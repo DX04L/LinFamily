@@ -517,7 +517,7 @@
       const url = safeUrl(app.url); if (!url) return '#';
       if (!isExternal(url)) return url;
       let host = ''; try { host = new URL(url).hostname; } catch (_) {}
-      if (OWN_HOSTS.includes(host) || NO_FRAME.test(host)) return url;
+      if (NO_FRAME.test(host)) return url; // 自家網站也走框內，才不會出現瀏覽器那一列
       return 'open.html?u=' + encodeURIComponent(url) + '&n=' + encodeURIComponent(app.name || '');
     }
     function renderTile(app, editing) {
