@@ -120,8 +120,11 @@
     .lf-app:hover .lf-icon { transform:scale(1.05); }
     .lf-app:active .lf-icon { transform:scale(.95); }
     .lf-icon.is-emoji { background:var(--pine); font-size:clamp(26px, 8vw, 38px); }
-    .lf-icon.is-fav { background:var(--mist); }
-    .lf-icon.is-fav img { width:58%; height:58%; object-fit:contain; }
+    .lf-icon.is-mono { color:#fff; font-weight:800; font-size:clamp(18px, 5.4vw, 26px); letter-spacing:-.02em; }
+    .lf-iconrow { display:flex; gap:10px; align-items:center; }
+    .lf-iconrow input { flex:1; min-width:0; }
+    #lfAppPreview { width:44px; flex:none; }
+    #lfAppPreview .lf-icon.is-mono { font-size:16px; } #lfAppPreview .lf-icon.is-emoji { font-size:24px; }
     .lf-icon.is-img img { width:100%; height:100%; object-fit:cover; }
     .lf-icon img { display:block; pointer-events:none; }
     .lf-name { font-size:12.5px; font-weight:700; line-height:1.25; text-align:center; max-width:100%; word-break:keep-all; overflow-wrap:anywhere; }
@@ -322,30 +325,15 @@
     <form method="dialog" novalidate>
       <h3 id="lfAppTitle">新增 App</h3>
       <label>網址<input id="lfAppUrl" placeholder="例如 HannahProjects/home.html 或 https://…" autocomplete="off" inputmode="url"></label>
-      <label>名稱<input id="lfAppName" maxlength="20" placeholder="留空會用網站名稱" autocomplete="off"></label>
-      <label>圖示<input id="lfAppIcon" maxlength="300" placeholder="emoji（例如 🎨）或圖片網址；留空用網站圖示" autocomplete="off"></label>
+      <label>名稱<input id="lfAppName" maxlength="20" placeholder="貼上網址後自動抓取，可修改" autocomplete="off"></label>
+      <label>圖示<span class="lf-iconrow"><span id="lfAppPreview"></span><input id="lfAppIcon" maxlength="300" placeholder="自動抓取；也可填 emoji 或圖片網址" autocomplete="off"></span></label>
+      <p class="lf-note" id="lfAppStatus" hidden></p>
       <p class="lf-err" id="lfAppErr" hidden></p>
       <div class="lf-actions">
         <button type="button" id="lfAppCancel">取消</button>
         <button type="submit" class="lf-primary" id="lfAppSave">儲存</button>
       </div>
     </form>
-  </dialog>
-
-  <!-- 權限管理（只有 Superuser） -->
-  <dialog class="lf-dialog" id="lfUsersDialog">
-    <div class="lf-dialog-body">
-      <h3>權限管理</h3>
-      <p class="lf-note">Superuser 為固定名單（寫在程式裡）。Admin 可登入；Viewer 唯讀。編輯 App 只限 Superuser。</p>
-      <ul class="lf-users" id="lfUsersList"><li><span>讀取中…</span></li></ul>
-      <form id="lfUserAdd" style="padding:0;flex-direction:row;gap:8px;align-items:flex-end">
-        <label style="flex:1">Email<input id="lfUserEmail" type="email" placeholder="name@example.com" autocomplete="off"></label>
-        <label>角色<select id="lfUserRole"><option value="admin">Admin</option><option value="viewer">Viewer</option></select></label>
-        <div class="lf-actions" style="margin:0"><button type="submit" class="lf-primary">加入</button></div>
-      </form>
-      <p class="lf-err" id="lfUsersErr" hidden></p>
-      <div class="lf-actions"><button type="button" id="lfUsersClose">關閉</button></div>
-    </div>
   </dialog>
 
   <!-- 安裝說明 -->
@@ -447,7 +435,7 @@
       if (act !== 'theme') setMenu(false);
       if (act === 'logout') { if (confirm('確定要登出管理員身分嗎？')) { await auth.signOut(); toast('已登出'); } }
       else if (act === 'theme') toggleTheme();
-      else if (act === 'users') openUsers();
+      else if (act === 'users') location.href = 'users.html';
     });
     function toggleTheme() {
       const dark = !document.documentElement.classList.contains('dark');
@@ -494,19 +482,29 @@
     }
     const isExternal = url => { try { return new URL(url, location.href).origin !== location.origin; } catch (_) { return false; } };
     const isImageUrl = v => /^(https?:\/\/|\/|\.\/)/i.test(String(v || '')) || /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(String(v || ''));
+    const MONO_COLORS = ['#4E8B7E', '#B5835A', '#5F77A8', '#A8607A', '#4F8FA0', '#7E6FAE', '#6E8B4E'];
+    const isGoogleIcon = v => /google\.[a-z.]+\/s2\/favicons/i.test(String(v || ''));
+    function monogram(span, app) {
+      const n = String(app.name || '').trim() || (() => { try { return new URL(safeUrl(app.url), location.href).hostname.replace(/^www\./, ''); } catch (_) { return '?'; } })();
+      const cjk = /[\u3400-\u9fff]/.test(n[0] || '');
+      let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      span.className = 'lf-icon is-mono'; span.style.background = MONO_COLORS[h % MONO_COLORS.length];
+      span.textContent = cjk ? n[0] : (n.replace(/[^A-Za-z0-9]/g, '').slice(0, 2) || n[0] || '?').replace(/^./, c => c.toUpperCase());
+    }
     function iconEl(app) {
       const span = document.createElement('span');
       span.className = 'lf-icon';
-      const icon = String(app.icon || app.iconUrl || '').trim();
-      const img = src => { const i = document.createElement('img'); i.alt = ''; i.loading = 'lazy'; i.src = src;
-        i.addEventListener('error', () => { span.className = 'lf-icon is-emoji'; span.textContent = '🔗'; }, { once: true }); return i; };
-      if (icon && isImageUrl(icon) && safeUrl(icon)) { span.classList.add('is-img'); span.append(img(safeUrl(icon))); }
+      let icon = String(app.icon || app.iconUrl || '').trim();
+      if (isGoogleIcon(icon)) icon = '';
+      if (icon && isImageUrl(icon) && safeUrl(icon)) {
+        const src = safeUrl(icon), i = document.createElement('img');
+        i.alt = ''; i.loading = 'lazy'; i.src = src; span.classList.add('is-img'); span.append(i);
+        i.addEventListener('error', () => monogram(span, app), { once: true });
+        i.addEventListener('load', () => { if (i.naturalWidth && i.naturalWidth < 96 && !/\.svg(\?|$)/i.test(src)) monogram(span, app); }, { once: true });
+      }
       else if (icon) { span.classList.add('is-emoji'); span.textContent = icon; }
       else if (PRESET_EMOJI[app.preset]) { span.classList.add('is-emoji'); span.textContent = PRESET_EMOJI[app.preset]; }
-      else if (isExternal(safeUrl(app.url))) {
-        let host = ''; try { host = new URL(safeUrl(app.url)).hostname; } catch (_) {}
-        span.classList.add('is-fav'); span.append(img('https://www.google.com/s2/favicons?sz=128&domain=' + encodeURIComponent(host)));
-      } else { span.classList.add('is-emoji'); span.textContent = '✨'; }
+      else monogram(span, app);
       return span;
     }
     // 自家網站：直接開（網站本身用 lf-back.js 顯示「‹ LinFamily」）；外部網站：放進 open.html 框內，上方有返回列；
@@ -523,7 +521,7 @@
         own.searchParams.set('lfhome', location.href.split('#')[0]);
         return own.href;
       }
-      if (NO_FRAME.test(host)) return url;
+      if (app.embeddable === false || (app.embeddable !== true && NO_FRAME.test(host))) return url;
       return 'open.html?u=' + encodeURIComponent(url) + '&n=' + encodeURIComponent(app.name || '');
     }
     function renderTile(app, editing) {
@@ -610,14 +608,44 @@
       $('lfAppTitle').textContent = app ? '修改 App' : '新增 App';
       $('lfAppUrl').value = app ? app.url || '' : '';
       $('lfAppName').value = app ? app.name : '';
-      $('lfAppIcon').value = app ? (app.icon || app.iconUrl || '') : '';
-      showErr(''); $('lfAppSave').disabled = false;
+      $('lfAppIcon').value = app && !isGoogleIcon(app.icon || app.iconUrl) ? (app.icon || app.iconUrl || '') : '';
+      auto = { name: '', icon: '', embeddable: app ? app.embeddable : undefined, url: app ? safeUrl(app.url) : '' };
+      showErr(''); status(''); $('lfAppSave').disabled = false; preview();
       dlg.showModal(); (app ? $('lfAppName') : $('lfAppUrl')).focus();
     }
+    // 貼上網址 → 由 DX04 的 /api/site-info 抓名稱、圖示（和手機「加入主畫面」相同來源）、能否放進框內。
+    // 名稱、圖示只在空白或仍是上次自動抓的值時才覆蓋；抓不到圖就用自動生成的字母圖示。
+    const SITE_INFO = 'https://clc-dx04.pages.dev/api/site-info?url=';
+    let auto = {}, fetchSeq = 0, fetchTimer = 0;
+    function status(msg) { $('lfAppStatus').textContent = msg; $('lfAppStatus').hidden = !msg; }
+    function preview() { $('lfAppPreview').replaceChildren(iconEl({ name: $('lfAppName').value, icon: $('lfAppIcon').value, url: $('lfAppUrl').value })); }
+    async function fetchInfo() {
+      const url = safeUrl($('lfAppUrl').value);
+      if (!url || url === auto.url) return;
+      auto.url = url; auto.embeddable = undefined;
+      if (!isExternal(url)) return;
+      const seq = ++fetchSeq; status('讀取網站名稱與圖示…');
+      let info = null;
+      try { const r = await fetch(SITE_INFO + encodeURIComponent(url)); info = await r.json(); } catch (_) {}
+      if (seq !== fetchSeq) return;
+      status(info && info.ok ? '' : '讀取不到網站資訊，請自行填寫（圖示可留空）。');
+      if (!info) return;
+      if (typeof info.embeddable === 'boolean') auto.embeddable = info.embeddable;
+      const name = String(info.name || '').trim().slice(0, 20), icon = info.ok && !isGoogleIcon(info.icon) ? safeUrl(info.icon) : '';
+      const nameEl = $('lfAppName'), iconElm = $('lfAppIcon');
+      if (name && (!nameEl.value.trim() || nameEl.value === auto.name)) { nameEl.value = name; auto.name = name; }
+      if (!iconElm.value.trim() || iconElm.value === auto.icon) { iconElm.value = icon; auto.icon = icon; }
+      preview();
+    }
+    $('lfAppUrl').addEventListener('input', () => { clearTimeout(fetchTimer); fetchTimer = setTimeout(fetchInfo, 600); });
+    $('lfAppUrl').addEventListener('change', fetchInfo);
+    $('lfAppName').addEventListener('input', preview);
+    $('lfAppIcon').addEventListener('input', preview);
     $('lfAppCancel').addEventListener('click', () => dlg.close());
     dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
     dlg.querySelector('form').addEventListener('submit', async e => {
       e.preventDefault();
+      if (safeUrl($('lfAppUrl').value) !== auto.url) { clearTimeout(fetchTimer); await fetchInfo(); }
       const url = safeUrl($('lfAppUrl').value);
       const icon = $('lfAppIcon').value.trim();
       let name = $('lfAppName').value.trim().slice(0, 20);
@@ -627,6 +655,7 @@
       $('lfAppSave').disabled = true;
       const base = withPos(), old = editingId && base.find(a => a.id === editingId);
       const patch = { name, url, icon, iconUrl: '' };
+      if (typeof auto.embeddable === 'boolean') patch.embeddable = auto.embeddable; else if (old) patch.embeddable = null;
       const next = old
         ? base.map(a => a.id === old.id ? Object.assign({}, a, patch) : a)
         : base.concat(Object.assign({ id: 'app_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, patch,
@@ -636,42 +665,6 @@
     });
 
     // ---------- 權限管理 ----------
-    const usersDlg = $('lfUsersDialog');
-    function usersErr(msg) { $('lfUsersErr').textContent = msg; $('lfUsersErr').hidden = !msg; }
-    async function loadUsers() {
-      const list = $('lfUsersList');
-      try {
-        const snap = await db.collection('admin_users').get();
-        const rows = snap.docs.map(d => Object.assign({ email: d.id }, d.data())).sort((a, b) => a.email.localeCompare(b.email));
-        list.innerHTML = rows.length ? rows.map(u => `<li data-email="${esc(u.email)}"><span>${esc(u.email)}</span>
-          <button type="button" data-u="role">${u.role === 'viewer' ? 'Viewer' : 'Admin'}</button>
-          <button type="button" data-u="active">${u.active === false ? '已停用' : '啟用中'}</button>
-          <button type="button" data-u="del" class="lf-del">刪除</button></li>`).join('') : '<li><span>目前沒有其他成員</span></li>';
-        usersErr('');
-      } catch (err) { list.innerHTML = ''; usersErr('讀取失敗：' + errText(err)); }
-    }
-    function openUsers() { if (!isSuper()) return; usersDlg.showModal(); loadUsers(); }
-    $('lfUsersClose').addEventListener('click', () => usersDlg.close());
-    $('lfUsersList').addEventListener('click', async e => {
-      const b = e.target.closest('button[data-u]'); if (!b) return;
-      const email = b.closest('li').dataset.email, ref = db.collection('admin_users').doc(email);
-      try {
-        if (b.dataset.u === 'del') { if (!confirm('刪除 ' + email + '？')) return; await ref.delete(); }
-        else if (b.dataset.u === 'role') await ref.update({ role: b.textContent === 'Admin' ? 'viewer' : 'admin', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        else await ref.update({ active: b.textContent !== '啟用中', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        loadUsers();
-      } catch (err) { usersErr('更新失敗：' + errText(err)); }
-    });
-    $('lfUserAdd').addEventListener('submit', async e => {
-      e.preventDefault();
-      const email = $('lfUserEmail').value.trim().toLowerCase();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || SUPERUSERS.includes(email)) return usersErr('Email 格式不正確，或已是 Superuser。');
-      try {
-        await db.collection('admin_users').doc(email).set({ role: $('lfUserRole').value, active: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        $('lfUserEmail').value = ''; loadUsers();
-      } catch (err) { usersErr('加入失敗：' + errText(err)); }
-    });
-
     // ---------- 分頁：主畫面／家庭空間配置 ----------
     document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
       const tab = b.dataset.tab;

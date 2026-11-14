@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>權限管理 · LinFamily</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta name="theme-color" content="#161716" id="metaThemeColor">
+  <script>
+    (function () {
+      var v = null; try { v = localStorage.getItem('linfamily_theme') || localStorage.getItem('linfamily_pixel_theme'); } catch (_) {}
+      var dark = v ? v === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', dark);
+      document.getElementById('metaThemeColor').setAttribute('content', dark ? '#161716' : '#E6E7E9');
+    })();
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <style>
+    /* 字型與 DX 相同：英文 Arial（粗體用 Arial Bold）、中文微軟正黑體 */
+    @font-face { font-family:"CLC Arial"; src:local("Arial"),local("ArialMT"); font-weight:100 549; }
+    @font-face { font-family:"CLC Arial"; src:local("Arial Bold"),local("Arial-BoldMT"); font-weight:550 1000; }
+
+    /* 色系：墨黑 #1C1C1C、松綠 #4E8B7E、鼠尾草綠 #8FBFB0、奶油米 #EADFC8、淺灰 #E6E7E9（底色） */
+    :root {
+      --ink:#1C1C1C; --pine:#4E8B7E; --sage:#8FBFB0; --cream:#EADFC8; --cloud:#E6E7E9;
+      --teal:var(--pine);
+      --bg:var(--cloud); --surface:#FFFFFF; --text:var(--ink); --muted:#5E6B67;
+      --border:rgba(28,28,28,.12); --btn:rgba(28,28,28,.06); --btn-h:rgba(28,28,28,.11);
+      --shadow:0 18px 40px rgba(28,28,28,.16);
+    }
+    html.dark {
+      --teal:var(--sage);
+      --bg:#161716; --surface:#161924; --text:#F1F1EF; --muted:#A8B5B0;
+      --border:rgba(255,255,255,.1); --btn:rgba(255,255,255,.05); --btn-h:rgba(255,255,255,.1);
+      --shadow:0 20px 45px rgba(0,0,0,.55);
+      color-scheme:dark;
+    }
+    * { box-sizing:border-box; }
+    html, body { margin:0; }
+    body {
+      min-height:100vh; min-height:100dvh; display:flex; flex-direction:column;
+      background:var(--bg); color:var(--text);
+      font-family:"CLC Arial", Arial, "Microsoft JhengHei", "微軟正黑體", "PingFang TC", "Noto Sans TC", sans-serif;
+      -webkit-font-smoothing:antialiased; transition:background-color .3s, color .3s;
+    }
+    button, input, select { font:inherit; color:inherit; }
+    .lf-users { list-style:none; margin:0; padding:0; display:grid; gap:8px; max-height:45vh; overflow:auto; }
+    .lf-users li { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:12px; background:var(--btn); font-size:13.5px; }
+    .lf-users li span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .lf-users li button { border:0; background:none; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--teal); padding:4px 6px; }
+    .lf-users li button.lf-del { color:#E0525E; }
+    .lf-toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:100; padding:10px 18px; border-radius:12px;
+      background:#1C1C1C; color:#fff; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+    main { width:min(100%, 640px); margin:0 auto; padding:calc(18px + env(safe-area-inset-top)) 20px 40px; display:flex; flex-direction:column; gap:16px; }
+    .lf-back { align-self:flex-start; text-decoration:none; font-weight:700; color:var(--teal); padding:6px 0; }
+    h1 { margin:0; font-size:28px; font-weight:800; letter-spacing:-.02em; }
+    .lf-note { color:var(--muted); font-size:13.5px; line-height:1.6; margin:0; }
+    .lf-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:12px; }
+    .lf-card h2 { margin:0; font-size:15px; font-weight:800; }
+    .lf-users { max-height:none; }
+    form { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+    label { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:700; color:var(--muted); }
+    input, select { height:44px; padding:0 14px; border-radius:12px; font-size:15px; background:var(--btn); border:1px solid var(--border); outline:none; }
+    input:focus, select:focus { border-color:var(--teal); }
+    .lf-primary { height:44px; padding:0 18px; border-radius:12px; font-weight:700; border:0; cursor:pointer; background:var(--pine); color:#fff; }
+    .lf-err { color:#E0525E; font-size:13px; margin:0; }
+    [hidden] { display:none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="lf-back" href="./">‹ LinFamily</a>
+    <h1>權限管理</h1>
+    <p class="lf-note">Superuser 為固定名單（寫在程式裡）。Admin 可登入；Viewer 唯讀。編輯 App 只限 Superuser。</p>
+    <p class="lf-err" id="lfGate">確認登入中…</p>
+    <div id="lfBody" hidden>
+      <section class="lf-card">
+        <h2>成員</h2>
+        <ul class="lf-users" id="lfUsersList"><li><span>讀取中…</span></li></ul>
+      </section>
+      <section class="lf-card" style="margin-top:16px">
+        <h2>新增成員</h2>
+        <form id="lfUserAdd">
+          <label style="flex:1;min-width:200px">Email<input id="lfUserEmail" type="email" placeholder="name@example.com" autocomplete="off"></label>
+          <label>角色<select id="lfUserRole"><option value="admin">Admin</option><option value="viewer">Viewer</option></select></label>
+          <button type="submit" class="lf-primary">加入</button>
+        </form>
+      </section>
+      <p class="lf-err" id="lfUsersErr" hidden></p>
+    </div>
+  </main>
+  <script>
+  (function () {
+    const firebaseConfig = {
+      apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
+      authDomain: "linfamily-31cb6.firebaseapp.com",
+      projectId: "linfamily-31cb6",
+      storageBucket: "linfamily-31cb6.firebasestorage.app",
+      messagingSenderId: "299667187224",
+      appId: "1:299667187224:web:8df32264698caad761c56d"
+    };
+    let auth = null, db = null;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth(); db = firebase.firestore();
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+    } catch (err) { console.warn('Firebase 無法啟動', err); }
+
+    // Superuser 固定名單（沿用舊版）
+    const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
+    const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const $ = id => document.getElementById(id);
+    const errText = err => err && err.code === 'permission-denied' ? '權限不足（請確認已用 Superuser 登入，以及 Firestore 規則）。' : '請稍後再試。';
+    if (!auth) { $('lfGate').textContent = '登入服務尚未載入，請重新整理。'; return; }
+    auth.onAuthStateChanged(u => {
+      const ok = !!(u && u.email && u.emailVerified && SUPERUSERS.includes(u.email.toLowerCase()));
+      $('lfGate').textContent = ok ? '' : '只有 Superuser 可以使用這一頁，請先回 LinFamily 登入。';
+      $('lfGate').hidden = ok; $('lfBody').hidden = !ok;
+      if (ok) loadUsers();
+    });
+    function usersErr(msg) { $('lfUsersErr').textContent = msg; $('lfUsersErr').hidden = !msg; }
+    async function loadUsers() {
+      const list = $('lfUsersList');
+      try {
+        const snap = await db.collection('admin_users').get();
+        const rows = snap.docs.map(d => Object.assign({ email: d.id }, d.data())).sort((a, b) => a.email.localeCompare(b.email));
+        list.innerHTML = rows.length ? rows.map(u => `<li data-email="${esc(u.email)}"><span>${esc(u.email)}</span>
+          <button type="button" data-u="role">${u.role === 'viewer' ? 'Viewer' : 'Admin'}</button>
+          <button type="button" data-u="active">${u.active === false ? '已停用' : '啟用中'}</button>
+          <button type="button" data-u="del" class="lf-del">刪除</button></li>`).join('') : '<li><span>目前沒有其他成員</span></li>';
+        usersErr('');
+      } catch (err) { list.innerHTML = ''; usersErr('讀取失敗：' + errText(err)); }
+    }
+    $('lfUsersList').addEventListener('click', async e => {
+      const b = e.target.closest('button[data-u]'); if (!b) return;
+      const email = b.closest('li').dataset.email, ref = db.collection('admin_users').doc(email);
+      try {
+        if (b.dataset.u === 'del') { if (!confirm('刪除 ' + email + '？')) return; await ref.delete(); }
+        else if (b.dataset.u === 'role') await ref.update({ role: b.textContent === 'Admin' ? 'viewer' : 'admin', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        else await ref.update({ active: b.textContent !== '啟用中', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        loadUsers();
+      } catch (err) { usersErr('更新失敗：' + errText(err)); }
+    });
+    $('lfUserAdd').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = $('lfUserEmail').value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || SUPERUSERS.includes(email)) return usersErr('Email 格式不正確，或已是 Superuser。');
+      try {
+        await db.collection('admin_users').doc(email).set({ role: $('lfUserRole').value, active: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        $('lfUserEmail').value = ''; loadUsers();
+      } catch (err) { usersErr('加入失敗：' + errText(err)); }
+    });
+  })();
+  </script>
+</body>
+</html>
