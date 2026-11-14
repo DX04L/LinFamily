@@ -139,6 +139,26 @@
     .lf-hint { color:var(--muted); font-size:12.5px; margin-top:18px; }
     .lf-hint[hidden] { display:none; }
 
+    /* ---------- 搜尋列（DX 輸入框樣式：圓角、細框、聚焦時松綠框） ---------- */
+    .lf-search { display:flex; align-items:center; gap:10px; height:48px; padding:0 8px 0 16px; margin-top:20px; max-width:520px; border-radius:16px;
+      background:var(--surface); border:1px solid var(--border); transition:border-color .15s; }
+    html.dark .lf-search { background:rgba(255,255,255,.04); }
+    .lf-search:focus-within { border-color:var(--pine); }
+    html.dark .lf-search:focus-within { border-color:var(--sage); }
+    .lf-search svg { width:18px; height:18px; flex:none; color:var(--muted); }
+    .lf-search input { flex:1; min-width:0; height:100%; border:0; outline:none; background:transparent; font-size:15px; color:var(--text); }
+    .lf-search input::placeholder { color:var(--muted); opacity:.75; }
+    .lf-search input::-webkit-search-cancel-button { display:none; }
+    .lf-search button { flex:none; width:32px; height:32px; border:0; border-radius:10px; background:none; color:var(--muted); cursor:pointer; font-size:16px; }
+    .lf-search button:hover { background:var(--btn); }
+    .lf-search button[hidden] { display:none; }
+    @media (min-width:640px) { .lf-search { max-width:780px; } }
+    @media (min-width:1024px) { .lf-search { max-width:1040px; } }
+    #lfApps.is-searching > * { transition:opacity .15s; }
+    #lfApps.is-searching > .lf-dim { opacity:.15; pointer-events:none; }
+    .lf-noresult { color:var(--muted); font-size:13.5px; margin:-6px 0 14px; }
+    .lf-noresult[hidden] { display:none; }
+
     /* ---------- 家庭空間配置 ---------- */
     .lf-board { background:#fff; border-radius:18px; padding:10px; overflow-x:auto; border:1px solid var(--border); }
     .lf-board svg { display:block; width:100%; min-width:620px; height:auto; }
@@ -200,6 +220,12 @@
   </div>
 
   <main>
+    <label class="lf-search" for="lfSearch">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
+      <input type="search" id="lfSearch" placeholder="搜尋 App…" autocomplete="off" enterkeyhint="go" aria-label="搜尋 App">
+      <button type="button" id="lfSearchClear" aria-label="清除搜尋" hidden>✕</button>
+    </label>
+
     <div class="lf-tabs" role="tablist" aria-label="切換">
       <button type="button" role="tab" aria-selected="true" data-tab="apps">主畫面</button>
       <button type="button" role="tab" aria-selected="false" data-tab="family">家庭空間配置</button>
@@ -208,6 +234,7 @@
     <section id="panelApps" aria-label="App">
       <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 clc-slot-grid.js：
            Superuser 長按晃動 → 拖到空格或互換位置、「−」移除、點 App 修改、長按空格新增、按「完成」結束。 -->
+      <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
       <nav id="lfApps" aria-label="App"></nav>
       <p class="lf-hint" id="lfHint" hidden>長按 App 可以移動或編輯，長按空格可以新增。</p>
     </section>
@@ -640,6 +667,34 @@
       g.addEventListener('click', pick);
       g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
     });
+
+    // ---------- 搜尋：符合的 App 保持清楚，其他變淡；Enter 開第一個符合的 App ----------
+    const search = $('lfSearch');
+    function applySearch() {
+      const q = search.value.trim().toLowerCase();
+      const grid = $('lfApps');
+      $('lfSearchClear').hidden = !q;
+      grid.classList.toggle('is-searching', !!q);
+      let hits = 0;
+      grid.querySelectorAll(':scope > [data-slot]').forEach(el => {
+        const app = el.dataset.id && apps.find(a => a.id === el.dataset.id);
+        const match = !q || (app && (String(app.name).toLowerCase().includes(q) || String(app.url || '').toLowerCase().includes(q)));
+        el.classList.toggle('lf-dim', !!q && !match);
+        if (q && match && app) hits++;
+      });
+      $('lfNoResult').hidden = !q || hits > 0;
+      if (q) { document.querySelector('.lf-tabs [data-tab="apps"]').click(); slots.setEditing(false); }
+    }
+    search.addEventListener('input', applySearch);
+    search.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { search.value = ''; applySearch(); search.blur(); }
+      if (e.key === 'Enter') {
+        const first = $('lfApps').querySelector(':scope > .slot-cell:not(.lf-dim) a');
+        if (search.value.trim() && first) location.href = first.href;
+      }
+    });
+    $('lfSearchClear').addEventListener('click', () => { search.value = ''; applySearch(); search.focus(); });
+    new MutationObserver(() => { if (search.value.trim()) applySearch(); }).observe($('lfApps'), { childList: true });
 
     slots.render();
   })();
