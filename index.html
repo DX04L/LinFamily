@@ -511,7 +511,7 @@
     }
     // 自家網站：直接開（網站本身用 lf-back.js 顯示「‹ LinFamily」）；外部網站：放進 open.html 框內，上方有返回列；
     // 不允許被放進框內的網站（Google 等）：直接開，接受瀏覽器那一列。
-    const OWN_HOSTS = ['clc-dx04.pages.dev'];
+    const OWN_HOSTS = ['clc-dx04.pages.dev', 'clc-ya-portal.pages.dev', 'clc-sr-portal.pages.dev'];
     const NO_FRAME = /(^|\.)(google\.[a-z.]+|youtube\.com|youtu\.be|gmail\.com|facebook\.com|instagram\.com|messenger\.com|threads\.net|line\.me|apple\.com|icloud\.com|github\.com|x\.com|twitter\.com|microsoft\.com|live\.com|office\.com|notion\.so|amazon\.[a-z.]+|linkedin\.com|paypal\.com)$/i;
     function tileHref(app) {
       const url = safeUrl(app.url); if (!url) return '#';
