@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E6E7E9">
+<title>LinFamily</title>
+<link rel="icon" href="favicon.png">
+<style>
+  :root { --bg:#E6E7E9; --text:#1d1d1f; --line:rgba(0,0,0,.08); }
+  .dark { --bg:#161716; --text:#f2f2f2; --line:rgba(255,255,255,.1); }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font:15px -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif; }
+  body { display:flex; flex-direction:column; }
+  header { display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 6px) 10px 6px; border-bottom:1px solid var(--line); }
+  header a { color:inherit; text-decoration:none; padding:6px 10px; border-radius:10px; white-space:nowrap; }
+  header a:active { background:var(--line); }
+  #t { flex:1; text-align:center; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  iframe { flex:1; width:100%; border:0; background:#fff; }
+</style>
+</head>
+<body>
+<header><a href="./" aria-label="回 LinFamily">‹ LinFamily</a><div id="t"></div><a id="ext" href="#" aria-label="直接開啟">↗</a></header>
+<iframe id="f" title="App" allow="fullscreen; clipboard-write; geolocation; camera; microphone"></iframe>
+<script>
+  try { if (localStorage.getItem('linfamily_theme') === 'dark') document.documentElement.classList.add('dark'); } catch (_) {}
+  const p = new URLSearchParams(location.search);
+  let u = ''; try { const x = new URL(p.get('u') || ''); if (/^https?:$/.test(x.protocol)) u = x.href; } catch (_) {}
+  if (!u) location.replace('./');
+  else {
+    document.getElementById('t').textContent = document.title = (p.get('n') || new URL(u).hostname).slice(0, 30);
+    document.getElementById('f').src = u;
+    document.getElementById('ext').href = u; // 框內打不開時，按 ↗ 直接開啟
+  }
+</script>
+</body>
+</html>
