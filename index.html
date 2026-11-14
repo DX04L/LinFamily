@@ -236,7 +236,6 @@
            Superuser 長按晃動 → 拖到空格或互換位置、「−」移除、點 App 修改、長按空格新增、按「完成」結束。 -->
       <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
       <nav id="lfApps" aria-label="App"></nav>
-      <p class="lf-hint" id="lfHint" hidden>長按 App 可以移動或編輯，長按空格可以新增。</p>
     </section>
 
     <section id="panelFamily" aria-label="家庭空間配置" hidden>
@@ -408,7 +407,6 @@
       $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
       if (!role) setMenu(false);
-      $('lfHint').hidden = !isSuper();
       if (slots) { slots.render(); if (isSuper()) seedIfNeeded(); }
     }
     if (auth) auth.onAuthStateChanged(u => {
