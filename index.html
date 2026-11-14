@@ -6,20 +6,26 @@
   <title>LinFamily APP</title>
 
   <!-- PWA 設定 -->
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LinFamily APP">
-  <meta name="theme-color" content="#000000" id="metaThemeColor">
+  <meta name="theme-color" content="#0E0E0E" id="metaThemeColor">
   <link id="dynamicFavicon" rel="icon" type="image/svg+xml">
   <link id="dynamicAppleIcon" rel="apple-touch-icon">
   <link id="dynamicManifest" rel="manifest">
+
+  <!-- Firebase SDK (與 clc-dx04 相同版本，支援 Google 登入與 Firestore 即時同步) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <!-- 主題預載防閃爍 -->
   <script>
     (function () {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
       function savedTheme() {
-        const v = localStorage.getItem('linfamily_theme');
+        const v = localStorage.getItem('linfamily_pixel_theme');
         return v === 'light' || v === 'dark' ? v : null;
       }
       function applyTheme() {
@@ -27,7 +33,7 @@
         const isDark = chosen ? chosen === 'dark' : systemTheme.matches;
         document.documentElement.classList.toggle('dark', isDark);
         const meta = document.getElementById('metaThemeColor');
-        if (meta) meta.setAttribute('content', isDark ? '#000000' : '#F2F2F7');
+        if (meta) meta.setAttribute('content', isDark ? '#0E0E0E' : '#F8F9FA');
       }
       applyTheme();
       systemTheme.addEventListener?.('change', () => { if (!savedTheme()) applyTheme(); });
@@ -35,53 +41,56 @@
   </script>
 
   <style>
+    /* =====================================================================
+       Google Pixel Material You (Monochrome 黑白極簡配色)
+    ===================================================================== */
     :root {
-      --accent: #007AFF;
-      --accent-hover: #0062CC;
-      --accent-soft: rgba(0, 122, 255, 0.14);
-      --danger: #FF3B30;
-      --success: #34C759;
-      --warning: #FF9500;
-
-      --bg-page: #F2F2F7;
-      --bg-elevated: rgba(255, 255, 255, 0.78);
-      --bg-card: #FFFFFF;
-      --bg-fill: rgba(118, 118, 128, 0.12);
-      --bg-fill-hover: rgba(118, 118, 128, 0.20);
-      --text-primary: #1C1C1E;
-      --text-secondary: #3A3A3C;
-      --text-tertiary: #8E8E93;
-      --border-subtle: rgba(60, 60, 67, 0.14);
-      --shadow-tile: 0 6px 18px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
-      --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.06);
-      --shadow-modal: 0 28px 70px rgba(0, 0, 0, 0.24);
-      --wallpaper: radial-gradient(120% 90% at 15% 0%, #E5F1FF 0%, #F2F2F7 48%, #EAEAF2 100%);
+      --md-bg: #F8F9FA;
+      --md-surface: #FFFFFF;
+      --md-surface-container: #EFEFEF;
+      --md-surface-container-high: #E4E4E7;
+      --md-surface-glass: rgba(248, 249, 250, 0.84);
+      --md-on-surface: #111111;
+      --md-on-surface-variant: #52525B;
+      --md-outline: #D4D4D8;
+      --md-outline-strong: #111111;
+      --md-primary: #111111;
+      --md-on-primary: #FFFFFF;
+      --md-primary-container: #E4E4E7;
+      --md-on-primary-container: #111111;
+      --md-danger: #DC2626;
+      --md-success: #16A34A;
+      --md-warning: #D97706;
+      --md-ripple: rgba(17, 17, 17, 0.12);
+      --md-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+      --md-elevation-2: 0 4px 14px rgba(0, 0, 0, 0.08);
+      --md-elevation-3: 0 20px 56px rgba(0, 0, 0, 0.22);
     }
 
     html.dark {
-      --accent: #0A84FF;
-      --accent-hover: #409CFF;
-      --accent-soft: rgba(10, 132, 255, 0.18);
-      --danger: #FF453A;
-      --success: #30D158;
-      --warning: #FF9F0A;
-
-      --bg-page: #000000;
-      --bg-elevated: rgba(28, 28, 30, 0.78);
-      --bg-card: #1C1C1E;
-      --bg-fill: rgba(118, 118, 128, 0.24);
-      --bg-fill-hover: rgba(118, 118, 128, 0.34);
-      --text-primary: #F5F5F7;
-      --text-secondary: #D1D1D6;
-      --text-tertiary: #8E8E93;
-      --border-subtle: rgba(255, 255, 255, 0.12);
-      --shadow-tile: 0 8px 22px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(255, 255, 255, 0.06) inset;
-      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.45);
-      --shadow-modal: 0 32px 80px rgba(0, 0, 0, 0.78);
-      --wallpaper: radial-gradient(120% 90% at 15% 0%, #101A2E 0%, #07080C 52%, #000000 100%);
+      --md-bg: #0E0E0E;
+      --md-surface: #171717;
+      --md-surface-container: #222222;
+      --md-surface-container-high: #2E2E30;
+      --md-surface-glass: rgba(14, 14, 14, 0.84);
+      --md-on-surface: #F4F4F5;
+      --md-on-surface-variant: #A1A1AA;
+      --md-outline: #323236;
+      --md-outline-strong: #F4F4F5;
+      --md-primary: #F4F4F5;
+      --md-on-primary: #111111;
+      --md-primary-container: #2E2E30;
+      --md-on-primary-container: #F4F4F5;
+      --md-danger: #F87171;
+      --md-success: #4ADE80;
+      --md-warning: #FBBF24;
+      --md-ripple: rgba(244, 244, 245, 0.14);
+      --md-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+      --md-elevation-2: 0 6px 18px rgba(0, 0, 0, 0.5);
+      --md-elevation-3: 0 24px 64px rgba(0, 0, 0, 0.8);
     }
 
-    /* 全面隱藏所有捲軸，保留正常滑動與捲動功能 */
+    /* 全面隱藏所有捲軸，保留流暢觸控滑動與捲動 */
     *, *::before, *::after {
       box-sizing: border-box;
       scrollbar-width: none !important;
@@ -96,77 +105,75 @@
 
     html {
       font-size: 16.5px;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-family: "Google Sans", "Roboto", -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
     body {
       margin: 0;
       min-height: 100dvh;
-      background: var(--wallpaper);
-      background-color: var(--bg-page);
-      color: var(--text-primary);
+      background-color: var(--md-bg);
+      color: var(--md-on-surface);
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
-      transition: background-color 0.28s ease, color 0.28s ease;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
 
-    /* 無獨立 Header：頂部僅保留極簡懸浮控制列（左側 LinFamily APP 品牌標誌，右上角 安裝 / 權限登入 / 明暗切換） */
-    .floating-top-bar {
+    /* Material You Ripple 水波紋點擊回饋 */
+    .ripple-host {
+      position: relative;
+      overflow: hidden;
+    }
+    .md-ripple-wave {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--md-ripple);
+      transform: scale(0);
+      animation: mdRippleAnim 0.52s cubic-bezier(0.2, 0, 0, 1) forwards;
+      pointer-events: none;
+    }
+    @keyframes mdRippleAnim {
+      to { transform: scale(2.8); opacity: 0; }
+    }
+
+    /* =====================================================================
+       無獨立 Header：極簡懸浮頂部控制列（無任何品牌 Logo，純粹 LinFamily APP 字樣）
+    ===================================================================== */
+    .pixel-top-bar {
       position: sticky;
       top: 0;
       z-index: 40;
       width: 100%;
-      max-width: 960px;
+      max-width: 920px;
       margin: 0 auto;
-      padding: calc(12px + env(safe-area-inset-top)) 18px 8px;
+      padding: calc(12px + env(safe-area-inset-top)) 18px 6px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
       pointer-events: none;
     }
-    .floating-top-bar > * {
-      pointer-events: auto;
-    }
+    .pixel-top-bar > * { pointer-events: auto; }
 
-    .brand-pill {
+    .wordmark-btn {
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--md-outline);
+      background: var(--md-surface-glass);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      color: var(--md-on-surface);
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
       display: inline-flex;
       align-items: center;
-      gap: 9px;
-      height: 38px;
-      padding: 0 14px 0 10px;
-      border-radius: 999px;
-      background: var(--bg-elevated);
-      backdrop-filter: blur(22px) saturate(180%);
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-      border: 1px solid var(--border-subtle);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
       text-decoration: none;
-      color: var(--text-primary);
-      font-weight: 700;
-      font-size: 0.92rem;
-      letter-spacing: -0.01em;
-      user-select: none;
       cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
-    }
-    .brand-pill:active { transform: scale(0.96); }
-    .brand-apple-mark {
-      width: 22px;
-      height: 22px;
-      border-radius: 6px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(145deg, #1C1C1E, #3A3A3C);
-      color: #FFFFFF;
-      flex: none;
-    }
-    html.dark .brand-apple-mark {
-      background: linear-gradient(145deg, #F5F5F7, #D1D1D6);
-      color: #000000;
+      box-shadow: var(--md-elevation-1);
     }
 
     .top-actions {
@@ -176,16 +183,16 @@
       position: relative;
     }
 
-    .glass-btn {
-      height: 38px;
-      min-width: 38px;
-      padding: 0 12px;
+    .m3-chip-btn {
+      height: 40px;
+      min-width: 40px;
+      padding: 0 14px;
       border-radius: 999px;
-      border: 1px solid var(--border-subtle);
-      background: var(--bg-elevated);
-      backdrop-filter: blur(22px) saturate(180%);
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-      color: var(--text-primary);
+      border: 1px solid var(--md-outline);
+      background: var(--md-surface-glass);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      color: var(--md-on-surface);
       font: inherit;
       font-size: 0.85rem;
       font-weight: 600;
@@ -194,218 +201,169 @@
       justify-content: center;
       gap: 6px;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      transition: transform 0.16s ease, background-color 0.16s ease;
-      user-select: none;
+      box-shadow: var(--md-elevation-1);
+      transition: background-color 0.16s ease, transform 0.14s ease;
     }
-    .glass-btn.icon-only {
-      width: 38px;
+    .m3-chip-btn.icon-only {
+      width: 40px;
       padding: 0;
     }
-    .glass-btn:hover { background: var(--bg-card); }
-    .glass-btn:active { transform: scale(0.94); }
-    .glass-btn svg {
-      width: 18px;
-      height: 18px;
-      flex: none;
-    }
+    .m3-chip-btn:hover { background: var(--md-surface-container); }
+    .m3-chip-btn:active { transform: scale(0.95); }
+    .m3-chip-btn svg { width: 18px; height: 18px; flex: none; }
 
-    .admin-dot {
+    .status-indicator {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 0 2px var(--bg-card);
+      background: var(--md-success);
     }
-    .admin-dot.is-viewer { background: var(--warning); }
+    .status-indicator.is-viewer { background: var(--md-warning); }
 
-    /* 權限下拉選單 */
-    .popover-menu {
+    /* Material You 權限選單卡片 */
+    .m3-menu {
       position: absolute;
       top: calc(100% + 8px);
       right: 0;
-      width: 248px;
+      width: 256px;
       padding: 8px;
-      border-radius: 18px;
-      background: var(--bg-elevated);
-      backdrop-filter: blur(26px) saturate(190%);
-      -webkit-backdrop-filter: blur(26px) saturate(190%);
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-modal);
+      border-radius: 24px;
+      background: var(--md-surface);
+      border: 1px solid var(--md-outline);
+      box-shadow: var(--md-elevation-3);
       z-index: 60;
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
-    .popover-menu[hidden] { display: none !important; }
-    .popover-header {
-      padding: 8px 10px 10px;
-      border-bottom: 1px solid var(--border-subtle);
+    .m3-menu[hidden] { display: none !important; }
+    .m3-menu-head {
+      padding: 10px 12px 12px;
+      border-bottom: 1px solid var(--md-outline);
       margin-bottom: 4px;
     }
-    .popover-email {
-      font-size: 0.82rem;
+    .m3-menu-email {
+      font-size: 0.84rem;
       font-weight: 700;
-      color: var(--text-primary);
       word-break: break-all;
     }
-    .popover-role {
-      font-size: 0.74rem;
-      color: var(--text-tertiary);
+    .m3-menu-role {
+      font-size: 0.75rem;
+      color: var(--md-on-surface-variant);
       margin-top: 2px;
     }
-    .popover-item {
+    .m3-menu-item {
       width: 100%;
-      padding: 10px 12px;
+      padding: 11px 14px;
       border: 0;
-      border-radius: 12px;
+      border-radius: 16px;
       background: transparent;
-      color: var(--text-primary);
+      color: var(--md-on-surface);
       font: inherit;
       font-size: 0.88rem;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 11px;
       cursor: pointer;
       text-align: left;
-      transition: background-color 0.14s ease;
     }
-    .popover-item:hover { background: var(--bg-fill); }
-    .popover-item.danger { color: var(--danger); }
-    .popover-item svg { width: 17px; height: 17px; flex: none; }
+    .m3-menu-item:hover { background: var(--md-surface-container); }
+    .m3-menu-item.danger { color: var(--md-danger); }
+    .m3-menu-item svg { width: 18px; height: 18px; flex: none; }
 
-    /* 主容器 */
-    .main-shell {
+    /* =====================================================================
+       Google Pixel 主畫面架構
+    ===================================================================== */
+    .pixel-shell {
       width: 100%;
-      max-width: 960px;
+      max-width: 920px;
       margin: 0 auto;
-      padding: 8px 20px calc(28px + env(safe-area-inset-bottom));
+      padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 22px;
     }
 
-    /* 頂部歡迎與狀態列（像 iOS 主畫面頂部時間與搜尋） */
-    .hero-bar {
+    /* Pixel At a Glance 頂部資訊區 */
+    .at-a-glance {
+      padding: 6px 4px 2px;
       display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 6px 2px 2px;
+      flex-direction: column;
+      gap: 6px;
     }
-    .hero-title-group h1 {
+    .glance-date {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--md-on-surface-variant);
+      letter-spacing: 0.01em;
+    }
+    .glance-title {
       margin: 0;
-      font-size: clamp(1.75rem, 4.5vw, 2.35rem);
-      font-weight: 800;
+      font-size: clamp(1.85rem, 4.8vw, 2.45rem);
+      font-weight: 700;
       letter-spacing: -0.025em;
       line-height: 1.12;
     }
-    .hero-subtitle {
-      margin: 4px 0 0;
-      font-size: 0.88rem;
-      color: var(--text-tertiary);
-      font-weight: 500;
-    }
-
-    /* Segmented Control + 即時搜尋列 */
-    .toolbar-row {
+    .glance-meta-row {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
+      margin-top: 2px;
+      font-size: 0.84rem;
+      color: var(--md-on-surface-variant);
     }
-
-    .segmented-control {
-      display: inline-flex;
-      padding: 3px;
-      border-radius: 12px;
-      background: var(--bg-fill);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      gap: 2px;
-    }
-    .seg-btn {
-      border: 0;
-      background: transparent;
-      color: var(--text-secondary);
-      font: inherit;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 7px 14px;
-      border-radius: 9.5px;
-      cursor: pointer;
-      transition: all 0.18s ease;
+    .glance-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-    }
-    .seg-btn.active {
-      background: var(--bg-card);
-      color: var(--text-primary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 4px 11px;
+      border-radius: 999px;
+      background: var(--md-surface-container);
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: var(--md-on-surface);
     }
 
-    .search-box {
-      position: relative;
-      flex: 1 1 220px;
-      max-width: 320px;
+    /* Material You 分段切換鈕 (Segmented Button) */
+    .m3-segmented {
+      display: inline-flex;
+      align-self: flex-start;
+      border-radius: 999px;
+      border: 1px solid var(--md-outline);
+      background: var(--md-surface);
+      padding: 3px;
+      gap: 2px;
     }
-    .search-box svg {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 16px;
-      height: 16px;
-      color: var(--text-tertiary);
-      pointer-events: none;
-    }
-    .search-input {
-      width: 100%;
-      height: 38px;
-      padding: 0 34px 0 36px;
-      border-radius: 12px;
-      border: 1px solid transparent;
-      background: var(--bg-fill);
-      color: var(--text-primary);
-      font: inherit;
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.18s ease, background-color 0.18s ease;
-    }
-    .search-input::placeholder { color: var(--text-tertiary); }
-    .search-input:focus {
-      background: var(--bg-card);
-      border-color: var(--accent);
-    }
-    .search-clear {
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 22px;
-      height: 22px;
+    .m3-seg-btn {
+      height: 36px;
+      padding: 0 18px;
+      border-radius: 999px;
       border: 0;
-      border-radius: 50%;
-      background: var(--bg-fill-hover);
-      color: var(--text-secondary);
-      font-size: 13px;
-      display: grid;
-      place-items: center;
+      background: transparent;
+      color: var(--md-on-surface-variant);
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background-color 0.18s ease, color 0.18s ease;
     }
-    .search-clear[hidden] { display: none; }
+    .m3-seg-btn.active {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+    }
 
-    /* 家庭空間配置圖區塊（置頂於家庭空間分頁，且深色模式下圖表底色維持純白高對比） */
+    /* 置頂向量平面圖 / 動線圖（於「家庭空間配置」分頁置頂顯示，且深色模式下維持純白高對比） */
     .diagram-card {
-      border-radius: 26px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-card);
+      border-radius: 28px;
+      background: var(--md-surface);
+      border: 1px solid var(--md-outline);
+      box-shadow: var(--md-elevation-1);
       padding: 18px;
       display: flex;
       flex-direction: column;
@@ -428,16 +386,15 @@
     }
     .diagram-hint {
       font-size: 0.78rem;
-      color: var(--text-tertiary);
+      color: var(--md-on-surface-variant);
     }
     /* 特殊保留原則：深色模式切換時，所有平面圖、動線圖、示意圖圖表底色必須維持純白高對比 */
     .diagram-white-board {
       background: #FFFFFF !important;
-      color: #111827 !important;
-      border-radius: 18px;
+      color: #111111 !important;
+      border-radius: 20px;
       padding: 14px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+      border: 1px solid #E4E4E7;
       overflow: hidden;
     }
     .diagram-white-board svg {
@@ -447,307 +404,405 @@
     }
     .svg-hotspot {
       cursor: pointer;
-      transition: transform 0.18s ease, opacity 0.18s ease;
+      transition: opacity 0.18s ease;
     }
-    .svg-hotspot:hover {
-      opacity: 0.86;
-    }
+    .svg-hotspot:hover { opacity: 0.85; }
     .svg-hotspot.is-highlighted rect.zone-box,
     .svg-hotspot.is-highlighted circle.zone-pin {
-      stroke: #007AFF !important;
+      stroke: #111111 !important;
       stroke-width: 3.5px !important;
-      filter: drop-shadow(0 0 8px rgba(0, 122, 255, 0.45));
+      filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.28));
     }
 
-    /* iPhone 風格主畫面 App 網格 */
-    .home-section-head {
+    /* Pixel Launcher 頂部拖曳編輯列 */
+    .pixel-edit-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-height: 34px;
-      padding: 0 2px;
-    }
-    .section-label {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--text-tertiary);
-      letter-spacing: 0.02em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .edit-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .done-pill {
-      height: 32px;
-      padding: 0 16px;
+      gap: 12px;
+      padding: 10px 16px;
       border-radius: 999px;
-      border: 0;
-      background: var(--accent);
-      color: #FFFFFF;
-      font: inherit;
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      box-shadow: var(--md-elevation-2);
+    }
+    .pixel-edit-bar[hidden] { display: none; }
+    .pixel-edit-bar span {
       font-size: 0.84rem;
+      font-weight: 600;
+    }
+    .pixel-done-btn {
+      height: 30px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
     }
-    .done-pill[hidden] { display: none; }
 
-    .app-grid {
+    /* Pixel Launcher 主畫面圓形 App 網格 */
+    .pixel-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 20px 14px;
-      padding: 6px 2px 12px;
+      gap: 22px 12px;
+      padding: 4px 0 8px;
       user-select: none;
       -webkit-user-select: none;
     }
     @media (min-width: 640px) {
-      .app-grid {
+      .pixel-grid {
         grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 24px 20px;
+        gap: 26px 18px;
       }
     }
     @media (min-width: 860px) {
-      .app-grid {
+      .pixel-grid {
         grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 26px 24px;
+        gap: 28px 22px;
       }
     }
 
-    .app-cell {
+    .pixel-cell {
       position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       touch-action: manipulation;
       transition: transform 0.18s ease, opacity 0.18s ease;
     }
-    .app-cell.is-pressing {
-      transform: scale(0.9);
-    }
-    .app-cell.reorder-source {
-      opacity: 0.28;
-    }
-    .app-cell.reorder-target .app-icon-box {
-      outline: 3px solid var(--accent);
+    .pixel-cell.is-pressing { transform: scale(0.9); }
+    .pixel-cell.reorder-source { opacity: 0.25; }
+    .pixel-cell.reorder-target .pixel-circle-icon {
+      outline: 3px solid var(--md-outline-strong);
       outline-offset: 4px;
     }
 
-    /* iPhone 抖動動畫（長按進入編輯模式） */
-    .app-grid.is-editing .app-cell:not(.is-add-slot) .app-icon-box {
-      animation: iosJiggle 0.3s ease-in-out infinite;
-      animation-delay: var(--jiggle-delay, 0s);
-    }
-    @keyframes iosJiggle {
-      0%, 100% { transform: rotate(-2.1deg); }
-      50% { transform: rotate(2.1deg); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .app-grid.is-editing .app-cell .app-icon-box { animation: none; }
-    }
-
-    .app-icon-box {
+    /* 原生 Android Pixel 圓形圖示 (Adaptive Circle Icon) */
+    .pixel-circle-icon {
       position: relative;
-      width: 100%;
-      max-width: 76px;
-      aspect-ratio: 1;
-      border-radius: 22.5%;
-      background: var(--bg-card);
-      box-shadow: var(--shadow-tile);
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--md-surface-container);
+      border: 1px solid var(--md-outline);
+      color: var(--md-on-surface);
       display: grid;
       place-items: center;
       overflow: hidden;
       cursor: pointer;
       text-decoration: none;
-      transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease;
+      box-shadow: var(--md-elevation-1);
+      transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), background-color 0.18s ease, box-shadow 0.18s ease;
     }
-    .app-icon-box:hover { transform: scale(1.05); }
-    .app-icon-box:active { transform: scale(0.93); }
-    .app-icon-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    @media (min-width: 640px) {
+      .pixel-circle-icon { width: 68px; height: 68px; }
+    }
+    .pixel-circle-icon:hover {
+      background: var(--md-surface-container-high);
+      transform: translateY(-2px);
+      box-shadow: var(--md-elevation-2);
+    }
+    .pixel-circle-icon:active { transform: scale(0.93); }
+
+    /* Monochrome 單色主題圖示風格（Pixel Material You Themed Icons） */
+    .pixel-circle-icon.themed-invert {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      border-color: var(--md-primary);
+    }
+    .pixel-circle-icon img {
+      width: 58%;
+      height: 58%;
+      object-fit: contain;
+      border-radius: 50%;
       pointer-events: none;
-      display: block;
     }
-    .app-icon-svg {
-      width: 100%;
-      height: 100%;
-      display: grid;
-      place-items: center;
-      color: #FFFFFF;
-    }
-    .app-icon-svg svg {
-      width: 54%;
-      height: 54%;
-    }
-    .app-fallback-text {
-      width: 100%;
-      height: 100%;
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      font-size: 1.45rem;
-      color: #FFFFFF;
-      letter-spacing: -0.02em;
+    .pixel-circle-icon svg {
+      width: 28px;
+      height: 28px;
+      pointer-events: none;
     }
 
-    .app-name {
+    .pixel-app-label {
       width: 100%;
-      max-width: 84px;
+      max-width: 82px;
       font-size: 0.76rem;
       font-weight: 500;
-      color: var(--text-primary);
+      color: var(--md-on-surface);
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       line-height: 1.25;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
     }
 
-    /* 左上角 iOS 刪除「−」按鈕 */
-    .app-remove-badge {
+    /* 長按編輯時：右上角 Material 刪除膠囊按鈕 */
+    .pixel-remove-btn {
       position: absolute;
-      top: -7px;
-      left: calc(50% - 45px);
-      width: 26px;
-      height: 26px;
+      top: -4px;
+      right: calc(50% - 38px);
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
-      border: 0;
-      background: rgba(142, 142, 147, 0.92);
-      backdrop-filter: blur(8px);
+      border: 1.5px solid var(--md-bg);
+      background: var(--md-danger);
       color: #FFFFFF;
       display: grid;
       place-items: center;
       cursor: pointer;
       z-index: 5;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-      transition: background-color 0.15s ease, transform 0.15s ease;
+      box-shadow: var(--md-elevation-1);
     }
-    .app-remove-badge:hover {
-      background: var(--danger);
-      transform: scale(1.1);
-    }
-    .app-remove-badge::before {
-      content: "";
-      width: 11px;
-      height: 2.2px;
-      border-radius: 2px;
-      background: #FFFFFF;
-    }
+    .pixel-remove-btn svg { width: 13px; height: 13px; }
 
-    /* 新增 App 空格子（＋） */
-    .app-add-box {
-      width: 100%;
-      max-width: 76px;
-      aspect-ratio: 1;
-      border-radius: 22.5%;
-      border: 2px dashed var(--border-subtle);
-      background: var(--bg-fill);
-      color: var(--text-tertiary);
+    /* Pixel Launcher 標誌性「＋」新增捷徑圓形槽位 */
+    .pixel-add-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 1.5px dashed var(--md-outline-strong);
+      background: transparent;
+      color: var(--md-on-surface);
       display: grid;
       place-items: center;
       cursor: pointer;
-      transition: all 0.18s ease;
+      opacity: 0.72;
+      transition: opacity 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
     }
-    .app-add-box:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-soft);
+    @media (min-width: 640px) {
+      .pixel-add-circle { width: 68px; height: 68px; }
+    }
+    .pixel-add-circle:hover {
+      opacity: 1;
+      background: var(--md-surface-container);
       transform: scale(1.04);
     }
-    .app-add-box svg { width: 28px; height: 28px; }
+    .pixel-add-circle svg { width: 26px; height: 26px; }
 
-    /* iOS 底部懸浮 Dock 欄（常用核心入口與快捷功能） */
-    .ios-dock-wrap {
+    /* =====================================================================
+       Google Pixel 底部搜尋膠囊列 + 應用程式抽屜按鈕 + Extended FAB
+    ===================================================================== */
+    .pixel-bottom-dock {
       margin-top: auto;
-      padding-top: 12px;
+      padding-top: 10px;
       display: flex;
-      justify-content: center;
-    }
-    .ios-dock {
-      display: inline-flex;
-      align-items: center;
+      flex-direction: column;
       gap: 14px;
-      padding: 11px 16px;
-      border-radius: 28px;
-      background: var(--bg-elevated);
-      backdrop-filter: blur(26px) saturate(180%);
-      -webkit-backdrop-filter: blur(26px) saturate(180%);
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-card);
     }
-    .dock-item {
-      width: 54px;
-      height: 54px;
-      border-radius: 22.5%;
+
+    .pixel-search-pill-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pixel-search-pill {
+      flex: 1;
+      height: 52px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: var(--md-surface-container);
+      border: 1px solid var(--md-outline);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background-color 0.18s ease, border-color 0.18s ease;
+    }
+    .pixel-search-pill:focus-within {
+      background: var(--md-surface);
+      border-color: var(--md-outline-strong);
+      box-shadow: var(--md-elevation-2);
+    }
+    .pixel-search-pill svg {
+      width: 20px;
+      height: 20px;
+      color: var(--md-on-surface-variant);
+      flex: none;
+    }
+    .pixel-search-input {
+      flex: 1;
+      min-width: 0;
       border: 0;
-      padding: 0;
+      background: transparent;
+      color: var(--md-on-surface);
+      font: inherit;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .pixel-search-input::placeholder { color: var(--md-on-surface-variant); }
+
+    .drawer-trigger-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 1px solid var(--md-outline);
+      background: var(--md-surface-container);
+      color: var(--md-on-surface);
       display: grid;
       place-items: center;
-      color: #FFFFFF;
       cursor: pointer;
-      text-decoration: none;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-      transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+      flex: none;
+      transition: background-color 0.16s ease, transform 0.14s ease;
     }
-    .dock-item:hover { transform: translateY(-4px) scale(1.06); }
-    .dock-item:active { transform: scale(0.92); }
-    .dock-item svg { width: 27px; height: 27px; }
-    .dock-divider {
-      width: 1px;
-      height: 32px;
-      background: var(--border-subtle);
-    }
+    .drawer-trigger-btn:hover { background: var(--md-surface-container-high); }
+    .drawer-trigger-btn:active { transform: scale(0.94); }
+    .drawer-trigger-btn svg { width: 22px; height: 22px; }
 
-    /* 近全螢幕大尺寸 Pop-up 彈窗（2.5px 粗實線主題色邊框 + 深層立體陰影） */
+    /* Material You Extended FAB（新增 App 捷徑主按鈕） */
+    .m3-fab {
+      height: 52px;
+      padding: 0 20px;
+      border-radius: 18px;
+      border: 0;
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: var(--md-elevation-2);
+      flex: none;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .m3-fab:hover { opacity: 0.92; }
+    .m3-fab:active { transform: scale(0.95); }
+    .m3-fab svg { width: 20px; height: 20px; }
+
+    /* =====================================================================
+       Android 15/16 Bottom Sheet 應用程式抽屜 (App Drawer)
+    ===================================================================== */
+    .bottom-sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .bottom-sheet-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .bottom-sheet {
+      width: min(100%, 760px);
+      max-height: 86dvh;
+      border-radius: 28px 28px 0 0;
+      background: var(--md-surface);
+      border-top: 2px solid var(--md-outline-strong);
+      box-shadow: var(--md-elevation-3);
+      padding: 12px 20px calc(24px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.2, 0, 0, 1);
+    }
+    .bottom-sheet-backdrop.is-open .bottom-sheet {
+      transform: translateY(0);
+    }
+    .sheet-drag-pill {
+      width: 36px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--md-outline);
+      margin: 0 auto;
+    }
+    .drawer-list {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .drawer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 18px;
+      text-decoration: none;
+      color: var(--md-on-surface);
+      transition: background-color 0.14s ease;
+    }
+    .drawer-row:hover { background: var(--md-surface-container); }
+    .drawer-row-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      flex: 1;
+    }
+    .drawer-mini-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--md-surface-container);
+      border: 1px solid var(--md-outline);
+      display: grid;
+      place-items: center;
+      flex: none;
+      overflow: hidden;
+    }
+    .drawer-mini-circle img { width: 58%; height: 58%; object-fit: contain; }
+    .drawer-mini-circle svg { width: 20px; height: 20px; }
+
+    /* =====================================================================
+       近全螢幕大尺寸 Pop-up 彈窗（2.5px 粗實線主題色邊框 + 深層立體陰影）
+    ===================================================================== */
     .modal-backdrop {
       position: fixed;
       inset: 0;
       z-index: 100;
-      background: rgba(0, 0, 0, 0.56);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 14px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.22s ease;
+      transition: opacity 0.2s ease;
     }
     .modal-backdrop.is-open {
       opacity: 1;
       pointer-events: auto;
     }
-    .modal-sheet {
+    .modal-dialog {
       width: min(96vw, 680px);
       max-height: 92dvh;
       border-radius: 28px;
-      background: var(--bg-card);
-      color: var(--text-primary);
-      border: 2.5px solid var(--accent);
-      box-shadow: var(--shadow-modal);
+      background: var(--md-surface);
+      color: var(--md-on-surface);
+      border: 2.5px solid var(--md-outline-strong);
+      box-shadow: var(--md-elevation-3);
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      transform: translateY(14px) scale(0.97);
-      transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: scale(0.96) translateY(10px);
+      transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1);
     }
-    .modal-backdrop.is-open .modal-sheet {
-      transform: translateY(0) scale(1);
+    .modal-backdrop.is-open .modal-dialog {
+      transform: scale(1) translateY(0);
     }
-    .modal-sheet.compact {
-      width: min(94vw, 440px);
-    }
-    .modal-top {
+    .modal-dialog.compact { width: min(94vw, 440px); }
+    .modal-header {
       padding: 18px 20px 14px;
-      border-bottom: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--md-outline);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -755,23 +810,20 @@
     }
     .modal-title {
       margin: 0;
-      font-size: 1.18rem;
-      font-weight: 800;
-      letter-spacing: -0.01em;
+      font-size: 1.15rem;
+      font-weight: 700;
     }
-    .modal-close {
-      width: 34px;
-      height: 34px;
+    .modal-close-btn {
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      border: 0;
-      background: var(--bg-fill);
-      color: var(--text-secondary);
+      border: 1px solid var(--md-outline);
+      background: var(--md-surface-container);
+      color: var(--md-on-surface);
       display: grid;
       place-items: center;
       cursor: pointer;
-      flex: none;
     }
-    .modal-close:hover { background: var(--bg-fill-hover); }
     .modal-body {
       padding: 18px 20px 22px;
       overflow-y: auto;
@@ -781,186 +833,168 @@
     }
 
     /* 一鍵切換多重職責膠囊按鈕 */
-    .role-switch-pill {
+    .role-capsule-btn {
       align-self: flex-start;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 7px 14px;
+      gap: 8px;
+      padding: 8px 16px;
       border-radius: 999px;
-      border: 1.5px solid var(--accent);
-      background: var(--accent-soft);
-      color: var(--accent);
+      border: 1.5px solid var(--md-outline-strong);
+      background: var(--md-surface-container);
+      color: var(--md-on-surface);
       font: inherit;
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
-      transition: transform 0.15s ease, background-color 0.15s ease;
+      transition: background-color 0.15s ease, color 0.15s ease;
     }
-    .role-switch-pill:hover {
-      background: var(--accent);
-      color: #FFFFFF;
+    .role-capsule-btn:hover {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
     }
 
-    /* 表單元件 */
-    .field-group {
+    /* Material Outlined Text Field 與按鈕 */
+    .m3-field {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
-    .field-label {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--text-secondary);
+    .m3-label {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--md-on-surface-variant);
     }
-    .apple-input, .apple-select {
+    .m3-input, .m3-select {
       width: 100%;
-      height: 44px;
+      height: 46px;
       padding: 0 14px;
-      border-radius: 13px;
-      border: 1.5px solid var(--border-subtle);
-      background: var(--bg-fill);
-      color: var(--text-primary);
+      border-radius: 14px;
+      border: 1.5px solid var(--md-outline);
+      background: var(--md-bg);
+      color: var(--md-on-surface);
       font: inherit;
       font-size: 0.95rem;
       outline: none;
-      transition: border-color 0.16s ease, background-color 0.16s ease;
     }
-    .apple-input:focus, .apple-select:focus {
-      border-color: var(--accent);
-      background: var(--bg-card);
+    .m3-input:focus, .m3-select:focus {
+      border-color: var(--md-outline-strong);
+      background: var(--md-surface);
     }
-    .btn-row {
+    .btn-actions {
       display: flex;
       align-items: center;
       justify-content: flex-end;
       gap: 10px;
       margin-top: 4px;
     }
-    .btn-secondary {
+    .m3-btn-tonal {
       height: 42px;
       padding: 0 18px;
-      border-radius: 13px;
+      border-radius: 999px;
       border: 0;
-      background: var(--bg-fill);
-      color: var(--text-primary);
+      background: var(--md-surface-container);
+      color: var(--md-on-surface);
       font: inherit;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 600;
       cursor: pointer;
     }
-    .btn-primary {
+    .m3-btn-filled {
       height: 42px;
-      padding: 0 20px;
-      border-radius: 13px;
+      padding: 0 22px;
+      border-radius: 999px;
       border: 0;
-      background: var(--accent);
-      color: #FFFFFF;
+      background: var(--md-primary);
+      color: var(--md-on-primary);
       font: inherit;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 700;
       cursor: pointer;
     }
-    .btn-primary:hover { background: var(--accent-hover); }
-    .btn-danger-outline {
-      height: 32px;
-      padding: 0 11px;
-      border-radius: 9px;
-      border: 1px solid var(--danger);
+    .m3-btn-danger {
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid var(--md-danger);
       background: transparent;
-      color: var(--danger);
+      color: var(--md-danger);
       font: inherit;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
     }
 
-    /* 權限管理列表 */
-    .user-card {
-      padding: 13px 14px;
-      border-radius: 16px;
-      border: 1px solid var(--border-subtle);
-      background: var(--bg-fill);
+    /* 單色向量圖示選擇器 */
+    .icon-grid-picker {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .icon-choice {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1.5px solid var(--md-outline);
+      background: var(--md-surface-container);
+      color: var(--md-on-surface);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+    .icon-choice.selected {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      border-color: var(--md-primary);
+    }
+    .icon-choice svg { width: 22px; height: 22px; }
+
+    /* 權限管理成員卡片 */
+    .member-card {
+      padding: 13px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--md-outline);
+      background: var(--md-bg);
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
     }
-    .user-email {
-      font-weight: 700;
-      font-size: 0.92rem;
-      word-break: break-all;
-    }
-    .user-meta {
-      font-size: 0.78rem;
-      color: var(--text-tertiary);
-      margin-top: 2px;
-    }
-    .user-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .mini-chip-btn {
+    .member-email { font-weight: 700; font-size: 0.92rem; word-break: break-all; }
+    .member-meta { font-size: 0.78rem; color: var(--md-on-surface-variant); margin-top: 2px; }
+    .mini-pill {
       height: 30px;
-      padding: 0 10px;
-      border-radius: 8px;
-      border: 1px solid var(--border-subtle);
-      background: var(--bg-card);
-      color: var(--text-primary);
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--md-outline);
+      background: var(--md-surface);
+      color: var(--md-on-surface);
       font: inherit;
       font-size: 0.76rem;
       font-weight: 600;
       cursor: pointer;
     }
 
-    /* 預設圖示選擇器 */
-    .icon-preset-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 8px;
-    }
-    .preset-opt {
-      aspect-ratio: 1;
-      border-radius: 14px;
-      border: 2px solid transparent;
-      display: grid;
-      place-items: center;
-      color: #FFFFFF;
-      cursor: pointer;
-      transition: transform 0.14s ease;
-    }
-    .preset-opt.selected {
-      border-color: var(--text-primary);
-      transform: scale(1.06);
-    }
-    .preset-opt svg { width: 22px; height: 22px; }
-
-    /* Toast 提示 */
-    .toast-pill {
+    /* Android Snackbar 底部通知 */
+    .snackbar {
       position: fixed;
-      bottom: calc(24px + env(safe-area-inset-bottom));
+      bottom: calc(22px + env(safe-area-inset-bottom));
       left: 50%;
       transform: translateX(-50%) translateY(20px);
       z-index: 200;
-      padding: 10px 18px;
-      border-radius: 999px;
-      background: rgba(28, 28, 30, 0.92);
-      color: #FFFFFF;
-      font-size: 0.85rem;
+      padding: 12px 20px;
+      border-radius: 14px;
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      font-size: 0.86rem;
       font-weight: 600;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      box-shadow: var(--md-elevation-3);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s ease, transform 0.2s ease;
       white-space: nowrap;
     }
-    html.dark .toast-pill {
-      background: rgba(245, 245, 247, 0.94);
-      color: #1C1C1E;
-    }
-    .toast-pill.show {
+    .snackbar.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
@@ -968,21 +1002,15 @@
 </head>
 <body>
 
-  <!-- 無獨立 Header：僅保留極簡懸浮頂部控制列 -->
-  <div class="floating-top-bar">
-    <a href="#home" id="brandHomeBtn" class="brand-pill" aria-label="LinFamily APP 首頁">
-      <span class="brand-apple-mark" aria-hidden="true">
-        <!-- Apple 風格極簡幾何圖標 -->
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z"/>
-        </svg>
-      </span>
-      <span>LinFamily APP</span>
+  <!-- 無獨立 Header：極簡懸浮頂部列（無任何品牌 Logo，純粹 LinFamily APP 字樣與右上角控制項） -->
+  <div class="pixel-top-bar">
+    <a href="#home" id="homeWordmarkBtn" class="wordmark-btn ripple-host" aria-label="LinFamily APP 主畫面">
+      LinFamily APP
     </a>
 
     <div class="top-actions">
       <!-- 安裝按鈕 (PWA / 加入主畫面) -->
-      <button type="button" id="installBtn" class="glass-btn" aria-label="安裝 LinFamily APP">
+      <button type="button" id="installBtn" class="m3-chip-btn ripple-host" aria-label="安裝 LinFamily APP">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
         </svg>
@@ -990,19 +1018,19 @@
       </button>
 
       <!-- 右上角登入與權限管理按鈕 -->
-      <button type="button" id="authBtn" class="glass-btn" aria-label="管理員登入與權限">
+      <button type="button" id="authBtn" class="m3-chip-btn ripple-host" aria-label="管理員登入與權限">
         <svg id="authIconLock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="11" width="18" height="11" rx="3"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
-        <svg id="authIconUser" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg id="authIconShield" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2l7 4v6c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V6l7-4z"/><path d="m9 12 2 2 4-4"/>
         </svg>
         <span id="authBtnLabel">登入</span>
-        <span id="authStatusDot" class="admin-dot" hidden></span>
+        <span id="authStatusDot" class="status-indicator" hidden></span>
       </button>
 
-      <!-- 明暗模式一鍵切換 -->
-      <button type="button" id="themeBtn" class="glass-btn icon-only" aria-label="切換深淺色模式" title="切換明暗模式">
+      <!-- 明暗模式切換 (黑白雙色切換) -->
+      <button type="button" id="themeBtn" class="m3-chip-btn icon-only ripple-host" aria-label="切換深淺色模式" title="切換明暗模式">
         <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
         </svg>
@@ -1012,24 +1040,24 @@
       </button>
 
       <!-- 權限下拉選單 -->
-      <div id="adminPopover" class="popover-menu" hidden>
-        <div class="popover-header">
-          <div id="popEmail" class="popover-email">未登入</div>
-          <div id="popRole" class="popover-role">訪客模式（唯讀瀏覽）</div>
+      <div id="adminPopover" class="m3-menu" hidden>
+        <div class="m3-menu-head">
+          <div id="popEmail" class="m3-menu-email">未登入</div>
+          <div id="popRole" class="m3-menu-role">訪客模式（唯讀瀏覽）</div>
         </div>
-        <button type="button" id="popAddAppBtn" class="popover-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg>
-          <span>新增 App 捷徑</span>
+        <button type="button" id="popAddAppBtn" class="m3-menu-item ripple-host">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          <span>新增 App 至主畫面</span>
         </button>
-        <button type="button" id="popEditModeBtn" class="popover-item">
+        <button type="button" id="popEditModeBtn" class="m3-menu-item ripple-host">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-          <span>整理與編輯 App</span>
+          <span>排列與編輯 App</span>
         </button>
-        <button type="button" id="popUsersBtn" class="popover-item">
+        <button type="button" id="popUsersBtn" class="m3-menu-item ripple-host">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>後台權限管理</span>
         </button>
-        <button type="button" id="popLogoutBtn" class="popover-item danger">
+        <button type="button" id="popLogoutBtn" class="m3-menu-item danger ripple-host">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <span>登出帳號</span>
         </button>
@@ -1037,232 +1065,247 @@
     </div>
   </div>
 
-  <main class="main-shell">
-    <!-- 頂部時間與歡迎標語 -->
-    <section class="hero-bar" aria-label="LinFamily APP 總覽">
-      <div class="hero-title-group">
-        <h1>LinFamily APP</h1>
-        <p id="liveClockSub" class="hero-subtitle">正在同步時間…</p>
+  <main class="pixel-shell">
+    <!-- Google Pixel「At a Glance (一眼掌握)」頂部資訊模組 -->
+    <section class="at-a-glance" aria-label="一眼掌握狀態">
+      <div id="glanceDateText" class="glance-date">同步日期中…</div>
+      <h1 class="glance-title">LinFamily APP</h1>
+      <div class="glance-meta-row">
+        <span class="glance-pill" id="glanceCountBadge">8 個已釘選服務</span>
+        <span id="glanceSyncBadge" class="glance-pill">本機離線模式</span>
+        <span id="glanceHintText">點擊圖示直接換頁開啟 · 長按可拖曳移動與編輯</span>
       </div>
     </section>
 
-    <!-- Segmented Control 分頁切換 + 即時搜尋 -->
-    <div class="toolbar-row">
-      <div class="segmented-control" role="tablist" aria-label="畫面檢視切換">
-        <button type="button" class="seg-btn active" role="tab" aria-selected="true" data-tab="apps">主畫面 App</button>
-        <button type="button" class="seg-btn" role="tab" aria-selected="false" data-tab="family">家庭空間與成員</button>
-      </div>
-
-      <div class="search-box">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-        </svg>
-        <input type="search" id="searchInput" class="search-input" placeholder="搜尋 App 或家庭服務…" autocomplete="off">
-        <button type="button" id="searchClearBtn" class="search-clear" hidden aria-label="清除搜尋">×</button>
-      </div>
+    <!-- Material You 分段控制鈕 (Segmented Control) -->
+    <div class="m3-segmented" role="tablist" aria-label="檢視模式切換">
+      <button type="button" class="m3-seg-btn active ripple-host" role="tab" aria-selected="true" data-tab="apps">主畫面捷徑</button>
+      <button type="button" class="m3-seg-btn ripple-host" role="tab" aria-selected="false" data-tab="family">家庭空間配置</button>
     </div>
 
-    <!-- 置頂向量平面圖 / 動線圖（於「家庭空間與成員」分頁置頂顯示，且深色模式下維持純白高對比） -->
-    <section id="diagramSection" class="diagram-card" hidden aria-label="LinFamily 智慧家庭動線與設備配置圖">
+    <!-- 置頂向量平面圖 / 動線圖（於「家庭空間配置」分頁置頂顯示，且深色模式下維持純白高對比） -->
+    <section id="diagramSection" class="diagram-card" hidden aria-label="LinFamily 智慧家庭配置與動線圖">
       <div class="diagram-head">
         <h2 class="diagram-title">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
           </svg>
-          <span>LinFamily 智慧家庭配置與動線圖</span>
+          <span>LinFamily 智慧家庭空間與動線圖</span>
         </h2>
-        <span class="diagram-hint">點擊圖上區域可檢視對應服務</span>
+        <span class="diagram-hint">點擊圖上區域可檢視服務詳情</span>
       </div>
       <div class="diagram-white-board" id="floorplanBoard">
-        <!-- 純程式碼向量圖 SVG（零外部圖片依賴） -->
+        <!-- 純程式碼向量圖 SVG（零外部圖片依賴，黑白極簡高對比） -->
         <svg viewBox="0 0 760 320" role="img" aria-label="LinFamily 家庭空間配置平面圖">
           <defs>
-            <marker id="flowArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#007AFF"/>
+            <marker id="pixelArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#111111"/>
             </marker>
-            <pattern id="gridDots" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="#E5E7EB"/>
+            <pattern id="pixelDots" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1" fill="#E4E4E7"/>
             </pattern>
           </defs>
 
-          <!-- 純白高對比底層與網格 -->
-          <rect x="0" y="0" width="760" height="320" rx="14" fill="#FFFFFF"/>
-          <rect x="12" y="12" width="736" height="296" rx="10" fill="url(#gridDots)" stroke="#CBD5E1" stroke-width="2"/>
+          <!-- 純白高對比底層 -->
+          <rect x="0" y="0" width="760" height="320" rx="16" fill="#FFFFFF"/>
+          <rect x="12" y="12" width="736" height="296" rx="12" fill="url(#pixelDots)" stroke="#111111" stroke-width="1.8"/>
 
           <!-- 建築隔間牆線 -->
-          <line x1="260" y1="12" x2="260" y2="308" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 4"/>
-          <line x1="510" y1="12" x2="510" y2="308" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 4"/>
-          <line x1="260" y1="165" x2="748" y2="165" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 4"/>
+          <line x1="260" y1="12" x2="260" y2="308" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <line x1="510" y1="12" x2="510" y2="308" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <line x1="260" y1="165" x2="748" y2="165" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
 
-          <!-- 動線箭頭（玄関 -> 客廳中樞 -> 書房雲端 / 廚房生活） -->
-          <path d="M 135 245 L 135 160 L 365 160 L 365 95" fill="none" stroke="#007AFF" stroke-width="2.4" stroke-dasharray="5 4" marker-end="url(#flowArrow)"/>
-          <path d="M 385 120 L 385 225 L 590 225" fill="none" stroke="#34C759" stroke-width="2.4" stroke-dasharray="5 4" marker-end="url(#flowArrow)"/>
-          <path d="M 455 85 L 590 85" fill="none" stroke="#FF9500" stroke-width="2.4" stroke-dasharray="5 4" marker-end="url(#flowArrow)"/>
+          <!-- 動線箭頭 -->
+          <path d="M 135 245 L 135 160 L 365 160 L 365 95" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
+          <path d="M 385 120 L 385 225 L 590 225" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
+          <path d="M 455 85 L 590 85" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
 
-          <!-- 熱區 1：玄關與安防門禁 -->
-          <g class="svg-hotspot" data-zone-id="zone-entry" tabindex="0" role="button" aria-label="1 玄關安防與門禁">
-            <rect class="zone-box" x="32" y="34" width="206" height="252" rx="14" fill="#F8FAFC" stroke="#64748B" stroke-width="1.8"/>
-            <circle class="zone-pin" cx="62" cy="64" r="15" fill="#1C1C1E"/>
-            <text x="62" y="69" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">1</text>
-            <text x="88" y="69" fill="#0F172A" font-size="15" font-weight="800">玄關門禁與影像</text>
-            <text x="48" y="102" fill="#475569" font-size="12.5">• 智慧門鎖狀態監控</text>
-            <text x="48" y="126" fill="#475569" font-size="12.5">• 門口監視器即時串流</text>
-            <text x="48" y="150" fill="#475569" font-size="12.5">• 家人回家推播通知</text>
-            <rect x="48" y="218" width="174" height="44" rx="10" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.2"/>
-            <text x="135" y="245" text-anchor="middle" fill="#1D4ED8" font-size="12.5" font-weight="700">主入口動線起點 →</text>
+          <!-- 熱區 1：玄關門禁 -->
+          <g class="svg-hotspot" data-zone-id="zone-entry" tabindex="0" role="button" aria-label="1 玄關門禁與影像">
+            <rect class="zone-box" x="32" y="34" width="206" height="252" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="62" cy="64" r="15" fill="#111111"/>
+            <text x="62" y="69" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">1</text>
+            <text x="88" y="69" fill="#111111" font-size="15" font-weight="700">玄關門禁與影像</text>
+            <text x="48" y="102" fill="#3F3F46" font-size="12.5">• 智慧門鎖狀態監控</text>
+            <text x="48" y="126" fill="#3F3F46" font-size="12.5">• 門口監視器即時串流</text>
+            <text x="48" y="150" fill="#3F3F46" font-size="12.5">• 家人回家推播通知</text>
+            <rect x="48" y="218" width="174" height="44" rx="12" fill="#F4F4F5" stroke="#111111" stroke-width="1.2"/>
+            <text x="135" y="245" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="700">主入口動線起點 →</text>
           </g>
 
-          <!-- 熱區 2：客廳影音與家庭相簿 -->
-          <g class="svg-hotspot" data-zone-id="zone-living" tabindex="0" role="button" aria-label="2 客廳家庭相簿與影音">
-            <rect class="zone-box" x="278" y="34" width="214" height="114" rx="14" fill="#F0F9FF" stroke="#0284C7" stroke-width="1.8"/>
-            <circle class="zone-pin" cx="306" cy="62" r="15" fill="#007AFF"/>
-            <text x="306" y="67" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">2</text>
-            <text x="330" y="67" fill="#0F172A" font-size="15" font-weight="800">客廳影音與相簿</text>
-            <text x="294" y="96" fill="#334155" font-size="12.5">• LinFamily 共享相簿牆</text>
-            <text x="294" y="118" fill="#334155" font-size="12.5">• Apple TV / 家庭劇院中控</text>
+          <!-- 熱區 2：客廳影音與相簿 -->
+          <g class="svg-hotspot" data-zone-id="zone-living" tabindex="0" role="button" aria-label="2 客廳影音與相簿">
+            <rect class="zone-box" x="278" y="34" width="214" height="114" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="306" cy="62" r="15" fill="#111111"/>
+            <text x="306" y="67" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">2</text>
+            <text x="330" y="67" fill="#111111" font-size="15" font-weight="700">客廳影音與相簿</text>
+            <text x="294" y="96" fill="#3F3F46" font-size="12.5">• LinFamily 共享相簿牆</text>
+            <text x="294" y="118" fill="#3F3F46" font-size="12.5">• 客廳電視與家庭劇院中控</text>
           </g>
 
-          <!-- 熱區 3：書房 NAS 與雲端中樞 -->
-          <g class="svg-hotspot" data-zone-id="zone-cloud" tabindex="0" role="button" aria-label="3 書房 NAS 與雲端備份">
-            <rect class="zone-box" x="528" y="34" width="202" height="114" rx="14" fill="#FFFBEB" stroke="#D97706" stroke-width="1.8"/>
-            <circle class="zone-pin" cx="556" cy="62" r="15" fill="#FF9500"/>
-            <text x="556" y="67" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">3</text>
-            <text x="580" y="67" fill="#0F172A" font-size="15" font-weight="800">書房 NAS 雲端</text>
-            <text x="544" y="96" fill="#334155" font-size="12.5">• 私有雲檔案與自動備份</text>
-            <text x="544" y="118" fill="#334155" font-size="12.5">• 家庭網路與路由器監控</text>
+          <!-- 熱區 3：書房 NAS 與雲端 -->
+          <g class="svg-hotspot" data-zone-id="zone-cloud" tabindex="0" role="button" aria-label="3 書房 NAS 雲端">
+            <rect class="zone-box" x="528" y="34" width="202" height="114" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="556" cy="62" r="15" fill="#111111"/>
+            <text x="556" y="67" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">3</text>
+            <text x="580" y="67" fill="#111111" font-size="15" font-weight="700">書房 NAS 雲端</text>
+            <text x="544" y="96" fill="#3F3F46" font-size="12.5">• 私有雲檔案與自動備份</text>
+            <text x="544" y="118" fill="#3F3F46" font-size="12.5">• 家庭網路與路由器監控</text>
           </g>
 
-          <!-- 熱區 4：餐廳行事曆與採買清單 -->
-          <g class="svg-hotspot" data-zone-id="zone-life" tabindex="0" role="button" aria-label="4 家庭行事曆與生活帳本">
-            <rect class="zone-box" x="278" y="182" width="452" height="104" rx="14" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.8"/>
-            <circle class="zone-pin" cx="306" cy="212" r="15" fill="#34C759"/>
-            <text x="306" y="217" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">4</text>
-            <text x="330" y="217" fill="#0F172A" font-size="15" font-weight="800">家庭行事曆、帳本與採買清單</text>
-            <text x="294" y="246" fill="#334155" font-size="12.5">• 全家人行程同步、紀念日提醒、家庭共同記帳與日常採買清單</text>
-            <text x="294" y="268" fill="#15803D" font-size="12" font-weight="700">動線節點：客廳 → 餐廚生活共享區</text>
+          <!-- 熱區 4：餐廚生活共享區 -->
+          <g class="svg-hotspot" data-zone-id="zone-life" tabindex="0" role="button" aria-label="4 家庭行事曆、帳本與採買清單">
+            <rect class="zone-box" x="278" y="182" width="452" height="104" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="306" cy="212" r="15" fill="#111111"/>
+            <text x="306" y="217" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">4</text>
+            <text x="330" y="217" fill="#111111" font-size="15" font-weight="700">家庭行事曆、帳本與採買清單</text>
+            <text x="294" y="246" fill="#3F3F46" font-size="12.5">• 全家人行程同步、紀念日提醒、家庭共同記帳與日常採買清單</text>
+            <text x="294" y="268" fill="#111111" font-size="12" font-weight="700">動線節點：客廳 → 餐廚生活共享區</text>
           </g>
         </svg>
       </div>
     </section>
 
-    <!-- App 格子主區（iPhone 主畫面網格） -->
-    <section aria-labelledby="gridHeading">
-      <div class="home-section-head">
-        <div id="gridHeading" class="section-label">
-          <span id="gridTitleText">主畫面應用程式</span>
-          <span id="gridHintText" style="font-weight:500;opacity:0.8;"></span>
-        </div>
-        <div class="edit-actions">
-          <button type="button" id="doneEditBtn" class="done-pill" hidden>完成</button>
-        </div>
-      </div>
+    <!-- Pixel Launcher 編輯模式頂部控制膠囊 -->
+    <div id="pixelEditBar" class="pixel-edit-bar" hidden>
+      <span>編輯主畫面：拖曳圓形圖示排列順序，點擊可編輯或按 × 移除</span>
+      <button type="button" id="doneEditBtn" class="pixel-done-btn">完成</button>
+    </div>
 
-      <div id="appGrid" class="app-grid" role="list"></div>
+    <!-- Google Pixel 4×N 圓形圖示主畫面網格 -->
+    <section aria-label="主畫面應用程式網格">
+      <div id="pixelGrid" class="pixel-grid" role="list"></div>
     </section>
 
-    <!-- iPhone 底部懸浮 Dock 列 -->
-    <div class="ios-dock-wrap">
-      <nav class="ios-dock" aria-label="快捷工具列">
-        <button type="button" class="dock-item" id="dockQuickAddBtn" style="background:linear-gradient(145deg,#007AFF,#0055D4);" title="新增 App 捷徑" aria-label="新增 App 捷徑">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    <!-- Google Pixel 底部搜尋膠囊列 (Pixel Search Pill) + 應用程式抽屜按鈕 + Extended FAB -->
+    <div class="pixel-bottom-dock">
+      <div class="pixel-search-pill-row">
+        <div class="pixel-search-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input type="search" id="pixelSearchInput" class="pixel-search-input" placeholder="搜尋您的應用程式與家庭服務…" autocomplete="off">
+        </div>
+
+        <!-- 應用程式抽屜按鈕 (App Drawer Bottom Sheet) -->
+        <button type="button" id="openDrawerBtn" class="drawer-trigger-btn ripple-host" title="所有應用程式抽屜" aria-label="開啟所有應用程式抽屜">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m18 15-6-6-6 6"/>
+          </svg>
         </button>
-        <button type="button" class="dock-item" id="dockFloorplanBtn" style="background:linear-gradient(145deg,#34C759,#248A3D);" title="家庭空間配置圖" aria-label="家庭空間配置圖">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+
+        <!-- Material You Extended FAB：新增 App 捷徑 -->
+        <button type="button" id="fabAddAppBtn" class="m3-fab ripple-host" aria-label="新增 App 捷徑">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          <span>新增 App</span>
         </button>
-        <div class="dock-divider" aria-hidden="true"></div>
-        <button type="button" class="dock-item" id="dockAdminBtn" style="background:linear-gradient(145deg,#5856D6,#3634A3);" title="權限與成員管理" aria-label="權限與成員管理">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 2l7 4v6c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V6l7-4z"/><path d="m9 12 2 2 4-4"/></svg>
-        </button>
-        <button type="button" class="dock-item" id="dockThemeBtn" style="background:linear-gradient(145deg,#FF9500,#D97706);" title="切換明暗模式" aria-label="切換明暗模式">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>
-        </button>
-      </nav>
+      </div>
     </div>
   </main>
 
-  <!-- 1. 新增 App 彈窗（貼上連結即可新增 App，自動抓取網站名稱與圖示） -->
+  <!-- Android 15/16 Bottom Sheet 應用程式抽屜 (App Drawer) -->
+  <div id="appDrawerBackdrop" class="bottom-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="drawerHeading">
+    <div class="bottom-sheet">
+      <div class="sheet-drag-pill" aria-hidden="true"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <h2 id="drawerHeading" class="modal-title">所有應用程式 (A–Z)</h2>
+        <button type="button" class="modal-close-btn" id="closeDrawerBtn" aria-label="關閉抽屜">×</button>
+      </div>
+      <div class="pixel-search-pill" style="height:44px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="search" id="drawerSearchInput" class="pixel-search-input" placeholder="在應用程式抽屜中搜尋…" autocomplete="off">
+      </div>
+      <div id="drawerList" class="drawer-list"></div>
+    </div>
+  </div>
+
+  <!-- 1. 新增 App 彈窗（貼上連結即可新增至主畫面） -->
   <div id="addAppModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
-    <div class="modal-sheet compact">
-      <div class="modal-top">
-        <h3 id="addModalTitle" class="modal-title">新增 App 捷徑</h3>
-        <button type="button" class="modal-close" data-close-modal="addAppModal" aria-label="關閉">×</button>
+    <div class="modal-dialog compact">
+      <div class="modal-header">
+        <h3 id="addModalTitle" class="modal-title">新增至主畫面</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="addAppModal" aria-label="關閉">×</button>
       </div>
       <form id="addAppForm" class="modal-body">
-        <div class="field-group">
-          <label class="field-label" for="addUrlInput">貼上網站或服務連結</label>
-          <input type="text" id="addUrlInput" class="apple-input" placeholder="例如 https://photos.google.com 或 photos.apple.com" required autocomplete="off" inputmode="url">
+        <div class="m3-field">
+          <label class="m3-label" for="addUrlInput">貼上網站或服務連結</label>
+          <input type="text" id="addUrlInput" class="m3-input" placeholder="例如 https://photos.google.com" required autocomplete="off" inputmode="url">
         </div>
-        <div class="field-group">
-          <label class="field-label" for="addNameInput">顯示名稱（留空將自動偵測網域名稱）</label>
-          <input type="text" id="addNameInput" class="apple-input" placeholder="例如 家庭相簿、智慧門鎖" maxlength="24" autocomplete="off">
+        <div class="m3-field">
+          <label class="m3-label" for="addNameInput">顯示名稱（留空自動抓取網域名稱）</label>
+          <input type="text" id="addNameInput" class="m3-input" placeholder="例如 家庭相簿、智慧門鎖" maxlength="24" autocomplete="off">
         </div>
-        <div class="field-group">
-          <label class="field-label" for="addCategorySelect">所屬分頁分類</label>
-          <select id="addCategorySelect" class="apple-select">
-            <option value="apps">主畫面 App</option>
-            <option value="family">家庭空間與成員</option>
+        <div class="m3-field">
+          <label class="m3-label" for="addCategorySelect">所屬分類</label>
+          <select id="addCategorySelect" class="m3-select">
+            <option value="apps">主畫面捷徑</option>
+            <option value="family">家庭空間配置</option>
           </select>
         </div>
-        <div class="btn-row">
-          <button type="button" class="btn-secondary" data-close-modal="addAppModal">取消</button>
-          <button type="submit" class="btn-primary">加入主畫面</button>
+        <div class="btn-actions">
+          <button type="button" class="m3-btn-tonal" data-close-modal="addAppModal">取消</button>
+          <button type="submit" class="m3-btn-filled ripple-host">加入主畫面</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 2. 編輯 App 彈窗（修改名稱、網址、圖示風格、關聯空間區域） -->
+  <!-- 2. 編輯 App 彈窗 -->
   <div id="editAppModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
-    <div class="modal-sheet compact">
-      <div class="modal-top">
-        <h3 id="editModalTitle" class="modal-title">編輯 App 設定</h3>
-        <button type="button" class="modal-close" data-close-modal="editAppModal" aria-label="關閉">×</button>
+    <div class="modal-dialog compact">
+      <div class="modal-header">
+        <h3 id="editModalTitle" class="modal-title">編輯 App 捷徑</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="editAppModal" aria-label="關閉">×</button>
       </div>
       <form id="editAppForm" class="modal-body">
-        <div class="field-group">
-          <label class="field-label" for="editNameInput">App 名稱</label>
-          <input type="text" id="editNameInput" class="apple-input" required maxlength="24" autocomplete="off">
+        <div class="m3-field">
+          <label class="m3-label" for="editNameInput">App 名稱</label>
+          <input type="text" id="editNameInput" class="m3-input" required maxlength="24" autocomplete="off">
         </div>
-        <div class="field-group">
-          <label class="field-label" for="editUrlInput">開啟網址（直接跳轉換頁）</label>
-          <input type="text" id="editUrlInput" class="apple-input" required autocomplete="off" inputmode="url">
+        <div class="m3-field">
+          <label class="m3-label" for="editUrlInput">開啟網址（點擊直接換頁開啟）</label>
+          <input type="text" id="editUrlInput" class="m3-input" required autocomplete="off" inputmode="url">
         </div>
-        <div class="field-group">
-          <label class="field-label" for="editIconUrlInput">自訂圖示網址（留空則使用系統圖示 / 網站 Favicon）</label>
-          <input type="text" id="editIconUrlInput" class="apple-input" placeholder="https://..." autocomplete="off" inputmode="url">
+        <div class="m3-field">
+          <label class="m3-label" for="editIconUrlInput">自訂圖示網址（留空使用原生單色向量圖示）</label>
+          <input type="text" id="editIconUrlInput" class="m3-input" placeholder="https://..." autocomplete="off" inputmode="url">
         </div>
-        <div class="field-group">
-          <span class="field-label">Apple 風格預設圖示色系</span>
-          <div id="presetPicker" class="icon-preset-grid"></div>
+        <div class="m3-field">
+          <span class="m3-label">Material You 單色向量圖示</span>
+          <div id="presetPicker" class="icon-grid-picker"></div>
         </div>
-        <div class="btn-row" style="justify-content:space-between;">
-          <button type="button" id="editDeleteBtn" class="btn-danger-outline">刪除此 App</button>
+        <div class="btn-actions" style="justify-content:space-between;">
+          <button type="button" id="editDeleteBtn" class="m3-btn-danger">移除捷徑</button>
           <div style="display:flex;gap:8px;">
-            <button type="button" class="btn-secondary" data-close-modal="editAppModal">取消</button>
-            <button type="submit" class="btn-primary">儲存變更</button>
+            <button type="button" class="m3-btn-tonal" data-close-modal="editAppModal">取消</button>
+            <button type="submit" class="m3-btn-filled ripple-host">儲存</button>
           </div>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 3. 項目與空間雙向互動詳情彈窗（含高亮平面圖 + 一鍵切換多重職責膠囊按鈕） -->
+  <!-- 3. 雙向互動詳情彈窗（含高亮平面圖 + 一鍵切換職責膠囊按鈕） -->
   <div id="detailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
-    <div class="modal-sheet">
-      <div class="modal-top">
+    <div class="modal-dialog">
+      <div class="modal-header">
         <h3 id="detailModalTitle" class="modal-title">服務詳情</h3>
-        <button type="button" class="modal-close" data-close-modal="detailModal" aria-label="關閉">×</button>
+        <button type="button" class="modal-close-btn" data-close-modal="detailModal" aria-label="關閉">×</button>
       </div>
       <div class="modal-body" id="detailModalBody"></div>
     </div>
   </div>
 
-  <!-- 4. 右上角登入與後台權限管理彈窗（對齊參考站 Superuser / Admin / Viewer 權限架構） -->
+  <!-- 4. 右上角 Google 登入與後台權限管理彈窗 -->
   <div id="adminModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
-    <div class="modal-sheet">
-      <div class="modal-top">
+    <div class="modal-dialog">
+      <div class="modal-header">
         <h3 id="adminModalTitle" class="modal-title">LinFamily 權限管理</h3>
-        <button type="button" class="modal-close" data-close-modal="adminModal" aria-label="關閉">×</button>
+        <button type="button" class="modal-close-btn" data-close-modal="adminModal" aria-label="關閉">×</button>
       </div>
       <div class="modal-body" id="adminModalBody"></div>
     </div>
@@ -1270,90 +1313,102 @@
 
   <!-- 5. 安裝說明彈窗 -->
   <div id="installModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="installModalTitle">
-    <div class="modal-sheet compact">
-      <div class="modal-top">
+    <div class="modal-dialog compact">
+      <div class="modal-header">
         <h3 id="installModalTitle" class="modal-title">安裝 LinFamily APP</h3>
-        <button type="button" class="modal-close" data-close-modal="installModal" aria-label="關閉">×</button>
+        <button type="button" class="modal-close-btn" data-close-modal="installModal" aria-label="關閉">×</button>
       </div>
       <div class="modal-body" id="installModalBody"></div>
     </div>
   </div>
 
-  <div id="toastPill" class="toast-pill" role="status" aria-live="polite"></div>
+  <div id="snackbar" class="snackbar" role="status" aria-live="polite"></div>
 
   <script>
     (function () {
       'use strict';
 
       /* =====================================================================
-         1. SVG 向量圖示庫（Apple iPhone / macOS 風格圖示，零外部圖片依賴）
+         0. Firebase 連線設定（將下方 firebaseConfig 替換為你自己的 Firebase 專案金鑰即可上線）
       ===================================================================== */
-      const PRESET_ICONS = {
+      const firebaseConfig = {
+        apiKey: "YOUR_FIREBASE_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+      };
+
+      const isFirebaseConfigured = Boolean(
+        window.firebase &&
+        firebaseConfig.apiKey &&
+        !firebaseConfig.apiKey.startsWith('YOUR_')
+      );
+
+      let auth = null;
+      let db = null;
+      if (isFirebaseConfigured) {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+      }
+
+      /* =====================================================================
+         1. Material Symbols 風格單色向量圖示庫（純黑白極簡，無任何蘋果圖形）
+      ===================================================================== */
+      const MATERIAL_ICONS = {
         photos: {
           label: '相簿',
-          bg: 'linear-gradient(145deg, #FF9500, #FF2D55)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>'
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>'
         },
         calendar: {
           label: '行事曆',
-          bg: 'linear-gradient(145deg, #FF3B30, #D70015)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="4"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
         },
         home: {
           label: '家庭中控',
-          bg: 'linear-gradient(145deg, #FFCC00, #FF9500)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
         },
         cloud: {
           label: '雲端硬碟',
-          bg: 'linear-gradient(145deg, #5AC8FA, #007AFF)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>'
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>'
         },
         notes: {
-          label: '備忘錄',
-          bg: 'linear-gradient(145deg, #FFD60A, #FF9F0A)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
+          label: '備忘清單',
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
         },
         finance: {
           label: '家庭帳本',
-          bg: 'linear-gradient(145deg, #34C759, #248A3D)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="3"/><line x1="2" y1="10" x2="22" y2="10"/></svg>'
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><line x1="2" y1="10" x2="22" y2="10"/></svg>'
         },
         security: {
           label: '門禁安防',
-          bg: 'linear-gradient(145deg, #3A3A3C, #1C1C1E)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
-        },
-        media: {
-          label: '影音娛樂',
-          bg: 'linear-gradient(145deg, #AF52DE, #5856D6)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
         },
         map: {
           label: '家人定位',
-          bg: 'linear-gradient(145deg, #30D158, #007AFF)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'
+        },
+        media: {
+          label: '影音娛樂',
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
         },
         link: {
-          label: '自訂連結',
-          bg: 'linear-gradient(145deg, #007AFF, #5856D6)',
-          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
+          label: '網頁捷徑',
+          svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
         }
       };
 
       /* =====================================================================
-         2. 動態生成高解析 PNG Favicon 與 iOS/Android 桌面 App Icon
+         2. 動態生成純黑白幾何 Favicon 與 Android Adaptive 桌面圖示（無蘋果 Logo）
       ===================================================================== */
       function initDynamicAppIcons() {
         const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-          <defs>
-            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#1C1C1E"/>
-              <stop offset="100%" stop-color="#007AFF"/>
-            </linearGradient>
-          </defs>
-          <rect width="512" height="512" rx="115" fill="url(#g)"/>
-          <path d="M332 374c-15 22-31 44-55 44.5-24 .5-32-14-59-14-27.5 0-36 13.8-59 14.7-23.5.9-41.5-23.8-56.5-45.5-31-44.8-54.5-126.7-22.8-181.8 15.7-27.3 43.8-44.6 74.2-45.2 23-.4 45 15.7 59.2 15.7 14 0 40.7-19.3 68.6-16.4 11.7.5 44.5 4.7 65.5 35.6-1.6 1.1-39 23-38.7 68.6.5 54.4 47.7 72.5 48.2 72.7-.5 1.3-7.5 25.9-24.7 50.8M282.5 137c11.5-14 19.4-33.5 17.3-52.9-16.7.7-37.1 11.2-49 25.2-10.4 12.2-19.8 32.2-17.3 51.1 18.7 1.4 37.5-9.4 49-23.4z" fill="#FFFFFF"/>
+          <rect width="512" height="512" rx="128" fill="#111111"/>
+          <circle cx="256" cy="256" r="184" fill="none" stroke="#F4F4F5" stroke-width="22"/>
+          <text x="256" y="286" text-anchor="middle" fill="#F4F4F5" font-family="Arial, sans-serif" font-size="138" font-weight="700" letter-spacing="-4">LF</text>
         </svg>`;
         const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgMarkup);
         const fav = document.getElementById('dynamicFavicon');
@@ -1375,31 +1430,47 @@
             short_name: 'LinFamily',
             start_url: './',
             display: 'standalone',
-            background_color: '#000000',
-            theme_color: '#007AFF',
+            background_color: '#0E0E0E',
+            theme_color: '#111111',
             icons: [
               { src: pngUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
             ]
           };
-          const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+          const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
           const manifestEl = document.getElementById('dynamicManifest');
-          if (manifestEl) manifestEl.href = URL.createObjectURL(manifestBlob);
+          if (manifestEl) manifestEl.href = URL.createObjectURL(blob);
         };
         img.src = svgUrl;
       }
       initDynamicAppIcons();
 
       /* =====================================================================
-         3. 權限與資料狀態管理（對齊參考網站 Superuser / Admin / Viewer 模型）
+         3. Material You 水波紋點擊效果 (Ripple Feedback)
       ===================================================================== */
-      const STORAGE_APPS_KEY = 'linfamily_apps_v1';
-      const STORAGE_AUTH_KEY = 'linfamily_auth_session_v1';
-      const STORAGE_USERS_KEY = 'linfamily_admin_users_v1';
+      document.addEventListener('pointerdown', e => {
+        const host = e.target.closest('.ripple-host');
+        if (!host) return;
+        const rect = host.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const wave = document.createElement('span');
+        wave.className = 'md-ripple-wave';
+        wave.style.width = wave.style.height = size + 'px';
+        wave.style.left = (e.clientX - rect.left - size / 2) + 'px';
+        wave.style.top = (e.clientY - rect.top - size / 2) + 'px';
+        host.appendChild(wave);
+        setTimeout(() => wave.remove(), 550);
+      });
+
+      /* =====================================================================
+         4. 權限與資料狀態管理（對齊 clc-dx04 Superuser / Admin / Viewer 模型）
+      ===================================================================== */
+      const STORAGE_APPS_KEY = 'linfamily_pixel_apps_v1';
+      const STORAGE_AUTH_KEY = 'linfamily_pixel_auth_v1';
+      const STORAGE_USERS_KEY = 'linfamily_pixel_users_v1';
 
       const SUPERUSERS = [
         'darren710404@gmail.com',
-        'darren.lin@twclc.org',
-        'admin@linfamily.app'
+        'darren.lin@twclc.org'
       ];
 
       const DEFAULT_APPS = [
@@ -1409,10 +1480,11 @@
           url: 'https://photos.google.com',
           preset: 'photos',
           iconUrl: '',
+          themedInvert: true,
           category: 'apps',
           zoneId: 'zone-living',
           rolePrimary: '生活紀錄：全家人出遊照片、影片自動備份與共享相簿牆',
-          roleSecondary: '空間設備：客廳 Apple TV 待機畫面輪播與家庭劇院投影同步'
+          roleSecondary: '空間設備：客廳電視待機畫面輪播與家庭劇院投影同步'
         },
         {
           id: 'app-calendar',
@@ -1420,17 +1492,19 @@
           url: 'https://calendar.google.com',
           preset: 'calendar',
           iconUrl: '',
+          themedInvert: false,
           category: 'apps',
           zoneId: 'zone-life',
           rolePrimary: '生活紀錄：家庭聚餐、孩子課表、紀念日與重要預約提醒',
           roleSecondary: '空間設備：餐廚區共享平板看板每日自動同步排程'
         },
         {
-          id: 'app-homekit',
+          id: 'app-home',
           name: '智慧家庭',
-          url: 'https://www.icloud.com',
+          url: 'https://home.google.com',
           preset: 'home',
           iconUrl: '',
+          themedInvert: true,
           category: 'apps',
           zoneId: 'zone-entry',
           rolePrimary: '空間設備：玄關智慧門鎖、客廳燈光場景與冷氣遠端控制',
@@ -1442,6 +1516,7 @@
           url: 'https://drive.google.com',
           preset: 'cloud',
           iconUrl: '',
+          themedInvert: false,
           category: 'apps',
           zoneId: 'zone-cloud',
           rolePrimary: '空間設備：書房私有雲 NAS 檔案存取、重要證件與保單歸檔',
@@ -1453,6 +1528,7 @@
           url: 'https://keep.google.com',
           preset: 'notes',
           iconUrl: '',
+          themedInvert: false,
           category: 'family',
           zoneId: 'zone-life',
           rolePrimary: '生活紀錄：冰箱常備食材清單、日常採買與家務分工備忘',
@@ -1464,6 +1540,7 @@
           url: 'https://docs.google.com/spreadsheets',
           preset: 'finance',
           iconUrl: '',
+          themedInvert: true,
           category: 'family',
           zoneId: 'zone-life',
           rolePrimary: '生活紀錄：每月水電瓦斯固定支出、家庭旅遊基金與預算表',
@@ -1475,6 +1552,7 @@
           url: 'https://home.google.com',
           preset: 'security',
           iconUrl: '',
+          themedInvert: false,
           category: 'family',
           zoneId: 'zone-entry',
           rolePrimary: '空間設備：大門口與車庫即時監視器畫面、異常移動警報',
@@ -1483,9 +1561,10 @@
         {
           id: 'app-map',
           name: '家人定位',
-          url: 'https://www.icloud.com/find',
+          url: 'https://www.google.com/maps',
           preset: 'map',
           iconUrl: '',
+          themedInvert: true,
           category: 'family',
           zoneId: 'zone-entry',
           rolePrimary: '生活紀錄：家人即時安全位置分享與通勤抵達通知',
@@ -1504,17 +1583,16 @@
       let adminUsers = [];
       try {
         const rawUsers = JSON.parse(localStorage.getItem(STORAGE_USERS_KEY) || 'null');
-        adminUsers = Array.isArray(rawUsers) ? rawUsers : [
-          { email: 'family.member@gmail.com', role: 'admin', active: true },
-          { email: 'guest.viewer@gmail.com', role: 'viewer', active: true }
-        ];
+        adminUsers = Array.isArray(rawUsers) ? rawUsers : [];
       } catch (_) {
         adminUsers = [];
       }
 
       let session = null;
       try {
-        session = JSON.parse(localStorage.getItem(STORAGE_AUTH_KEY) || 'null');
+        if (!isFirebaseConfigured) {
+          session = JSON.parse(localStorage.getItem(STORAGE_AUTH_KEY) || 'null');
+        }
       } catch (_) {
         session = null;
       }
@@ -1525,17 +1603,34 @@
       let editingAppId = null;
       let selectedPreset = 'link';
 
-      function saveApps() {
+      function saveLocalApps() {
         try { localStorage.setItem(STORAGE_APPS_KEY, JSON.stringify(apps)); } catch (_) {}
       }
-      function saveUsers() {
+      function saveLocalUsers() {
         try { localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(adminUsers)); } catch (_) {}
       }
-      function saveSession() {
+      function saveLocalSession() {
         try {
           if (session) localStorage.setItem(STORAGE_AUTH_KEY, JSON.stringify(session));
           else localStorage.removeItem(STORAGE_AUTH_KEY);
         } catch (_) {}
+      }
+
+      // 儲存 App 清單（若已連接 Firebase 則同步寫入 Firestore linfamily_settings/apps）
+      async function persistApps() {
+        saveLocalApps();
+        if (isFirebaseConfigured && db && canEditApps()) {
+          try {
+            await db.collection('linfamily_settings').doc('apps').set({
+              items: apps,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedBy: session ? session.email : ''
+            });
+          } catch (err) {
+            console.warn('Firestore 寫入失敗：', err);
+            showSnackbar('雲端同步失敗：' + (err.code === 'permission-denied' ? '權限不足，請確認已發布 firestore.rules' : err.message));
+          }
+        }
       }
 
       function getRoleForEmail(email) {
@@ -1553,867 +1648,44 @@
         return role === 'superuser' || role === 'admin';
       }
 
-      function isSuperuser() {
-        return !!session && getRoleForEmail(session.email) === 'superuser';
-      }
-
       /* =====================================================================
-         4. Toast 通知與即時時鐘
+         5. Firebase 即時監聽（Google 登入狀態 + Firestore 雲端清單 + 管理員名單）
       ===================================================================== */
-      let toastTimer = null;
-      function showToast(msg) {
-        const el = document.getElementById('toastPill');
-        el.textContent = msg;
-        el.classList.add('show');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
-      }
+      const syncBadgeEl = document.getElementById('glanceSyncBadge');
+      if (isFirebaseConfigured && auth && db) {
+        syncBadgeEl.textContent = 'Firebase 雲端已連線';
 
-      function updateClock() {
-        const now = new Date();
-        const fmt = new Intl.DateTimeFormat('zh-TW', {
-          month: 'long', day: 'numeric', weekday: 'long',
-          hour: '2-digit', minute: '2-digit', hour12: false
-        });
-        document.getElementById('liveClockSub').textContent = fmt.format(now) + ' · 家庭控制中心';
-      }
-      updateClock();
-      setInterval(updateClock, 15000);
-
-      /* =====================================================================
-         5. 明暗模式切換
-      ===================================================================== */
-      function syncThemeIcons() {
-        const isDark = document.documentElement.classList.contains('dark');
-        document.getElementById('iconSun').style.display = isDark ? 'block' : 'none';
-        document.getElementById('iconMoon').style.display = isDark ? 'none' : 'block';
-        const meta = document.getElementById('metaThemeColor');
-        if (meta) meta.setAttribute('content', isDark ? '#000000' : '#F2F2F7');
-      }
-      function toggleThemeMode() {
-        const isDark = document.documentElement.classList.toggle('dark');
-        try { localStorage.setItem('linfamily_theme', isDark ? 'dark' : 'light'); } catch (_) {}
-        syncThemeIcons();
-      }
-      syncThemeIcons();
-      document.getElementById('themeBtn').addEventListener('click', toggleThemeMode);
-      document.getElementById('dockThemeBtn').addEventListener('click', toggleThemeMode);
-
-      /* =====================================================================
-         6. 網址解析與圖示渲染（加連結即可新增 App）
-      ===================================================================== */
-      function normalizeUrl(raw) {
-        let v = String(raw || '').trim();
-        if (!v) return '';
-        if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
-        try {
-          const u = new URL(v);
-          return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
-        } catch (_) {
-          return '';
-        }
-      }
-
-      function deriveAppMetaFromUrl(urlStr) {
-        try {
-          const u = new URL(urlStr);
-          const host = u.hostname.replace(/^www\./i, '');
-          const base = host.split('.')[0] || 'App';
-          const titleName = base.charAt(0).toUpperCase() + base.slice(1);
-          const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(u.hostname)}&sz=128`;
-          return { name: titleName, faviconUrl };
-        } catch (_) {
-          return { name: '新捷徑', faviconUrl: '' };
-        }
-      }
-
-      function renderAppVisual(app) {
-        const wrap = document.createElement('div');
-        const preset = PRESET_ICONS[app.preset] || PRESET_ICONS.link;
-
-        if (app.iconUrl) {
-          const img = document.createElement('img');
-          img.src = app.iconUrl;
-          img.alt = '';
-          img.onerror = () => {
-            wrap.innerHTML = `<div class="app-icon-svg" style="background:${preset.bg}">${preset.svg}</div>`;
-          };
-          wrap.appendChild(img);
-          return wrap.firstChild;
-        }
-
-        const div = document.createElement('div');
-        div.className = 'app-icon-svg';
-        div.style.background = preset.bg;
-        div.innerHTML = preset.svg;
-        return div;
-      }
-
-      /* =====================================================================
-         7. 主畫面 App 網格渲染 + 長按編輯 + 自由拖曳排序
-      ===================================================================== */
-      const appGrid = document.getElementById('appGrid');
-      const doneEditBtn = document.getElementById('doneEditBtn');
-
-      function setEditMode(active) {
-        if (active && !canEditApps()) {
-          showToast('請先從右上角登入管理員帳號');
-          return;
-        }
-        isEditing = !!active;
-        doneEditBtn.hidden = !isEditing;
-        appGrid.classList.toggle('is-editing', isEditing);
-        if (isEditing && navigator.vibrate) navigator.vibrate(15);
-        renderGrid();
-      }
-      doneEditBtn.addEventListener('click', () => setEditMode(false));
-
-      function getFilteredApps() {
-        const q = searchQuery.trim().toLowerCase();
-        return apps.filter(app => {
-          const tabMatch = activeTab === 'apps' ? true : app.category === 'family';
-          if (!tabMatch) return false;
-          if (!q) return true;
-          return app.name.toLowerCase().includes(q) ||
-                 app.url.toLowerCase().includes(q) ||
-                 (app.rolePrimary || '').toLowerCase().includes(q);
-        });
-      }
-
-      function renderGrid() {
-        const editable = canEditApps();
-        if (!editable) isEditing = false;
-        doneEditBtn.hidden = !isEditing;
-        appGrid.classList.toggle('is-editing', isEditing);
-
-        const list = getFilteredApps();
-        document.getElementById('gridTitleText').textContent =
-          activeTab === 'apps' ? '全部應用程式' : '家庭空間專屬服務';
-        document.getElementById('gridHintText').textContent =
-          isEditing ? '（拖曳可調整順序，點擊編輯或按 − 刪除）' :
-          (editable ? '（長按圖示可移動與增減）' : '');
-
-        appGrid.replaceChildren();
-
-        list.forEach((app, idx) => {
-          const cell = document.createElement('div');
-          cell.className = 'app-cell';
-          cell.setAttribute('role', 'listitem');
-          cell.dataset.appId = app.id;
-          cell.style.setProperty('--jiggle-delay', `${-(idx % 3) * 0.1}s`);
-          if (editable) cell.draggable = true;
-
-          // 編輯模式左上角「−」刪除按鈕
-          if (isEditing) {
-            const rm = document.createElement('button');
-            rm.type = 'button';
-            rm.className = 'app-remove-badge';
-            rm.setAttribute('aria-label', `刪除 ${app.name}`);
-            rm.addEventListener('click', e => {
-              e.stopPropagation();
-              deleteAppById(app.id);
-            });
-            cell.appendChild(rm);
-          }
-
-          // App 圖示方塊：點擊直接換頁開啟（無 Header 遮擋）；編輯模式下點擊開啟設定
-          const tile = document.createElement('a');
-          tile.className = 'app-icon-box';
-          tile.href = app.url;
-          tile.setAttribute('aria-label', app.name);
-          tile.appendChild(renderAppVisual(app));
-
-          tile.addEventListener('click', e => {
-            if (suppressNextClick) {
-              e.preventDefault();
-              suppressNextClick = false;
-              return;
-            }
-            if (isEditing) {
-              e.preventDefault();
-              openEditModal(app.id);
-              return;
-            }
-            // 若在「家庭空間與成員」分頁，點擊可先開啟互動詳情並高亮空間位置，或直接開啟網址
-            if (activeTab === 'family') {
-              e.preventDefault();
-              openDetailModal(app.id, 'primary');
-              return;
-            }
-            // 直接換頁過去（同視窗跳轉，不在 header 底下開 iframe）
-            e.preventDefault();
-            window.location.assign(app.url);
-          });
-
-          const label = document.createElement('span');
-          label.className = 'app-name';
-          label.textContent = app.name;
-
-          cell.append(tile, label);
-          appGrid.appendChild(cell);
-        });
-
-        // 永遠保留「＋ 新增 App」空格子（登入管理員可直接點擊新增；未登入點擊引導登入）
-        const addCell = document.createElement('div');
-        addCell.className = 'app-cell is-add-slot';
-        addCell.setAttribute('role', 'listitem');
-
-        const addBox = document.createElement('button');
-        addBox.type = 'button';
-        addBox.className = 'app-add-box';
-        addBox.setAttribute('aria-label', '新增 App 捷徑');
-        addBox.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
-        addBox.addEventListener('click', () => {
-          if (!canEditApps()) {
-            openAdminModal();
-            showToast('請先登入管理員權限以新增 App');
+        // 監聽 Google 登入狀態
+        let userRoleUnsub = null;
+        auth.onAuthStateChanged(user => {
+          if (userRoleUnsub) { userRoleUnsub(); userRoleUnsub = null; }
+          if (!user || !user.email || !user.emailVerified) {
+            session = null;
+            syncAuthUI();
             return;
           }
-          openAddModal();
-        });
-
-        const addLabel = document.createElement('span');
-        addLabel.className = 'app-name';
-        addLabel.textContent = '新增 App';
-
-        addCell.append(addBox, addLabel);
-        appGrid.appendChild(addCell);
-      }
-
-      /* =====================================================================
-         8. 長按進入編輯 + 觸控/滑鼠自由拖曳排序（參考 reorder.js 互動手感）
-      ===================================================================== */
-      let pressTimer = null;
-      let pressStart = null;
-      let suppressNextClick = false;
-      let dragSourceId = null;
-
-      appGrid.addEventListener('pointerdown', e => {
-        const cell = e.target.closest('.app-cell:not(.is-add-slot)');
-        if (!cell || e.target.closest('.app-remove-badge')) return;
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-
-        cell.classList.add('is-pressing');
-        pressStart = { x: e.clientX, y: e.clientY, cell };
-
-        if (!isEditing) {
-          pressTimer = setTimeout(() => {
-            cell.classList.remove('is-pressing');
-            suppressNextClick = true;
-            setEditMode(true);
-          }, 520);
-        }
-      });
-
-      appGrid.addEventListener('pointermove', e => {
-        if (!pressStart) return;
-        if (Math.hypot(e.clientX - pressStart.x, e.clientY - pressStart.y) > 10) {
-          clearTimeout(pressTimer);
-          pressStart.cell.classList.remove('is-pressing');
-          pressStart = null;
-        }
-      });
-
-      ['pointerup', 'pointercancel', 'pointerleave'].forEach(evName => {
-        appGrid.addEventListener(evName, () => {
-          clearTimeout(pressTimer);
-          if (pressStart) {
-            pressStart.cell.classList.remove('is-pressing');
-            pressStart = null;
-          }
-        });
-      });
-
-      appGrid.addEventListener('contextmenu', e => {
-        if (e.target.closest('.app-cell')) e.preventDefault();
-      });
-
-      // 桌面與支援拖曳裝置的原生 Drag & Drop 自由移動排序
-      appGrid.addEventListener('dragstart', e => {
-        const cell = e.target.closest('.app-cell:not(.is-add-slot)');
-        if (!cell || !canEditApps()) { e.preventDefault(); return; }
-        dragSourceId = cell.dataset.appId;
-        cell.classList.add('reorder-source');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', dragSourceId);
-      });
-
-      appGrid.addEventListener('dragover', e => {
-        if (!dragSourceId) return;
-        e.preventDefault();
-        const target = e.target.closest('.app-cell:not(.is-add-slot)');
-        appGrid.querySelectorAll('.reorder-target').forEach(el => el.classList.remove('reorder-target'));
-        if (target && target.dataset.appId !== dragSourceId) {
-          target.classList.add('reorder-target');
-        }
-      });
-
-      appGrid.addEventListener('drop', e => {
-        if (!dragSourceId) return;
-        e.preventDefault();
-        const target = e.target.closest('.app-cell:not(.is-add-slot)');
-        appGrid.querySelectorAll('.reorder-target, .reorder-source').forEach(el => el.classList.remove('reorder-target', 'reorder-source'));
-        if (target && target.dataset.appId && target.dataset.appId !== dragSourceId) {
-          reorderApps(dragSourceId, target.dataset.appId);
-        }
-        dragSourceId = null;
-      });
-
-      appGrid.addEventListener('dragend', () => {
-        dragSourceId = null;
-        appGrid.querySelectorAll('.reorder-target, .reorder-source').forEach(el => el.classList.remove('reorder-target', 'reorder-source'));
-      });
-
-      // 手機觸控長按後直接拖曳排序
-      let touchDragId = null;
-      appGrid.addEventListener('touchmove', e => {
-        if (!isEditing || !canEditApps()) return;
-        const touch = e.touches[0];
-        if (!touch) return;
-        if (!touchDragId) {
-          const startCell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.app-cell:not(.is-add-slot)');
-          if (startCell) {
-            touchDragId = startCell.dataset.appId;
-            startCell.classList.add('reorder-source');
-          }
-        }
-        if (touchDragId) {
-          e.preventDefault();
-          const overCell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.app-cell:not(.is-add-slot)');
-          appGrid.querySelectorAll('.reorder-target').forEach(el => el.classList.remove('reorder-target'));
-          if (overCell && overCell.dataset.appId !== touchDragId) {
-            overCell.classList.add('reorder-target');
-          }
-        }
-      }, { passive: false });
-
-      appGrid.addEventListener('touchend', () => {
-        if (!touchDragId) return;
-        const target = appGrid.querySelector('.reorder-target');
-        const targetId = target ? target.dataset.appId : null;
-        appGrid.querySelectorAll('.reorder-target, .reorder-source').forEach(el => el.classList.remove('reorder-target', 'reorder-source'));
-        if (targetId && targetId !== touchDragId) {
-          reorderApps(touchDragId, targetId);
-        }
-        touchDragId = null;
-      });
-
-      function reorderApps(fromId, toId) {
-        const fromIdx = apps.findIndex(a => a.id === fromId);
-        const toIdx = apps.findIndex(a => a.id === toId);
-        if (fromIdx < 0 || toIdx < 0) return;
-        const [moved] = apps.splice(fromIdx, 1);
-        apps.splice(toIdx, 0, moved);
-        saveApps();
-        renderGrid();
-      }
-
-      /* =====================================================================
-         9. 新增 / 編輯 / 刪除 App
-      ===================================================================== */
-      function openModal(id) {
-        document.getElementById(id).classList.add('is-open');
-      }
-      function closeModal(id) {
-        document.getElementById(id).classList.remove('is-open');
-      }
-      document.querySelectorAll('[data-close-modal]').forEach(btn => {
-        btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
-      });
-      document.querySelectorAll('.modal-backdrop').forEach(bg => {
-        bg.addEventListener('click', e => {
-          if (e.target === bg) bg.classList.remove('is-open');
-        });
-      });
-
-      function openAddModal() {
-        document.getElementById('addUrlInput').value = '';
-        document.getElementById('addNameInput').value = '';
-        document.getElementById('addCategorySelect').value = activeTab === 'family' ? 'family' : 'apps';
-        openModal('addAppModal');
-        setTimeout(() => document.getElementById('addUrlInput').focus(), 60);
-      }
-
-      document.getElementById('addAppForm').addEventListener('submit', e => {
-        e.preventDefault();
-        if (!canEditApps()) return;
-        const url = normalizeUrl(document.getElementById('addUrlInput').value);
-        if (!url) {
-          showToast('請輸入有效的網址（例如 https://...）');
-          return;
-        }
-        const meta = deriveAppMetaFromUrl(url);
-        const customName = document.getElementById('addNameInput').value.trim();
-        const category = document.getElementById('addCategorySelect').value;
-
-        const newApp = {
-          id: 'app-' + Date.now().toString(36),
-          name: customName || meta.name,
-          url,
-          preset: 'link',
-          iconUrl: meta.faviconUrl,
-          category,
-          zoneId: category === 'family' ? 'zone-life' : 'zone-cloud',
-          rolePrimary: `自訂捷徑：直接開啟 ${url}`,
-          roleSecondary: '空間節點：已同步至 LinFamily APP 家庭主畫面'
-        };
-        apps.push(newApp);
-        saveApps();
-        closeModal('addAppModal');
-        renderGrid();
-        showToast(`已新增「${newApp.name}」`);
-      });
-
-      function renderPresetPicker(currentKey) {
-        const container = document.getElementById('presetPicker');
-        container.replaceChildren();
-        Object.entries(PRESET_ICONS).forEach(([key, item]) => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'preset-opt' + (key === currentKey ? ' selected' : '');
-          btn.style.background = item.bg;
-          btn.title = item.label;
-          btn.innerHTML = item.svg;
-          btn.addEventListener('click', () => {
-            selectedPreset = key;
-            document.getElementById('editIconUrlInput').value = '';
-            renderPresetPicker(key);
-          });
-          container.appendChild(btn);
-        });
-      }
-
-      function openEditModal(appId) {
-        const app = apps.find(a => a.id === appId);
-        if (!app) return;
-        editingAppId = appId;
-        selectedPreset = app.preset || 'link';
-        document.getElementById('editNameInput').value = app.name;
-        document.getElementById('editUrlInput').value = app.url;
-        document.getElementById('editIconUrlInput').value = app.iconUrl || '';
-        renderPresetPicker(selectedPreset);
-        openModal('editAppModal');
-      }
-
-      document.getElementById('editAppForm').addEventListener('submit', e => {
-        e.preventDefault();
-        if (!canEditApps() || !editingAppId) return;
-        const app = apps.find(a => a.id === editingAppId);
-        if (!app) return;
-        const name = document.getElementById('editNameInput').value.trim();
-        const url = normalizeUrl(document.getElementById('editUrlInput').value);
-        const iconRaw = document.getElementById('editIconUrlInput').value.trim();
-        if (!name || !url) {
-          showToast('請確認名稱與網址格式正確');
-          return;
-        }
-        app.name = name;
-        app.url = url;
-        app.preset = selectedPreset;
-        app.iconUrl = iconRaw ? normalizeUrl(iconRaw) : '';
-        saveApps();
-        closeModal('editAppModal');
-        renderGrid();
-        showToast('已儲存變更');
-      });
-
-      function deleteAppById(appId) {
-        const app = apps.find(a => a.id === appId);
-        if (!app) return;
-        apps = apps.filter(a => a.id !== appId);
-        saveApps();
-        closeModal('editAppModal');
-        renderGrid();
-        showToast(`已移除「${app.name}」`);
-      }
-
-      document.getElementById('editDeleteBtn').addEventListener('click', () => {
-        if (editingAppId) deleteAppById(editingAppId);
-      });
-
-      /* =====================================================================
-         10. 雙向互動超連結（點卡片看圖高亮 / 點平面圖熱區開詳情）+ 多重職責一鍵切換
-      ===================================================================== */
-      function openDetailModal(appId, roleMode = 'primary') {
-        const app = apps.find(a => a.id === appId);
-        if (!app) return;
-
-        // 高亮對應平面圖區域
-        document.querySelectorAll('.svg-hotspot').forEach(el => {
-          el.classList.toggle('is-highlighted', el.dataset.zoneId === app.zoneId);
-        });
-
-        document.getElementById('detailModalTitle').textContent = app.name;
-        const body = document.getElementById('detailModalBody');
-
-        const isPrimary = roleMode === 'primary';
-        const currentRoleText = isPrimary
-          ? (app.rolePrimary || `主要服務連結：${app.url}`)
-          : (app.roleSecondary || '空間設備節點：已綁定家庭區域動線');
-        const switchLabel = isPrimary ? '一鍵切換查看：空間設備職責' : '一鍵切換查看：生活紀錄職責';
-
-        // 複製一份純白高對比平面圖並高亮當前區域
-        const boardClone = document.getElementById('floorplanBoard').cloneNode(true);
-        boardClone.removeAttribute('id');
-        boardClone.querySelectorAll('.svg-hotspot').forEach(el => {
-          el.classList.toggle('is-highlighted', el.dataset.zoneId === app.zoneId);
-        });
-
-        body.innerHTML = `
-          <button type="button" id="switchRoleCapsule" class="role-switch-pill">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
-            <span>${switchLabel}</span>
-          </button>
-          <div style="padding:14px 16px;border-radius:16px;background:var(--bg-fill);line-height:1.6;font-size:0.95rem;">
-            <div style="font-size:0.78rem;font-weight:700;color:var(--accent);margin-bottom:4px;">
-              ${isPrimary ? '當前檢視：生活紀錄職責' : '當前檢視：空間設備職責'}
-            </div>
-            <div>${currentRoleText}</div>
-          </div>
-          <div id="modalMapSlot"></div>
-          <div class="btn-row">
-            <button type="button" class="btn-secondary" data-close-inner="1">返回</button>
-            <a href="${app.url}" class="btn-primary" style="display:inline-flex;align-items:center;text-decoration:none;">直接開啟 App →</a>
-          </div>
-        `;
-        body.querySelector('#modalMapSlot').appendChild(boardClone);
-        body.querySelector('#switchRoleCapsule').addEventListener('click', () => {
-          openDetailModal(appId, isPrimary ? 'secondary' : 'primary');
-        });
-        body.querySelector('[data-close-inner]').addEventListener('click', () => closeModal('detailModal'));
-        openModal('detailModal');
-      }
-
-      // 點平面圖熱區 -> 開啟對應 App 詳情彈窗
-      document.querySelectorAll('.svg-hotspot').forEach(hotspot => {
-        const trigger = () => {
-          const zoneId = hotspot.dataset.zoneId;
-          const matched = apps.find(a => a.zoneId === zoneId) || apps[0];
-          if (matched) openDetailModal(matched.id, 'secondary');
-        };
-        hotspot.addEventListener('click', trigger);
-        hotspot.addEventListener('keydown', e => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger(); }
-        });
-      });
-
-      /* =====================================================================
-         11. 分頁切換、搜尋與 Dock 快捷列
-      ===================================================================== */
-      function switchTab(tab) {
-        activeTab = tab;
-        document.querySelectorAll('.seg-btn').forEach(btn => {
-          const on = btn.dataset.tab === tab;
-          btn.classList.toggle('active', on);
-          btn.setAttribute('aria-selected', String(on));
-        });
-        document.getElementById('diagramSection').hidden = (tab !== 'family');
-        renderGrid();
-      }
-
-      document.querySelectorAll('.seg-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-      });
-
-      document.getElementById('brandHomeBtn').addEventListener('click', e => {
-        e.preventDefault();
-        switchTab('apps');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-
-      const searchInput = document.getElementById('searchInput');
-      const searchClearBtn = document.getElementById('searchClearBtn');
-      searchInput.addEventListener('input', () => {
-        searchQuery = searchInput.value;
-        searchClearBtn.hidden = !searchQuery;
-        renderGrid();
-      });
-      searchClearBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        searchQuery = '';
-        searchClearBtn.hidden = true;
-        renderGrid();
-      });
-
-      document.getElementById('dockQuickAddBtn').addEventListener('click', () => {
-        if (!canEditApps()) {
-          openAdminModal();
-          showToast('請先登入管理員權限以新增 App');
-          return;
-        }
-        openAddModal();
-      });
-      document.getElementById('dockFloorplanBtn').addEventListener('click', () => {
-        switchTab(activeTab === 'family' ? 'apps' : 'family');
-      });
-      document.getElementById('dockAdminBtn').addEventListener('click', () => openAdminModal());
-
-      /* =====================================================================
-         12. 右上角登入與後台權限管理（Superuser / Admin / Viewer）
-      ===================================================================== */
-      const authBtn = document.getElementById('authBtn');
-      const adminPopover = document.getElementById('adminPopover');
-
-      function syncAuthUI() {
-        const loggedIn = !!session;
-        const role = loggedIn ? getRoleForEmail(session.email) : null;
-        document.getElementById('authIconLock').hidden = loggedIn;
-        document.getElementById('authIconUser').hidden = !loggedIn;
-        document.getElementById('authStatusDot').hidden = !loggedIn;
-        document.getElementById('authStatusDot').classList.toggle('is-viewer', role === 'viewer');
-        document.getElementById('authBtnLabel').textContent = loggedIn
-          ? (role === 'superuser' ? 'Superuser' : (role === 'admin' ? 'Admin' : 'Viewer'))
-          : '登入';
-
-        document.getElementById('popEmail').textContent = loggedIn ? session.email : '未登入';
-        document.getElementById('popRole').textContent = loggedIn
-          ? (role === 'superuser' ? '最高管理員（可增減 App 與管理權限）' :
-             role === 'admin' ? '管理員（可增減與移動 App）' : '檢視者（唯讀瀏覽）')
-          : '訪客模式';
-
-        document.getElementById('popAddAppBtn').hidden = !canEditApps();
-        document.getElementById('popEditModeBtn').hidden = !canEditApps();
-        renderGrid();
-      }
-
-      authBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        if (!session) {
-          openAdminModal();
-          return;
-        }
-        adminPopover.hidden = !adminPopover.hidden;
-      });
-
-      document.addEventListener('click', e => {
-        if (!adminPopover.hidden && !adminPopover.contains(e.target) && !authBtn.contains(e.target)) {
-          adminPopover.hidden = true;
-        }
-      });
-
-      document.getElementById('popAddAppBtn').addEventListener('click', () => {
-        adminPopover.hidden = true;
-        openAddModal();
-      });
-      document.getElementById('popEditModeBtn').addEventListener('click', () => {
-        adminPopover.hidden = true;
-        setEditMode(!isEditing);
-      });
-      document.getElementById('popUsersBtn').addEventListener('click', () => {
-        adminPopover.hidden = true;
-        openAdminModal();
-      });
-      document.getElementById('popLogoutBtn').addEventListener('click', () => {
-        adminPopover.hidden = true;
-        session = null;
-        saveSession();
-        setEditMode(false);
-        syncAuthUI();
-        showToast('已登出管理員帳號');
-      });
-
-      function openAdminModal() {
-        const body = document.getElementById('adminModalBody');
-        const currentRole = session ? getRoleForEmail(session.email) : null;
-
-        if (!session || !currentRole) {
-          body.innerHTML = `
-            <p style="margin:0;font-size:0.9rem;color:var(--text-secondary);line-height:1.6;">
-              登入授權管理員帳號後，即可在主畫面長按移動、增減 App 捷徑，並管理家庭成員存取權限（後續串接 Firebase 雲端同步）。
-            </p>
-            <form id="loginForm" style="display:flex;flex-direction:column;gap:14px;">
-              <div class="field-group">
-                <label class="field-label" for="loginEmailInput">管理員 Email</label>
-                <input type="email" id="loginEmailInput" class="apple-input" value="darren710404@gmail.com" placeholder="輸入授權 Email" required>
-              </div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                <button type="button" class="mini-chip-btn" data-quick-email="darren710404@gmail.com">一鍵帶入 Superuser</button>
-                <button type="button" class="mini-chip-btn" data-quick-email="family.member@gmail.com">帶入 Admin</button>
-                <button type="button" class="mini-chip-btn" data-quick-email="guest.viewer@gmail.com">帶入 Viewer</button>
-              </div>
-              <div class="btn-row">
-                <button type="button" class="btn-secondary" data-close-admin="1">取消</button>
-                <button type="submit" class="btn-primary">登入驗證</button>
-              </div>
-            </form>
-          `;
-          body.querySelectorAll('[data-quick-email]').forEach(btn => {
-            btn.addEventListener('click', () => {
-              body.querySelector('#loginEmailInput').value = btn.dataset.quickEmail;
-            });
-          });
-          body.querySelector('[data-close-admin]').addEventListener('click', () => closeModal('adminModal'));
-          body.querySelector('#loginForm').addEventListener('submit', e => {
-            e.preventDefault();
-            const email = body.querySelector('#loginEmailInput').value.trim().toLowerCase();
-            const role = getRoleForEmail(email);
-            if (!role) {
-              showToast('此 Email 尚未加入授權名單');
-              return;
-            }
+          const email = user.email.toLowerCase().trim();
+          if (SUPERUSERS.includes(email)) {
             session = { email, loginAt: Date.now() };
-            saveSession();
             syncAuthUI();
-            closeModal('adminModal');
-            showToast(`已登入：${email}（${role.toUpperCase()}）`);
-          });
-          openModal('adminModal');
-          return;
-        }
-
-        // 已登入：顯示權限名單與新增管理員介面（Superuser / Admin 可編輯；Viewer 唯讀）
-        const editable = canEditApps();
-        const rows = [
-          ...SUPERUSERS.map(email => ({ email, role: 'superuser', active: true, locked: true })),
-          ...adminUsers.filter(u => !SUPERUSERS.includes(u.email.toLowerCase()))
-        ];
-
-        body.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:16px;background:var(--accent-soft);">
-            <div>
-              <div style="font-weight:800;font-size:0.92rem;">${session.email}</div>
-              <div style="font-size:0.78rem;color:var(--accent);font-weight:700;">目前身分：${currentRole.toUpperCase()}</div>
-            </div>
-            <button type="button" id="modalLogoutBtn" class="btn-danger-outline">登出</button>
-          </div>
-
-          ${editable ? `
-          <form id="addAdminUserForm" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
-            <div class="field-group" style="flex:1 1 200px;">
-              <label class="field-label" for="newAdminEmail">新增授權成員 Email</label>
-              <input type="email" id="newAdminEmail" class="apple-input" placeholder="member@example.com" required>
-            </div>
-            <div class="field-group" style="flex:0 0 130px;">
-              <label class="field-label" for="newAdminRole">權限等級</label>
-              <select id="newAdminRole" class="apple-select">
-                <option value="admin">Admin（可編輯）</option>
-                <option value="viewer">Viewer（唯讀）</option>
-              </select>
-            </div>
-            <button type="submit" class="btn-primary" style="height:44px;">新增</button>
-          </form>` : `<p style="margin:0;font-size:0.84rem;color:var(--text-tertiary);">目前為 Viewer 唯讀權限，僅可檢視成員名單。</p>`}
-
-          <div style="display:flex;flex-direction:column;gap:8px;" id="adminUsersList"></div>
-        `;
-
-        const listEl = body.querySelector('#adminUsersList');
-        rows.forEach(u => {
-          const card = document.createElement('div');
-          card.className = 'user-card';
-          const roleText = u.locked
-            ? 'Superuser · 永久最高權限'
-            : `${u.role === 'viewer' ? 'Viewer（唯讀）' : 'Admin（可編輯）'} · ${u.active !== false ? '已啟用' : '已停用'}`;
-
-          card.innerHTML = `
-            <div>
-              <div class="user-email">${u.email}</div>
-              <div class="user-meta">${roleText}</div>
-            </div>
-            ${(!u.locked && editable) ? `
-            <div class="user-actions">
-              <button type="button" class="mini-chip-btn" data-toggle-role="${u.email}">${u.role === 'viewer' ? '升為 Admin' : '改為 Viewer'}</button>
-              <button type="button" class="mini-chip-btn" data-toggle-active="${u.email}">${u.active !== false ? '停用' : '啟用'}</button>
-              <button type="button" class="mini-chip-btn" style="color:var(--danger);" data-del-user="${u.email}">移除</button>
-            </div>` : ''}
-          `;
-          listEl.appendChild(card);
-        });
-
-        body.querySelector('#modalLogoutBtn').addEventListener('click', () => {
-          session = null;
-          saveSession();
-          setEditMode(false);
-          syncAuthUI();
-          closeModal('adminModal');
-          showToast('已登出帳號');
-        });
-
-        const addForm = body.querySelector('#addAdminUserForm');
-        if (addForm) {
-          addForm.addEventListener('submit', e => {
-            e.preventDefault();
-            const email = body.querySelector('#newAdminEmail').value.trim().toLowerCase();
-            const role = body.querySelector('#newAdminRole').value;
-            if (!email || SUPERUSERS.includes(email) || adminUsers.some(x => x.email.toLowerCase() === email)) {
-              showToast('此 Email 已在名單中或格式不正確');
-              return;
+            return;
+          }
+          // 動態查詢 Firestore admin_users/{email}
+          userRoleUnsub = db.collection('admin_users').doc(email).onSnapshot(snap => {
+            const data = snap.exists ? snap.data() : null;
+            if (data && (data.role === 'admin' || data.role === 'viewer') && data.active !== false) {
+              if (!adminUsers.some(u => u.email === email)) {
+                adminUsers.push({ email, role: data.role, active: true });
+              }
+              session = { email, loginAt: Date.now() };
+            } else {
+              session = null;
             }
-            adminUsers.push({ email, role, active: true });
-            saveUsers();
-            openAdminModal();
-            showToast(`已新增成員：${email}`);
-          });
-        }
-
-        listEl.querySelectorAll('[data-toggle-role]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const target = adminUsers.find(x => x.email === btn.dataset.toggleRole);
-            if (!target) return;
-            target.role = target.role === 'viewer' ? 'admin' : 'viewer';
-            saveUsers();
-            openAdminModal();
+            syncAuthUI();
+          }, () => {
+            session = null;
+            syncAuthUI();
           });
         });
 
-        listEl.querySelectorAll('[data-toggle-active]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const target = adminUsers.find(x => x.email === btn.dataset.toggleActive);
-            if (!target) return;
-            target.active = target.active === false;
-            saveUsers();
-            openAdminModal();
-          });
-        });
-
-        listEl.querySelectorAll('[data-del-user]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            adminUsers = adminUsers.filter(x => x.email !== btn.dataset.delUser);
-            saveUsers();
-            openAdminModal();
-            showToast('已移除該授權帳號');
-          });
-        });
-
-        openModal('adminModal');
-      }
-
-      /* =====================================================================
-         13. PWA 安裝提示（支援一鍵安裝與 iOS / macOS Safari 加入主畫面引導）
-      ===================================================================== */
-      let deferredPrompt = null;
-      window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault();
-        deferredPrompt = e;
-      });
-
-      document.getElementById('installBtn').addEventListener('click', async () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          await deferredPrompt.userChoice;
-          deferredPrompt = null;
-          return;
-        }
-        const body = document.getElementById('installModalBody');
-        body.innerHTML = `
-          <p style="margin:0;font-size:0.92rem;color:var(--text-secondary);line-height:1.6;">
-            將 <strong>LinFamily APP</strong> 加入手機主畫面或 Mac Dock，即可享受全螢幕原生 App 體驗：
-          </p>
-          <ol style="margin:0;padding-left:20px;line-height:1.75;font-size:0.9rem;">
-            <li><strong>iPhone / iPad (Safari)：</strong>點擊底部或右上角「分享」圖示，選擇「加入主畫面」。</li>
-            <li><strong>Mac (Safari)：</strong>點擊選單列「檔案」→「加入 Dock」。</li>
-            <li><strong>Android / Chrome / Edge：</strong>點擊網址列右側「安裝應用程式」圖示即可完成。</li>
-          </ol>
-          <div class="btn-row">
-            <button type="button" class="btn-primary" data-close-inst="1">知道了</button>
-          </div>
-        `;
-        body.querySelector('[data-close-inst]').addEventListener('click', () => closeModal('installModal'));
-        openModal('installModal');
-      });
-
-      // 初始化啟動
-      syncAuthUI();
-    })();
-  </script>
-</body>
-</html>
+        // 監聽雲端 App 清單（跨裝置即時
