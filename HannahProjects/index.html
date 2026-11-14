@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hannah's Studio — Art, Crafts & LEGO</title>
+<meta name="description" content="A little portfolio of Hannah's drawings, crafts and LEGO builds.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink-50:  #fff5f8;
+    --pink-100: #ffe4ee;
+    --pink-200: #ffc8dc;
+    --pink-400: #ff8fb8;
+    --pink-600: #e85a92;
+    --pink-800: #a8325f;
+    --sea:      #8fd8e0;
+    --sea-deep: #4fb3c2;
+    --sand:     #fbe9cf;
+    --gold:     #f6c453;
+    --ink:      #4a2c3a;
+    --muted:    #8a6a78;
+    --card:     #ffffff;
+    --radius:   22px;
+    --shadow:   0 10px 30px -12px rgba(168, 50, 95, .25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Nunito", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--pink-50);
+    line-height: 1.6;
+  }
+  h1, h2, h3, .logo, .chip { font-family: "Fredoka", "Nunito", sans-serif; }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(255, 245, 248, .85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--pink-100);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 1.35rem; font-weight: 600; text-decoration: none; color: var(--pink-800); }
+  .logo svg { width: 34px; height: 34px; }
+  nav ul { display: flex; gap: 28px; list-style: none; }
+  nav ul a { text-decoration: none; font-weight: 600; color: var(--muted); transition: color .2s; }
+  nav ul a:hover { color: var(--pink-600); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, var(--pink-100) 0%, #ffeef4 55%, var(--sand) 100%);
+    padding: 80px 0 150px;
+  }
+  .hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; position: relative; z-index: 2; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; color: var(--pink-600);
+    padding: 6px 14px; border-radius: 999px;
+    font-weight: 700; font-size: .85rem; letter-spacing: .02em;
+    box-shadow: var(--shadow);
+  }
+  .hero h1 { font-size: clamp(2.6rem, 6vw, 4.4rem); line-height: 1.05; margin: 20px 0 16px; color: var(--pink-800); font-weight: 700; }
+  .hero h1 span { color: var(--pink-600); }
+  .hero p { font-size: 1.15rem; color: var(--muted); max-width: 30em; }
+  .btn {
+    display: inline-block; margin-top: 28px;
+    background: var(--pink-600); color: #fff; text-decoration: none;
+    padding: 14px 28px; border-radius: 999px; font-weight: 700;
+    box-shadow: 0 8px 20px -8px var(--pink-600);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px var(--pink-600); }
+  .hero-art { display: flex; justify-content: center; }
+  .hero-art svg { width: 100%; max-width: 380px; filter: drop-shadow(0 20px 30px rgba(168,50,95,.18)); }
+  .float { animation: float 5s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+  .sparkle { position: absolute; color: var(--gold); font-size: 1.4rem; opacity: .8; animation: twinkle 3s ease-in-out infinite; }
+  @keyframes twinkle { 0%,100% { opacity: .2; transform: scale(.8); } 50% { opacity: .9; transform: scale(1.1); } }
+
+  .waves { position: absolute; left: 0; right: 0; bottom: -2px; z-index: 1; }
+  .waves svg { display: block; width: 100%; height: 120px; }
+
+  /* ---------- Section headings ---------- */
+  section { padding: 80px 0; }
+  .section-head { text-align: center; margin-bottom: 40px; }
+  .section-head h2 { font-size: clamp(2rem, 4vw, 2.8rem); color: var(--pink-800); font-weight: 600; }
+  .section-head p { color: var(--muted); margin-top: 6px; }
+
+  /* ---------- Filters ---------- */
+  .filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 36px; }
+  .chip {
+    border: 2px solid var(--pink-200); background: #fff; color: var(--pink-800);
+    padding: 8px 20px; border-radius: 999px; font-size: 1rem; font-weight: 500;
+    cursor: pointer; transition: all .2s;
+  }
+  .chip:hover { border-color: var(--pink-400); }
+  .chip.active { background: var(--pink-600); border-color: var(--pink-600); color: #fff; }
+
+  /* ---------- Gallery ---------- */
+  #gallery-section { background: linear-gradient(180deg, #e9f8fa 0%, var(--pink-50) 140px); }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 26px; }
+  .card {
+    background: var(--card); border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow); cursor: pointer;
+    transition: transform .25s, box-shadow .25s;
+    animation: pop .4s ease both;
+  }
+  .card:hover { transform: translateY(-6px) rotate(-.6deg); box-shadow: 0 18px 36px -14px rgba(168,50,95,.35); }
+  @keyframes pop { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: none; } }
+  .thumb { aspect-ratio: 4 / 3; display: grid; place-items: center; font-size: 4rem; position: relative; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tag {
+    position: absolute; top: 12px; left: 12px;
+    background: rgba(255,255,255,.92); color: var(--pink-800);
+    font-size: .75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  }
+  .card-body { padding: 16px 18px 20px; }
+  .card-body h3 { font-size: 1.15rem; font-weight: 600; color: var(--ink); }
+  .card-body p { font-size: .9rem; color: var(--muted); }
+
+  /* placeholder backgrounds */
+  .bg-art   { background: linear-gradient(135deg, #ffd6e6, #ffeef4); }
+  .bg-craft { background: linear-gradient(135deg, #fbe9cf, #fff4e4); }
+  .bg-lego  { background: linear-gradient(135deg, #cdeff3, #eafafc); }
+  .bg-other { background: linear-gradient(135deg, #e9dcff, #f6f0ff); }
+
+  /* ---------- About ---------- */
+  .about { display: grid; grid-template-columns: 280px 1fr; gap: 48px; align-items: center;
+    background: #fff; border-radius: 32px; padding: 44px; box-shadow: var(--shadow); }
+  .about .avatar { width: 240px; height: 240px; border-radius: 50%; background: var(--pink-100);
+    display: grid; place-items: center; margin: 0 auto; border: 6px solid var(--pink-200); }
+  .about .avatar svg { width: 72%; }
+  .about h2 { font-size: 2.2rem; color: var(--pink-800); font-weight: 600; }
+  .about p { color: var(--muted); margin-top: 10px; font-size: 1.05rem; }
+  .faves { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+  .faves span { background: var(--pink-50); border: 1px solid var(--pink-200); padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: .9rem; }
+
+  /* ---------- Footer ---------- */
+  footer { background: var(--sea-deep); color: #fff; text-align: center; padding: 0 0 36px; position: relative; }
+  footer .waves-top svg { display: block; width: 100%; height: 70px; }
+  footer p { opacity: .95; font-weight: 600; }
+  footer small { display: block; margin-top: 6px; opacity: .75; }
+
+  /* ---------- Lightbox ---------- */
+  .lightbox { position: fixed; inset: 0; background: rgba(74, 44, 58, .75); display: none; place-items: center; z-index: 50; padding: 24px; }
+  .lightbox.open { display: grid; }
+  .lightbox-inner { background: #fff; border-radius: 28px; max-width: 720px; width: 100%; overflow: hidden; animation: pop .25s ease; }
+  .lightbox .thumb { aspect-ratio: 4 / 3; font-size: 7rem; }
+  .lightbox .card-body { padding: 22px 26px 28px; }
+  .lightbox h3 { font-size: 1.6rem; }
+  .lightbox .date { color: var(--pink-600); font-weight: 700; font-size: .85rem; }
+  .close { position: absolute; top: 20px; right: 24px; background: #fff; border: 0; width: 44px; height: 44px; border-radius: 50%; font-size: 1.4rem; cursor: pointer; color: var(--pink-800); }
+
+  @media (max-width: 800px) {
+    nav ul { gap: 16px; font-size: .9rem; }
+    .hero { padding: 50px 0 130px; }
+    .hero .wrap { grid-template-columns: 1fr; text-align: center; }
+    .hero p { margin: 0 auto; }
+    .hero-art svg { max-width: 260px; }
+    .about { grid-template-columns: 1fr; text-align: center; padding: 32px 24px; }
+    .faves { justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav>
+  <div class="wrap">
+    <a href="#" class="logo" aria-label="Hannah's Studio home">
+      <!-- little crown -->
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M6 28 L8 12 L15 20 L20 8 L25 20 L32 12 L34 28 Z" fill="#f6c453" stroke="#e0a82e" stroke-width="1.5" stroke-linejoin="round"/>
+        <rect x="6" y="28" width="28" height="5" rx="2" fill="#ff8fb8"/>
+        <circle cx="20" cy="8" r="2.5" fill="#ff8fb8"/><circle cx="8" cy="12" r="2" fill="#8fd8e0"/><circle cx="32" cy="12" r="2" fill="#8fd8e0"/>
+      </svg>
+      Hannah's Studio
+    </a>
+    <ul>
+      <li><a href="#gallery-section">Gallery</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <span class="sparkle" style="top:14%;left:6%">✦</span>
+  <span class="sparkle" style="top:30%;left:46%;animation-delay:1s">✦</span>
+  <span class="sparkle" style="top:10%;right:10%;animation-delay:2s">✦</span>
+
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">✿ Little artist · Big imagination</span>
+      <h1>Welcome to <span>Hannah's</span> Studio</h1>
+      <p>Drawings, crafts, LEGO castles and everything in between — a collection of things made with crayons, glue, bricks and lots of pink.</p>
+      <a href="#gallery-section" class="btn">See my creations →</a>
+    </div>
+
+    <!-- original kitty princess illustration -->
+    <div class="hero-art">
+      <svg class="float" viewBox="0 0 300 300" role="img" aria-label="A pink kitty wearing a crown">
+        <circle cx="150" cy="160" r="120" fill="#fff" opacity=".7"/>
+        <!-- ears -->
+        <path d="M78 120 L92 50 L135 95 Z" fill="#ffb3cf"/>
+        <path d="M222 120 L208 50 L165 95 Z" fill="#ffb3cf"/>
+        <path d="M92 108 L99 70 L122 96 Z" fill="#ff8fb8"/>
+        <path d="M208 108 L201 70 L178 96 Z" fill="#ff8fb8"/>
+        <!-- head -->
+        <ellipse cx="150" cy="160" rx="92" ry="80" fill="#ffc8dc"/>
+        <!-- crown -->
+        <path d="M112 82 L118 50 L134 68 L150 40 L166 68 L182 50 L188 82 Z" fill="#f6c453" stroke="#e0a82e" stroke-width="2" stroke-linejoin="round"/>
+        <circle cx="150" cy="40" r="5" fill="#8fd8e0"/>
+        <circle cx="118" cy="50" r="4" fill="#ff8fb8"/>
+        <circle cx="182" cy="50" r="4" fill="#ff8fb8"/>
+        <!-- eyes -->
+        <ellipse cx="118" cy="158" rx="11" ry="14" fill="#4a2c3a"/>
+        <ellipse cx="182" cy="158" rx="11" ry="14" fill="#4a2c3a"/>
+        <circle cx="122" cy="152" r="4" fill="#fff"/>
+        <circle cx="186" cy="152" r="4" fill="#fff"/>
+        <!-- cheeks -->
+        <ellipse cx="100" cy="185" rx="14" ry="8" fill="#ff8fb8" opacity=".6"/>
+        <ellipse cx="200" cy="185" rx="14" ry="8" fill="#ff8fb8" opacity=".6"/>
+        <!-- nose & mouth -->
+        <path d="M144 176 L156 176 L150 183 Z" fill="#e85a92"/>
+        <path d="M150 183 Q150 194 140 194 M150 183 Q150 194 160 194" stroke="#4a2c3a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- whiskers -->
+        <g stroke="#a8325f" stroke-width="2" stroke-linecap="round" opacity=".5">
+          <line x1="62" y1="170" x2="96" y2="174"/><line x1="64" y1="188" x2="96" y2="184"/>
+          <line x1="238" y1="170" x2="204" y2="174"/><line x1="236" y1="188" x2="204" y2="184"/>
+        </g>
+        <!-- seashell -->
+        <g transform="translate(222 228) rotate(15)">
+          <path d="M0 0 Q20 -30 40 0 Z" fill="#fbe9cf" stroke="#e8c79a" stroke-width="2"/>
+          <path d="M20 0 L20 -20 M10 0 L14 -18 M30 0 L26 -18" stroke="#e8c79a" stroke-width="2"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="waves" aria-hidden="true">
+    <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+      <path d="M0,60 C240,110 480,10 720,50 C960,90 1200,20 1440,60 L1440,120 L0,120 Z" fill="#bfeaef"/>
+      <path d="M0,80 C260,40 520,120 760,80 C1000,40 1220,110 1440,80 L1440,120 L0,120 Z" fill="#e9f8fa"/>
+    </svg>
+  </div>
+</header>
+
+<!-- ============ GALLERY ============ -->
+<section id="gallery-section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>My Gallery</h2>
+      <p>Tap any picture to see it bigger!</p>
+    </div>
+    <div class="filters" role="tablist">
+      <button class="chip active" data-filter="all">✨ All</button>
+      <button class="chip" data-filter="art">🎨 Art</button>
+      <button class="chip" data-filter="craft">✂️ Crafts</button>
+      <button class="chip" data-filter="lego">🧱 LEGO</button>
+      <button class="chip" data-filter="other">💖 Other</button>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section id="about">
+  <div class="wrap">
+    <div class="about">
+      <div class="avatar">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <path d="M22 40 L28 12 L44 30 Z" fill="#ffb3cf"/><path d="M78 40 L72 12 L56 30 Z" fill="#ffb3cf"/>
+          <ellipse cx="50" cy="56" rx="34" ry="30" fill="#ffc8dc"/>
+          <ellipse cx="38" cy="54" rx="4" ry="5" fill="#4a2c3a"/><ellipse cx="62" cy="54" rx="4" ry="5" fill="#4a2c3a"/>
+          <path d="M46 64 L54 64 L50 68 Z" fill="#e85a92"/>
+          <ellipse cx="30" cy="66" rx="6" ry="3" fill="#ff8fb8" opacity=".6"/><ellipse cx="70" cy="66" rx="6" ry="3" fill="#ff8fb8" opacity=".6"/>
+        </svg>
+      </div>
+      <div>
+        <h2>Hi, I'm Hannah! 👋</h2>
+        <p>I'm 8 years old and I love to make things. I draw princesses and kitties, build LEGO castles by the sea, and make crafts out of paper, beads and anything sparkly. This is where my mom and dad keep all my favourite projects.</p>
+        <div class="faves">
+          <span>👑 Princesses</span>
+          <span>🐱 Kitties</span>
+          <span>🏖️ The beach</span>
+          <span>💗 Pink!</span>
+          <span>🧱 LEGO</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="waves-top" aria-hidden="true">
+    <svg viewBox="0 0 1440 70" preserveAspectRatio="none">
+      <path d="M0,0 L1440,0 L1440,30 C1200,70 960,0 720,30 C480,60 240,0 0,30 Z" fill="#fff5f8"/>
+    </svg>
+  </div>
+  <p>Made with love, glitter & crayons 🐚</p>
+  <small>© <span id="year"></span> Hannah's Studio</small>
+</footer>
+
+<!-- ============ LIGHTBOX ============ -->
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="close" id="close" aria-label="Close">×</button>
+  <div class="lightbox-inner" id="lightbox-content"></div>
+</div>
+
+<script>
+/* =============================================================
+   HOW TO ADD A NEW PROJECT
+   1. Put the photo in an "images" folder next to this file.
+   2. Add an entry to the list below, e.g.
+      { title: "Mermaid Castle", category: "lego",
+        date: "2026-11", image: "images/mermaid-castle.jpg",
+        note: "Built on a rainy Saturday!" },
+   category can be: "art", "craft", "lego" or "other".
+   Entries without an image show a cute placeholder.
+   ============================================================= */
+const projects = [
+  { title: "Princess Kitty Portrait", category: "art",   date: "2026-11", emoji: "👑", note: "Crayons and glitter glue." },
+  { title: "Seashell Castle",         category: "lego",  date: "2026-10", emoji: "🏰", note: "A LEGO castle right on the beach." },
+  { title: "Paper Plate Fish",        category: "craft", date: "2026-10", emoji: "🐠", note: "Made at the kitchen table." },
+  { title: "Sunset at the Beach",     category: "art",   date: "2026-09", emoji: "🌅", note: "Watercolours — pink sky!" },
+  { title: "Beaded Bracelet",         category: "craft", date: "2026-09", emoji: "📿", note: "A gift for Grandma." },
+  { title: "Kitty Café",              category: "lego",  date: "2026-08", emoji: "🐱", note: "With a tiny cupcake counter." },
+  { title: "Rainbow Unicorn",         category: "art",   date: "2026-08", emoji: "🦄", note: "Markers on cardstock." },
+  { title: "Clay Cupcakes",           category: "other", date: "2026-07", emoji: "🧁", note: "Air-dry clay, painted pink." },
+];
+
+const labels = { art: "Art", craft: "Craft", lego: "LEGO", other: "Other" };
+const gallery = document.getElementById("gallery");
+const lightbox = document.getElementById("lightbox");
+const lbContent = document.getElementById("lightbox-content");
+
+function thumbHTML(p, withTag = true) {
+  const inner = p.image
+    ? `<img src="${p.image}" alt="${p.title}" loading="lazy">`
+    : `<span aria-hidden="true">${p.emoji || "✨"}</span>`;
+  return `<div class="thumb bg-${p.category}">${inner}${withTag ? `<span class="tag">${labels[p.category]}</span>` : ""}</div>`;
+}
+
+function formatDate(d) {
+  if (!d) return "";
+  const [y, m] = d.split("-");
+  return new Date(y, (m || 1) - 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+function render(filter = "all") {
+  gallery.innerHTML = "";
+  projects
+    .filter(p => filter === "all" || p.category === filter)
+    .forEach((p, i) => {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.style.animationDelay = `${i * 50}ms`;
+      card.tabIndex = 0;
+      card.innerHTML = `${thumbHTML(p)}<div class="card-body"><h3>${p.title}</h3><p>${formatDate(p.date)}</p></div>`;
+      card.addEventListener("click", () => open(p));
+      card.addEventListener("keydown", e => { if (e.key === "Enter") open(p); });
+      gallery.appendChild(card);
+    });
+}
+
+function open(p) {
+  lbContent.innerHTML = `${thumbHTML(p, false)}<div class="card-body"><span class="date">${labels[p.category]} · ${formatDate(p.date)}</span><h3>${p.title}</h3><p>${p.note || ""}</p></div>`;
+  lightbox.classList.add("open");
+  lightbox.setAttribute("aria-hidden", "false");
+}
+function close() { lightbox.classList.remove("open"); lightbox.setAttribute("aria-hidden", "true"); }
+
+document.getElementById("close").addEventListener("click", close);
+lightbox.addEventListener("click", e => { if (e.target === lightbox) close(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    render(chip.dataset.filter);
+  });
+});
+
+document.getElementById("year").textContent = new Date().getFullYear();
+render();
+</script>
+</body>
+</html>
