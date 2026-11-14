@@ -64,7 +64,7 @@
       padding:calc(16px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
       max-width:1100px; width:100%; margin:0 auto; }
     .lf-date { margin:0; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.02em; }
-    .lf-title { margin:2px 0 0; font-size:clamp(30px, 8vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
+    .lf-title { margin:2px 0 0; font-size:clamp(24px, 6.6vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
     .lf-right { display:flex; align-items:center; gap:6px; position:relative; flex:none; }
     /* 以下尺寸、顏色與 DX 的 Header 按鈕／管理員下拉選單相同 */
     .lf-btn { width:34px; min-width:34px; height:34px; border-radius:9px; font-size:15px; padding:0; display:inline-flex; align-items:center; justify-content:center;
@@ -481,8 +481,9 @@
     // ---------- App 清單 ----------
     const CACHE_KEY = 'linfamily_apps_v2';
     const HANNAH = { id: 'hannah', name: "Hannah's Studio", url: 'HannahProjects/home.html', icon: 'HannahProjects/apple-touch-icon.png', pos: 0 };
+    const DX04 = { id: 'dx04', name: 'CLC DX04', url: 'https://clc-dx04.pages.dev/', icon: 'https://clc-dx04.pages.dev/apple-touch-icon.png' };
     const PRESET_EMOJI = { photos:'📷', calendar:'📅', home:'🏠', cloud:'☁️', notes:'📝', finance:'💰', security:'📹', map:'📍', media:'🎬', link:'🔗' };
-    let apps = [HANNAH], needsSeed = false, seeding = false;
+    let apps = [HANNAH, Object.assign({}, DX04, { pos: 1 })], needsSeed = false, seeding = false, seededList = ['hannah', 'dx04'];
     try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (Array.isArray(c) && c.length) apps = c; } catch (_) {}
 
     function safeUrl(value) {
@@ -536,7 +537,7 @@
     async function persist(next) {
       if (!db) throw new Error('資料庫尚未載入');
       await db.collection('linfamily_settings').doc('apps').set({
-        items: next, hannahSeeded: true,
+        items: next, seeded: seededList, hannahSeeded: true,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: user ? user.email : ''
       });
       apps = next; needsSeed = false;
@@ -548,20 +549,38 @@
       if (!app || !confirm('從主畫面移除「' + app.name + '」？')) return;
       try { await persist(withPos().filter(a => a.id !== id)); } catch (err) { toast('移除失敗：' + errText(err)); }
     }
-    // 舊資料第一次載入時，把 Hannah's Studio 放到第一格（其餘依序往後），由 Superuser 登入時寫回雲端。
+    // 預設 App 只自動加一次（記在雲端 seeded 清單；之後刪掉也不會再跑回來）：
+    // Hannah's Studio 放第一格（其餘往後），CLC DX04 放到第一個空格。由 Superuser 登入時寫回雲端。
     function fromCloud(d) {
       let items = Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : [];
-      if (d.hannahSeeded || items.some(a => a.id === HANNAH.id)) return { items, seed: false };
-      items = [HANNAH].concat(window.clcSlotGridNormalize(items).sort((a, b) => a.pos - b.pos).map((a, i) => Object.assign({}, a, { pos: i + 1 })));
-      return { items, seed: true };
+      const seeded = new Set(Array.isArray(d.seeded) ? d.seeded : []);
+      if (d.hannahSeeded) seeded.add('hannah');
+      let changed = false;
+      if (!seeded.has('hannah')) {
+        seeded.add('hannah');
+        if (!items.some(a => a.id === HANNAH.id)) {
+          items = [HANNAH].concat(window.clcSlotGridNormalize(items).sort((a, b) => a.pos - b.pos).map((a, i) => Object.assign({}, a, { pos: i + 1 })));
+          changed = true;
+        }
+      }
+      if (!seeded.has('dx04')) {
+        seeded.add('dx04');
+        if (!items.some(a => a.id === DX04.id || /clc-dx04\.pages\.dev\/?$/.test(String(a.url || '')))) {
+          items = window.clcSlotGridNormalize(items);
+          let pos = 0; while (items.some(a => a.pos === pos)) pos++;
+          items = items.concat(Object.assign({}, DX04, { pos }));
+          changed = true;
+        }
+      }
+      return { items, seed: changed || !Array.isArray(d.seeded) || d.seeded.length !== seeded.size, seeded: Array.from(seeded) };
     }
     function seedIfNeeded() {
       if (!needsSeed || seeding || !isSuper()) return;
       seeding = true; persist(apps).catch(err => console.warn('Hannah 預設寫入失敗', err)).finally(() => { seeding = false; });
     }
     if (db) db.collection('linfamily_settings').doc('apps').onSnapshot(snap => {
-      const r = snap.exists ? fromCloud(snap.data()) : { items: [HANNAH], seed: true };
-      apps = r.items; needsSeed = r.seed;
+      const r = fromCloud(snap.exists ? snap.data() : {});
+      apps = r.items; needsSeed = r.seed; seededList = r.seeded;
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(apps)); } catch (_) {}
       slots.render(); renderZone(); seedIfNeeded();
     }, err => console.warn('App 清單讀取失敗（沿用快取）', err));
