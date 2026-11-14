@@ -517,7 +517,13 @@
       const url = safeUrl(app.url); if (!url) return '#';
       if (!isExternal(url)) return url;
       let host = ''; try { host = new URL(url).hostname; } catch (_) {}
-      if (NO_FRAME.test(host)) return url; // 自家網站也走框內，才不會出現瀏覽器那一列
+      if (OWN_HOSTS.includes(host)) { // 自家網站直接開，網站左下角會出現「‹ LinFamily」（DX04 的 lf-back.js）
+        const u = new URL(url), sub = host.match(/^clc-(ya|sr)-portal\.pages\.dev$/);
+        const own = sub ? new URL('https://clc-dx04.pages.dev/' + sub[1] + u.pathname + u.search + u.hash) : u; // YA、SR 走 DX04 底下的 /ya、/sr
+        own.searchParams.set('lfhome', location.href.split('#')[0]);
+        return own.href;
+      }
+      if (NO_FRAME.test(host)) return url;
       return 'open.html?u=' + encodeURIComponent(url) + '&n=' + encodeURIComponent(app.name || '');
     }
     function renderTile(app, editing) {
