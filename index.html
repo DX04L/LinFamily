@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LinFamily">
-  <meta name="theme-color" content="#0E2C4E" id="metaThemeColor">
+  <meta name="theme-color" content="#161716" id="metaThemeColor">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
   <script>
@@ -20,7 +20,7 @@
       var v = null; try { v = localStorage.getItem('linfamily_theme') || localStorage.getItem('linfamily_pixel_theme'); } catch (_) {}
       var dark = v ? v === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.classList.toggle('dark', dark);
-      document.getElementById('metaThemeColor').setAttribute('content', dark ? '#0E2C4E' : '#F4E4C4');
+      document.getElementById('metaThemeColor').setAttribute('content', dark ? '#161716' : '#E6E7E9');
     })();
   </script>
 
@@ -33,17 +33,19 @@
     @font-face { font-family:"CLC Arial"; src:local("Arial"),local("ArialMT"); font-weight:100 549; }
     @font-face { font-family:"CLC Arial"; src:local("Arial Bold"),local("Arial-BoldMT"); font-weight:550 1000; }
 
-    /* 色系：取自海灘配色（深海藍、湖水綠、海霧綠、霧白、沙色） */
+    /* 色系：墨黑 #1C1C1C、松綠 #4E8B7E、鼠尾草綠 #8FBFB0、奶油米 #EADFC8、淺灰 #E6E7E9（底色） */
     :root {
-      --navy:#0E2C4E; --teal:#0FA3B1; --sea:#A8C5BF; --mist:#ECE8E6; --sand:#F4E4C4;
-      --bg:var(--sand); --surface:#FBF6EC; --text:var(--navy); --muted:#4F6B7C;
-      --border:rgba(14,44,78,.14); --btn:rgba(14,44,78,.07); --btn-h:rgba(14,44,78,.13);
-      --shadow:0 18px 40px rgba(14,44,78,.18);
+      --ink:#1C1C1C; --pine:#4E8B7E; --sage:#8FBFB0; --cream:#EADFC8; --cloud:#E6E7E9;
+      --teal:var(--pine);
+      --bg:var(--cloud); --surface:#FFFFFF; --text:var(--ink); --muted:#5E6B67;
+      --border:rgba(28,28,28,.12); --btn:rgba(28,28,28,.06); --btn-h:rgba(28,28,28,.11);
+      --shadow:0 18px 40px rgba(28,28,28,.16);
     }
     html.dark {
-      --bg:var(--navy); --surface:#123660; --text:var(--mist); --muted:var(--sea);
-      --border:rgba(236,232,230,.12); --btn:rgba(255,255,255,.06); --btn-h:rgba(255,255,255,.12);
-      --shadow:0 20px 45px rgba(0,0,0,.45);
+      --teal:var(--sage);
+      --bg:#161716; --surface:#161924; --text:#F1F1EF; --muted:#A8B5B0;
+      --border:rgba(255,255,255,.1); --btn:rgba(255,255,255,.05); --btn-h:rgba(255,255,255,.1);
+      --shadow:0 20px 45px rgba(0,0,0,.55);
       color-scheme:dark;
     }
     * { box-sizing:border-box; }
@@ -57,39 +59,56 @@
     button, input, select { font:inherit; color:inherit; }
     a { color:inherit; }
 
-    /* ---------- 頂部列（不是 DX Header：沒有切站、沒有左右滑） ---------- */
-    .lf-top { display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:calc(10px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+    /* ---------- 頂部（沒有外框；左：日期＋標題，右：照 DX 的安裝與管理員按鈕） ---------- */
+    .lf-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding:calc(16px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
       max-width:1100px; width:100%; margin:0 auto; }
-    .lf-wordmark { height:36px; padding:0 14px; border-radius:10px; background:var(--teal); color:#fff; font-weight:800; font-size:14px;
-      letter-spacing:.05em; display:inline-flex; align-items:center; text-decoration:none; }
-    .lf-btn { width:36px; height:36px; border-radius:10px; border:1px solid var(--border); background:var(--btn); display:inline-flex;
-      align-items:center; justify-content:center; font-size:16px; cursor:pointer; position:relative; transition:background .2s, transform .1s; }
-    .lf-btn:hover { background:var(--btn-h); }
+    .lf-date { margin:0; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.02em; }
+    .lf-title { margin:2px 0 0; font-size:clamp(30px, 8vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
+    .lf-right { display:flex; align-items:center; gap:6px; position:relative; flex:none; }
+    /* 以下尺寸、顏色與 DX 的 Header 按鈕／管理員下拉選單相同 */
+    .lf-btn { width:34px; min-width:34px; height:34px; border-radius:9px; font-size:15px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+      cursor:pointer; position:relative; background:rgba(226,232,240,.7); color:#334155; border:1px solid rgba(203,213,225,.6); transition:background .15s, transform .1s; }
+    .lf-btn:hover { background:rgba(203,213,225,.7); }
     .lf-btn:active { transform:scale(.95); }
-    .lf-dot { position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:#F5B942; }
+    html.dark .lf-btn { background:rgba(255,255,255,.05); color:#cbd5e1; border-color:rgba(255,255,255,.1); }
+    html.dark .lf-btn:hover { background:rgba(255,255,255,.1); }
+    .lf-install { width:auto; padding:0 10px; font-size:12px; font-weight:600; gap:4px; }
+    .lf-install[hidden] { display:none; }
+    .lf-dot { position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:#fbbf24; animation:lfPulse 2s cubic-bezier(.4,0,.6,1) infinite; }
     .lf-dot[hidden] { display:none; }
-    .lf-menu { position:absolute; right:0; top:100%; margin-top:8px; width:220px; padding:7px 0; border-radius:12px; background:var(--surface);
-      border:1px solid var(--border); box-shadow:var(--shadow); z-index:50; }
+    @keyframes lfPulse { 50% { opacity:.5; } }
+    @media (min-width:640px) {
+      .lf-btn { width:36px; min-width:36px; height:36px; border-radius:10px; font-size:16px; }
+      .lf-install { width:auto; height:36px; font-size:13px; padding:0 12px; }
+    }
+    .lf-menu { position:absolute; right:0; top:100%; margin-top:7.5px; width:210px; padding:7.5px 0; border-radius:11.25px; z-index:50; text-align:left;
+      background:#fff; border:1px solid #e2e8f0; box-shadow:0 25px 50px -12px rgba(0,0,0,.25); }
+    html.dark .lf-menu { background:#161924; border-color:rgba(255,255,255,.1); }
     .lf-menu[hidden] { display:none; }
-    .lf-menu .lf-menu-head { padding:6px 15px 8px; font-size:11.5px; font-weight:700; color:var(--muted); border-bottom:1px solid var(--border);
+    .lf-menu .lf-menu-head { padding:7.5px 15px; font-size:11.25px; line-height:15px; font-weight:700; color:#94a3b8; border-bottom:1px solid #f1f5f9;
       overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .lf-menu button { display:block; width:100%; padding:9px 15px; border:0; background:none; text-align:left; font-size:14px; font-weight:600; cursor:pointer; }
-    .lf-menu button:hover { background:var(--btn); }
-    .lf-menu button[hidden], .lf-menu hr[hidden] { display:none; }
-    .lf-menu .lf-danger { color:#E0525E; font-weight:700; }
-    .lf-menu hr { border:0; border-top:1px solid var(--border); margin:5px 0; }
+    html.dark .lf-menu .lf-menu-head { border-bottom-color:rgba(255,255,255,.05); }
+    .lf-menu button { display:block; width:100%; padding:9.375px 15px; border:0; background:none; text-align:left; font-size:13.125px; line-height:18.75px; font-weight:600;
+      color:#334155; cursor:pointer; transition:background .15s; }
+    html.dark .lf-menu button { color:#e2e8f0; }
+    .lf-menu button:hover { background:#f1f5f9; }
+    html.dark .lf-menu button:hover { background:rgba(255,255,255,.05); }
+    @media (min-width:640px) { .lf-menu button { font-size:15px; } }
+    .lf-menu button[hidden] { display:none; }
+    .lf-menu .lf-sep { border-top:1px solid #f1f5f9; margin:5.625px 0; }
+    html.dark .lf-menu .lf-sep { border-top-color:rgba(255,255,255,.05); }
+    .lf-menu .lf-danger { color:#e11d48; font-weight:700; }
+    html.dark .lf-menu .lf-danger { color:#fb7185; }
+    .lf-menu .lf-danger:hover { background:#fff1f2; }
+    html.dark .lf-menu .lf-danger:hover { background:rgba(244,63,94,.1); }
     html.dark .lf-ic-moon, html:not(.dark) .lf-ic-sun { display:none; }
 
     /* ---------- 主畫面 ---------- */
     main { flex:1; width:100%; max-width:1100px; margin:0 auto; padding:18px max(20px, env(safe-area-inset-left)) 40px; }
-    .lf-hello p { margin:0; }
-    .lf-kicker { font-size:12px; font-weight:800; letter-spacing:.3em; text-transform:uppercase; color:var(--teal); }
-    .lf-title { margin:6px 0 2px; font-size:clamp(28px, 7vw, 40px); font-weight:800; letter-spacing:-.02em; }
-    .lf-date { color:var(--muted); font-size:14px; }
-    .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
+    .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0 24px; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
     .lf-tabs button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
-    .lf-tabs button[aria-selected="true"] { background:var(--teal); color:#fff; }
+    .lf-tabs button[aria-selected="true"] { background:var(--pine); color:#fff; }
 
     /* App 格子：手機 4 欄、平板 6 欄、電腦 8 欄 */
     #lfApps { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:22px 16px; max-width:520px; }
@@ -100,7 +119,7 @@
     .lf-icon { width:100%; aspect-ratio:1; border-radius:22%; display:grid; place-items:center; overflow:hidden; transition:transform .2s; }
     .lf-app:hover .lf-icon { transform:scale(1.05); }
     .lf-app:active .lf-icon { transform:scale(.95); }
-    .lf-icon.is-emoji { background:var(--teal); font-size:clamp(26px, 8vw, 38px); }
+    .lf-icon.is-emoji { background:var(--pine); font-size:clamp(26px, 8vw, 38px); }
     .lf-icon.is-fav { background:var(--mist); }
     .lf-icon.is-fav img { width:58%; height:58%; object-fit:contain; }
     .lf-icon.is-img img { width:100%; height:100%; object-fit:cover; }
@@ -125,9 +144,9 @@
     .lf-board svg { display:block; width:100%; min-width:620px; height:auto; }
     .svg-hotspot { cursor:pointer; outline:none; }
     .svg-hotspot .zone-box { transition:fill .2s, stroke .2s; }
-    .svg-hotspot:hover .zone-box, .svg-hotspot:focus-visible .zone-box { fill:#EAF7F8; }
-    .svg-hotspot.is-active .zone-box { fill:#E1F4F6; stroke:#0FA3B1; stroke-width:3; }
-    .svg-hotspot.is-active .zone-pin { fill:#0FA3B1; }
+    .svg-hotspot:hover .zone-box, .svg-hotspot:focus-visible .zone-box { fill:#EEF5F2; }
+    .svg-hotspot.is-active .zone-box { fill:#E3EFEA; stroke:#4E8B7E; stroke-width:3; }
+    .svg-hotspot.is-active .zone-pin { fill:#4E8B7E; }
     .lf-zone { margin-top:16px; padding:18px; border-radius:18px; background:var(--surface); border:1px solid var(--border); }
     .lf-zone h3 { margin:0 0 10px; font-size:16px; }
     .lf-zone ul { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
@@ -149,7 +168,7 @@
     .lf-dialog .lf-note { color:var(--muted); font-size:13px; line-height:1.6; margin:0; }
     .lf-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
     .lf-actions button { height:42px; padding:0 18px; border-radius:12px; font-weight:700; font-size:15px; border:0; cursor:pointer; background:var(--btn); }
-    .lf-actions .lf-primary { background:var(--teal); color:#fff; }
+    .lf-actions .lf-primary { background:var(--pine); color:#fff; }
     .lf-actions .lf-primary:disabled { opacity:.5; }
     .lf-users { list-style:none; margin:0; padding:0; display:grid; gap:8px; max-height:45vh; overflow:auto; }
     .lf-users li { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:12px; background:var(--btn); font-size:13.5px; }
@@ -157,34 +176,30 @@
     .lf-users li button { border:0; background:none; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--teal); padding:4px 6px; }
     .lf-users li button.lf-del { color:#E0525E; }
     .lf-toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:100; padding:10px 18px; border-radius:12px;
-      background:#0B1E33; color:#fff; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+      background:#1C1C1C; color:#fff; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
     footer { text-align:center; font-size:11px; color:var(--muted); padding:14px 0 calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
   </style>
 </head>
 <body>
   <div class="lf-top">
-    <a class="lf-wordmark" href="./" aria-label="LinFamily 主畫面">LinFamily</a>
-    <div style="position:relative">
-      <button type="button" id="lfAuthBtn" class="lf-btn" aria-haspopup="menu" aria-expanded="false" title="登入與設定"><span id="lfAuthIcon">🔐</span><span id="lfAuthDot" class="lf-dot" hidden></span></button>
+    <div>
+      <p class="lf-date" id="lfDate">&nbsp;</p>
+      <h1 class="lf-title">LinFamily APP</h1>
+    </div>
+    <div class="lf-right">
+      <button type="button" id="lfInstallBtn" class="lf-btn lf-install" hidden><span>📲</span><span>安裝</span></button>
+      <button type="button" id="lfAuthBtn" class="lf-btn" title="管理員登入 / 狀態" aria-haspopup="menu" aria-expanded="false"><span id="lfAuthIcon">🔐</span><span id="lfAuthDot" class="lf-dot" hidden></span></button>
       <div id="lfMenu" class="lf-menu" role="menu" hidden>
-        <div id="lfMenuHead" class="lf-menu-head">未登入</div>
-        <button type="button" role="menuitem" data-act="login" id="lfLoginItem">🔐 登入</button>
+        <div id="lfMenuHead" class="lf-menu-head">管理員已登入</div>
         <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>👤 權限管理</button>
-        <button type="button" role="menuitem" data-act="install" id="lfInstallItem">📲 安裝 App</button>
         <button type="button" role="menuitem" data-act="theme"><span class="lf-ic-sun">☀️ 切換淺色</span><span class="lf-ic-moon">🌙 切換深色</span></button>
-        <hr id="lfLogoutSep" hidden>
-        <button type="button" role="menuitem" data-act="logout" id="lfLogoutItem" class="lf-danger" hidden>🚪 登出</button>
+        <div class="lf-sep"></div>
+        <button type="button" role="menuitem" data-act="logout" class="lf-danger">🚪 登出管理員</button>
       </div>
     </div>
   </div>
 
   <main>
-    <section class="lf-hello">
-      <p class="lf-kicker">Lin Family</p>
-      <h1 class="lf-title" id="lfGreeting">Hello</h1>
-      <p class="lf-date" id="lfDate">&nbsp;</p>
-    </section>
-
     <div class="lf-tabs" role="tablist" aria-label="切換">
       <button type="button" role="tab" aria-selected="true" data-tab="apps">主畫面</button>
       <button type="button" role="tab" aria-selected="false" data-tab="family">家庭空間配置</button>
@@ -347,12 +362,12 @@
     }
 
     // ---------- 問候與日期 ----------
-    function hello() {
-      const now = new Date(), h = now.getHours();
-      $('lfGreeting').textContent = h < 5 ? 'Good Night' : h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
-      $('lfDate').textContent = now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    function clock() {
+      const now = new Date();
+      $('lfDate').textContent = now.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' }) + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     }
-    hello(); setInterval(hello, 60000);
+    clock(); setInterval(clock, 15000);
 
     // ---------- 登入與權限 ----------
     let user = null, role = '', roleUnsub = null, slots = null;
@@ -363,10 +378,9 @@
       window.isSuperuser = role === 'superuser';
       $('lfAuthIcon').textContent = role === 'viewer' ? '👁️' : role ? '👑' : '🔐';
       $('lfAuthDot').hidden = !role;
-      $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : 'Viewer（唯讀）'}` : '未登入';
-      $('lfLoginItem').hidden = !!role;
+      $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
-      $('lfLogoutItem').hidden = !role; $('lfLogoutSep').hidden = !role;
+      if (!role) setMenu(false);
       $('lfHint').hidden = !isSuper();
       if (slots) { slots.render(); if (isSuper()) seedIfNeeded(); }
     }
@@ -400,22 +414,20 @@
     // ---------- 皇冠選單 ----------
     const menu = $('lfMenu'), authBtn = $('lfAuthBtn');
     function setMenu(open) { menu.hidden = !open; authBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
-    authBtn.addEventListener('click', () => setMenu(menu.hidden));
+    authBtn.addEventListener('click', () => { if (!role) login(); else setMenu(menu.hidden); });
     document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && !authBtn.contains(e.target)) setMenu(false); });
     menu.addEventListener('click', async e => {
       const b = e.target.closest('button[data-act]'); if (!b) return;
       const act = b.dataset.act;
       if (act !== 'theme') setMenu(false);
-      if (act === 'login') login();
-      else if (act === 'logout') { if (confirm('確定要登出嗎？')) { await auth.signOut(); toast('已登出'); } }
+      if (act === 'logout') { if (confirm('確定要登出管理員身分嗎？')) { await auth.signOut(); toast('已登出'); } }
       else if (act === 'theme') toggleTheme();
-      else if (act === 'install') install();
       else if (act === 'users') openUsers();
     });
     function toggleTheme() {
       const dark = !document.documentElement.classList.contains('dark');
       document.documentElement.classList.toggle('dark', dark);
-      $('metaThemeColor').setAttribute('content', dark ? '#0E2C4E' : '#F4E4C4');
+      $('metaThemeColor').setAttribute('content', dark ? '#161716' : '#E6E7E9');
       try { localStorage.setItem('linfamily_theme', dark ? 'dark' : 'light'); } catch (_) {}
     }
 
@@ -423,8 +435,11 @@
     let deferredPrompt = null;
     const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
-    window.addEventListener('appinstalled', () => { deferredPrompt = null; $('lfInstallItem').hidden = true; toast('已安裝'); });
-    if (standalone()) $('lfInstallItem').hidden = true;
+    window.addEventListener('appinstalled', () => { deferredPrompt = null; $('lfInstallBtn').hidden = true; try { localStorage.setItem('linfamily_installed', '1'); } catch (_) {} toast('已安裝'); });
+    let installedBefore = false; try { installedBefore = localStorage.getItem('linfamily_installed') === '1'; } catch (_) {}
+    if (standalone()) { try { localStorage.setItem('linfamily_installed', '1'); } catch (_) {} }
+    $('lfInstallBtn').hidden = standalone() || installedBefore;
+    $('lfInstallBtn').addEventListener('click', install);
     async function install() {
       if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; return; }
       const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);

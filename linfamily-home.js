@@ -13,7 +13,7 @@
     a.id = 'lfHomeBtn'; a.href = home; a.setAttribute('aria-label', '回 LinFamily 主畫面'); a.textContent = '⌂';
     a.style.cssText = 'position:fixed;left:max(14px,env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));z-index:2147483000;' +
       'width:44px;height:44px;border-radius:50%;display:grid;place-items:center;text-decoration:none;font:700 22px/1 Arial,sans-serif;' +
-      'background:#0E2C4E;color:#F4E4C4;box-shadow:0 6px 18px rgba(0,0,0,.3);opacity:.92;-webkit-tap-highlight-color:transparent;';
+      'background:#1C1C1C;color:#EADFC8;box-shadow:0 6px 18px rgba(0,0,0,.3);opacity:.92;-webkit-tap-highlight-color:transparent;';
     document.body.appendChild(a);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
