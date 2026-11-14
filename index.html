@@ -1688,4 +1688,969 @@
           });
         });
 
-        // 監聽雲端 App 清單（跨裝置即時
+        // 監聽雲端 App 清單（跨裝置即時同步）
+        db.collection('linfamily_settings').doc('apps').onSnapshot(snap => {
+          if (snap.exists && Array.isArray(snap.data().items)) {
+            apps = snap.data().items;
+            saveLocalApps();
+            renderGrid();
+          }
+        }, err => {
+          console.warn('讀取雲端清單失敗（沿用本機快取）：', err);
+        });
+      }
+
+      async function triggerGoogleSignIn() {
+        if (!isFirebaseConfigured || !auth) return false;
+        const provider = new firebase.auth.GoogleAuthProvider();
+        try {
+          const result = await auth.signInWithPopup(provider);
+          const email = result.user.email.toLowerCase().trim();
+          if (SUPERUSERS.includes(email)) {
+            session = { email, loginAt: Date.now() };
+            syncAuthUI();
+            closeModal('adminModal');
+            showSnackbar(`歡迎回來，Superuser（${email}）`);
+            return true;
+          }
+          const snap = await db.collection('admin_users').doc(email).get();
+          const data = snap.exists ? snap.data() : null;
+          if (data && (data.role === 'admin' || data.role === 'viewer') && data.active !== false) {
+            session = { email, loginAt: Date.now() };
+            syncAuthUI();
+            closeModal('adminModal');
+            showSnackbar(`已登入：${email}（${data.role.toUpperCase()}）`);
+            return true;
+          }
+          await auth.signOut();
+          showSnackbar(`帳號【${email}】尚未加入授權名單`);
+          return false;
+        } catch (err) {
+          if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err?.code)) {
+            showSnackbar('Google 登入失敗：' + err.message);
+          }
+          return false;
+        }
+      }
+
+      /* =====================================================================
+         6. Snackbar 通知與 Pixel At a Glance 日期時間
+      ===================================================================== */
+      let snackTimer = null;
+      function showSnackbar(msg) {
+        const el = document.getElementById('snackbar');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(snackTimer);
+        snackTimer = setTimeout(() => el.classList.remove('show'), 2800);
+      }
+
+      function updateAtAGlance() {
+        const now = new Date();
+        const fmt = new Intl.DateTimeFormat('zh-TW', {
+          month: 'long', day: 'numeric', weekday: 'long',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        });
+        document.getElementById('glanceDateText').textContent = fmt.format(now);
+        document.getElementById('glanceCountBadge').textContent = `${apps.length} 個家庭服務`;
+      }
+      updateAtAGlance();
+      setInterval(updateAtAGlance, 15000);
+
+      /* =====================================================================
+         7. 明暗模式切換 (黑白雙色)
+      ===================================================================== */
+      function syncThemeIcons() {
+        const isDark = document.documentElement.classList.contains('dark');
+        document.getElementById('iconSun').style.display = isDark ? 'block' : 'none';
+        document.getElementById('iconMoon').style.display = isDark ? 'none' : 'block';
+        const meta = document.getElementById('metaThemeColor');
+        if (meta) meta.setAttribute('content', isDark ? '#0E0E0E' : '#F8F9FA');
+      }
+      function toggleThemeMode() {
+        const isDark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('linfamily_pixel_theme', isDark ? 'dark' : 'light'); } catch (_) {}
+        syncThemeIcons();
+      }
+      syncThemeIcons();
+      document.getElementById('themeBtn').addEventListener('click', toggleThemeMode);
+
+      /* =====================================================================
+         8. 網址解析與原生 Pixel 圓形圖示渲染
+      ===================================================================== */
+      function normalizeUrl(raw) {
+        let v = String(raw || '').trim();
+        if (!v) return '';
+        if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+        try {
+          const u = new URL(v);
+          return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function deriveAppMetaFromUrl(urlStr) {
+        try {
+          const u = new URL(urlStr);
+          const host = u.hostname.replace(/^www\./i, '');
+          const base = host.split('.')[0] || 'App';
+          const titleName = base.charAt(0).toUpperCase() + base.slice(1);
+          const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(u.hostname)}&sz=128`;
+          return { name: titleName, faviconUrl };
+        } catch (_) {
+          return { name: '新捷徑', faviconUrl: '' };
+        }
+      }
+
+      function renderPixelIconContent(app, containerEl) {
+        const preset = MATERIAL_ICONS[app.preset] || MATERIAL_ICONS.link;
+        if (app.iconUrl) {
+          const img = document.createElement('img');
+          img.src = app.iconUrl;
+          img.alt = '';
+          img.onerror = () => { containerEl.innerHTML = preset.svg; };
+          containerEl.appendChild(img);
+          return;
+        }
+        containerEl.innerHTML = preset.svg;
+      }
+
+      /* =====================================================================
+         9. Pixel 主畫面圓形網格渲染 + 長按編輯 + 拖曳排列
+      ===================================================================== */
+      const pixelGrid = document.getElementById('pixelGrid');
+      const pixelEditBar = document.getElementById('pixelEditBar');
+
+      function setEditMode(active) {
+        if (active && !canEditApps()) {
+          showSnackbar('請先從右上角登入管理員帳號');
+          return;
+        }
+        isEditing = !!active;
+        pixelEditBar.hidden = !isEditing;
+        if (isEditing && navigator.vibrate) navigator.vibrate(18);
+        renderGrid();
+      }
+      document.getElementById('doneEditBtn').addEventListener('click', () => setEditMode(false));
+
+      function getFilteredApps() {
+        const q = searchQuery.trim().toLowerCase();
+        return apps.filter(app => {
+          const tabMatch = activeTab === 'apps' ? true : app.category === 'family';
+          if (!tabMatch) return false;
+          if (!q) return true;
+          return app.name.toLowerCase().includes(q) ||
+                 app.url.toLowerCase().includes(q) ||
+                 (app.rolePrimary || '').toLowerCase().includes(q);
+        });
+      }
+
+      function renderGrid() {
+        const editable = canEditApps();
+        if (!editable) isEditing = false;
+        pixelEditBar.hidden = !isEditing;
+        updateAtAGlance();
+
+        const list = getFilteredApps();
+        pixelGrid.replaceChildren();
+
+        list.forEach(app => {
+          const cell = document.createElement('div');
+          cell.className = 'pixel-cell';
+          cell.setAttribute('role', 'listitem');
+          cell.dataset.appId = app.id;
+          if (editable) cell.draggable = true;
+
+          // 編輯模式右上角 Material 紅色移除鈕
+          if (isEditing) {
+            const rm = document.createElement('button');
+            rm.type = 'button';
+            rm.className = 'pixel-remove-btn';
+            rm.setAttribute('aria-label', `移除 ${app.name}`);
+            rm.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+            rm.addEventListener('click', e => {
+              e.stopPropagation();
+              deleteAppById(app.id);
+            });
+            cell.appendChild(rm);
+          }
+
+          // 原生 Pixel 圓形圖示按鈕
+          const circle = document.createElement('a');
+          circle.className = 'pixel-circle-icon ripple-host' + (app.themedInvert && !app.iconUrl ? ' themed-invert' : '');
+          circle.href = app.url;
+          circle.setAttribute('aria-label', app.name);
+          renderPixelIconContent(app, circle);
+
+          circle.addEventListener('click', e => {
+            if (suppressNextClick) {
+              e.preventDefault();
+              suppressNextClick = false;
+              return;
+            }
+            if (isEditing) {
+              e.preventDefault();
+              openEditModal(app.id);
+              return;
+            }
+            if (activeTab === 'family') {
+              e.preventDefault();
+              openDetailModal(app.id, 'primary');
+              return;
+            }
+            // 直接換頁開啟（同視窗跳轉，不在 header 底下開 iframe）
+            e.preventDefault();
+            window.location.assign(app.url);
+          });
+
+          const label = document.createElement('span');
+          label.className = 'pixel-app-label';
+          label.textContent = app.name;
+
+          cell.append(circle, label);
+          pixelGrid.appendChild(cell);
+        });
+
+        // 保留「＋ 新增捷徑」圓形槽位
+        const addCell = document.createElement('div');
+        addCell.className = 'pixel-cell is-add-slot';
+        addCell.setAttribute('role', 'listitem');
+
+        const addCircle = document.createElement('button');
+        addCircle.type = 'button';
+        addCircle.className = 'pixel-add-circle ripple-host';
+        addCircle.setAttribute('aria-label', '新增 App 捷徑');
+        addCircle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+        addCircle.addEventListener('click', () => {
+          if (!canEditApps()) {
+            openAdminModal();
+            showSnackbar('請先登入管理員權限以新增 App');
+            return;
+          }
+          openAddModal();
+        });
+
+        const addLabel = document.createElement('span');
+        addLabel.className = 'pixel-app-label';
+        addLabel.textContent = '新增捷徑';
+
+        addCell.append(addCircle, addLabel);
+        pixelGrid.appendChild(addCell);
+      }
+
+      /* =====================================================================
+         10. 長按進入編輯 + 觸控/滑鼠自由拖曳移動順序
+      ===================================================================== */
+      let pressTimer = null;
+      let pressStart = null;
+      let suppressNextClick = false;
+      let dragSourceId = null;
+
+      pixelGrid.addEventListener('pointerdown', e => {
+        const cell = e.target.closest('.pixel-cell:not(.is-add-slot)');
+        if (!cell || e.target.closest('.pixel-remove-btn')) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+        cell.classList.add('is-pressing');
+        pressStart = { x: e.clientX, y: e.clientY, cell };
+
+        if (!isEditing) {
+          pressTimer = setTimeout(() => {
+            cell.classList.remove('is-pressing');
+            suppressNextClick = true;
+            setEditMode(true);
+          }, 500);
+        }
+      });
+
+      pixelGrid.addEventListener('pointermove', e => {
+        if (!pressStart) return;
+        if (Math.hypot(e.clientX - pressStart.x, e.clientY - pressStart.y) > 10) {
+          clearTimeout(pressTimer);
+          pressStart.cell.classList.remove('is-pressing');
+          pressStart = null;
+        }
+      });
+
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(evName => {
+        pixelGrid.addEventListener(evName, () => {
+          clearTimeout(pressTimer);
+          if (pressStart) {
+            pressStart.cell.classList.remove('is-pressing');
+            pressStart = null;
+          }
+        });
+      });
+
+      pixelGrid.addEventListener('contextmenu', e => {
+        if (e.target.closest('.pixel-cell')) e.preventDefault();
+      });
+
+      pixelGrid.addEventListener('dragstart', e => {
+        const cell = e.target.closest('.pixel-cell:not(.is-add-slot)');
+        if (!cell || !canEditApps()) { e.preventDefault(); return; }
+        dragSourceId = cell.dataset.appId;
+        cell.classList.add('reorder-source');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragSourceId);
+      });
+
+      pixelGrid.addEventListener('dragover', e => {
+        if (!dragSourceId) return;
+        e.preventDefault();
+        const target = e.target.closest('.pixel-cell:not(.is-add-slot)');
+        pixelGrid.querySelectorAll('.reorder-target').forEach(el => el.classList.remove('reorder-target'));
+        if (target && target.dataset.appId !== dragSourceId) {
+          target.classList.add('reorder-target');
+        }
+      });
+
+      pixelGrid.addEventListener('drop', e => {
+        if (!dragSourceId) return;
+        e.preventDefault();
+        const target = e.target.closest('.pixel-cell:not(.is-add-slot)');
+        pixelGrid.querySelectorAll('.reorder-target, .reorder-source').forEach(el => el.classList.remove('reorder-target', 'reorder-source'));
+        if (target && target.dataset.appId && target.dataset.appId !== dragSourceId) {
+          reorderApps(dragSourceId, target.dataset.appId);
+        }
+        dragSourceId = null;
+      });
+
+      pixelGrid.addEventListener('dragend', () => {
+        dragSourceId = null;
+        pixelGrid.querySelectorAll('.reorder-target, .reorder-source').forEach(el => el.classList.remove('reorder-target', 'reorder-source'));
+      });
+
+      // 手機觸控長按後直接拖曳排序
+      let touchDragId = null;
+      pixelGrid.addEventListener('touchmove', e => {
+        if (!isEditing || !canEditApps()) return;
+        const touch = e.touches[0];
+        if (!touch) return;
+        if (!touchDragId) {
+          const startCell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pixel-cell:not(.is-add-slot)');
+          if (startCell) {
+            touchDragId = startCell.dataset.appId;
+            startCell.classList.add('reorder-source');
+          }
+        }
+        if (touchDragId) {
+          e.preventDefault();
+          const overCell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pixel-cell:not(.is-add-slot)');
+          pixelGrid.querySelectorAll('.reorder-target').forEach(el => el.classList.remove('reorder-target'));
+          if (overCell && overCell.dataset.appId !== touchDragId) {
+            overCell.classList.add('reorder-target');
+          }
+        }
+      }, { passive: false });
+
+      pixelGrid.addEventListener('touchend', () => {
+        if (!touchDragId) return;
+        const target = pixelGrid.querySelector('.reorder-target');
+        const targetId = target ? target.dataset.appId : null;
+        pixelGrid.querySelectorAll('.reorder-target, .reorder-source').forEach(el => el.classList.remove('reorder-target', 'reorder-source'));
+        if (targetId && targetId !== touchDragId) {
+          reorderApps(touchDragId, targetId);
+        }
+        touchDragId = null;
+      });
+
+      async function reorderApps(fromId, toId) {
+        const fromIdx = apps.findIndex(a => a.id === fromId);
+        const toIdx = apps.findIndex(a => a.id === toId);
+        if (fromIdx < 0 || toIdx < 0) return;
+        const [moved] = apps.splice(fromIdx, 1);
+        apps.splice(toIdx, 0, moved);
+        renderGrid();
+        await persistApps();
+      }
+
+      /* =====================================================================
+         11. Android 15/16 應用程式抽屜 (App Drawer Bottom Sheet)
+      ===================================================================== */
+      const appDrawerBackdrop = document.getElementById('appDrawerBackdrop');
+      const drawerList = document.getElementById('drawerList');
+      const drawerSearchInput = document.getElementById('drawerSearchInput');
+
+      function openAppDrawer() {
+        drawerSearchInput.value = '';
+        renderDrawerList('');
+        appDrawerBackdrop.classList.add('is-open');
+      }
+      function closeAppDrawer() {
+        appDrawerBackdrop.classList.remove('is-open');
+      }
+
+      function renderDrawerList(filterStr) {
+        const q = String(filterStr || '').trim().toLowerCase();
+        const sorted = [...apps]
+          .filter(a => !q || a.name.toLowerCase().includes(q) || a.url.toLowerCase().includes(q))
+          .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+
+        drawerList.replaceChildren();
+        sorted.forEach(app => {
+          const row = document.createElement('a');
+          row.className = 'drawer-row ripple-host';
+          row.href = app.url;
+
+          const left = document.createElement('div');
+          left.className = 'drawer-row-left';
+
+          const miniCircle = document.createElement('div');
+          miniCircle.className = 'drawer-mini-circle';
+          renderPixelIconContent(app, miniCircle);
+
+          const info = document.createElement('div');
+          info.style.minWidth = '0';
+          info.innerHTML = `
+            <div style="font-weight:700;font-size:0.95rem;">${app.name}</div>
+            <div style="font-size:0.78rem;color:var(--md-on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${app.url}</div>
+          `;
+
+          left.append(miniCircle, info);
+          row.appendChild(left);
+
+          row.addEventListener('click', e => {
+            e.preventDefault();
+            window.location.assign(app.url);
+          });
+
+          drawerList.appendChild(row);
+        });
+      }
+
+      document.getElementById('openDrawerBtn').addEventListener('click', openAppDrawer);
+      document.getElementById('closeDrawerBtn').addEventListener('click', closeAppDrawer);
+      appDrawerBackdrop.addEventListener('click', e => {
+        if (e.target === appDrawerBackdrop) closeAppDrawer();
+      });
+      drawerSearchInput.addEventListener('input', () => renderDrawerList(drawerSearchInput.value));
+
+      /* =====================================================================
+         12. 新增 / 編輯 / 刪除 App
+      ===================================================================== */
+      function openModal(id) { document.getElementById(id).classList.add('is-open'); }
+      function closeModal(id) { document.getElementById(id).classList.remove('is-open'); }
+
+      document.querySelectorAll('[data-close-modal]').forEach(btn => {
+        btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
+      });
+      document.querySelectorAll('.modal-backdrop').forEach(bg => {
+        bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('is-open'); });
+      });
+
+      function openAddModal() {
+        document.getElementById('addUrlInput').value = '';
+        document.getElementById('addNameInput').value = '';
+        document.getElementById('addCategorySelect').value = activeTab === 'family' ? 'family' : 'apps';
+        openModal('addAppModal');
+        setTimeout(() => document.getElementById('addUrlInput').focus(), 60);
+      }
+
+      document.getElementById('fabAddAppBtn').addEventListener('click', () => {
+        if (!canEditApps()) {
+          openAdminModal();
+          showSnackbar('請先登入管理員權限以新增 App');
+          return;
+        }
+        openAddModal();
+      });
+
+      document.getElementById('addAppForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!canEditApps()) return;
+        const url = normalizeUrl(document.getElementById('addUrlInput').value);
+        if (!url) {
+          showSnackbar('請輸入有效的網址（例如 https://...）');
+          return;
+        }
+        const meta = deriveAppMetaFromUrl(url);
+        const customName = document.getElementById('addNameInput').value.trim();
+        const category = document.getElementById('addCategorySelect').value;
+
+        const newApp = {
+          id: 'app-' + Date.now().toString(36),
+          name: customName || meta.name,
+          url,
+          preset: 'link',
+          iconUrl: meta.faviconUrl,
+          themedInvert: false,
+          category,
+          zoneId: category === 'family' ? 'zone-life' : 'zone-cloud',
+          rolePrimary: `自訂捷徑：直接開啟 ${url}`,
+          roleSecondary: '空間節點：已同步至 LinFamily APP 主畫面'
+        };
+        apps.push(newApp);
+        closeModal('addAppModal');
+        renderGrid();
+        await persistApps();
+        showSnackbar(`已加入「${newApp.name}」至主畫面`);
+      });
+
+      function renderPresetPicker(currentKey) {
+        const container = document.getElementById('presetPicker');
+        container.replaceChildren();
+        Object.entries(MATERIAL_ICONS).forEach(([key, item]) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'icon-choice' + (key === currentKey ? ' selected' : '');
+          btn.title = item.label;
+          btn.innerHTML = item.svg;
+          btn.addEventListener('click', () => {
+            selectedPreset = key;
+            document.getElementById('editIconUrlInput').value = '';
+            renderPresetPicker(key);
+          });
+          container.appendChild(btn);
+        });
+      }
+
+      function openEditModal(appId) {
+        const app = apps.find(a => a.id === appId);
+        if (!app) return;
+        editingAppId = appId;
+        selectedPreset = app.preset || 'link';
+        document.getElementById('editNameInput').value = app.name;
+        document.getElementById('editUrlInput').value = app.url;
+        document.getElementById('editIconUrlInput').value = app.iconUrl || '';
+        renderPresetPicker(selectedPreset);
+        openModal('editAppModal');
+      }
+
+      document.getElementById('editAppForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!canEditApps() || !editingAppId) return;
+        const app = apps.find(a => a.id === editingAppId);
+        if (!app) return;
+        const name = document.getElementById('editNameInput').value.trim();
+        const url = normalizeUrl(document.getElementById('editUrlInput').value);
+        const iconRaw = document.getElementById('editIconUrlInput').value.trim();
+        if (!name || !url) {
+          showSnackbar('請確認名稱與網址格式正確');
+          return;
+        }
+        app.name = name;
+        app.url = url;
+        app.preset = selectedPreset;
+        app.iconUrl = iconRaw ? normalizeUrl(iconRaw) : '';
+        closeModal('editAppModal');
+        renderGrid();
+        await persistApps();
+        showSnackbar('已儲存變更');
+      });
+
+      async function deleteAppById(appId) {
+        const app = apps.find(a => a.id === appId);
+        if (!app) return;
+        apps = apps.filter(a => a.id !== appId);
+        closeModal('editAppModal');
+        renderGrid();
+        await persistApps();
+        showSnackbar(`已移除「${app.name}」`);
+      }
+
+      document.getElementById('editDeleteBtn').addEventListener('click', () => {
+        if (editingAppId) deleteAppById(editingAppId);
+      });
+
+      /* =====================================================================
+         13. 雙向互動平面圖 + 多重職責一鍵切換膠囊按鈕
+      ===================================================================== */
+      function openDetailModal(appId, roleMode = 'primary') {
+        const app = apps.find(a => a.id === appId);
+        if (!app) return;
+
+        document.querySelectorAll('.svg-hotspot').forEach(el => {
+          el.classList.toggle('is-highlighted', el.dataset.zoneId === app.zoneId);
+        });
+
+        document.getElementById('detailModalTitle').textContent = app.name;
+        const body = document.getElementById('detailModalBody');
+
+        const isPrimary = roleMode === 'primary';
+        const currentRoleText = isPrimary
+          ? (app.rolePrimary || `主要服務連結：${app.url}`)
+          : (app.roleSecondary || '空間設備節點：已綁定家庭區域動線');
+        const switchLabel = isPrimary ? '一鍵切換查看：空間設備職責' : '一鍵切換查看：生活紀錄職責';
+
+        const boardClone = document.getElementById('floorplanBoard').cloneNode(true);
+        boardClone.removeAttribute('id');
+        boardClone.querySelectorAll('.svg-hotspot').forEach(el => {
+          el.classList.toggle('is-highlighted', el.dataset.zoneId === app.zoneId);
+        });
+
+        body.innerHTML = `
+          <button type="button" id="switchRoleCapsule" class="role-capsule-btn ripple-host">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+            <span>${switchLabel}</span>
+          </button>
+          <div style="padding:14px 16px;border-radius:18px;background:var(--md-surface-container);line-height:1.6;font-size:0.94rem;">
+            <div style="font-size:0.78rem;font-weight:700;margin-bottom:4px;">
+              ${isPrimary ? '當前檢視：生活紀錄職責' : '當前檢視：空間設備職責'}
+            </div>
+            <div>${currentRoleText}</div>
+          </div>
+          <div id="modalMapSlot"></div>
+          <div class="btn-actions">
+            <button type="button" class="m3-btn-tonal" data-close-inner="1">返回</button>
+            <a href="${app.url}" class="m3-btn-filled ripple-host" style="display:inline-flex;align-items:center;text-decoration:none;">開啟 App →</a>
+          </div>
+        `;
+        body.querySelector('#modalMapSlot').appendChild(boardClone);
+        body.querySelector('#switchRoleCapsule').addEventListener('click', () => {
+          openDetailModal(appId, isPrimary ? 'secondary' : 'primary');
+        });
+        body.querySelector('[data-close-inner]').addEventListener('click', () => closeModal('detailModal'));
+        openModal('detailModal');
+      }
+
+      document.querySelectorAll('.svg-hotspot').forEach(hotspot => {
+        const trigger = () => {
+          const zoneId = hotspot.dataset.zoneId;
+          const matched = apps.find(a => a.zoneId === zoneId) || apps[0];
+          if (matched) openDetailModal(matched.id, 'secondary');
+        };
+        hotspot.addEventListener('click', trigger);
+        hotspot.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger(); }
+        });
+      });
+
+      /* =====================================================================
+         14. 分頁切換與 Pixel 底部搜尋欄即時過濾
+      ===================================================================== */
+      function switchTab(tab) {
+        activeTab = tab;
+        document.querySelectorAll('.m3-seg-btn').forEach(btn => {
+          const on = btn.dataset.tab === tab;
+          btn.classList.toggle('active', on);
+          btn.setAttribute('aria-selected', String(on));
+        });
+        document.getElementById('diagramSection').hidden = (tab !== 'family');
+        renderGrid();
+      }
+
+      document.querySelectorAll('.m3-seg-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      document.getElementById('homeWordmarkBtn').addEventListener('click', e => {
+        e.preventDefault();
+        switchTab('apps');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      const pixelSearchInput = document.getElementById('pixelSearchInput');
+      pixelSearchInput.addEventListener('input', () => {
+        searchQuery = pixelSearchInput.value;
+        renderGrid();
+      });
+
+      /* =====================================================================
+         15. 右上角登入與後台權限管理（支援 Firebase Auth & Firestore 同步）
+      ===================================================================== */
+      const authBtn = document.getElementById('authBtn');
+      const adminPopover = document.getElementById('adminPopover');
+
+      function syncAuthUI() {
+        const loggedIn = !!session;
+        const role = loggedIn ? getRoleForEmail(session.email) : null;
+        document.getElementById('authIconLock').hidden = loggedIn;
+        document.getElementById('authIconShield').hidden = !loggedIn;
+        document.getElementById('authStatusDot').hidden = !loggedIn;
+        document.getElementById('authStatusDot').classList.toggle('is-viewer', role === 'viewer');
+        document.getElementById('authBtnLabel').textContent = loggedIn
+          ? (role === 'superuser' ? 'Superuser' : (role === 'admin' ? 'Admin' : 'Viewer'))
+          : '登入';
+
+        document.getElementById('popEmail').textContent = loggedIn ? session.email : '未登入';
+        document.getElementById('popRole').textContent = loggedIn
+          ? (role === 'superuser' ? '最高管理員（可增減 App 與管理權限）' :
+             role === 'admin' ? '管理員（可增減與移動 App）' : '檢視者（唯讀瀏覽）')
+          : '訪客模式';
+
+        document.getElementById('popAddAppBtn').hidden = !canEditApps();
+        document.getElementById('popEditModeBtn').hidden = !canEditApps();
+        renderGrid();
+      }
+
+      authBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!session) {
+          if (isFirebaseConfigured) {
+            triggerGoogleSignIn();
+          } else {
+            openAdminModal();
+          }
+          return;
+        }
+        adminPopover.hidden = !adminPopover.hidden;
+      });
+
+      document.addEventListener('click', e => {
+        if (!adminPopover.hidden && !adminPopover.contains(e.target) && !authBtn.contains(e.target)) {
+          adminPopover.hidden = true;
+        }
+      });
+
+      document.getElementById('popAddAppBtn').addEventListener('click', () => {
+        adminPopover.hidden = true;
+        openAddModal();
+      });
+      document.getElementById('popEditModeBtn').addEventListener('click', () => {
+        adminPopover.hidden = true;
+        setEditMode(!isEditing);
+      });
+      document.getElementById('popUsersBtn').addEventListener('click', () => {
+        adminPopover.hidden = true;
+        openAdminModal();
+      });
+      document.getElementById('popLogoutBtn').addEventListener('click', async () => {
+        adminPopover.hidden = true;
+        if (isFirebaseConfigured && auth) {
+          await auth.signOut().catch(() => {});
+        }
+        session = null;
+        saveLocalSession();
+        setEditMode(false);
+        syncAuthUI();
+        showSnackbar('已登出管理員帳號');
+      });
+
+      async function openAdminModal() {
+        const body = document.getElementById('adminModalBody');
+        const currentRole = session ? getRoleForEmail(session.email) : null;
+
+        if (!session || !currentRole) {
+          body.innerHTML = `
+            <p style="margin:0;font-size:0.9rem;color:var(--md-on-surface-variant);line-height:1.6;">
+              ${isFirebaseConfigured
+                ? '點擊下方按鈕使用已授權的 Google 帳號登入，登入後即可跨裝置管理主畫面捷徑與成員權限。'
+                : '尚未填入 Firebase 金鑰（目前為本機展示模式）。請在 index.html 頂部填入 firebaseConfig 後即可啟用 Google 登入與雲端同步。'}
+            </p>
+            ${isFirebaseConfigured ? `
+              <div class="btn-actions">
+                <button type="button" class="m3-btn-tonal" data-close-admin="1">取消</button>
+                <button type="button" id="googleSignInModalBtn" class="m3-btn-filled ripple-host">使用 Google 帳號登入</button>
+              </div>
+            ` : `
+              <form id="loginForm" style="display:flex;flex-direction:column;gap:14px;">
+                <div class="m3-field">
+                  <label class="m3-label" for="loginEmailInput">本機測試管理員 Email</label>
+                  <input type="email" id="loginEmailInput" class="m3-input" value="darren710404@gmail.com" required>
+                </div>
+                <div class="btn-actions">
+                  <button type="button" class="m3-btn-tonal" data-close-admin="1">取消</button>
+                  <button type="submit" class="m3-btn-filled ripple-host">本機模擬登入</button>
+                </div>
+              </form>
+            `}
+          `;
+          body.querySelector('[data-close-admin]')?.addEventListener('click', () => closeModal('adminModal'));
+          body.querySelector('#googleSignInModalBtn')?.addEventListener('click', () => triggerGoogleSignIn());
+          body.querySelector('#loginForm')?.addEventListener('submit', e => {
+            e.preventDefault();
+            const email = body.querySelector('#loginEmailInput').value.trim().toLowerCase();
+            const role = getRoleForEmail(email);
+            if (!role) {
+              showSnackbar('此 Email 尚未加入授權名單');
+              return;
+            }
+            session = { email, loginAt: Date.now() };
+            saveLocalSession();
+            syncAuthUI();
+            closeModal('adminModal');
+            showSnackbar(`已登入：${email}（${role.toUpperCase()}）`);
+          });
+          openModal('adminModal');
+          return;
+        }
+
+        // 若已連接 Firebase，從 Firestore 讀取最新 admin_users 名單
+        if (isFirebaseConfigured && db) {
+          try {
+            const snap = await db.collection('admin_users').get();
+            adminUsers = snap.docs.map(d => ({
+              email: d.id.toLowerCase(),
+              role: d.data().role === 'viewer' ? 'viewer' : 'admin',
+              active: d.data().active !== false
+            }));
+          } catch (err) {
+            console.warn('讀取 admin_users 失敗：', err);
+          }
+        }
+
+        const editable = canEditApps();
+        const rows = [
+          ...SUPERUSERS.map(email => ({ email, role: 'superuser', active: true, locked: true })),
+          ...adminUsers.filter(u => !SUPERUSERS.includes(u.email.toLowerCase()))
+        ];
+
+        body.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-radius:18px;background:var(--md-surface-container);">
+            <div>
+              <div style="font-weight:700;font-size:0.92rem;">${session.email}</div>
+              <div style="font-size:0.78rem;color:var(--md-on-surface-variant);font-weight:600;">目前身分：${currentRole.toUpperCase()}</div>
+            </div>
+            <button type="button" id="modalLogoutBtn" class="m3-btn-danger">登出</button>
+          </div>
+
+          ${editable ? `
+          <form id="addAdminUserForm" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+            <div class="m3-field" style="flex:1 1 200px;">
+              <label class="m3-label" for="newAdminEmail">新增授權成員 Google Email</label>
+              <input type="email" id="newAdminEmail" class="m3-input" placeholder="member@gmail.com" required>
+            </div>
+            <div class="m3-field" style="flex:0 0 135px;">
+              <label class="m3-label" for="newAdminRole">權限等級</label>
+              <select id="newAdminRole" class="m3-select">
+                <option value="admin">Admin（可編輯）</option>
+                <option value="viewer">Viewer（唯讀）</option>
+              </select>
+            </div>
+            <button type="submit" class="m3-btn-filled ripple-host" style="height:46px;">新增</button>
+          </form>` : `<p style="margin:0;font-size:0.84rem;color:var(--md-on-surface-variant);">目前為 Viewer 唯讀權限，僅可檢視成員名單。</p>`}
+
+          <div style="display:flex;flex-direction:column;gap:8px;" id="adminUsersList"></div>
+        `;
+
+        const listEl = body.querySelector('#adminUsersList');
+        rows.forEach(u => {
+          const card = document.createElement('div');
+          card.className = 'member-card';
+          const roleText = u.locked
+            ? 'Superuser · 永久最高權限'
+            : `${u.role === 'viewer' ? 'Viewer（唯讀）' : 'Admin（可編輯）'} · ${u.active !== false ? '已啟用' : '已停用'}`;
+
+          card.innerHTML = `
+            <div>
+              <div class="member-email">${u.email}</div>
+              <div class="member-meta">${roleText}</div>
+            </div>
+            ${(!u.locked && editable) ? `
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <button type="button" class="mini-pill" data-toggle-role="${u.email}">${u.role === 'viewer' ? '升為 Admin' : '改為 Viewer'}</button>
+              <button type="button" class="mini-pill" data-toggle-active="${u.email}">${u.active !== false ? '停用' : '啟用'}</button>
+              <button type="button" class="mini-pill" style="color:var(--md-danger);" data-del-user="${u.email}">移除</button>
+            </div>` : ''}
+          `;
+          listEl.appendChild(card);
+        });
+
+        body.querySelector('#modalLogoutBtn').addEventListener('click', async () => {
+          if (isFirebaseConfigured && auth) await auth.signOut().catch(() => {});
+          session = null;
+          saveLocalSession();
+          setEditMode(false);
+          syncAuthUI();
+          closeModal('adminModal');
+          showSnackbar('已登出帳號');
+        });
+
+        const addForm = body.querySelector('#addAdminUserForm');
+        if (addForm) {
+          addForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const email = body.querySelector('#newAdminEmail').value.trim().toLowerCase();
+            const role = body.querySelector('#newAdminRole').value;
+            if (!email || SUPERUSERS.includes(email) || adminUsers.some(x => x.email.toLowerCase() === email)) {
+              showSnackbar('此 Email 已在名單中或格式不正確');
+              return;
+            }
+            if (isFirebaseConfigured && db) {
+              await db.collection('admin_users').doc(email).set({
+                role,
+                active: true,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            }
+            adminUsers.push({ email, role, active: true });
+            saveLocalUsers();
+            openAdminModal();
+            showSnackbar(`已新增成員：${email}`);
+          });
+        }
+
+        listEl.querySelectorAll('[data-toggle-role]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const target = adminUsers.find(x => x.email === btn.dataset.toggleRole);
+            if (!target) return;
+            target.role = target.role === 'viewer' ? 'admin' : 'viewer';
+            if (isFirebaseConfigured && db) {
+              await db.collection('admin_users').doc(target.email).update({ role: target.role });
+            }
+            saveLocalUsers();
+            openAdminModal();
+          });
+        });
+
+        listEl.querySelectorAll('[data-toggle-active]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const target = adminUsers.find(x => x.email === btn.dataset.toggleActive);
+            if (!target) return;
+            target.active = target.active === false;
+            if (isFirebaseConfigured && db) {
+              await db.collection('admin_users').doc(target.email).update({ active: target.active });
+            }
+            saveLocalUsers();
+            openAdminModal();
+          });
+        });
+
+        listEl.querySelectorAll('[data-del-user]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const email = btn.dataset.delUser;
+            if (isFirebaseConfigured && db) {
+              await db.collection('admin_users').doc(email).delete();
+            }
+            adminUsers = adminUsers.filter(x => x.email !== email);
+            saveLocalUsers();
+            openAdminModal();
+            showSnackbar('已移除該授權帳號');
+          });
+        });
+
+        openModal('adminModal');
+      }
+
+      /* =====================================================================
+         16. PWA 安裝提示（支援 Chrome / Android 一鍵安裝）
+      ===================================================================== */
+      let deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+      });
+
+      document.getElementById('installBtn').addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          return;
+        }
+        const body = document.getElementById('installModalBody');
+        body.innerHTML = `
+          <p style="margin:0;font-size:0.92rem;color:var(--md-on-surface-variant);line-height:1.6;">
+            將 <strong>LinFamily APP</strong> 安裝至手機或電腦桌面，即可獲得全螢幕原生應用程式體驗：
+          </p>
+          <ol style="margin:0;padding-left:20px;line-height:1.75;font-size:0.9rem;">
+            <li><strong>Android (Google Pixel / Chrome)：</strong>點擊瀏覽器右上角「⋮」選單 →「安裝應用程式」或「加到主畫面」。</li>
+            <li><strong>桌面版 Chrome / Edge：</strong>點擊網址列右側的「安裝」圖示即可建立獨立視窗捷徑。</li>
+            <li><strong>其他行動瀏覽器：</strong>透過「分享」或選單中的「加入主畫面」即可使用。</li>
+          </ol>
+          <div class="btn-actions">
+            <button type="button" class="m3-btn-filled ripple-host" data-close-inst="1">知道了</button>
+          </div>
+        `;
+        body.querySelector('[data-close-inst]').addEventListener('click', () => closeModal('installModal'));
+        openModal('installModal');
+      });
+
+      // 初始化啟動
+      syncAuthUI();
+    })();
+  </script>
+</body>
+</html>
