@@ -11,6 +11,7 @@
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   let SHORE = 0.55, running = false, rafId = 0;
+  const TILT = -12; // 整個畫面轉斜的角度（負＝逆時針）
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
             const PALETTE = {
       deepTeal: ['#007780', '#008B94'],
@@ -46,9 +47,12 @@
   function resizeCanvas() {
       SHORE = innerHeight > innerWidth ? 0.62 : 0.55;
       try {
-          const rect = wrap.getBoundingClientRect();
-          width = Math.max(320, rect.width);
-          height = Math.max(180, rect.height);
+          // 斜的：畫布轉 TILT 度，並放大到轉了之後四角仍蓋滿畫面（直接用大畫布繪製，不靠 CSS 放大，線條才清楚）
+          const W = wrap.clientWidth || innerWidth, H = wrap.clientHeight || innerHeight;
+          const t = Math.abs(TILT) * Math.PI / 180, z = Math.cos(t) + Math.max(W / H, H / W) * Math.sin(t);
+          width = Math.max(320, Math.round(W * z));
+          height = Math.max(180, Math.round(H * z));
+          Object.assign(canvas.style, { width: width + 'px', height: height + 'px', left: (W - width) / 2 + 'px', top: (H - height) / 2 + 'px', transform: 'rotate(' + TILT + 'deg)' });
           dpr = Math.min(window.devicePixelRatio || 1, 2);
 
           canvas.width = Math.round(width * dpr);
@@ -67,9 +71,9 @@
   function getShorelineX(yRatio, time) {
       const centerRatio = SHORE;
       const drift =
-          Math.sin(yRatio * Math.PI * 2.2 + time * 0.35) * 0.018 +
-          Math.cos(yRatio * Math.PI * 4.1 - time * 0.24) * 0.011 +
-          Math.sin(yRatio * Math.PI * 7.0 + time * 0.42) * 0.005;
+          Math.sin(yRatio * Math.PI * 2.2 + time * 0.35) * 0.034 +
+          Math.cos(yRatio * Math.PI * 4.1 - time * 0.24) * 0.022 +
+          Math.sin(yRatio * Math.PI * 7.0 + time * 0.42) * 0.012 + Math.sin(yRatio * Math.PI * 1.3 - time * 0.17) * 0.02;
       return (centerRatio + drift) * width;
   }
 
@@ -82,7 +86,7 @@
       for (let i = 0; i < count; i++) {
           harmonics.push({
               freq: (i + 1) * rand(1.1, 1.95),
-              amp: rand(0.015, 0.038) / (i * 0.55 + 1),
+              amp: rand(0.022, 0.06) / (i * 0.45 + 1), // 加大，浪線比較不規則
               phase: rand(0, Math.PI * 2),
               speed: rand(-1.4, 1.4)
           });
