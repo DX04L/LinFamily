@@ -35,7 +35,7 @@
   - 同網域的站（DX、YA、SR、LF 子頁）：直接換頁（不會有那一列）。
   - 外部網站可內嵌：在 `open.html` 框內開（右上角 ↗ 直接開啟）。
   - 外部網站不可內嵌（Google 等）：直接開，接受那一列。
-- 空白處按右鍵／手機長按：自訂選單「Copy link」「Open in new window」，外觀照 DX 的 Header 選單；Copy link 後面顯示網址，選單寬度固定，網址太長時跑馬灯流過去（LF 的 `js/lf-menu.js`，DX、YA、SR 的 `header.js`）；新分頁盡量用預設瀏覽器開（Android 用 `intent://`、LINE 加 `openExternalBrowser=1`）。
+- 空白處按右鍵／手機長按：自訂選單「Copy link」「Open in new window」，外觀照 DX 的 Header 選單；Copy link 後面顯示網址，選單寬度固定，網址太長時跑馬灯流過去；複製的是各站**原本的網址**（DX 底下的 `/ya/`、`/sr/` 換回 YA、SR 自己的網域，`/lf/` 維持 DX 底下）（LF 的 `js/lf-menu.js`，DX、YA、SR 的 `header.js`）；新分頁盡量用預設瀏覽器開（Android 用 `intent://`、LINE 加 `openExternalBrowser=1`）。
 - **回首頁鈕**：從 LF 開出來的所有站（DX、YA、SR、`open.html` 內的外部網站）左下角都有一顆**淡淡的圓形 🏠 浮動鈕**（平常幾乎透明，碰到才變清楚），按了回 LF 主畫面。不要再用「‹ LinFamily」文字鈕。
   - 自家站：LF 帶 `?lfhome=` 進入，由 DX04 的 `lf-back.js` 顯示（Worker 自動插入，各站不用改）。
   - `open.html`：直接寫在頁面裡（樣式相同）。
