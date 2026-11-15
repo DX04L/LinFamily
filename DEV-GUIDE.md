@@ -26,7 +26,7 @@
 - 權限管理是**獨立頁面**（不是彈出視窗），左上角「‹ 返回」；只有 Superuser 看得到內容。版面與字體大小照 DX 的 `admin-users.html`。
 
 ## 4. App 格子（主畫面）
-- 長按進入編輯模式（像 iPhone）；拖曳排序、`−` 刪除、空格 `＋` 新增。共用 `clc-slot-grid.js`。
+- 長按進入編輯模式（像 iPhone）；拖曳排序、`−` 刪除、空格 `＋` 新增。共用 `js/clc-slot-grid.js`。
 - **新增／修改 App 同一個畫面**，標題「新增 App」／「修改 App」，欄位順序固定：
   1. 網址　2. 名稱　3. 圖示（旁邊即時預覽）
 - 貼上網址後自動抓名稱、圖示、能否內嵌（DX04 的 `/api/site-info`，已開放跨站呼叫）。使用者改過的值不會被自動抓取覆蓋。
@@ -35,6 +35,7 @@
   - 同網域的站（DX、YA、SR、LF 子頁）：直接換頁（不會有那一列）。
   - 外部網站可內嵌：在 `open.html` 框內開（上方有返回列與 ↗）。
   - 外部網站不可內嵌（Google 等）：直接開，接受那一列。
+- 空白處按右鍵／手機長按：自訂選單「複製網址」「在新分頁開啟」（LF 的 `js/lf-menu.js`）；新分頁盡量用預設瀏覽器開（Android 用 `intent://`、LINE 加 `openExternalBrowser=1`）。
 - 從 LF 進入其他站時帶 `?lfhome=`，該站左下角顯示「‹ LinFamily」（DX04 的 `lf-back.js`，Worker 自動插入）。
 
 ## 5. 外觀
@@ -46,3 +47,11 @@
 - 沒有特別指示時，用最省 AI token 的方式修改；需要大量測試的步驟交給 Darren 手動測。
 - Firebase / Cloudflare 主控台由 Darren 自己設定，只要告訴他「去哪裡、填什麼」。
 - Repo：LF＝`DX04L/LinFamily`；DX、YA、SR＝`CLC-Darren/clc-dx04`、`clc-ya-portal`、`clc-sr-portal`。
+
+## 7. 檔案命名（每站一致）
+- 主畫面：`index.html`。外部網站內嵌框：`open.html`。站台設定：`clc-site.json`（下層站才需要；DX 是最上層網域本身，不用）。
+- **後台頁一律 `admin-xxx.html`**（前綴，不用後綴）：權限管理 `admin-users.html`、其他後台如 `admin-hymns.html`、`admin-venues.html`、`admin-members.html`、`admin-join.html`。
+- **只給本站頁面用的 JS／CSS 放 `js/`**：`js/clc-slot-grid.js`、`js/home-apps.js`、`js/lf-menu.js`…
+- **Worker 自動插入、或好幾站一起用的檔案留在根目錄不搬**：`header.js`、`clc-sso.js`、`lf-back.js`、`login-gate.js`、`_worker.js`、`sw.js`、`manifest.json`、圖示檔。
+- 改名時舊檔名留一個轉址小檔（`location.replace` 到新檔名），舊連結、書籤、已寄出的信才不會壞。
+- 不要把 `desktop.ini`、`.DS_Store` 這類系統檔放進 repo。

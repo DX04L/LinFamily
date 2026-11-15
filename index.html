@@ -235,7 +235,7 @@
     </div>
 
     <section id="panelApps" aria-label="App">
-      <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 clc-slot-grid.js：
+      <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
            Superuser 長按晃動 → 拖到空格或互換位置、「−」移除、點 App 修改、長按空格新增、按「完成」結束。 -->
       <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
       <nav id="lfApps" aria-label="App"></nav>
@@ -345,8 +345,8 @@
     </div>
   </dialog>
 
-  <script src="clc-slot-grid.js?v=20261115g"></script>
-  <script src="lf-menu.js?v=20261115a"></script>
+  <script src="js/clc-slot-grid.js?v=20261115g"></script>
+  <script src="js/lf-menu.js?v=20261115b"></script>
   <script>
   (function () {
     'use strict';
@@ -439,7 +439,7 @@
       if (act !== 'theme') setMenu(false);
       if (act === 'logout') { if (confirm('確定要登出管理員身分嗎？')) { await auth.signOut(); toast('已登出'); } }
       else if (act === 'theme') toggleTheme();
-      else if (act === 'users') location.href = 'users.html';
+      else if (act === 'users') location.href = 'admin-users.html';
     });
     function toggleTheme() {
       const dark = !document.documentElement.classList.contains('dark');

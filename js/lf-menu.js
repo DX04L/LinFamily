@@ -8,7 +8,7 @@
  */
 (function () {
   'use strict';
-  const OBJECT = 'a, button, input, textarea, select, label, img, svg, video, audio, iframe, canvas, dialog, summary, [contenteditable], [role="button"], [data-slot], .slot-cell, .slot-empty, .lf-menu';
+  const OBJECT = 'a, button, input, textarea, select, label, img, svg, video, audio, iframe, canvas, dialog, summary, [contenteditable], [role="button"], [data-slot], [role="menu"], .slot-cell, .slot-empty, .lf-menu, .lf-ctx';
   const ua = navigator.userAgent || '';
   const isAndroid = /Android/i.test(ua);
   const isLine = /\bLine\//i.test(ua);
@@ -45,10 +45,10 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    .lf-menu { position:fixed; z-index:200; min-width:180px; padding:6px; border-radius:14px; background:var(--surface,#fff); color:var(--text,#1C1C1C);
+    .lf-ctx { position:fixed; z-index:200; min-width:180px; padding:6px; border-radius:14px; background:var(--surface,#fff); color:var(--text,#1C1C1C);
       border:1px solid var(--border,rgba(28,28,28,.12)); box-shadow:var(--shadow,0 18px 40px rgba(28,28,28,.16)); font-size:14.5px; }
-    .lf-menu button { display:block; width:100%; text-align:left; border:0; background:none; color:inherit; font:inherit; padding:10px 12px; border-radius:9px; cursor:pointer; }
-    .lf-menu button:hover, .lf-menu button:focus-visible { background:var(--btn-h,rgba(28,28,28,.08)); outline:none; }`;
+    .lf-ctx button { display:block; width:100%; text-align:left; border:0; background:none; color:inherit; font:inherit; padding:10px 12px; border-radius:9px; cursor:pointer; }
+    .lf-ctx button:hover, .lf-ctx button:focus-visible { background:var(--btn-h,rgba(28,28,28,.08)); outline:none; }`;
   document.head.appendChild(style);
 
   let menu = null, openedAt = 0;
@@ -57,7 +57,7 @@
     close();
     const url = location.href.split('#')[0];
     menu = document.createElement('div');
-    menu.className = 'lf-menu'; menu.setAttribute('role', 'menu');
+    menu.className = 'lf-ctx'; menu.setAttribute('role', 'menu');
     menu.innerHTML = '<button type="button" role="menuitem" data-m="copy">複製網址</button><button type="button" role="menuitem" data-m="open">在新分頁開啟</button>';
     menu.addEventListener('click', async e => {
       const b = e.target.closest('button[data-m]'); if (!b) return;
