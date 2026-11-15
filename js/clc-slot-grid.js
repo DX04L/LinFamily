@@ -16,7 +16,8 @@
  *     renderTile: (item, editing) => Element,
  *     save: async items => {},           // 移動後的新清單（含 pos）
  *     onAdd: pos => {}, onEdit: id => {}, onRemove: id => {},
- *     onEditingChange: editing => {}
+ *     onEditingChange: editing => {},
+ *     flow: true                         // 可省略。true＝不留空格、依序排列，拖到別的 App 上＝插到那裡（其他往後移，像手機）
  *   });
  *   g.render(); g.setEditing(false); g.isEditing();
  */
@@ -88,12 +89,14 @@
       if (g && g.dragging) return; // 拖曳中不要重建
       if (!canEdit()) editing = false;
       items = normalize(o.getItems() || []);
-      const admin = canEdit(), cols = columns();
+      if (o.flow) items = items.sort((a, b) => a.pos - b.pos).map((it, i) => Object.assign({}, it, { pos: i }));
+      const admin = canEdit() && !o.flow, cols = columns();
       const byPos = new Map(items.map(it => [it.pos, it]));
       const maxPos = items.reduce((m, it) => Math.max(m, it.pos), -1);
       let total = Math.max(o.minSlots || 0, Math.ceil((maxPos + 1) / cols) * cols);
       if (admin && items.length >= total) total += cols; // 管理時至少留一格空格可新增
       total = Math.ceil(total / cols) * cols;
+      if (o.flow) total = items.length;
       grid.classList.toggle('is-editing', editing);
       const floating = Array.from(grid.querySelectorAll(':scope > .slot-floating')); // 落位動畫中的卡片保留
       grid.replaceChildren();
@@ -194,7 +197,9 @@
       if (from === to) return;
       const moving = items.find(it => it.pos === from), other = items.find(it => it.pos === to);
       if (!moving) return;
-      const next = items.map(it => it === moving ? Object.assign({}, it, { pos: to }) : it === other ? Object.assign({}, it, { pos: from }) : it);
+      let next;
+      if (o.flow) { const arr = items.slice().sort((a, b) => a.pos - b.pos); arr.splice(to, 0, arr.splice(from, 1)[0]); next = arr.map((it, i) => Object.assign({}, it, { pos: i })); }
+      else next = items.map(it => it === moving ? Object.assign({}, it, { pos: to }) : it === other ? Object.assign({}, it, { pos: from }) : it);
       saving = true;
       items = next;
       try { await o.save(next); }

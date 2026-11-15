@@ -169,6 +169,7 @@
     .lf-tabbar .lf-tabs { margin:0; }
     .lf-search-btn { flex:none; width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--btn); color:var(--muted); cursor:pointer; display:grid; place-items:center; }
     .lf-search-btn svg { width:18px; height:18px; }
+    .lf-search-btn[hidden] { display:none; }
     .lf-search-btn[aria-expanded="true"] { background:var(--pine); color:#fff; border-color:var(--pine); }
     .lf-tabbar + .lf-search { margin:-12px 0 20px; }
     @media (min-width:640px) { .lf-search { max-width:780px; } }
@@ -246,7 +247,8 @@
       <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
       <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-dot" id="lfAppsDot" hidden></i></button>
     </div>
-    <button type="button" class="lf-search-btn" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
+    <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button type="button" class="lf-search-btn" id="lfSearchBtn" aria-label="搜尋 App" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
     </div>
     <label class="lf-search" for="lfSearch" id="lfSearchBox" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
@@ -256,7 +258,7 @@
 
     <section id="panelApps" aria-label="App">
       <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
-           登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到空格或互換位置、「−」移除、點 App 修改、長按空格新增、按「完成」結束。 -->
+           登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到別的 App 上＝插到那裡（不留空格，像手機）、「−」移除、點 App 修改、＋ 圓鈕新增、按「完成」結束。 -->
       <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
       <nav id="lfApps" aria-label="App"></nav>
     </section>
@@ -420,6 +422,7 @@
       $('lfAuthDot').hidden = !role;
       $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
+      $('lfAddBtn').hidden = !role;
       if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
       if (!role) setMenu(false);
       watchDesk();
@@ -600,7 +603,7 @@
     }
     let addPos = null;
     slots = window.clcSlotGrid($('lfApps'), {
-      minSlots: 8, cellClass: 'lf-cell', emptyClass: 'lf-slot', removeClass: 'lf-remove',
+      flow: true, minSlots: 0, cellClass: 'lf-cell', emptyClass: 'lf-slot', removeClass: 'lf-remove',
       canEdit: () => !!role, // 登入者都能編自己的桌面
       getItems: () => apps,
       renderTile,
@@ -844,6 +847,7 @@
       }
     });
     // 放大鏡：點了才出現搜尋列；清空或離開（沒有字）就收起來，不占版面
+    $('lfAddBtn').addEventListener('click', () => { addPos = null; openApp(null); });
     const sBox = $('lfSearchBox'), sBtn = $('lfSearchBtn');
     function showSearch(on) { sBox.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) search.focus(); }
     sBtn.addEventListener('click', () => { if (sBox.hidden) showSearch(true); else { search.value = ''; applySearch(); showSearch(false); } });
