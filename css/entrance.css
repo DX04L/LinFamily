@@ -1,6 +1,6 @@
 /* LinFamily 入口歡迎頁：抽象海岸浪潮動畫（js/entrance-waves.js）＋LF Logo。只在未登入時顯示（#lfWelcome 由 index.html 的 applyRole 控制 hidden）。 */
 .lf-welcome { position:fixed; inset:0; z-index:90; height:100dvh; min-height:100svh; overflow:hidden; cursor:pointer;
-  background:#161716;
+  background:linear-gradient(100deg, #02878F, #02A8AB 58%, #F8C4B4 64%, #F5CCBD); /* 跟動畫同色，確認登入中或動畫還沒畫出來時不會閃暗色 */
   -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
 .lf-welcome[hidden] { display:none; }
 .lf-welcome:focus-visible { outline:3px solid #EADFC8; outline-offset:-8px; }
@@ -16,7 +16,7 @@
 .lf-ent-note[hidden] { display:none; }
 @keyframes lfEntIn { from { opacity:0; transform:translate(-50%, -50%) scale(.94); } to { opacity:1; transform:translate(-50%, -50%) scale(1); } }
 @keyframes lfEntBreathe { 0%, 100% { transform:translate(-50%, -50%) scale(1); } 50% { transform:translate(-50%, -50%) scale(1.015); } }
-html.lf-pending .lf-welcome > * { visibility:hidden; } /* 確認登入狀態時只顯示底色＋poster，不先閃出 Logo */
+html.lf-pending .lf-welcome > * { visibility:hidden; } /* 確認登入狀態時只顯示底色，不先閃出 Logo */
 @media (prefers-reduced-motion: reduce) { .lf-ent-logo { animation:none; } }
 
 @media (orientation: portrait) { .lf-ent-logo { left:31%; top:36%; } } /* 手機直式：左半邊偏上，避開拇指與底部橫條 */
