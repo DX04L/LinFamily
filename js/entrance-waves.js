@@ -13,12 +13,12 @@
   let SHORE = 0.55, running = false, rafId = 0;
   const TILT = -12; // 整個畫面轉斜的角度（負＝逆時針）
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-            const PALETTE = { // LinFamily 色系
-      deepTeal: ['#4E8B7E', '#3F7468'],          // LF 松綠（＋深一階）
-      turquoise: ['#8FBFB0', '#A9CFC3', '#C4DED5'], // 鼠尾草綠（＋淺階）
-      foam: ['#F7F5F0', '#E6E7E9', '#EADFC8'],      // Logo 白、淺灰、奶油米
-      sand: ['#EADFC8', '#F0D8A0', '#D9C49A']        // 奶油米、Logo 奶油黃（＋深一階）
-  };
+            const PALETTE = { // 取自海灘空拍照的鮮豔色（線條風格不變）
+      deepTeal: ['#006B73', '#00747C'],             // 深海青（後方細線）
+      turquoise: ['#4CE0D8', '#7EEAE3', '#B5F5F0'], // 亮松石
+      foam: ['#FFFFFF', '#F2FCFC', '#D8F5F5'],      // 浪花白
+      sand: ['#E8A88C', '#DE9478', '#F0B49C']       // 沙灘蜜桃（比底色深，線才看得到）
+    };
 
   const config = {
       speedMultiplier: 1.0,
@@ -339,10 +339,10 @@
       // 1. 极简深色分割基底，突出高对比度的线条与粒子色彩
       const bgGrad = ctx.createLinearGradient(0, 0, width, 0);
       if (!config.paperMode) {
-          bgGrad.addColorStop(0, '#0E1916');   // 深松綠墨
-          bgGrad.addColorStop(SHORE - 0.03, '#15261F');
-          bgGrad.addColorStop(SHORE + 0.03, '#1C1C1C'); // LF 墨黑
-          bgGrad.addColorStop(1, '#221F1A');
+          bgGrad.addColorStop(0, '#02878F');   // 照片深海
+          bgGrad.addColorStop(SHORE - 0.03, '#02A8AB');   // 照片淺海
+          bgGrad.addColorStop(SHORE + 0.03, '#F8C4B4'); // 照片近岸沙
+          bgGrad.addColorStop(1, '#F5CCBD');  // 照片沙灘
       } else {
           bgGrad.addColorStop(0, '#072226');
           bgGrad.addColorStop(1, '#0D1E21');
