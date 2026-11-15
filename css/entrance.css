@@ -1,14 +1,17 @@
 /* LinFamily 入口歡迎頁：海浪影片＋LF Logo。只在未登入時顯示（#lfWelcome 由 index.html 的 applyRole 控制 hidden）。 */
 .lf-welcome { position:fixed; inset:0; z-index:90; height:100dvh; min-height:100svh; overflow:hidden; cursor:pointer;
-  background:#161716 url("../assets/entrance.poster.v1.webp") 61% 50% / cover no-repeat;
+  background:#161716;
   -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
 .lf-welcome[hidden] { display:none; }
 .lf-welcome:focus-visible { outline:3px solid #EADFC8; outline-offset:-8px; }
 /* 手機直式：海浪與沙灘交界落在畫面右側約三分之一（交界在原片約 62%） */
-.lf-ent-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:61% 50%; pointer-events:none; background:transparent; }
+.lf-ent-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:61% 50%; pointer-events:none; background:transparent;
+  transform:rotate(var(--lf-ent-tilt, -8deg)) scale(var(--lf-ent-zoom, 1.35)); } /* 海浪微斜；放大倍數由 js/entrance.js 依畫面比例算，四角不露底 */
+.lf-ent-poster { position:absolute; inset:0; background:url("../assets/entrance.poster.v2.webp") 61% 50% / cover no-repeat; transform:rotate(var(--lf-ent-tilt, -8deg)) scale(var(--lf-ent-zoom, 1.35)); pointer-events:none; }
 .lf-ent-shade { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at center, rgba(22,23,22,.28), rgba(22,23,22,.12) 60%, rgba(22,23,22,0)); }
-.lf-ent-logo { position:absolute; left:50%; top:50%; width:min(46vw, 28vh, 320px); aspect-ratio:1080/1078; pointer-events:none;
-  transform:translate(-50%, -50%); filter:drop-shadow(0 12px 28px rgba(0,0,0,.35));
+.lf-ent-logo { position:absolute; left:50%; top:50%; width:min(44vw, 26vh, 300px); aspect-ratio:644/594; pointer-events:none;
+  transform:translate(-50%, -50%); filter:drop-shadow(0 0 1.5px rgba(10,30,28,.7)) drop-shadow(0 3px 16px rgba(10,30,28,.65)); } /* 沒有底色塊：用深色光暈讓字在浪花上也清楚 */
+.lf-ent-logo {
   animation:lfEntIn 1.4s cubic-bezier(.2,.7,.2,1) both, lfEntBreathe 6s ease-in-out 1.4s infinite; }
 .lf-ent-logo img { width:100%; height:100%; display:block; }
 .lf-ent-note { position:absolute; left:16px; right:16px; bottom:calc(24px + env(safe-area-inset-bottom)); margin:0; text-align:center;

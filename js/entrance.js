@@ -12,7 +12,7 @@
   const shown = () => !wrap.hidden && !document.hidden;
 
   if (video && !reduced) {
-    [['assets/entrance.v1.webm', 'video/webm'], ['assets/entrance.v1.mp4', 'video/mp4']].forEach(([src, type]) => {
+    [['assets/entrance.v2.webm', 'video/webm'], ['assets/entrance.v2.mp4', 'video/mp4']].forEach(([src, type]) => {
       const s = document.createElement('source'); s.src = src; s.type = type; video.append(s);
     });
     video.muted = true; video.load();
@@ -22,6 +22,14 @@
     if (shown()) { const p = video.play(); if (p && p.catch) p.catch(() => {}); } // 被擋就留在 poster
     else video.pause();
   }
+  // 影片轉斜後要放大才蓋滿畫面：倍數 = cosθ + (長邊/短邊)·sinθ
+  const TILT = -8;
+  function fit() {
+    const t = Math.abs(TILT) * Math.PI / 180, w = innerWidth, h = innerHeight;
+    wrap.style.setProperty('--lf-ent-tilt', TILT + 'deg');
+    wrap.style.setProperty('--lf-ent-zoom', (Math.cos(t) + Math.max(w / h, h / w) * Math.sin(t)).toFixed(3));
+  }
+  fit(); addEventListener('resize', fit);
   document.addEventListener('visibilitychange', sync);
   new MutationObserver(sync).observe(wrap, { attributes: true, attributeFilter: ['hidden'] });
   sync();
