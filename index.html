@@ -408,24 +408,13 @@
         applyRole(d && d.active !== false && (d.role === 'admin' || d.role === 'viewer') ? d.role : '');
       }, () => applyRole(''));
     });
-    // 掛在 DX04 底下（/lf/）時：用 DX04 的 Google 登入，同時登入 DX04（YA、SR 會自動跟著登入）和 LinFamily。
-    // 需要：LinFamily 的 Firebase 已授權網域有 clc-dx04.pages.dev、Google 登入白名單有 DX04 的用戶端 ID。
-    const DX_CONFIG = { apiKey: "AIzaSyDbLv-XgOD7Q3J_wl81eXOuK9rqNAdzxM8", authDomain: "clc-dx04.firebaseapp.com", projectId: "clc-dx04", appId: "1:333844280279:web:84e6f122ae00bf010dd192" };
-    async function loginViaDx() {
-      const dx = firebase.apps.find(a => a.name === 'dx') || firebase.initializeApp(DX_CONFIG, 'dx');
-      const r = await dx.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
-      const tok = r.credential && r.credential.idToken;
-      await dx.auth().signOut().catch(() => {});
-      if (!tok) throw new Error('沒有取得登入憑證');
-      window.CLCSSO.saveGoogleIdToken(tok);
-      const err = await window.CLCSSO.signInSite(DX_CONFIG, { t: tok }); // 寫入 DX04 的登入狀態
-      if (err) console.warn('DX04 登入失敗', err);
-      return auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(tok));
-    }
+    // 掛在 DX04 底下（/lf/）時，LinFamily 是主站：登入後保存 Google 憑證，DX04、YA、SR 打開時自動登入（clc-sso.js）。
+    // 需要：DX04、YA、SR 各自的 Firebase「外部專案用戶端 ID 白名單」加上 LinFamily 的 Web client ID。
     async function login() {
       if (!auth) return toast('登入服務尚未載入，請重新整理。');
       try {
-        const res = window.CLCSSO ? await loginViaDx() : await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        if (window.CLCSSO && res.credential && res.credential.idToken) window.CLCSSO.saveGoogleIdToken(res.credential.idToken);
         const email = res.user.email.toLowerCase();
         if (SUPERUSERS.includes(email)) return toast('歡迎回來，' + (res.user.displayName || email));
         const snap = await db.collection('admin_users').doc(email).get();
