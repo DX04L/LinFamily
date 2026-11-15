@@ -217,6 +217,13 @@
     .lf-users li button.lf-del { color:#E0525E; }
     .lf-toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:100; padding:10px 18px; border-radius:12px;
       background:#1C1C1C; color:#fff; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+    /* 上面（標題、分頁）固定，只有下面的 App 區捲動；App 沒滿就不能捲 */
+    html, body { height:100%; }
+    body { height:100dvh; min-height:0 !important; overflow:hidden; display:flex; flex-direction:column; }
+    main { display:flex; flex-direction:column; min-height:0; padding-bottom:0; }
+    main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
+    #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
+    #lfApps.is-editing .slot-empty { visibility:visible; }
     @media (max-width:639px) { footer { display:none; } } /* 手機版不要 footer */
     footer { text-align:center; font-size:11px; color:var(--muted); padding:14px 0 calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
   </style>
@@ -259,7 +266,7 @@
 
     <section id="panelApps" aria-label="App">
       <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
-           登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到別的 App 上＝插到那裡（不留空格，像手機）、「−」移除、點 App 修改、＋ 圓鈕新增、按「完成」結束。 -->
+           登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到任何位置（空位編輯時才看得到）或和別的 App 互換、「−」移除、點 App 修改、＋ 圓鈕新增、按「完成」結束。 -->
       <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
       <nav id="lfApps" aria-label="App"></nav>
     </section>
@@ -603,8 +610,19 @@
       return a;
     }
     let addPos = null;
+    // 整個 App 區都可以放 App（含最底部）：格數＝畫面放得下的行數 × 每行個數；放滿才多一行（只有 App 區捲動）
+    function fitSlots() {
+      const p = $('panelApps'), gr = $('lfApps'), cs = getComputedStyle(gr);
+      const cols = cs.gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+      const c = gr.querySelector('.slot-cell') || gr.querySelector('.slot-empty');
+      const h = c ? c.offsetHeight : 96, gap = parseFloat(cs.rowGap) || 22;
+      const avail = p.clientHeight - 24 - ($('lfApps').nextElementSibling && !$('lfApps').nextElementSibling.hidden ? 50 : 0);
+      return Math.max(1, Math.floor((avail + gap) / (h + gap))) * cols;
+    }
+    let fitT = null;
+    window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(() => slots.render(), 150); });
     slots = window.clcSlotGrid($('lfApps'), {
-      flow: true, minSlots: 0, cellClass: 'lf-cell', emptyClass: 'lf-slot', removeClass: 'lf-remove',
+      minSlots: fitSlots, cellClass: 'lf-cell', emptyClass: 'lf-slot', removeClass: 'lf-remove',
       canEdit: () => !!role, // 登入者都能編自己的桌面
       getItems: () => apps,
       renderTile,
@@ -797,6 +815,7 @@
       document.querySelectorAll('.lf-tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
       $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family'; $('panelAll').hidden = tab !== 'all';
       if (tab === 'all') { renderAll(); clearNews(); }
+      if (tab === 'apps') slots.render();
       if (tab !== 'apps') slots.setEditing(false);
     }));
     // 平面圖：點區域 → 列出這個區域的 App（App 的 zoneId 沿用舊資料）
@@ -857,7 +876,7 @@
     $('lfSearchClear').addEventListener('click', () => { search.value = ''; applySearch(); showSearch(false); });
     new MutationObserver(() => { if (search.value.trim()) applySearch(); }).observe($('lfApps'), { childList: true });
 
-    slots.render();
+    slots.render(); requestAnimationFrame(() => slots.render()); // 第二次依實際格子高度補滿畫面
   })();
   </script>
 </body>
