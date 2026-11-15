@@ -13,11 +13,11 @@
   let SHORE = 0.55, running = false, rafId = 0;
   const TILT = -12; // 整個畫面轉斜的角度（負＝逆時針）
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-            const PALETTE = {
-      deepTeal: ['#007780', '#008B94'],
-      turquoise: ['#00B4B8', '#14C8C6', '#4CE0D8'],
-      foam: ['#FFFFFF', '#F2FCFC', '#D8F5F5'],
-      sand: ['#FAD6C3', '#F5C3AC', '#E8B19A']
+            const PALETTE = { // LinFamily 色系
+      deepTeal: ['#4E8B7E', '#3F7468'],          // LF 松綠（＋深一階）
+      turquoise: ['#8FBFB0', '#A9CFC3', '#C4DED5'], // 鼠尾草綠（＋淺階）
+      foam: ['#F7F5F0', '#E6E7E9', '#EADFC8'],      // Logo 白、淺灰、奶油米
+      sand: ['#EADFC8', '#F0D8A0', '#D9C49A']        // 奶油米、Logo 奶油黃（＋深一階）
   };
 
   const config = {
@@ -339,10 +339,10 @@
       // 1. 极简深色分割基底，突出高对比度的线条与粒子色彩
       const bgGrad = ctx.createLinearGradient(0, 0, width, 0);
       if (!config.paperMode) {
-          bgGrad.addColorStop(0, '#041B1E');
-          bgGrad.addColorStop(SHORE - 0.03, '#07272B');
-          bgGrad.addColorStop(SHORE + 0.03, '#1B1615');
-          bgGrad.addColorStop(1, '#261C19');
+          bgGrad.addColorStop(0, '#0E1916');   // 深松綠墨
+          bgGrad.addColorStop(SHORE - 0.03, '#15261F');
+          bgGrad.addColorStop(SHORE + 0.03, '#1C1C1C'); // LF 墨黑
+          bgGrad.addColorStop(1, '#221F1A');
       } else {
           bgGrad.addColorStop(0, '#072226');
           bgGrad.addColorStop(1, '#0D1E21');
