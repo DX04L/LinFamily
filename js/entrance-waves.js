@@ -21,7 +21,7 @@
     };
 
   const config = {
-      speedMultiplier: 1.0,
+      speedMultiplier: 0.6, // 放慢，海浪流動比較平靜
       densityMultiplier: 1.0,
       paperMode: false // false: 深海分界基底 | true: 纯净暗调基底
   };
