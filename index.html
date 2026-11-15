@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LinFamily">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
+  <link rel="stylesheet" href="css/entrance.css?v=1">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
   <script>
@@ -225,22 +226,18 @@
     #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
     #lfApps.is-editing .slot-empty { visibility:visible; }
     @media (max-width:639px) { footer { display:none; } }
-    .lf-welcome { position:fixed; inset:0; z-index:90; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
-      background:#1C1C1C; color:#EADFC8; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; }
-    .lf-welcome[hidden] { display:none; }
-    .lf-welcome-title { font-weight:800; font-size:clamp(48px, 13vw, 104px); letter-spacing:.02em; }
-    .lf-welcome-hint { margin:0; font-size:14px; color:#8FBFB0; animation:lfBlink 2.4s ease-in-out infinite; }
-    @keyframes lfBlink { 50% { opacity:.35; } }
-    html.lf-pending .lf-welcome > * { visibility:hidden; } /* 確認登入狀態時先不閃出字 */ /* 手機版不要 footer */
     footer { text-align:center; font-size:11px; color:var(--muted); padding:14px 0 calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
   </style>
 </head>
 <body>
   <!-- 沒登入：停在 Welcome 畫面，點一下就跳出 Google 登入（參照 DX） -->
-  <div class="lf-welcome" id="lfWelcome" role="button" tabindex="0" aria-label="使用 Google 帳號登入 LinFamily">
-    <div class="lf-welcome-title">LinFamily</div>
-    <p class="lf-welcome-hint">點一下畫面登入</p>
+  <div class="lf-welcome" id="lfWelcome" role="button" tabindex="0" aria-label="LinFamily：按一下以 Google 帳號登入">
+    <video class="lf-ent-video" muted playsinline autoplay loop preload="auto" poster="assets/entrance.poster.v1.webp" aria-hidden="true"></video>
+    <div class="lf-ent-shade"></div>
+    <div class="lf-ent-logo"><img src="assets/lf-logo.v1.svg" alt="" width="1080" height="1078"></div>
+    <p class="lf-ent-note" hidden>請用 Safari 或 Chrome 開啟本頁再登入</p>
   </div>
+  <script src="js/entrance.js" defer></script>
   <script>document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
   <div class="lf-top">
     <div>
@@ -487,8 +484,9 @@
     // ---------- 皇冠選單 ----------
     const menu = $('lfMenu'), authBtn = $('lfAuthBtn');
     function setMenu(open) { menu.hidden = !open; authBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
-    $('lfWelcome').addEventListener('click', () => login());
-    $('lfWelcome').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); login(); } });
+    const enter = () => { if (window.lfEntranceGuard && window.lfEntranceGuard()) return; login(); }; // 內建瀏覽器先處理（js/entrance.js）
+    $('lfWelcome').addEventListener('click', enter);
+    $('lfWelcome').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } });
     authBtn.addEventListener('click', () => { if (!role) login(); else setMenu(menu.hidden); });
     document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && !authBtn.contains(e.target)) setMenu(false); });
     menu.addEventListener('click', async e => {
