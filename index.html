@@ -408,9 +408,9 @@
     function clock() {
       const now = new Date();
       $('lfDate').textContent = now.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' }) + ' ' +
-        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
     }
-    clock(); setInterval(clock, 15000);
+    clock(); setInterval(clock, 1000);
 
     // ---------- 登入與權限 ----------
     let user = null, role = '', roleUnsub = null, slots = null;
