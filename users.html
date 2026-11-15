@@ -47,47 +47,54 @@
       -webkit-font-smoothing:antialiased; transition:background-color .3s, color .3s;
     }
     button, input, select { font:inherit; color:inherit; }
-    .lf-users { list-style:none; margin:0; padding:0; display:grid; gap:8px; max-height:45vh; overflow:auto; }
-    .lf-users li { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:12px; background:var(--btn); font-size:13.5px; }
-    .lf-users li span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
-    .lf-users li button { border:0; background:none; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--teal); padding:4px 6px; }
-    .lf-users li button.lf-del { color:#E0525E; }
-    .lf-toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:100; padding:10px 18px; border-radius:12px;
-      background:#1C1C1C; color:#fff; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
-    main { width:min(100%, 640px); margin:0 auto; padding:calc(18px + env(safe-area-inset-top)) 20px 40px; display:flex; flex-direction:column; gap:16px; }
-    .lf-back { align-self:flex-start; text-decoration:none; font-weight:700; color:var(--teal); padding:6px 0; }
-    h1 { margin:0; font-size:28px; font-weight:800; letter-spacing:-.02em; }
-    .lf-note { color:var(--muted); font-size:13.5px; line-height:1.6; margin:0; }
-    .lf-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:12px; }
-    .lf-card h2 { margin:0; font-size:15px; font-weight:800; }
-    .lf-users { max-height:none; }
-    form { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
-    label { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:700; color:var(--muted); }
-    input, select { height:44px; padding:0 14px; border-radius:12px; font-size:15px; background:var(--btn); border:1px solid var(--border); outline:none; }
-    input:focus, select:focus { border-color:var(--teal); }
-    .lf-primary { height:44px; padding:0 18px; border-radius:12px; font-weight:700; border:0; cursor:pointer; background:var(--pine); color:#fff; }
-    .lf-err { color:#E0525E; font-size:13px; margin:0; }
+    /* 版面與字體大小照 DX 的 admin-users.html（基準 15px） */
+    html { font-size:15px; }
+    main { width:100%; max-width:48rem; margin:0 auto; padding:calc(1.75rem + env(safe-area-inset-top)) 1rem 1.75rem; display:flex; flex-direction:column; gap:1.25rem; }
+    .lf-back { align-self:flex-start; text-decoration:none; font-weight:700; font-size:.875rem; color:var(--teal); margin-bottom:-.5rem; }
+    h1 { margin:0; font-size:1.25rem; line-height:1.75rem; font-weight:800; }
+    .lf-note { color:var(--muted); font-size:.875rem; line-height:1.25rem; margin:0; }
+    .lf-box { border:1px solid var(--border); border-radius:.75rem; padding:1rem; font-size:.875rem; }
+    #lfBody { display:flex; flex-direction:column; gap:1.25rem; }
+    .lf-card { background:var(--surface); border:1px solid var(--border); border-radius:.75rem; padding:1rem; }
+    .lf-card h2 { margin:0; font-size:1rem; font-weight:700; }
+    form.lf-card > * + * { margin-top:.75rem; }
+    label { display:block; font-size:.875rem; }
+    .field { display:block; width:100%; margin-top:.25rem; padding:11px; border-radius:10px; background:var(--surface); border:1px solid var(--border); outline:none; font-size:1rem; }
+    html.dark .field { background:#161924; border-color:#334155; }
+    .field:focus { border-color:var(--teal); }
+    .lf-primary { padding:10px 17px; border-radius:10px; font-weight:700; border:0; cursor:pointer; background:var(--pine); color:#fff; font-size:1rem; }
+    .lf-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:.75rem; }
+    .lf-count { font-size:.75rem; color:var(--muted); }
+    .lf-users { display:flex; flex-direction:column; gap:.5rem; font-size:.875rem; }
+    .lf-row { border:1px solid var(--border); border-radius:.75rem; padding:.75rem; display:flex; flex-direction:column; gap:.75rem; }
+    @media (min-width:640px) { .lf-row { flex-direction:row; align-items:center; justify-content:space-between; } .lf-btns { justify-content:flex-end; } }
+    .lf-row .lf-email { font-weight:600; word-break:break-all; }
+    .lf-row .lf-sub { font-size:.75rem; color:var(--muted); margin-top:.25rem; }
+    .lf-btns { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+    .lf-btns button { border:1px solid var(--border); background:none; border-radius:.375rem; padding:.375rem .625rem; font-size:.75rem; cursor:pointer; color:var(--teal); }
+    .lf-btns button.lf-del, .lf-btns button.lf-off { color:#E0525E; }
+    .lf-btns button.lf-del { border-color:rgba(224,82,94,.5); }
+    .lf-btns button.lf-on { color:#34A37A; }
+    .lf-err { color:#E0525E; font-size:.875rem; margin:0; }
     [hidden] { display:none !important; }
   </style>
 </head>
 <body>
   <main>
-    <a class="lf-back" href="./">‹ LinFamily</a>
-    <h1>權限管理</h1>
-    <p class="lf-note">Superuser 為固定名單（寫在程式裡）。Admin 可登入；Viewer 唯讀。編輯 App 只限 Superuser。</p>
-    <p class="lf-err" id="lfGate">確認登入中…</p>
+    <a class="lf-back" href="./">‹ 返回</a>
+    <h1>👤 權限管理</h1>
+    <p class="lf-note">Superuser 為固定名單（寫在程式裡）。Admin 可登入；Viewer 唯讀。編輯 App 只限 Superuser。新增者需使用相同 Google Email 登入。</p>
+    <div class="lf-box" id="lfGate">確認登入中…</div>
     <div id="lfBody" hidden>
-      <section class="lf-card">
-        <h2>成員</h2>
-        <ul class="lf-users" id="lfUsersList"><li><span>讀取中…</span></li></ul>
-      </section>
-      <section class="lf-card" style="margin-top:16px">
+      <form class="lf-card" id="lfUserAdd">
         <h2>新增成員</h2>
-        <form id="lfUserAdd">
-          <label style="flex:1;min-width:200px">Email<input id="lfUserEmail" type="email" placeholder="name@example.com" autocomplete="off"></label>
-          <label>角色<select id="lfUserRole"><option value="admin">Admin</option><option value="viewer">Viewer</option></select></label>
-          <button type="submit" class="lf-primary">加入</button>
-        </form>
+        <label>Google 帳號 Email<input class="field" id="lfUserEmail" type="email" placeholder="name@example.com" autocomplete="off"></label>
+        <label>權限等級<select class="field" id="lfUserRole"><option value="admin">Admin（可登入）</option><option value="viewer">Viewer（唯讀）</option></select></label>
+        <button type="submit" class="lf-primary">新增成員</button>
+      </form>
+      <section class="lf-card">
+        <div class="lf-head"><h2>成員名單</h2><span class="lf-count" id="lfUsersCount"></span></div>
+        <div class="lf-users" id="lfUsersList"><div class="lf-note">讀取中…</div></div>
       </section>
       <p class="lf-err" id="lfUsersErr" hidden></p>
     </div>
@@ -127,20 +134,25 @@
       try {
         const snap = await db.collection('admin_users').get();
         const rows = snap.docs.map(d => Object.assign({ email: d.id }, d.data())).sort((a, b) => a.email.localeCompare(b.email));
-        list.innerHTML = rows.length ? rows.map(u => `<li data-email="${esc(u.email)}"><span>${esc(u.email)}</span>
-          <button type="button" data-u="role">${u.role === 'viewer' ? 'Viewer' : 'Admin'}</button>
-          <button type="button" data-u="active">${u.active === false ? '已停用' : '啟用中'}</button>
-          <button type="button" data-u="del" class="lf-del">刪除</button></li>`).join('') : '<li><span>目前沒有其他成員</span></li>';
+        const all = SUPERUSERS.map(email => ({ email, sup: true })).concat(rows.filter(u => !SUPERUSERS.includes(u.email)));
+        $('lfUsersCount').textContent = all.length + ' 位成員';
+        list.innerHTML = all.map(u => u.sup
+          ? `<div class="lf-row"><div><div class="lf-email">${esc(u.email)}</div><div class="lf-sub">🔒 Superuser · 永久保留（不可刪除、不可降權）</div></div></div>`
+          : `<div class="lf-row" data-email="${esc(u.email)}"><div><div class="lf-email">${esc(u.email)}</div>
+          <div class="lf-sub">${u.role === 'viewer' ? 'Viewer（唯讀）' : 'Admin'} · ${u.active === false ? '已停用' : '已啟用'}</div></div>
+          <div class="lf-btns"><button type="button" data-u="role" data-role="${u.role === 'viewer' ? 'viewer' : 'admin'}">${u.role === 'viewer' ? '改為 Admin' : '改為 Viewer'}</button>
+          <button type="button" data-u="active" data-active="${u.active === false ? '0' : '1'}" class="${u.active === false ? 'lf-on' : 'lf-off'}">${u.active === false ? '啟用' : '停用'}</button>
+          <button type="button" data-u="del" class="lf-del">刪除</button></div></div>`).join('');
         usersErr('');
       } catch (err) { list.innerHTML = ''; usersErr('讀取失敗：' + errText(err)); }
     }
     $('lfUsersList').addEventListener('click', async e => {
       const b = e.target.closest('button[data-u]'); if (!b) return;
-      const email = b.closest('li').dataset.email, ref = db.collection('admin_users').doc(email);
+      const email = b.closest('[data-email]').dataset.email, ref = db.collection('admin_users').doc(email);
       try {
         if (b.dataset.u === 'del') { if (!confirm('刪除 ' + email + '？')) return; await ref.delete(); }
-        else if (b.dataset.u === 'role') await ref.update({ role: b.textContent === 'Admin' ? 'viewer' : 'admin', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        else await ref.update({ active: b.textContent !== '啟用中', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        else if (b.dataset.u === 'role') await ref.update({ role: b.dataset.role === 'admin' ? 'viewer' : 'admin', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        else await ref.update({ active: b.dataset.active !== '1', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
         loadUsers();
       } catch (err) { usersErr('更新失敗：' + errText(err)); }
     });
