@@ -109,6 +109,16 @@
     .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0 24px; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
     .lf-tabs button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
     .lf-tabs button[aria-selected="true"] { background:var(--pine); color:#fff; }
+    .lf-news { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:-12px 0 18px; padding:10px 14px; border-radius:14px; background:var(--btn); border:1px solid var(--pine); font-size:14px; }
+    .lf-news span { flex:1; min-width:160px; }
+    .lf-news button, .lf-all button { border:0; border-radius:9999px; padding:6px 14px; font:inherit; font-size:13px; font-weight:700; background:var(--pine); color:#fff; cursor:pointer; }
+    .lf-news .lf-news-skip { background:var(--btn-h); color:inherit; }
+    .lf-all-note { font-size:13px; opacity:.7; margin:0 0 12px; }
+    .lf-all { display:grid; gap:8px; }
+    .lf-all-row { display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:14px; background:var(--btn); }
+    .lf-all-row a { flex:1; display:flex; align-items:center; gap:12px; color:inherit; text-decoration:none; min-width:0; font-weight:700; }
+    .lf-all-row .lf-icon { width:40px; height:40px; flex:none; }
+    .lf-all-row button:disabled { background:var(--btn-h); color:inherit; opacity:.7; cursor:default; }
 
     /* App 格子：手機 4 欄、平板 6 欄、電腦 8 欄 */
     #lfApps { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:22px 16px; max-width:520px; }
@@ -217,7 +227,6 @@
         <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>👤 權限管理</button>
         <button type="button" role="menuitem" data-act="theme"><span class="lf-ic-sun">☀️ 切換淺色</span><span class="lf-ic-moon">🌙 切換深色</span></button>
         <div class="lf-sep"></div>
-        <button type="button" role="menuitem" data-act="resetdesk" id="lfResetDesk" hidden>↺ 還原預設桌面</button>
         <button type="button" role="menuitem" data-act="logout" class="lf-danger">🚪 登出管理員</button>
       </div>
     </div>
@@ -233,13 +242,20 @@
     <div class="lf-tabs" role="tablist" aria-label="切換">
       <button type="button" role="tab" aria-selected="true" data-tab="apps">主畫面</button>
       <button type="button" role="tab" aria-selected="false" data-tab="family">家庭空間配置</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="all">所有 App</button>
     </div>
+    <div class="lf-news" id="lfNews" hidden><span id="lfNewsText"></span><button type="button" id="lfNewsGo">查看</button><button type="button" id="lfNewsSkip" class="lf-news-skip">略過</button></div>
 
     <section id="panelApps" aria-label="App">
       <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
            登入者長按晃動（各自的桌面；Superuser 編的是全部 App 的預設桌面）→ 拖到空格或互換位置、「−」移除、點 App 修改、長按空格新增、按「完成」結束。 -->
       <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
       <nav id="lfApps" aria-label="App"></nav>
+    </section>
+
+    <section id="panelAll" aria-label="所有 App" hidden>
+      <p class="lf-all-note" id="lfAllNote"></p>
+      <div class="lf-all" id="lfAll"></div>
     </section>
 
     <section id="panelFamily" aria-label="家庭空間配置" hidden>
@@ -398,7 +414,6 @@
       $('lfUsersItem').hidden = !isSuper();
       if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
       if (!role) setMenu(false);
-      $('lfResetDesk').hidden = !role || isSuper();
       watchDesk();
       if (slots) { slots.render(); if (isSuper()) seedIfNeeded(); }
     }
@@ -447,7 +462,6 @@
       if (act === 'logout') { if (confirm('確定要登出管理員身分嗎？')) { await auth.signOut(); toast('已登出'); } }
       else if (act === 'theme') toggleTheme();
       else if (act === 'users') location.href = 'admin-users.html';
-      else if (act === 'resetdesk') { if (confirm('還原成預設桌面？你自己的排列與新增的 App 會清除。')) { try { await db.collection(DESK_COL).doc(user.email.toLowerCase()).delete(); toast('已還原預設桌面'); } catch (err) { toast('還原失敗：' + errText(err)); } } }
     });
     function toggleTheme() {
       const dark = !document.documentElement.classList.contains('dark');
@@ -486,11 +500,11 @@
     // 個人桌面：linfamily_desktops/{email}（每人自己排列、新增、移除）。沒有個人桌面時顯示預設桌面（Superuser 編的全部 App）。
     // Superuser 永遠看、編預設桌面＝全部 App。之後要做「哪些 App 給哪些人」時，在預設桌面的 App 上加權限欄位即可。
     const DESK_COL = 'linfamily_desktops';
-    let globalApps = apps, myDesk = null, deskUnsub = null, deskEmail = '';
+    let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '';
     const deskKey = () => 'linfamily_desk_' + deskEmail;
     function showApps() {
       apps = myDesk && !isSuper() ? myDesk : globalApps;
-      if (slots) { slots.render(); renderZone(); }
+      if (slots) { slots.render(); renderZone(); renderNews(); if (!$('panelAll').hidden) renderAll(); }
     }
     function watchDesk() {
       const email = role && !isSuper() && user ? user.email.toLowerCase() : '';
@@ -502,6 +516,7 @@
         if (db) deskUnsub = db.collection(DESK_COL).doc(email).onSnapshot(snap => {
           const d = snap.exists ? snap.data() : null;
           myDesk = d && Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : null;
+          mySeen = d && Array.isArray(d.seen) ? d.seen : [];
           try { if (myDesk) localStorage.setItem(deskKey(), JSON.stringify(myDesk)); else localStorage.removeItem(deskKey()); } catch (_) {}
           showApps();
         }, err => console.warn('個人桌面讀取失敗', err));
@@ -589,11 +604,12 @@
     });
     const withPos = () => window.clcSlotGridNormalize(apps);
     function errText(err) { return err && err.code === 'permission-denied' ? '權限不足（請確認已登入，以及 Firestore 規則）。' : '請稍後再試。'; }
-    async function persist(next) {
+    async function persist(next, seenAdd) {
       if (!db) throw new Error('資料庫尚未載入');
-      if (role && !isSuper()) { // 個人桌面
-        await db.collection(DESK_COL).doc(user.email.toLowerCase()).set({ items: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        myDesk = next; try { localStorage.setItem(deskKey(), JSON.stringify(next)); } catch (_) {}
+      if (role && !isSuper()) { // 個人桌面（seen：已通知過的 App，第一次建立時＝當時全部 App）
+        const seen = Array.from(new Set((myDesk ? mySeen : globalApps.map(a => a.id)).concat(seenAdd || [])));
+        await db.collection(DESK_COL).doc(user.email.toLowerCase()).set({ items: next, seen, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        myDesk = next; mySeen = seen; try { localStorage.setItem(deskKey(), JSON.stringify(next)); } catch (_) {}
         return showApps();
       }
       await db.collection('linfamily_settings').doc('apps').set({
@@ -712,11 +728,51 @@
     });
 
     // ---------- 權限管理 ----------
+    // ---------- 所有 App（預設桌面＝目前全部 App）／新 App 通知 ----------
+    const onDesk = a => apps.some(m => m.id === a.id);
+    const locked = a => role === 'user' && isOwnSite(a);
+    const newApps = () => role && !isSuper() && myDesk ? globalApps.filter(a => !mySeen.includes(a.id) && !onDesk(a) && !locked(a)) : [];
+    async function addToDesk(a) {
+      const base = withPos(); let pos = 0; while (base.some(m => m.pos === pos)) pos++;
+      try { await persist(base.concat(Object.assign({}, a, { pos })), [a.id]); toast('已加到主畫面：' + a.name); }
+      catch (err) { toast('加入失敗：' + errText(err)); }
+    }
+    function renderAll() {
+      $('lfAllNote').textContent = !role ? '登入後可以把 App 加到自己的主畫面。' : isSuper() ? 'Superuser 的主畫面就是全部 App。' : '按「加到主畫面」把 App 放到你的主畫面。';
+      const box = $('lfAll'); box.textContent = '';
+      window.clcSlotGridNormalize(globalApps).slice().sort((a, b) => a.pos - b.pos).forEach(a => {
+        const row = document.createElement('div'); row.className = 'lf-all-row';
+        const link = document.createElement('a'); link.href = locked(a) ? '#' : tileHref(a);
+        const name = document.createElement('span'); name.textContent = a.name;
+        link.append(iconEl(a), name);
+        if (locked(a)) { link.style.opacity = '.4'; link.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + a.name + '。'); }); }
+        row.append(link);
+        if (role && !isSuper()) {
+          const b = document.createElement('button'); b.type = 'button';
+          if (locked(a)) { b.textContent = '無權限'; b.disabled = true; }
+          else if (onDesk(a)) { b.textContent = '已加入'; b.disabled = true; }
+          else { b.textContent = '＋ 加到主畫面'; b.addEventListener('click', () => { b.disabled = true; addToDesk(a); }); }
+          row.append(b);
+        }
+        box.append(row);
+      });
+    }
+    function renderNews() {
+      const n = newApps();
+      $('lfNews').hidden = !n.length;
+      if (n.length) $('lfNewsText').textContent = '🆕 有新的 App 可以加到主畫面：' + n.map(a => a.name).join('、');
+    }
+    $('lfNewsGo').addEventListener('click', () => document.querySelector('.lf-tabs [data-tab="all"]').click());
+    $('lfNewsSkip').addEventListener('click', async () => {
+      try { await persist(withPos(), newApps().map(a => a.id)); } catch (err) { toast('請稍後再試：' + errText(err)); }
+    });
+
     // ---------- 分頁：主畫面／家庭空間配置 ----------
     document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
       const tab = b.dataset.tab;
       document.querySelectorAll('.lf-tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
-      $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family';
+      $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family'; $('panelAll').hidden = tab !== 'all';
+      if (tab === 'all') renderAll();
       if (tab !== 'apps') slots.setEditing(false);
     }));
     // 平面圖：點區域 → 列出這個區域的 App（App 的 zoneId 沿用舊資料）
