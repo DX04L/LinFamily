@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LinFamily">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
+  <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__lfBIP=e;});</script><!-- 安裝事件可能很早就來，先接住 -->
   <link rel="stylesheet" href="css/entrance.css?v=17">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
@@ -530,7 +531,7 @@
     }
 
     // ---------- 安裝（PWA） ----------
-    let deferredPrompt = null;
+    let deferredPrompt = window.__lfBIP || null;
     const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
     // 安裝鈕：只要不是從已安裝的 App 開啟就顯示。層級規則（從上層站進來時不顯示）由 clc-sso.js 處理。
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -540,11 +541,12 @@
     $('lfInstallBtn').hidden = standalone(); // 不是從已安裝的 App 開啟就顯示（Chrome 還沒準備好時，按了會顯示安裝說明）
     $('lfInstallBtn').addEventListener('click', install);
     async function install() {
-      if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; return; }
+      deferredPrompt = deferredPrompt || window.__lfBIP || null;
+      if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; window.__lfBIP = null; return; }
       const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       $('lfInstallText').innerHTML = ios
         ? '請用 Safari 開啟這一頁，按下方的「分享」<b>⬆︎</b>，再選「<b>加入主畫面</b>」。'
-        : '請在瀏覽器選單（右上角 ⋮）選「<b>安裝應用程式</b>」或「<b>加到主畫面</b>」。';
+        : '瀏覽器目前沒有提供直接安裝，通常是<b>這台裝置已經安裝過 LinFamily</b>（請從桌面或應用程式清單開啟；要重裝請先移除）。也可以從瀏覽器選單（右上角 ⋮）選「<b>安裝應用程式</b>」或「<b>加到主畫面</b>」。';
       $('lfInstallDialog').showModal();
     }
     $('lfInstallClose').addEventListener('click', () => $('lfInstallDialog').close());
