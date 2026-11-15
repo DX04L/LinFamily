@@ -22,7 +22,7 @@
 
 ## 3. 權限
 - Superuser 固定兩位（寫死在程式與 Firestore 規則）：`darren710404@gmail.com`、`darren.lin@twclc.org`。四站都是最高權限。
-- 其他人存在 Firestore `admin_users/{email}`：`role: admin | viewer`、`active: true/false`。
+- 其他人存在 Firestore `admin_users/{email}`：`role: admin | viewer | user`（user：可登入 LF，不能開 DX／YA／SR，登入也不往下帶）、`active: true/false`。
 - 權限管理是**獨立頁面**（不是彈出視窗），左上角「‹ 返回」；只有 Superuser 看得到內容。版面與字體大小照 DX 的 `admin-users.html`。
 
 ## 4. App 格子（主畫面）

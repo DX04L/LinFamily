@@ -84,13 +84,13 @@
     <a class="lf-back" id="lfBack" href="./">‹ 返回</a>
     <script>(function(){var b=new URLSearchParams(location.search).get('back');if(b&&/^[\w\/.-]+$/.test(b)&&b.indexOf('..')<0)document.getElementById('lfBack').href=b;})();</script>
     <h1>👤 權限管理</h1>
-    <p class="lf-note">Superuser 為固定名單（寫在程式裡）。Admin 可登入；Viewer 唯讀。編輯 App 只限 Superuser。新增者需使用相同 Google Email 登入。</p>
+    <p class="lf-note">Superuser 為固定名單（寫在程式裡）。Admin 可登入；Viewer 唯讀；User 可登入 LinFamily，但不能開 DX（含 YA、SR），登入也不會帶過去。編輯 App 只限 Superuser。新增者需使用相同 Google Email 登入。</p>
     <div class="lf-box" id="lfGate">確認登入中…</div>
     <div id="lfBody" hidden>
       <form class="lf-card" id="lfUserAdd">
         <h2>新增成員</h2>
         <label>Google 帳號 Email<input class="field" id="lfUserEmail" type="email" placeholder="name@example.com" autocomplete="off"></label>
-        <label>權限等級<select class="field" id="lfUserRole"><option value="admin">Admin（可登入）</option><option value="viewer">Viewer（唯讀）</option></select></label>
+        <label>權限等級<select class="field" id="lfUserRole"><option value="admin">Admin（可登入）</option><option value="viewer">Viewer（唯讀）</option><option value="user">User（不含 DX、YA、SR）</option></select></label>
         <button type="submit" class="lf-primary">新增成員</button>
       </form>
       <section class="lf-card">
@@ -119,6 +119,7 @@
 
     // Superuser 固定名單（沿用舊版）
     const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
+    const ROLE_NAME = { admin: 'Admin', viewer: 'Viewer（唯讀）', user: 'User（不含 DX、YA、SR）' };
     const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const $ = id => document.getElementById(id);
     const errText = err => err && err.code === 'permission-denied' ? '權限不足（請確認已用 Superuser 登入，以及 Firestore 規則）。' : '請稍後再試。';
@@ -140,8 +141,8 @@
         list.innerHTML = all.map(u => u.sup
           ? `<div class="lf-row"><div><div class="lf-email">${esc(u.email)}</div><div class="lf-sub">🔒 Superuser · 永久保留（不可刪除、不可降權）</div></div></div>`
           : `<div class="lf-row" data-email="${esc(u.email)}"><div><div class="lf-email">${esc(u.email)}</div>
-          <div class="lf-sub">${u.role === 'viewer' ? 'Viewer（唯讀）' : 'Admin'} · ${u.active === false ? '已停用' : '已啟用'}</div></div>
-          <div class="lf-btns"><button type="button" data-u="role" data-role="${u.role === 'viewer' ? 'viewer' : 'admin'}">${u.role === 'viewer' ? '改為 Admin' : '改為 Viewer'}</button>
+          <div class="lf-sub">${ROLE_NAME[u.role] || 'Admin'} · ${u.active === false ? '已停用' : '已啟用'}</div></div>
+          <div class="lf-btns"><select data-u="role" class="field" style="width:auto;margin:0" aria-label="權限等級">${Object.keys(ROLE_NAME).map(r => `<option value="${r}"${(ROLE_NAME[u.role] ? u.role : 'admin') === r ? ' selected' : ''}>${r === 'admin' ? 'Admin' : r === 'viewer' ? 'Viewer' : 'User'}</option>`).join('')}</select>
           <button type="button" data-u="active" data-active="${u.active === false ? '0' : '1'}" class="${u.active === false ? 'lf-on' : 'lf-off'}">${u.active === false ? '啟用' : '停用'}</button>
           <button type="button" data-u="del" class="lf-del">刪除</button></div></div>`).join('');
         usersErr('');
@@ -152,10 +153,14 @@
       const email = b.closest('[data-email]').dataset.email, ref = db.collection('admin_users').doc(email);
       try {
         if (b.dataset.u === 'del') { if (!confirm('刪除 ' + email + '？')) return; await ref.delete(); }
-        else if (b.dataset.u === 'role') await ref.update({ role: b.dataset.role === 'admin' ? 'viewer' : 'admin', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
         else await ref.update({ active: b.dataset.active !== '1', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
         loadUsers();
       } catch (err) { usersErr('更新失敗：' + errText(err)); }
+    });
+    $('lfUsersList').addEventListener('change', async e => {
+      const s = e.target.closest('select[data-u="role"]'); if (!s) return;
+      try { await db.collection('admin_users').doc(s.closest('[data-email]').dataset.email).update({ role: s.value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); loadUsers(); }
+      catch (err) { usersErr('更新失敗：' + errText(err)); loadUsers(); }
     });
     $('lfUserAdd').addEventListener('submit', async e => {
       e.preventDefault();

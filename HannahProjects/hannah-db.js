@@ -45,10 +45,11 @@
   function applyRole(r) {
     role = r || '';
     window.canEdit = role === 'superuser' || role === 'admin';
-    $('lfAuthIcon').textContent = role === 'viewer' ? '👁️' : role ? '👑' : '🔐';
+    $('lfAuthIcon').textContent = role === 'viewer' ? '👁️' : role === 'user' ? '🙂' : role ? '👑' : '🔐';
     $('lfAuthDot').hidden = !role;
-    $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : 'Viewer（唯讀）'}` : '';
+    $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User' : 'Viewer（唯讀）'}` : '';
     $('lfUsersItem').hidden = role !== 'superuser';
+    if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
     $('addBtn').hidden = !window.canEdit;
     if (!role) setMenu(false);
   }
@@ -60,18 +61,21 @@
     if (SUPERUSERS.includes(email)) return applyRole('superuser');
     roleUnsub = db.collection('admin_users').doc(email).onSnapshot(snap => {
       const d = snap.exists ? snap.data() : null;
-      applyRole(d && d.active !== false && (d.role === 'admin' || d.role === 'viewer') ? d.role : '');
+      applyRole(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role) ? d.role : '');
     }, () => applyRole(''));
   });
   async function login() {
     try {
       const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-      if (window.CLCSSO && res.credential && res.credential.idToken) window.CLCSSO.saveGoogleIdToken(res.credential.idToken);
+      const tok = res.credential && res.credential.idToken;
+      const share = () => { if (window.CLCSSO && tok) window.CLCSSO.saveGoogleIdToken(tok); };
       const email = res.user.email.toLowerCase();
-      if (SUPERUSERS.includes(email)) return toast('歡迎回來，' + (res.user.displayName || email));
+      if (SUPERUSERS.includes(email)) { share(); return toast('歡迎回來，' + (res.user.displayName || email)); }
       const snap = await db.collection('admin_users').doc(email).get();
       const d = snap.exists ? snap.data() : null;
-      if (!(d && d.active !== false && (d.role === 'admin' || d.role === 'viewer'))) { await auth.signOut(); toast('帳號【' + email + '】沒有權限。'); }
+      if (d && d.active !== false && d.role === 'user') { if (window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); }
+      else share(); // User 不保存共用憑證
+      if (!(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role))) { await auth.signOut(); toast('帳號【' + email + '】沒有權限。'); }
       else toast('歡迎，' + (res.user.displayName || email));
     } catch (err) {
       if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err && err.code)) toast('登入未完成，請確認瀏覽器允許彈出視窗。');

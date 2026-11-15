@@ -391,10 +391,11 @@
     function applyRole(r) {
       role = r || '';
       window.isSuperuser = role === 'superuser';
-      $('lfAuthIcon').textContent = role === 'viewer' ? '👁️' : role ? '👑' : '🔐';
+      $('lfAuthIcon').textContent = role === 'viewer' ? '👁️' : role === 'user' ? '🙂' : role ? '👑' : '🔐';
       $('lfAuthDot').hidden = !role;
-      $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : 'Viewer（唯讀）'}` : '管理員已登入';
+      $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
+      if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
       if (!role) setMenu(false);
       if (slots) { slots.render(); if (isSuper()) seedIfNeeded(); }
     }
@@ -406,7 +407,7 @@
       if (SUPERUSERS.includes(email)) return applyRole('superuser');
       roleUnsub = db.collection('admin_users').doc(email).onSnapshot(snap => {
         const d = snap.exists ? snap.data() : null;
-        applyRole(d && d.active !== false && (d.role === 'admin' || d.role === 'viewer') ? d.role : '');
+        applyRole(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role) ? d.role : '');
       }, () => applyRole(''));
     });
     // 掛在 DX04 底下（/lf/）時，LinFamily 是主站：登入後保存 Google 憑證，DX04、YA、SR 打開時自動登入（clc-sso.js）。
@@ -415,12 +416,15 @@
       if (!auth) return toast('登入服務尚未載入，請重新整理。');
       try {
         const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-        if (window.CLCSSO && res.credential && res.credential.idToken) window.CLCSSO.saveGoogleIdToken(res.credential.idToken);
+        const tok = res.credential && res.credential.idToken;
+        const share = () => { if (window.CLCSSO && tok) window.CLCSSO.saveGoogleIdToken(tok); };
         const email = res.user.email.toLowerCase();
-        if (SUPERUSERS.includes(email)) return toast('歡迎回來，' + (res.user.displayName || email));
+        if (SUPERUSERS.includes(email)) { share(); return toast('歡迎回來，' + (res.user.displayName || email)); }
         const snap = await db.collection('admin_users').doc(email).get();
         const d = snap.exists ? snap.data() : null;
-        if (!(d && d.active !== false && (d.role === 'admin' || d.role === 'viewer'))) {
+        if (d && d.active !== false && d.role === 'user') { if (window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); }
+        else share(); // User 不保存共用憑證：登入不會帶到 DX、YA、SR
+        if (!(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role))) {
           await auth.signOut(); toast('帳號【' + email + '】沒有權限。');
         } else toast('歡迎，' + (res.user.displayName || email));
       } catch (err) {
@@ -515,6 +519,7 @@
     // 不允許被放進框內的網站（Google 等）：直接開，接受瀏覽器那一列。
     const OWN_HOSTS = ['clc-dx04.pages.dev', 'clc-ya-portal.pages.dev', 'clc-sr-portal.pages.dev'];
     const NO_FRAME = /(^|\.)(google\.[a-z.]+|youtube\.com|youtu\.be|gmail\.com|facebook\.com|instagram\.com|messenger\.com|threads\.net|line\.me|apple\.com|icloud\.com|github\.com|x\.com|twitter\.com|microsoft\.com|live\.com|office\.com|notion\.so|amazon\.[a-z.]+|linkedin\.com|paypal\.com)$/i;
+    function isOwnSite(app) { try { const u = new URL(safeUrl(app.url), location.href); return OWN_HOSTS.includes(u.hostname) || (u.origin === location.origin && !/^\/lf(\/|$)/.test(u.pathname)); } catch (_) { return false; } }
     function tileHref(app) {
       const url = safeUrl(app.url); if (!url) return '#';
       let host = ''; try { host = new URL(url, location.href).hostname; } catch (_) {}
@@ -535,6 +540,10 @@
       a.setAttribute('aria-label', editing ? '編輯 ' + app.name : app.name);
       const name = document.createElement('span'); name.className = 'lf-name'; name.textContent = app.name;
       a.append(iconEl(app), name);
+      if (role === 'user' && !editing && isOwnSite(app)) { // User 不能開 DX、YA、SR
+        a.href = '#'; a.style.opacity = '.4'; a.title = '此帳號不能開啟 ' + app.name;
+        a.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + app.name + '。'); });
+      }
       return a;
     }
     let addPos = null;
