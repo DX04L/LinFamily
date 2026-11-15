@@ -26,6 +26,8 @@
 - 權限管理是**獨立頁面**（不是彈出視窗），左上角「‹ 返回」；只有 Superuser 看得到內容。版面與字體大小照 DX 的 `admin-users.html`。
 
 ## 4. App 格子（主畫面）
+- 沒登入時停在 Welcome 畫面（墨黑底、LinFamily 大字），點一下跳出 Google 登入（參照 DX）。
+- DX、YA、SR 的 App 只有 Superuser 看得到（其他人主畫面與 Apps 都不顯示）。
 - **每人自己的桌面**：登入者都能長按編輯（排列、新增、移除、改圖示），存在 Firestore `linfamily_desktops/{email}`；沒有個人桌面時顯示預設桌面。
 - 分頁：**Home**（主畫面）、**Family**（家庭空間配置）、**Apps**（只列還沒加到主畫面的 App，含從主畫面移除的，可「＋ 加到主畫面」）；搜尋是分頁右邊的放大鏡，點了才出現搜尋列，清空就收起。有新 App 時 Apps 分頁出現紅點，打開 Apps 就消失；看過的記在個人桌面的 `seen`。
 - **App 櫃**＝`linfamily_settings/apps`（全部 App）。Superuser 也有自己的主畫面；Superuser 新增／修改 App 會同步到 App 櫃，在 Apps 分頁可「刪除」App 櫃裡的 App。之後「不同 App 給不同人」就在 App 櫃的 App 上加權限欄位。

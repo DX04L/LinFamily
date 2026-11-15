@@ -224,11 +224,24 @@
     main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
     #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
     #lfApps.is-editing .slot-empty { visibility:visible; }
-    @media (max-width:639px) { footer { display:none; } } /* 手機版不要 footer */
+    @media (max-width:639px) { footer { display:none; } }
+    .lf-welcome { position:fixed; inset:0; z-index:90; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      background:#1C1C1C; color:#EADFC8; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; }
+    .lf-welcome[hidden] { display:none; }
+    .lf-welcome-title { font-weight:800; font-size:clamp(48px, 13vw, 104px); letter-spacing:.02em; }
+    .lf-welcome-hint { margin:0; font-size:14px; color:#8FBFB0; animation:lfBlink 2.4s ease-in-out infinite; }
+    @keyframes lfBlink { 50% { opacity:.35; } }
+    html.lf-pending .lf-welcome > * { visibility:hidden; } /* 確認登入狀態時先不閃出字 */ /* 手機版不要 footer */
     footer { text-align:center; font-size:11px; color:var(--muted); padding:14px 0 calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
   </style>
 </head>
 <body>
+  <!-- 沒登入：停在 Welcome 畫面，點一下就跳出 Google 登入（參照 DX） -->
+  <div class="lf-welcome" id="lfWelcome" role="button" tabindex="0" aria-label="使用 Google 帳號登入 LinFamily">
+    <div class="lf-welcome-title">LinFamily</div>
+    <p class="lf-welcome-hint">點一下畫面登入</p>
+  </div>
+  <script>document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
   <div class="lf-top">
     <div>
       <p class="lf-date" id="lfDate">&nbsp;</p>
@@ -430,6 +443,7 @@
       $('lfAuthDot').hidden = !role;
       $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
+      $('lfWelcome').hidden = !!role; document.documentElement.classList.remove('lf-pending');
       $('lfAddBtn').hidden = !role;
       if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
       if (!role) setMenu(false);
@@ -472,6 +486,8 @@
     // ---------- 皇冠選單 ----------
     const menu = $('lfMenu'), authBtn = $('lfAuthBtn');
     function setMenu(open) { menu.hidden = !open; authBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    $('lfWelcome').addEventListener('click', () => login());
+    $('lfWelcome').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); login(); } });
     authBtn.addEventListener('click', () => { if (!role) login(); else setMenu(menu.hidden); });
     document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && !authBtn.contains(e.target)) setMenu(false); });
     menu.addEventListener('click', async e => {
@@ -522,7 +538,7 @@
     let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '';
     const deskKey = () => 'linfamily_desk_' + deskEmail;
     function showApps() {
-      apps = myDesk || globalApps;
+      apps = (myDesk || globalApps).filter(a => isSuper() || !isOwnSite(a)); // DX、YA、SR 只有 Superuser 看得到
       if (slots) { slots.render(); renderZone(); renderNews(); if (!$('panelAll').hidden) renderAll(); }
     }
     function watchDesk() {
@@ -772,7 +788,7 @@
     // ---------- 權限管理 ----------
     // ---------- 所有 App（預設桌面＝目前全部 App）／新 App 通知 ----------
     const onDesk = a => apps.some(m => m.id === a.id);
-    const locked = a => role === 'user' && isOwnSite(a);
+    const locked = a => !isSuper() && isOwnSite(a);
     const newApps = () => role && myDesk ? globalApps.filter(a => !mySeen.includes(a.id) && !onDesk(a) && !locked(a)) : [];
     async function addToDesk(a) {
       const base = withPos(); let pos = 0; while (base.some(m => m.pos === pos)) pos++;
