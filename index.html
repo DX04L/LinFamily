@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LinFamily">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
-  <link rel="stylesheet" href="css/entrance.css?v=13">
+  <link rel="stylesheet" href="css/entrance.css?v=14">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
   <script>
@@ -239,7 +239,7 @@
   </div>
   <script src="js/entrance.js" defer></script>
   <script src="js/entrance-waves.js" defer></script>
-  <script>document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
+  <script>try{if(localStorage.getItem('linfamily_signed_in')==='1')document.documentElement.classList.add('lf-signed-hint');}catch(_){}document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
   <div class="lf-top">
     <div>
       <p class="lf-date" id="lfDate">&nbsp;</p>
@@ -443,6 +443,9 @@
       $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
       $('lfWelcome').hidden = !!role; document.documentElement.classList.remove('lf-pending');
+      // 記住「上次是登入的」：下次打開直接顯示主畫面，不先閃過 Welcome 畫面（登入過期時 applyRole('') 會再把 Welcome 叫出來）
+      document.documentElement.classList.toggle('lf-signed-hint', !!role);
+      try { if (role) localStorage.setItem('linfamily_signed_in', '1'); else localStorage.removeItem('linfamily_signed_in'); } catch (_) {}
       $('lfAddBtn').hidden = !role;
       if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
       if (!role) setMenu(false);

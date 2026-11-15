@@ -9,7 +9,7 @@
   let savedTheme = null;
   function themeBar() {
     if (!meta) return;
-    if (!wrap.hidden) { if (savedTheme === null) savedTheme = meta.getAttribute('content'); meta.setAttribute('content', '#02969B'); }
+    if (!wrap.hidden && !document.documentElement.classList.contains('lf-signed-hint')) { if (savedTheme === null) savedTheme = meta.getAttribute('content'); meta.setAttribute('content', '#02969B'); }
     else if (savedTheme !== null) { meta.setAttribute('content', savedTheme); savedTheme = null; }
   }
   new MutationObserver(themeBar).observe(wrap, { attributes: true, attributeFilter: ['hidden'] });
