@@ -551,7 +551,7 @@
       const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       $('lfInstallText').innerHTML = ios
         ? '請用 Safari 開啟這一頁，按下方的「分享」<b>⬆︎</b>，再選「<b>加入主畫面</b>」。'
-        : '瀏覽器目前沒有提供直接安裝，通常是<b>這台裝置已經安裝過 LinFamily</b>（請從桌面或應用程式清單開啟；要重裝請先移除）。也可以從瀏覽器選單（右上角 ⋮）選「<b>安裝應用程式</b>」或「<b>加到主畫面</b>」。';
+        : '這個瀏覽器沒有讓網頁直接跳出安裝（例如 Brave）。請按<b>網址列右邊的安裝圖示</b>（螢幕或圓圈加向下箭頭），或從瀏覽器選單（右上角 ⋮ 或 ≡）選「<b>安裝 LinFamily</b>／安裝應用程式」。如果網址列顯示的是「在應用程式中開啟」，代表已經裝過，從桌面或應用程式清單開啟即可。';
       $('lfInstallDialog').showModal();
     }
     $('lfInstallClose').addEventListener('click', () => $('lfInstallDialog').close());
