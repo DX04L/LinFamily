@@ -120,9 +120,9 @@
     .lf-all-row button:disabled { background:var(--btn-h); color:inherit; opacity:.7; cursor:default; }
 
     /* App 格子：手機 4 欄、平板 6 欄、電腦 8 欄 */
-    #lfApps { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:22px 16px; max-width:520px; }
-    @media (min-width:640px) { #lfApps { grid-template-columns:repeat(6, minmax(0, 1fr)); max-width:780px; gap:26px 22px; } }
-    @media (min-width:1024px) { #lfApps { grid-template-columns:repeat(8, minmax(0, 1fr)); max-width:1040px; } }
+    /* 整個畫面都放 App：一行放得下幾個就放幾個，超過就換下一行 */
+    #lfApps { display:grid; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:22px 16px; }
+    @media (min-width:640px) { #lfApps { grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:26px 22px; } }
     #lfApps .slot-cell { aspect-ratio:auto; }
     .lf-app { display:flex; flex-direction:column; align-items:center; gap:7px; text-decoration:none; color:var(--text); -webkit-tap-highlight-color:transparent; }
     .lf-icon { width:100%; aspect-ratio:1; border-radius:22%; display:grid; place-items:center; overflow:hidden; transition:transform .2s; }
@@ -217,6 +217,7 @@
     .lf-users li button.lf-del { color:#E0525E; }
     .lf-toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:100; padding:10px 18px; border-radius:12px;
       background:#1C1C1C; color:#fff; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+    @media (max-width:639px) { footer { display:none; } } /* 手機版不要 footer */
     footer { text-align:center; font-size:11px; color:var(--muted); padding:14px 0 calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
   </style>
 </head>
