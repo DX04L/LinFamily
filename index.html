@@ -67,7 +67,11 @@
       max-width:1100px; width:100%; margin:0 auto; }
     .lf-date { margin:0; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.02em; }
     .lf-title { margin:2px 0 0; font-size:clamp(24px, 6.6vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
-    .lf-right { display:flex; align-items:center; gap:6px; position:relative; flex:none; }
+    /* 右上角按鈕位置照 DX 的 Header：離上緣 6px（DX 的 Header 高 46／48px、按鈕 34／36px 置中），離右緣 14／20／24／32px，貼齊整個畫面右邊 */
+    .lf-right { display:flex; align-items:center; gap:6px; flex:none; position:fixed; z-index:40; top:calc(6px + env(safe-area-inset-top)); right:max(14px, env(safe-area-inset-right)); }
+    @media (min-width:640px) { .lf-right { right:max(20px, env(safe-area-inset-right)); } }
+    @media (min-width:1024px) { .lf-right { right:24px; } }
+    @media (min-width:1440px) { .lf-right { right:32px; } }
     /* 以下尺寸、顏色與 DX 的 Header 按鈕／管理員下拉選單相同 */
     .lf-btn { width:34px; min-width:34px; height:34px; border-radius:9px; font-size:15px; padding:0; display:inline-flex; align-items:center; justify-content:center;
       cursor:pointer; position:relative; background:rgba(226,232,240,.7); color:#334155; border:1px solid rgba(203,213,225,.6); transition:background .15s, transform .1s; }
@@ -75,7 +79,8 @@
     .lf-btn:active { transform:scale(.95); }
     html.dark .lf-btn { background:rgba(255,255,255,.05); color:#cbd5e1; border-color:rgba(255,255,255,.1); }
     html.dark .lf-btn:hover { background:rgba(255,255,255,.1); }
-    .lf-install { width:auto; padding:0 10px; font-size:12px; font-weight:600; gap:4px; }
+    .lf-install { width:auto; padding:0 10px; font-size:12px; font-weight:600; gap:4px; line-height:1; white-space:nowrap; } /* line-height:1：字在按鈕裡上下置中 */
+    .lf-install > span { display:block; }
     .lf-install[hidden] { display:none; }
     .lf-dot { position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:#fbbf24; animation:lfPulse 2s cubic-bezier(.4,0,.6,1) infinite; }
     .lf-dot[hidden] { display:none; }
