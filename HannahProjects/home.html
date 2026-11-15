@@ -240,6 +240,22 @@
     .faves { justify-content: center; }
   }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+  /* 彈出視窗置中、幾乎全螢幕 */
+  .add-dlg { margin:auto; width:calc(100vw - 20px); height:calc(100dvh - 20px); max-width:960px; max-height:none; }
+  .add-dlg[open] { display:flex; }
+  .add-body { flex:1; display:flex; flex-direction:column; min-height:0; padding:16px 14px 14px; }
+  #st1, #st2, #st3, #st4 { flex:1; display:flex; flex-direction:column; min-height:0; }
+  #st1, #st2 { justify-content:center; }
+  .cam { flex:1; min-height:0; width:100%; aspect-ratio:auto; margin:16px 0 4px; padding:5px; border-radius:24px; }
+  .cam video { border-radius:20px; }
+  .cam-msg { inset:5px; border-radius:20px; }
+  .cam .ear { top:-14px; border-left-width:15px; border-right-width:15px; border-bottom-width:20px; }
+  .cam .ear.l { left:28px; } .cam .ear.r { right:28px; }
+  .cam-bar { margin-top:10px; }
+  .edit-wrap { flex:1; min-height:0; align-items:center; }
+  .edit-box canvas { max-height:calc(100dvh - 300px); }
+  .add-actions { margin-top:12px; }
 </style>
 </head>
 <body>
