@@ -4,6 +4,17 @@
 (function () {
   const wrap = document.getElementById('lfWelcome');
   if (!wrap) return;
+  // 入口頁顯示時，手機上方狀態列改成海的顏色（不是白色）；登入後還原
+  const meta = document.getElementById('metaThemeColor');
+  let savedTheme = null;
+  function themeBar() {
+    if (!meta) return;
+    if (!wrap.hidden) { if (savedTheme === null) savedTheme = meta.getAttribute('content'); meta.setAttribute('content', '#02969B'); }
+    else if (savedTheme !== null) { meta.setAttribute('content', savedTheme); savedTheme = null; }
+  }
+  new MutationObserver(themeBar).observe(wrap, { attributes: true, attributeFilter: ['hidden'] });
+  themeBar();
+
   // ---------- LINE／Facebook／Instagram 內建瀏覽器（Google 不允許在裡面登入：disallowed_useragent） ----------
   const ua = navigator.userAgent || '';
   const isLine = /\bLine\//i.test(ua), inApp = isLine || /FBAN|FBAV|FB_IAB|Instagram/i.test(ua);
