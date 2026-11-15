@@ -35,7 +35,7 @@
     dbItems = snap.docs.map(d => {
       const x = d.data(), t = x.createdAt && x.createdAt.toDate ? x.createdAt.toDate() : new Date();
       const date = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0');
-      return { id: d.id, title: x.title || t.toLocaleDateString('zh-TW'), category: x.category || 'other', emoji: x.emoji || '✨', image: x.image, date, note: '' };
+      return { id: d.id, raw: x.title || '', title: x.title || t.toLocaleDateString('zh-TW'), category: x.category || 'other', emoji: x.emoji || '✨', image: x.image, date, note: '' };
     });
     render();
   }, err => console.warn('讀取作品失敗', err));
@@ -88,68 +88,125 @@
     else if (b.dataset.act === 'users') location.href = '../users.html?back=HannahProjects/home';
   });
 
-  // ---------- Add Artwork：分類 → 圖示 → 拍照 → 上傳 ----------
-  const dlg = $('addDlg');
-  let pick = {}, imgData = '';
+  // ---------- Add Artwork：分類 → 圖示 → 拍照（網站內相機）→ 旋轉／裁切 → 上傳 ----------
+  const dlg = $('addDlg'), vid = $('camVid'), cv = $('editCv'), box = $('editBox'), cropEl = $('crop');
+  let pick = {}, editId = null, stream = null, facing = 'environment', cr = { x: 0, y: 0, w: 1, h: 1 };
   function step(n) {
-    ['st1', 'st2', 'st3'].forEach((id, i) => $(id).hidden = i !== n - 1);
-    $('addGo').hidden = n !== 3 || !imgData;
-    $('addBack').textContent = n === 1 ? 'Cancel' : '‹ Back';
+    ['st1', 'st2', 'st3', 'st4'].forEach((id, i) => $(id).hidden = i !== n - 1);
+    $('addGo').hidden = n !== 4;
+    $('addGo').textContent = editId ? 'Save ✨' : 'Upload ✨';
+    $('addBack').textContent = n === 1 || (editId && n === 4) ? 'Cancel' : '‹ Back';
+    $('st4Step').textContent = editId ? 'Rotate or crop' : '4 / 4 · Rotate or crop';
     dlg.dataset.step = n;
+    if (n === 3) startCam(); else stopCam();
   }
   $('iconPick').innerHTML = ICONS.map(i => `<button type="button" data-ic="${i}">${i}</button>`).join('');
-  $('addBtn').addEventListener('click', () => {
-    pick = {}; imgData = ''; $('prev').hidden = true; $('titleIn').value = ''; step(1); dlg.showModal();
-  });
+  $('addBtn').addEventListener('click', () => { pick = {}; editId = null; $('titleIn').value = ''; step(1); dlg.showModal(); });
+  dlg.addEventListener('close', stopCam);
   dlg.querySelector('.cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { pick.category = b.dataset.cat; step(2); } });
   $('iconPick').addEventListener('click', e => {
     const b = e.target.closest('[data-ic]'); if (!b) return;
     pick.emoji = b.dataset.ic; $('chosen').textContent = pick.emoji + ' ' + labels[pick.category]; step(3);
   });
-  $('addBack').addEventListener('click', () => { const n = +dlg.dataset.step; if (n > 1) step(n - 1); else dlg.close(); });
+  $('addBack').addEventListener('click', () => { const n = +dlg.dataset.step; if (n > 1 && !(editId && n === 4)) step(n - 1); else dlg.close(); });
 
-  // 壓縮：長邊 1280px JPEG，控制在約 900KB 以內（Firestore 單筆上限 1MB）
-  function compress(file) {
-    return new Promise((ok, bad) => {
-      const img = new Image(), url = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        let max = 1280, out = '';
-        for (let tries = 0; tries < 3; tries++) {
-          const k = Math.min(1, max / Math.max(img.width, img.height));
-          const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-          for (let q = 0.82; q >= 0.45; q -= 0.12) { out = c.toDataURL('image/jpeg', q); if (out.length < 900000) return ok(out); }
-          max = Math.round(max * 0.75);
-        }
-        ok(out);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); bad(new Error('bad image')); };
-      img.src = url;
-    });
+  // 相機
+  async function startCam() {
+    stopCam(); $('camMsg').hidden = true;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 } }, audio: false });
+      vid.srcObject = stream; vid.classList.toggle('mirror', facing === 'user');
+    } catch (_) { $('camMsg').hidden = false; }
   }
-  async function onFile(e) {
-    const f = e.target.files && e.target.files[0]; e.target.value = '';
-    if (!f) return;
-    try { imgData = await compress(f); $('prev').src = imgData; $('prev').hidden = false; $('addGo').hidden = false; }
-    catch (_) { toast('這張照片讀不到，請換一張。'); }
+  function stopCam() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } vid.srcObject = null; }
+  $('flipCam').addEventListener('click', () => { facing = facing === 'user' ? 'environment' : 'user'; startCam(); });
+  $('shutter').addEventListener('click', () => {
+    if (!stream || !vid.videoWidth) return toast('相機還沒準備好');
+    const c = document.createElement('canvas'); c.width = vid.videoWidth; c.height = vid.videoHeight;   // 直拍就是直的
+    c.getContext('2d').drawImage(vid, 0, 0); toEditor(c); step(4);
+  });
+  $('albIn').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+    const img = new Image(), url = URL.createObjectURL(f);
+    img.onload = () => { URL.revokeObjectURL(url); toEditor(img); step(4); };
+    img.onerror = () => { URL.revokeObjectURL(url); toast('這張照片讀不到，請換一張。'); };
+    img.src = url;
+  });
+
+  // 編輯：旋轉、裁切
+  function toEditor(src) {
+    const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height, k = Math.min(1, 1600 / Math.max(W, H));
+    cv.width = Math.round(W * k); cv.height = Math.round(H * k);
+    cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height); setCrop({ x: 0, y: 0, w: 1, h: 1 });
   }
-  $('camIn').addEventListener('change', onFile);
-  $('albIn').addEventListener('change', onFile);
+  function setCrop(c) { cr = c; Object.assign(cropEl.style, { left: c.x * 100 + '%', top: c.y * 100 + '%', width: c.w * 100 + '%', height: c.h * 100 + '%' }); }
+  function rotate(dir) {
+    const t = document.createElement('canvas'); t.width = cv.height; t.height = cv.width;
+    const g = t.getContext('2d'); g.translate(t.width / 2, t.height / 2); g.rotate(dir * Math.PI / 2); g.drawImage(cv, -cv.width / 2, -cv.height / 2);
+    cv.width = t.width; cv.height = t.height; cv.getContext('2d').drawImage(t, 0, 0); setCrop({ x: 0, y: 0, w: 1, h: 1 });
+  }
+  dlg.querySelector('.tools').addEventListener('click', e => {
+    const t = e.target.closest('[data-t]'); if (!t) return;
+    if (t.dataset.t === 'l') rotate(-1); else if (t.dataset.t === 'r') rotate(1); else setCrop({ x: 0, y: 0, w: 1, h: 1 });
+  });
+  let drag = null;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  box.addEventListener('pointerdown', e => {
+    if (!e.target.closest('.crop')) return;
+    drag = { hd: e.target.dataset.h || 'move', sx: e.clientX, sy: e.clientY, c: { ...cr }, W: box.clientWidth, H: box.clientHeight };
+    box.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  box.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = (e.clientX - drag.sx) / drag.W, dy = (e.clientY - drag.sy) / drag.H, m = 0.1, hd = drag.hd;
+    let { x, y, w, h } = drag.c;
+    if (hd === 'move') { x = clamp(x + dx, 0, 1 - w); y = clamp(y + dy, 0, 1 - h); }
+    else {
+      if (hd.includes('w')) { const nx = clamp(x + dx, 0, x + w - m); w += x - nx; x = nx; }
+      if (hd.includes('e')) w = clamp(w + dx, m, 1 - x);
+      if (hd.includes('n')) { const ny = clamp(y + dy, 0, y + h - m); h += y - ny; y = ny; }
+      if (hd.includes('s')) h = clamp(h + dy, m, 1 - y);
+    }
+    setCrop({ x, y, w, h });
+  });
+  ['pointerup', 'pointercancel'].forEach(ev => box.addEventListener(ev, () => { drag = null; }));
+
+  // 輸出：裁切 → 長邊 1280px JPEG，控制在約 900KB 以內（Firestore 單筆上限 1MB）
+  function exportImage() {
+    const sx = cr.x * cv.width, sy = cr.y * cv.height, sw = cr.w * cv.width, sh = cr.h * cv.height;
+    let max = 1280, out = '';
+    for (let tries = 0; tries < 3; tries++) {
+      const k = Math.min(1, max / Math.max(sw, sh)), c = document.createElement('canvas');
+      c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+      c.getContext('2d').drawImage(cv, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      for (let q = 0.82; q >= 0.45; q -= 0.12) { out = c.toDataURL('image/jpeg', q); if (out.length < 900000) return out; }
+      max = Math.round(max * 0.75);
+    }
+    return out;
+  }
 
   $('addGo').addEventListener('click', async () => {
-    if (!imgData || !window.canEdit) return;
-    const go = $('addGo'); go.disabled = true; go.textContent = 'Uploading…';
+    if (!window.canEdit) return;
+    const go = $('addGo'), label = go.textContent; go.disabled = true; go.textContent = 'Saving…';
     try {
-      await db.collection(COL).add({
-        category: pick.category, emoji: pick.emoji, title: $('titleIn').value.trim(), image: imgData,
+      const image = exportImage(), title = $('titleIn').value.trim();
+      if (editId) await db.collection(COL).doc(editId).update({ image, title });
+      else await db.collection(COL).add({
+        category: pick.category, emoji: pick.emoji, title, image,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: user.email
       });
-      dlg.close(); toast('Uploaded! 🎉');
-      document.getElementById('gallery-section').scrollIntoView({ behavior: 'smooth' });
-    } catch (err) { console.warn(err); toast('上傳失敗：' + (err.code === 'permission-denied' ? '沒有權限' : '請再試一次')); }
-    go.disabled = false; go.textContent = 'Upload ✨';
+      dlg.close(); toast(editId ? 'Saved! ✨' : 'Uploaded! 🎉');
+      if (!editId) $('gallery-section').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) { console.warn(err); toast('儲存失敗：' + (err.code === 'permission-denied' ? '沒有權限' : '請再試一次')); }
+    go.disabled = false; go.textContent = label;
   });
+
+  window.editArtwork = p => {
+    if (!window.canEdit) return;
+    const img = new Image();
+    img.onload = () => { editId = p.id; pick = { category: p.category, emoji: p.emoji }; $('titleIn').value = p.raw || ''; toEditor(img); step(4); dlg.showModal(); };
+    img.src = p.image;
+  };
 
   window.deleteArtwork = async p => {
     if (!window.canEdit || !confirm('Delete "' + p.title + '"?')) return;
