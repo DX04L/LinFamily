@@ -1,5 +1,5 @@
 /* LinFamily 入口歡迎頁：抽象海岸浪潮動畫（js/entrance-waves.js）＋LF Logo。只在未登入時顯示（#lfWelcome 由 index.html 的 applyRole 控制 hidden）。 */
-.lf-welcome { position:fixed; inset:0; z-index:90; height:100dvh; min-height:100svh; overflow:hidden; cursor:pointer;
+.lf-welcome { position:fixed; inset:0; z-index:90; /* 只用 inset:0 貼齊畫面；不用 100dvh（手機登出後回來時 dvh 可能算錯，Logo 會跑位） */ overflow:hidden; cursor:pointer;
   background:linear-gradient(100deg, #02878F, #02A8AB 58%, #F8C4B4 64%, #F5CCBD); /* 跟動畫同色，確認登入中或動畫還沒畫出來時不會閃暗色 */
   -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
 .lf-welcome[hidden] { display:none; }
@@ -20,7 +20,7 @@
 
 /* 手機直式：放在左下，左邊與下面留一樣的空間（--m） */
 @media (orientation: portrait) {
-  .lf-ent-logo { --m:16vw; left:calc(var(--m) + var(--lw) / 2); top:calc(100% - var(--m) - env(safe-area-inset-bottom) - var(--lw) * 594 / 644 / 2); }
+  .lf-ent-logo { --m:16vw; left:calc(var(--m) + var(--lw) / 2); top:auto; bottom:calc(var(--m) + env(safe-area-inset-bottom) - var(--lw) * 594 / 644 / 2); /* 以下緣定位：中心點往下半個 Logo 高（配合 translate(-50%,-50%)） */ }
 }
 #lfApps { transition:opacity .3s; }
 html.lf-apps-wait #lfApps { opacity:0; } /* 剛進主畫面、桌面還沒讀到：先不顯示 App 圖示 */

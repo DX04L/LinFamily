@@ -600,7 +600,7 @@
     running = true; lastTime = 0; rafId = requestAnimationFrame(animate);
   }
   function stop() { running = false; cancelAnimationFrame(rafId); }
-  function sync() { (!wrap.hidden && !document.hidden) ? start() : stop(); }
+  function sync() { if (!wrap.hidden) resizeCanvas(); (!wrap.hidden && !document.hidden) ? start() : stop(); } // 重新出現時（例如登出後）重算大小
   resizeCanvas(); initWaves();
   if (reduced) { for (let i = 0; i < 90; i++) { globalTime += 0.05; waveFronts.forEach(w => w.update(0.05)); } running = false; drawLineAndParticleBackdrop(); waveFronts.forEach(w => w.draw(ctx)); updateAndDrawAllParticles(0); }
   addEventListener('resize', () => { resizeCanvas(); if (reduced) { drawLineAndParticleBackdrop(); waveFronts.forEach(w => w.draw(ctx)); } });
