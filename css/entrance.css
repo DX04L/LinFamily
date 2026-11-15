@@ -22,3 +22,5 @@
 @media (orientation: portrait) {
   .lf-ent-logo { --m:16vw; left:calc(var(--m) + var(--lw) / 2); top:calc(100% - var(--m) - env(safe-area-inset-bottom) - var(--lw) * 594 / 644 / 2); }
 }
+#lfApps { transition:opacity .3s; }
+html.lf-apps-wait #lfApps { opacity:0; } /* 剛進主畫面、桌面還沒讀到：先不顯示 App 圖示 */

@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LinFamily">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
-  <link rel="stylesheet" href="css/entrance.css?v=15">
+  <link rel="stylesheet" href="css/entrance.css?v=16">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
   <script>
@@ -435,6 +435,13 @@
     const isSuper = () => role === 'superuser';
     window.isSuperuser = false;
     let entered = false; // 這次打開有沒有在 Welcome 點過
+    let waitT = null;
+    function goHome() { // 先顯示「沒有 App 圖示」的主畫面，等權限與個人桌面讀到再讓圖示出現
+      $('lfWelcome').hidden = true;
+      document.documentElement.classList.add('lf-apps-wait');
+      clearTimeout(waitT); waitT = setTimeout(appsReady, 3000); // 保險：最多等 3 秒
+    }
+    function appsReady() { clearTimeout(waitT); document.documentElement.classList.remove('lf-apps-wait'); }
     function applyRole(r) {
       role = r || '';
       window.isSuperuser = role === 'superuser';
@@ -445,6 +452,7 @@
       $('lfUsersItem').hidden = !isSuper();
       // 每次打開都先停在 Welcome；點過（entered）而且已登入才進主畫面。登入中不會先進去又閃回來。
       $('lfWelcome').hidden = !!(role && entered); document.documentElement.classList.remove('lf-pending');
+      if (!role) appsReady(); // 登入失敗或沒權限：回到 Welcome
       $('lfAddBtn').hidden = !role;
       if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
       if (!role) setMenu(false);
@@ -468,6 +476,7 @@
       if (!auth) return toast('登入服務尚未載入，請重新整理。');
       try {
         const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        if (entered) goHome(); // 登入一成功就進主畫面（先不顯示 App 圖示），不再回到 Welcome
         const tok = res.credential && res.credential.idToken;
         const share = () => { if (window.CLCSSO && tok) window.CLCSSO.saveGoogleIdToken(tok); };
         const email = res.user.email.toLowerCase();
@@ -491,7 +500,7 @@
       if (window.lfEntranceGuard && window.lfEntranceGuard()) return; // 內建瀏覽器先處理（js/entrance.js）
       entered = true;
       if (role) return applyRole(role);        // 已登入：點一下直接進主畫面
-      if (auth && auth.currentUser) return;    // 已登入、權限還在確認：確認完 applyRole 會自動進去，不再跳登入視窗
+      if (auth && auth.currentUser) return goHome(); // 已登入、權限還在確認：先進主畫面，圖示確認完才出現
       login();                                 // 沒登入：跳 Google 登入，成功後直接進主畫面
     };
     $('lfWelcome').addEventListener('click', enter);
@@ -562,8 +571,8 @@
           myDesk = d && Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : null;
           mySeen = d && Array.isArray(d.seen) ? d.seen : [];
           try { if (myDesk) localStorage.setItem(deskKey(), JSON.stringify(myDesk)); else localStorage.removeItem(deskKey()); } catch (_) {}
-          showApps();
-        }, err => console.warn('個人桌面讀取失敗', err));
+          showApps(); appsReady();
+        }, err => { console.warn('個人桌面讀取失敗', err); appsReady(); });
       }
       showApps();
     }
