@@ -39,6 +39,7 @@
 - **回首頁鈕**：從 LF 開出來的所有站（DX、YA、SR、`open.html` 內的外部網站）左下角都有一顆**淡淡的圓形 🏠 浮動鈕**（平常幾乎透明，碰到才變清楚），按了回 LF 主畫面。不要再用「‹ LinFamily」文字鈕。
   - 自家站：LF 帶 `?lfhome=` 進入，由 DX04 的 `lf-back.js` 顯示（Worker 自動插入，各站不用改）。
   - `open.html`：直接寫在頁面裡（樣式相同）。
+  - LF 自己的子 App（如 HannahProjects）：引用 LF 根目錄的 `linfamily-home.js`（樣式相同）。
 
 ## 5. 外觀
 - 字型：英文 Arial（粗體用 Arial Bold）、中文微軟正黑體（`"CLC Arial", Arial, "Microsoft JhengHei", "PingFang TC", sans-serif`）。
