@@ -69,7 +69,7 @@
     .lf-title { margin:2px 0 0; font-size:clamp(24px, 6.6vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
     /* 右上角按鈕位置照 DX 的 Header：離上緣 6px（DX 的 Header 高 46／48px、按鈕 34／36px 置中），離右緣 14／20／24／32px，貼齊整個畫面右邊 */
     .lf-right { display:flex; align-items:center; gap:6px; flex:none; position:fixed; z-index:40; top:calc(6px + env(safe-area-inset-top)); right:max(14px, env(safe-area-inset-right)); }
-    @media (min-width:640px) { .lf-right { right:max(20px, env(safe-area-inset-right)); } }
+    @media (min-width:640px) { .lf-right { right:max(20px, env(safe-area-inset-right)); gap:7.1px; } } /* DX 的 gap-1.5 在寬畫面量起來是 7.1px */
     @media (min-width:1024px) { .lf-right { right:24px; } }
     @media (min-width:1440px) { .lf-right { right:32px; } }
     /* 以下尺寸、顏色與 DX 的 Header 按鈕／管理員下拉選單相同 */
