@@ -242,7 +242,8 @@
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
   /* 彈出視窗置中、幾乎全螢幕 */
-  .add-dlg { margin:auto; width:calc(100vw - 20px); height:calc(100dvh - 20px); max-width:960px; max-height:none; }
+  .add-dlg { margin:auto; width:min(520px, calc(100vw - 32px)); max-height:calc(100dvh - 20px); }
+  .add-dlg[data-step="3"] { width:calc(100vw - 20px); height:calc(100dvh - 20px); max-width:960px; }
   .add-dlg[open] { display:flex; }
   .add-body { flex:1; display:flex; flex-direction:column; min-height:0; padding:16px 14px 14px; }
   #st1, #st2, #st3, #st4 { flex:1; display:flex; flex-direction:column; min-height:0; }
@@ -254,7 +255,7 @@
   .cam .ear.l { left:28px; } .cam .ear.r { right:28px; }
   .cam-bar { margin-top:10px; }
   .edit-wrap { flex:1; min-height:0; align-items:center; }
-  .edit-box canvas { max-height:calc(100dvh - 300px); }
+  .edit-box canvas { max-height:min(60vh, calc(100dvh - 300px)); }
   .add-actions { margin-top:12px; }
 </style>
 </head>
