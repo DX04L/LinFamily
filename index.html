@@ -164,6 +164,13 @@
     .lf-search button { flex:none; width:32px; height:32px; border:0; border-radius:10px; background:none; color:var(--muted); cursor:pointer; font-size:16px; }
     .lf-search button:hover { background:var(--btn); }
     .lf-search button[hidden] { display:none; }
+    .lf-search[hidden] { display:none; }
+    .lf-tabbar { display:flex; align-items:center; gap:10px; margin:22px 0 24px; }
+    .lf-tabbar .lf-tabs { margin:0; }
+    .lf-search-btn { flex:none; width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--btn); color:var(--muted); cursor:pointer; display:grid; place-items:center; }
+    .lf-search-btn svg { width:18px; height:18px; }
+    .lf-search-btn[aria-expanded="true"] { background:var(--pine); color:#fff; border-color:var(--pine); }
+    .lf-tabbar + .lf-search { margin:-12px 0 20px; }
     @media (min-width:640px) { .lf-search { max-width:780px; } }
     @media (min-width:1024px) { .lf-search { max-width:1040px; } }
     #lfApps.is-searching > * { transition:opacity .15s; }
@@ -232,17 +239,20 @@
   </div>
 
   <main>
-    <label class="lf-search" for="lfSearch">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
-      <input type="search" id="lfSearch" placeholder="搜尋 App…" autocomplete="off" enterkeyhint="go" aria-label="搜尋 App">
-      <button type="button" id="lfSearchClear" aria-label="清除搜尋" hidden>✕</button>
-    </label>
 
+    <div class="lf-tabbar">
     <div class="lf-tabs" role="tablist" aria-label="切換">
       <button type="button" role="tab" aria-selected="true" data-tab="apps">Home</button>
       <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
       <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-dot" id="lfAppsDot" hidden></i></button>
     </div>
+    <button type="button" class="lf-search-btn" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
+    </div>
+    <label class="lf-search" for="lfSearch" id="lfSearchBox" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
+      <input type="search" id="lfSearch" placeholder="搜尋 App…" autocomplete="off" enterkeyhint="go" aria-label="搜尋 App">
+      <button type="button" id="lfSearchClear" aria-label="清除搜尋" hidden>✕</button>
+    </label>
 
     <section id="panelApps" aria-label="App">
       <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
@@ -736,9 +746,10 @@
       catch (err) { toast('加入失敗：' + errText(err)); }
     }
     function renderAll() {
-      $('lfAllNote').textContent = !role ? '登入後可以把 App 加到自己的主畫面。' : isSuper() ? 'Superuser 的主畫面就是全部 App。' : '按「加到主畫面」把 App 放到你的主畫面。';
+      const list = role && !isSuper() ? window.clcSlotGridNormalize(globalApps).filter(a => !onDesk(a) && !locked(a)).sort((a, b) => a.pos - b.pos) : [];
+      $('lfAllNote').textContent = !role ? '登入後，還沒加到主畫面的 App 會列在這裡。' : isSuper() ? 'Superuser 的主畫面就是全部 App。' : list.length ? '還沒加到主畫面的 App（從主畫面移除的也會回到這裡）。' : '全部 App 都在你的主畫面了。';
       const box = $('lfAll'); box.textContent = '';
-      window.clcSlotGridNormalize(globalApps).slice().sort((a, b) => a.pos - b.pos).forEach(a => {
+      list.forEach(a => {
         const row = document.createElement('div'); row.className = 'lf-all-row';
         const link = document.createElement('a'); link.href = locked(a) ? '#' : tileHref(a);
         const name = document.createElement('span'); name.textContent = a.name;
@@ -808,13 +819,19 @@
     }
     search.addEventListener('input', applySearch);
     search.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { search.value = ''; applySearch(); search.blur(); }
+      if (e.key === 'Escape') { search.value = ''; applySearch(); showSearch(false); }
       if (e.key === 'Enter') {
         const first = $('lfApps').querySelector(':scope > .slot-cell:not(.lf-dim) a');
         if (search.value.trim() && first) location.href = first.href;
       }
     });
-    $('lfSearchClear').addEventListener('click', () => { search.value = ''; applySearch(); search.focus(); });
+    // 放大鏡：點了才出現搜尋列；清空或離開（沒有字）就收起來，不占版面
+    const sBox = $('lfSearchBox'), sBtn = $('lfSearchBtn');
+    function showSearch(on) { sBox.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) search.focus(); }
+    sBtn.addEventListener('click', () => { if (sBox.hidden) showSearch(true); else { search.value = ''; applySearch(); showSearch(false); } });
+    search.addEventListener('blur', () => setTimeout(() => { if (!search.value.trim() && document.activeElement !== search) showSearch(false); }, 150));
+    $('lfSearchClear').addEventListener('mousedown', e => e.preventDefault());
+    $('lfSearchClear').addEventListener('click', () => { search.value = ''; applySearch(); showSearch(false); });
     new MutationObserver(() => { if (search.value.trim()) applySearch(); }).observe($('lfApps'), { childList: true });
 
     slots.render();
