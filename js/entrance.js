@@ -1,39 +1,9 @@
-/* LinFamily 入口歡迎頁：海浪影片播放控制＋內建瀏覽器處理。
- * - 影片由這裡才放進 <video>：prefers-reduced-motion 時不放，只顯示 poster。
- * - 自動播放被擋（iPhone 低電量模式等）→ 保持 poster，不會黑畫面。
- * - 分頁在背景、或已登入（入口頁隱藏）時暫停。
+/* LinFamily 入口歡迎頁：內建瀏覽器處理（動畫在 js/entrance-waves.js）。
  * - window.lfEntranceGuard()：點擊時先呼叫；回傳 true 表示已處理（LINE／FB／IG 內建瀏覽器），不要叫出 Google 登入。
  */
 (function () {
   const wrap = document.getElementById('lfWelcome');
   if (!wrap) return;
-  const video = wrap.querySelector('video');
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const shown = () => !wrap.hidden && !document.hidden;
-
-  if (video && !reduced) {
-    [['assets/entrance.v2.webm', 'video/webm'], ['assets/entrance.v2.mp4', 'video/mp4']].forEach(([src, type]) => {
-      const s = document.createElement('source'); s.src = src; s.type = type; video.append(s);
-    });
-    video.muted = true; video.load();
-  }
-  function sync() {
-    if (!video || reduced || !video.currentSrc && !video.querySelector('source')) return;
-    if (shown()) { const p = video.play(); if (p && p.catch) p.catch(() => {}); } // 被擋就留在 poster
-    else video.pause();
-  }
-  // 影片轉斜後要放大才蓋滿畫面：倍數 = cosθ + (長邊/短邊)·sinθ
-  const TILT = -8;
-  function fit() {
-    const t = Math.abs(TILT) * Math.PI / 180, w = innerWidth, h = innerHeight;
-    wrap.style.setProperty('--lf-ent-tilt', TILT + 'deg');
-    wrap.style.setProperty('--lf-ent-zoom', (Math.cos(t) + Math.max(w / h, h / w) * Math.sin(t)).toFixed(3));
-  }
-  fit(); addEventListener('resize', fit);
-  document.addEventListener('visibilitychange', sync);
-  new MutationObserver(sync).observe(wrap, { attributes: true, attributeFilter: ['hidden'] });
-  sync();
-
   // ---------- LINE／Facebook／Instagram 內建瀏覽器（Google 不允許在裡面登入：disallowed_useragent） ----------
   const ua = navigator.userAgent || '';
   const isLine = /\bLine\//i.test(ua), inApp = isLine || /FBAN|FBAV|FB_IAB|Instagram/i.test(ua);

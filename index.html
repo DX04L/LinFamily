@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LinFamily">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
-  <link rel="stylesheet" href="css/entrance.css?v=2">
+  <link rel="stylesheet" href="css/entrance.css?v=4">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
   <script>
@@ -232,13 +232,13 @@
 <body>
   <!-- 沒登入：停在 Welcome 畫面，點一下就跳出 Google 登入（參照 DX） -->
   <div class="lf-welcome" id="lfWelcome" role="button" tabindex="0" aria-label="LinFamily：按一下以 Google 帳號登入">
-    <div class="lf-ent-poster"></div>
-    <video class="lf-ent-video" muted playsinline autoplay loop preload="auto" poster="assets/entrance.poster.v2.webp" aria-hidden="true"></video>
+    <canvas class="lf-ent-canvas" aria-hidden="true"></canvas>
     <div class="lf-ent-shade"></div>
     <div class="lf-ent-logo"><img src="assets/lf-mark.v2.svg" alt="" width="644" height="594"></div>
     <p class="lf-ent-note" hidden>請用 Safari 或 Chrome 開啟本頁再登入</p>
   </div>
   <script src="js/entrance.js" defer></script>
+  <script src="js/entrance-waves.js" defer></script>
   <script>document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
   <div class="lf-top">
     <div>

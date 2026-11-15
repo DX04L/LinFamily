@@ -26,8 +26,8 @@
 - 權限管理是**獨立頁面**（不是彈出視窗），左上角「‹ 返回」；只有 Superuser 看得到內容。版面與字體大小照 DX 的 `admin-users.html`。
 
 ## 4. App 格子（主畫面）
-- 沒登入時停在入口頁：海浪影片（`assets/entrance.v2.webm`／`.mp4`，4.4 秒無縫循環、無音軌）＋置中 LF Logo（`assets/lf-logo.v2.svg`），沒有任何提示文字與控制項；點一下、Enter、空白鍵才跳出 Google 登入。程式在 `css/entrance.css`、`js/entrance.js`。
-  - 減少動態效果、低電量模式、自動播放被擋 → 只顯示 poster（`assets/entrance.poster.v2.webp`）；分頁在背景或已登入時影片暫停。
+- 沒登入時停在入口頁：抽象海岸浪潮動畫（`js/entrance-waves.js`，Canvas 即時繪製線條＋粒子，不用影片；直式畫面海陸交界在右側約 1/3）＋置中 LF 字樣（`assets/lf-mark.v2.svg`，不含綠底；完整 App 圖示是 `assets/lf-logo.v2.svg`），沒有任何提示文字與控制項；點一下、Enter、空白鍵才跳出 Google 登入。樣式在 `css/entrance.css`、內建瀏覽器處理在 `js/entrance.js`。
+  - 減少動態效果 → 只畫一張靜止畫面；分頁在背景或已登入時動畫停止。
   - `assets/*` 由 `_headers` 設一年快取：換檔要改檔名版本（v2），不要覆蓋同名檔。
   - LINE／FB／IG 內建瀏覽器不能用 Google 登入：LINE 會自動加 `?openExternalBrowser=1` 重開；Android 改用 `intent://` 交給 Chrome；iPhone 的 FB／IG 只顯示「請用 Safari 或 Chrome 開啟」。**對外分享的 LF 連結請一律加 `?openExternalBrowser=1`**（程式會忽略這個參數）。⚠ 需在 iPhone 與 Android 各實機測一次。
 - DX、YA、SR 的 App 只有 Superuser 看得到（其他人主畫面與 Apps 都不顯示）。
