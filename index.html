@@ -442,6 +442,9 @@
       clearTimeout(waitT); waitT = setTimeout(appsReady, 3000); // 保險：最多等 3 秒
     }
     function appsReady() { clearTimeout(waitT); document.documentElement.classList.remove('lf-apps-wait'); }
+    // 從 DX、Hannah's Studio 等子 App 按 🏠 回來（同一個視窗）：已經進來過，就直接回主畫面，不再停在 Welcome
+    let authReady = false;
+    try { if (sessionStorage.getItem('linfamily_entered') === '1') { entered = true; goHome(); } } catch (_) {}
     function applyRole(r) {
       role = r || '';
       window.isSuperuser = role === 'superuser';
@@ -453,6 +456,7 @@
       // 每次打開都先停在 Welcome；點過（entered）而且已登入才進主畫面。登入中不會先進去又閃回來。
       $('lfWelcome').hidden = !!(role && entered); document.documentElement.classList.remove('lf-pending');
       if (!role) appsReady(); // 登入失敗或沒權限：回到 Welcome
+      try { if (role && entered) sessionStorage.setItem('linfamily_entered', '1'); else if (!role && authReady) sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
       $('lfAddBtn').hidden = !role;
       if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
       if (!role) setMenu(false);
@@ -460,6 +464,8 @@
       if (slots) { slots.render(); if (isSuper()) seedIfNeeded(); }
     }
     if (auth) auth.onAuthStateChanged(u => {
+      authReady = true;
+      if (u && entered) goHome(); // 點過 Welcome（或從子 App 回來）且確實已登入：直接進主畫面
       if (roleUnsub) { roleUnsub(); roleUnsub = null; }
       user = u && u.email && u.emailVerified ? u : null;
       if (!user) return applyRole('');
@@ -501,7 +507,8 @@
       entered = true;
       if (role) return applyRole(role);        // 已登入：點一下直接進主畫面
       if (auth && auth.currentUser) return goHome(); // 已登入、權限還在確認：先進主畫面，圖示確認完才出現
-      login();                                 // 沒登入：跳 Google 登入，成功後直接進主畫面
+      if (auth && !authReady) return;          // 剛打開、還在讀登入狀態：先等，已登入會自動進去，不跳登入視窗
+      login();                                 // 確定沒登入：跳 Google 登入，成功後直接進主畫面
     };
     $('lfWelcome').addEventListener('click', enter);
     $('lfWelcome').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } });
