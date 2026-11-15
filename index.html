@@ -109,8 +109,8 @@
     .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0 24px; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
     .lf-tabs button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
     .lf-tabs button[aria-selected="true"] { background:var(--pine); color:#fff; }
-    .lf-dot { display:inline-block; width:8px; height:8px; margin-left:5px; vertical-align:top; border-radius:50%; background:#E5484D; }
-    .lf-dot[hidden] { display:none; }
+    .lf-newdot { display:inline-block; width:8px; height:8px; margin-left:5px; vertical-align:top; border-radius:50%; background:#E5484D; }
+    .lf-newdot[hidden] { display:none; }
     .lf-all button { border:0; border-radius:9999px; padding:6px 14px; font:inherit; font-size:13px; font-weight:700; background:var(--pine); color:#fff; cursor:pointer; }
     .lf-all-note { font-size:13px; opacity:.7; margin:0 0 12px; }
     .lf-all { display:grid; gap:8px; }
@@ -266,7 +266,7 @@
     <div class="lf-tabs" role="tablist" aria-label="切換">
       <button type="button" role="tab" aria-selected="true" data-tab="apps">Home</button>
       <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
-      <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-dot" id="lfAppsDot" hidden></i></button>
+      <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-newdot" id="lfAppsDot" hidden></i></button>
     </div>
     <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
     <button type="button" class="lf-search-btn" id="lfSearchBtn" aria-label="搜尋 App" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
