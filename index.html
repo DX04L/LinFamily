@@ -255,7 +255,7 @@
         <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>👤 權限管理</button>
         <button type="button" role="menuitem" data-act="theme"><span class="lf-ic-sun">☀️ 切換淺色</span><span class="lf-ic-moon">🌙 切換深色</span></button>
         <div class="lf-sep"></div>
-        <button type="button" role="menuitem" data-act="logout" class="lf-danger">🚪 登出管理員</button>
+        <button type="button" role="menuitem" data-act="logout" class="lf-danger" id="lfLogoutBtn">🚪 登出帳號</button>
       </div>
     </div>
   </div>
@@ -439,7 +439,8 @@
     function applyRole(r) {
       role = r || '';
       window.isSuperuser = role === 'superuser';
-      $('lfAuthIcon').textContent = role === 'viewer' ? '👁️' : role === 'user' ? '🙂' : role ? '👑' : '🔐';
+      $('lfAuthIcon').textContent = role === 'superuser' ? '👑' : role ? '☰' : '🔐'; // 一般帳號用三條線選單
+      $('lfLogoutBtn').textContent = isSuper() ? '🚪 登出管理員' : '🚪 登出帳號';
       $('lfAuthDot').hidden = !role;
       $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
@@ -494,7 +495,7 @@
       const b = e.target.closest('button[data-act]'); if (!b) return;
       const act = b.dataset.act;
       if (act !== 'theme') setMenu(false);
-      if (act === 'logout') { if (confirm('確定要登出管理員身分嗎？')) { await auth.signOut(); toast('已登出'); } }
+      if (act === 'logout') { if (confirm(isSuper() ? '確定要登出管理員身分嗎？' : '確定要登出帳號嗎？')) { await auth.signOut(); toast('已登出'); } }
       else if (act === 'theme') toggleTheme();
       else if (act === 'users') location.href = 'admin-users.html';
     });
@@ -598,7 +599,7 @@
     // 不允許被放進框內的網站（Google 等）：直接開，接受瀏覽器那一列。
     const OWN_HOSTS = ['clc-dx04.pages.dev', 'clc-ya-portal.pages.dev', 'clc-sr-portal.pages.dev'];
     const NO_FRAME = /(^|\.)(google\.[a-z.]+|youtube\.com|youtu\.be|gmail\.com|facebook\.com|instagram\.com|messenger\.com|threads\.net|line\.me|apple\.com|icloud\.com|github\.com|x\.com|twitter\.com|microsoft\.com|live\.com|office\.com|notion\.so|amazon\.[a-z.]+|linkedin\.com|paypal\.com)$/i;
-    function isOwnSite(app) { try { const u = new URL(safeUrl(app.url), location.href); return OWN_HOSTS.includes(u.hostname) || (u.origin === location.origin && !/^\/lf(\/|$)/.test(u.pathname)); } catch (_) { return false; } }
+    function isOwnSite(app) { try { if (!/^https?:/i.test(safeUrl(app.url))) return false; const u = new URL(safeUrl(app.url), location.href); return OWN_HOSTS.includes(u.hostname) || (u.origin === location.origin && !/^\/lf(\/|$)/.test(u.pathname)); } catch (_) { return false; } }
     function tileHref(app) {
       const url = safeUrl(app.url); if (!url) return '#';
       let host = ''; try { host = new URL(url, location.href).hostname; } catch (_) {}

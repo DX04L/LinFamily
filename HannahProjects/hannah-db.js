@@ -45,7 +45,7 @@
   function applyRole(r) {
     role = r || '';
     window.canEdit = role === 'superuser' || role === 'admin';
-    $('lfAuthIcon').textContent = role === 'viewer' ? '👁️' : role === 'user' ? '🙂' : role ? '👑' : '🔐';
+    $('lfAuthIcon').textContent = role === 'superuser' ? '👑' : role ? '☰' : '🔐';
     $('lfAuthDot').hidden = !role;
     $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User' : 'Viewer（唯讀）'}` : '';
     $('lfUsersItem').hidden = role !== 'superuser';
