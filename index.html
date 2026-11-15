@@ -532,12 +532,12 @@
     // ---------- 安裝（PWA） ----------
     let deferredPrompt = null;
     const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-    // 安裝鈕：瀏覽器說「可以安裝」（beforeinstallprompt）才顯示，所以刪掉 App 後會再出現；iPhone 沒有這個事件，不是從主畫面開啟就顯示。
+    // 安裝鈕：只要不是從已安裝的 App 開啟就顯示。層級規則（從上層站進來時不顯示）由 clc-sso.js 處理。
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; if (!standalone()) $('lfInstallBtn').hidden = false; });
     window.addEventListener('appinstalled', () => { deferredPrompt = null; $('lfInstallBtn').hidden = true; toast('已安裝'); });
     try { localStorage.removeItem('linfamily_installed'); } catch (_) {}
-    $('lfInstallBtn').hidden = standalone() || !isIOS;
+    $('lfInstallBtn').hidden = standalone(); // 不是從已安裝的 App 開啟就顯示（Chrome 還沒準備好時，按了會顯示安裝說明）
     $('lfInstallBtn').addEventListener('click', install);
     async function install() {
       if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; return; }
