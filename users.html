@@ -81,7 +81,8 @@
 </head>
 <body>
   <main>
-    <a class="lf-back" href="./">‹ 返回</a>
+    <a class="lf-back" id="lfBack" href="./">‹ 返回</a>
+    <script>(function(){var b=new URLSearchParams(location.search).get('back');if(b&&/^[\w\/.-]+$/.test(b)&&b.indexOf('..')<0)document.getElementById('lfBack').href=b;})();</script>
     <h1>👤 權限管理</h1>
     <p class="lf-note">Superuser 為固定名單（寫在程式裡）。Admin 可登入；Viewer 唯讀。編輯 App 只限 Superuser。新增者需使用相同 Google Email 登入。</p>
     <div class="lf-box" id="lfGate">確認登入中…</div>
