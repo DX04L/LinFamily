@@ -256,7 +256,7 @@
 
     <section id="panelApps" aria-label="App">
       <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
-           登入者長按晃動（各自的桌面；Superuser 編的是全部 App 的預設桌面）→ 拖到空格或互換位置、「−」移除、點 App 修改、長按空格新增、按「完成」結束。 -->
+           登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到空格或互換位置、「−」移除、點 App 修改、長按空格新增、按「完成」結束。 -->
       <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
       <nav id="lfApps" aria-label="App"></nav>
     </section>
@@ -511,11 +511,11 @@
     let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '';
     const deskKey = () => 'linfamily_desk_' + deskEmail;
     function showApps() {
-      apps = myDesk && !isSuper() ? myDesk : globalApps;
+      apps = myDesk || globalApps;
       if (slots) { slots.render(); renderZone(); renderNews(); if (!$('panelAll').hidden) renderAll(); }
     }
     function watchDesk() {
-      const email = role && !isSuper() && user ? user.email.toLowerCase() : '';
+      const email = role && user ? user.email.toLowerCase() : ''; // Superuser 也有自己的主畫面
       if (email === deskEmail) return showApps();
       if (deskUnsub) { deskUnsub(); deskUnsub = null; }
       deskEmail = email; myDesk = null;
@@ -612,14 +612,18 @@
     });
     const withPos = () => window.clcSlotGridNormalize(apps);
     function errText(err) { return err && err.code === 'permission-denied' ? '權限不足（請確認已登入，以及 Firestore 規則）。' : '請稍後再試。'; }
+    // 主畫面＝個人桌面（每人一份，含 Superuser）；App 櫃＝linfamily_settings/apps（全部 App，只有 Superuser 改）
     async function persist(next, seenAdd) {
       if (!db) throw new Error('資料庫尚未載入');
-      if (role && !isSuper()) { // 個人桌面（seen：已通知過的 App，第一次建立時＝當時全部 App）
+      if (role) { // 個人桌面（seen：已通知過的 App，第一次建立時＝當時全部 App）
         const seen = Array.from(new Set((myDesk ? mySeen : globalApps.map(a => a.id)).concat(seenAdd || [])));
         await db.collection(DESK_COL).doc(user.email.toLowerCase()).set({ items: next, seen, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
         myDesk = next; mySeen = seen; try { localStorage.setItem(deskKey(), JSON.stringify(next)); } catch (_) {}
         return showApps();
       }
+      throw new Error('尚未登入');
+    }
+    async function saveGlobal(next) {
       await db.collection('linfamily_settings').doc('apps').set({
         items: next, seeded: seededList, hannahSeeded: true,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: user ? user.email : ''
@@ -660,7 +664,7 @@
     }
     function seedIfNeeded() {
       if (!needsSeed || seeding || !isSuper()) return;
-      seeding = true; persist(globalApps).catch(err => console.warn('Hannah 預設寫入失敗', err)).finally(() => { seeding = false; });
+      seeding = true; saveGlobal(globalApps).catch(err => console.warn('Hannah 預設寫入失敗', err)).finally(() => { seeding = false; });
     }
     if (db) db.collection('linfamily_settings').doc('apps').onSnapshot(snap => {
       const r = fromCloud(snap.exists ? snap.data() : {});
@@ -731,7 +735,15 @@
         ? base.map(a => a.id === old.id ? Object.assign({}, a, patch) : a)
         : base.concat(Object.assign({ id: 'app_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, patch,
             Number.isInteger(addPos) && !base.some(a => a.pos === addPos) ? { pos: addPos } : {}));
-      try { await persist(next); dlg.close(); }
+      try {
+        if (isSuper()) { // Superuser 新增／修改 → 同步到 App 櫃，大家的 Apps 會看到
+          const saved = next.find(a => a.id === (old ? old.id : next[next.length - 1].id));
+          const g = window.clcSlotGridNormalize(globalApps), inG = g.some(a => a.id === saved.id);
+          if (old && inG) await saveGlobal(g.map(a => a.id === saved.id ? Object.assign({}, a, patch) : a));
+          else if (!old) { let p = 0; while (g.some(a => a.pos === p)) p++; await saveGlobal(g.concat(Object.assign({}, saved, { pos: p }))); }
+        }
+        await persist(next, old ? [] : [next[next.length - 1].id]); dlg.close();
+      }
       catch (err) { showErr('儲存失敗：' + errText(err)); $('lfAppSave').disabled = false; }
     });
 
@@ -739,15 +751,15 @@
     // ---------- 所有 App（預設桌面＝目前全部 App）／新 App 通知 ----------
     const onDesk = a => apps.some(m => m.id === a.id);
     const locked = a => role === 'user' && isOwnSite(a);
-    const newApps = () => role && !isSuper() && myDesk ? globalApps.filter(a => !mySeen.includes(a.id) && !onDesk(a) && !locked(a)) : [];
+    const newApps = () => role && myDesk ? globalApps.filter(a => !mySeen.includes(a.id) && !onDesk(a) && !locked(a)) : [];
     async function addToDesk(a) {
       const base = withPos(); let pos = 0; while (base.some(m => m.pos === pos)) pos++;
       try { await persist(base.concat(Object.assign({}, a, { pos })), [a.id]); toast('已加到主畫面：' + a.name); }
       catch (err) { toast('加入失敗：' + errText(err)); }
     }
     function renderAll() {
-      const list = role && !isSuper() ? window.clcSlotGridNormalize(globalApps).filter(a => !onDesk(a) && !locked(a)).sort((a, b) => a.pos - b.pos) : [];
-      $('lfAllNote').textContent = !role ? '登入後，還沒加到主畫面的 App 會列在這裡。' : isSuper() ? 'Superuser 的主畫面就是全部 App。' : list.length ? '還沒加到主畫面的 App（從主畫面移除的也會回到這裡）。' : '全部 App 都在你的主畫面了。';
+      const list = role ? window.clcSlotGridNormalize(globalApps).filter(a => !onDesk(a) && !locked(a)).sort((a, b) => a.pos - b.pos) : [];
+      $('lfAllNote').textContent = !role ? '登入後，還沒加到主畫面的 App 會列在這裡。' : list.length ? '還沒加到主畫面的 App（從主畫面移除的也會回到這裡）。' : '全部 App 都在你的主畫面了。';
       const box = $('lfAll'); box.textContent = '';
       list.forEach(a => {
         const row = document.createElement('div'); row.className = 'lf-all-row';
@@ -756,12 +768,18 @@
         link.append(iconEl(a), name);
         if (locked(a)) { link.style.opacity = '.4'; link.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + a.name + '。'); }); }
         row.append(link);
-        if (role && !isSuper()) {
+        if (role) {
           const b = document.createElement('button'); b.type = 'button';
-          if (locked(a)) { b.textContent = '無權限'; b.disabled = true; }
-          else if (onDesk(a)) { b.textContent = '已加入'; b.disabled = true; }
-          else { b.textContent = '＋ 加到主畫面'; b.addEventListener('click', () => { b.disabled = true; addToDesk(a); }); }
+          b.textContent = '＋ 加到主畫面'; b.addEventListener('click', () => { b.disabled = true; addToDesk(a); });
           row.append(b);
+        }
+        if (isSuper()) { // Superuser：從 App 櫃刪除（所有人都不會再看到新增選項）
+          const d = document.createElement('button'); d.type = 'button'; d.textContent = '刪除'; d.style.background = '#B5483D';
+          d.addEventListener('click', async () => {
+            if (!confirm('從 App 櫃刪除「' + a.name + '」？（已加到別人主畫面的不受影響）')) return;
+            try { await saveGlobal(globalApps.filter(x => x.id !== a.id)); } catch (err) { toast('刪除失敗：' + errText(err)); }
+          });
+          row.append(d);
         }
         box.append(row);
       });
