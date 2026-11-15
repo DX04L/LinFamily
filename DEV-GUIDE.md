@@ -33,10 +33,12 @@
 - 圖示：自動抓取 → 抓不到或寬度 < 96px（會糊）→ **自動生成字母圖示**（彩色圓角方塊＋名稱第一個字）。**不使用 Google favicon 服務。**
 - 開啟方式：
   - 同網域的站（DX、YA、SR、LF 子頁）：直接換頁（不會有那一列）。
-  - 外部網站可內嵌：在 `open.html` 框內開（上方有返回列與 ↗）。
+  - 外部網站可內嵌：在 `open.html` 框內開（右上角 ↗ 直接開啟）。
   - 外部網站不可內嵌（Google 等）：直接開，接受那一列。
 - 空白處按右鍵／手機長按：自訂選單「複製網址」「在新分頁開啟」（LF 的 `js/lf-menu.js`）；新分頁盡量用預設瀏覽器開（Android 用 `intent://`、LINE 加 `openExternalBrowser=1`）。
-- 從 LF 進入其他站時帶 `?lfhome=`，該站左下角顯示「‹ LinFamily」（DX04 的 `lf-back.js`，Worker 自動插入）。
+- **回首頁鈕**：從 LF 開出來的所有站（DX、YA、SR、`open.html` 內的外部網站）左下角都有一顆**淡淡的圓形 🏠 浮動鈕**（平常幾乎透明，碰到才變清楚），按了回 LF 主畫面。不要再用「‹ LinFamily」文字鈕。
+  - 自家站：LF 帶 `?lfhome=` 進入，由 DX04 的 `lf-back.js` 顯示（Worker 自動插入，各站不用改）。
+  - `open.html`：直接寫在頁面裡（樣式相同）。
 
 ## 5. 外觀
 - 字型：英文 Arial（粗體用 Arial Bold）、中文微軟正黑體（`"CLC Arial", Arial, "Microsoft JhengHei", "PingFang TC", sans-serif`）。
