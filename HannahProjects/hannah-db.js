@@ -46,7 +46,7 @@
     role = r || '';
     window.canEdit = role === 'superuser' || role === 'admin';
     $('lfAuthIcon').textContent = role === 'superuser' ? '👑' : role ? '☰' : '🔐';
-    $('lfAuthDot').hidden = !role;
+    $('lfAuthDot').hidden = true; // 不顯示已登入小黃點
     $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User' : 'Viewer（唯讀）'}` : '';
     $('lfUsersItem').hidden = role !== 'superuser';
     if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR

@@ -441,7 +441,7 @@
       window.isSuperuser = role === 'superuser';
       $('lfAuthIcon').textContent = role === 'superuser' ? '👑' : role ? '☰' : '🔐'; // 一般帳號用三條線選單
       $('lfLogoutBtn').textContent = isSuper() ? '🚪 登出管理員' : '🚪 登出帳號';
-      $('lfAuthDot').hidden = !role;
+      $('lfAuthDot').hidden = true; // 不顯示已登入小黃點
       $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
       $('lfWelcome').hidden = !!role; document.documentElement.classList.remove('lf-pending');
