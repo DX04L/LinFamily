@@ -109,11 +109,9 @@
     .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0 24px; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
     .lf-tabs button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
     .lf-tabs button[aria-selected="true"] { background:var(--pine); color:#fff; }
-    .lf-news { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:-12px 0 18px; padding:10px 14px; border-radius:14px; background:var(--btn); border:1px solid var(--pine); font-size:14px; }
-    .lf-news[hidden] { display:none; }
-    .lf-news span { flex:1; min-width:160px; }
-    .lf-news button, .lf-all button { border:0; border-radius:9999px; padding:6px 14px; font:inherit; font-size:13px; font-weight:700; background:var(--pine); color:#fff; cursor:pointer; }
-    .lf-news .lf-news-skip { background:var(--btn-h); color:inherit; }
+    .lf-dot { display:inline-block; width:8px; height:8px; margin-left:5px; vertical-align:top; border-radius:50%; background:#E5484D; }
+    .lf-dot[hidden] { display:none; }
+    .lf-all button { border:0; border-radius:9999px; padding:6px 14px; font:inherit; font-size:13px; font-weight:700; background:var(--pine); color:#fff; cursor:pointer; }
     .lf-all-note { font-size:13px; opacity:.7; margin:0 0 12px; }
     .lf-all { display:grid; gap:8px; }
     .lf-all-row { display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:14px; background:var(--btn); }
@@ -241,11 +239,10 @@
     </label>
 
     <div class="lf-tabs" role="tablist" aria-label="切換">
-      <button type="button" role="tab" aria-selected="true" data-tab="apps">主畫面</button>
-      <button type="button" role="tab" aria-selected="false" data-tab="family">家庭空間配置</button>
-      <button type="button" role="tab" aria-selected="false" data-tab="all">所有 App</button>
+      <button type="button" role="tab" aria-selected="true" data-tab="apps">Home</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-dot" id="lfAppsDot" hidden></i></button>
     </div>
-    <div class="lf-news" id="lfNews" hidden><span id="lfNewsText"></span><button type="button" id="lfNewsGo">查看</button><button type="button" id="lfNewsSkip" class="lf-news-skip">略過</button></div>
 
     <section id="panelApps" aria-label="App">
       <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
@@ -758,22 +755,15 @@
         box.append(row);
       });
     }
-    function renderNews() {
-      const n = newApps();
-      $('lfNews').hidden = !n.length;
-      if (n.length) $('lfNewsText').textContent = '🆕 有新的 App 可以加到主畫面：' + n.map(a => a.name).join('、');
-    }
-    $('lfNewsGo').addEventListener('click', () => document.querySelector('.lf-tabs [data-tab="all"]').click());
-    $('lfNewsSkip').addEventListener('click', async () => {
-      try { await persist(withPos(), newApps().map(a => a.id)); } catch (err) { toast('請稍後再試：' + errText(err)); }
-    });
+    function renderNews() { $('lfAppsDot').hidden = !newApps().length; } // 有新 App → Apps 分頁紅點
+    function clearNews() { const n = newApps(); if (n.length) persist(withPos(), n.map(a => a.id)).catch(() => {}); } // 打開 Apps 就算看過
 
     // ---------- 分頁：主畫面／家庭空間配置 ----------
     document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
       const tab = b.dataset.tab;
       document.querySelectorAll('.lf-tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
       $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family'; $('panelAll').hidden = tab !== 'all';
-      if (tab === 'all') renderAll();
+      if (tab === 'all') { renderAll(); clearNews(); }
       if (tab !== 'apps') slots.setEditing(false);
     }));
     // 平面圖：點區域 → 列出這個區域的 App（App 的 zoneId 沿用舊資料）
