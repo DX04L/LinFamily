@@ -21,9 +21,6 @@ html.lf-pending .lf-welcome > * { visibility:hidden; } /* 確認登入狀態時�
 
 /* 手機直式：放在左下，左邊與下面留一樣的空間（--m） */
 @media (orientation: portrait) {
-  .lf-ent-logo { --m:16vw; left:calc(var(--m) + var(--lw) / 2); top:calc(100% - var(--m) - env(safe-area-inset-bottom) - var(--lw) * 594 / 644 / 2);
-    /* 從畫面正中央（App 啟動畫面圖示的位置）慢慢滑到左下，不會「跳」 */
-    animation:lfEntMove 1.4s cubic-bezier(.45,0,.2,1) .2s both, lfEntBreathe 6s ease-in-out 1.6s infinite; }
+  .lf-ent-logo { --m:16vw; left:calc(var(--m) + var(--lw) / 2); top:calc(100% - var(--m) - env(safe-area-inset-bottom) - var(--lw) * 594 / 644 / 2); }
 }
-@keyframes lfEntMove { from { left:50%; top:50%; } }
 html.lf-pending .lf-ent-logo { animation-play-state:paused; } /* 確認登入中先不開始動 */
