@@ -509,11 +509,12 @@
     // ---------- 安裝（PWA） ----------
     let deferredPrompt = null;
     const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
-    window.addEventListener('appinstalled', () => { deferredPrompt = null; $('lfInstallBtn').hidden = true; try { localStorage.setItem('linfamily_installed', '1'); } catch (_) {} toast('已安裝'); });
-    let installedBefore = false; try { installedBefore = localStorage.getItem('linfamily_installed') === '1'; } catch (_) {}
-    if (standalone()) { try { localStorage.setItem('linfamily_installed', '1'); } catch (_) {} }
-    $('lfInstallBtn').hidden = standalone() || installedBefore;
+    // 安裝鈕：瀏覽器說「可以安裝」（beforeinstallprompt）才顯示，所以刪掉 App 後會再出現；iPhone 沒有這個事件，不是從主畫面開啟就顯示。
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; if (!standalone()) $('lfInstallBtn').hidden = false; });
+    window.addEventListener('appinstalled', () => { deferredPrompt = null; $('lfInstallBtn').hidden = true; toast('已安裝'); });
+    try { localStorage.removeItem('linfamily_installed'); } catch (_) {}
+    $('lfInstallBtn').hidden = standalone() || !isIOS;
     $('lfInstallBtn').addEventListener('click', install);
     async function install() {
       if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; return; }
