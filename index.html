@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LinFamily">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
-  <link rel="stylesheet" href="css/entrance.css?v=14">
+  <link rel="stylesheet" href="css/entrance.css?v=15">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
   <script>
@@ -239,7 +239,7 @@
   </div>
   <script src="js/entrance.js" defer></script>
   <script src="js/entrance-waves.js" defer></script>
-  <script>try{if(localStorage.getItem('linfamily_signed_in')==='1')document.documentElement.classList.add('lf-signed-hint');}catch(_){}document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
+  <script>try{localStorage.removeItem('linfamily_signed_in');}catch(_){}document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
   <div class="lf-top">
     <div>
       <p class="lf-date" id="lfDate">&nbsp;</p>
@@ -434,6 +434,7 @@
     let user = null, role = '', roleUnsub = null, slots = null;
     const isSuper = () => role === 'superuser';
     window.isSuperuser = false;
+    let entered = false; // 這次打開有沒有在 Welcome 點過
     function applyRole(r) {
       role = r || '';
       window.isSuperuser = role === 'superuser';
@@ -442,10 +443,8 @@
       $('lfAuthDot').hidden = true; // 不顯示已登入小黃點
       $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
-      $('lfWelcome').hidden = !!role; document.documentElement.classList.remove('lf-pending');
-      // 記住「上次是登入的」：下次打開直接顯示主畫面，不先閃過 Welcome 畫面（登入過期時 applyRole('') 會再把 Welcome 叫出來）
-      document.documentElement.classList.toggle('lf-signed-hint', !!role);
-      try { if (role) localStorage.setItem('linfamily_signed_in', '1'); else localStorage.removeItem('linfamily_signed_in'); } catch (_) {}
+      // 每次打開都先停在 Welcome；點過（entered）而且已登入才進主畫面。登入中不會先進去又閃回來。
+      $('lfWelcome').hidden = !(role && entered); document.documentElement.classList.remove('lf-pending');
       $('lfAddBtn').hidden = !role;
       if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
       if (!role) setMenu(false);
@@ -488,7 +487,13 @@
     // ---------- 皇冠選單 ----------
     const menu = $('lfMenu'), authBtn = $('lfAuthBtn');
     function setMenu(open) { menu.hidden = !open; authBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
-    const enter = () => { if (window.lfEntranceGuard && window.lfEntranceGuard()) return; login(); }; // 內建瀏覽器先處理（js/entrance.js）
+    const enter = () => {
+      if (window.lfEntranceGuard && window.lfEntranceGuard()) return; // 內建瀏覽器先處理（js/entrance.js）
+      entered = true;
+      if (role) return applyRole(role);        // 已登入：點一下直接進主畫面
+      if (auth && auth.currentUser) return;    // 已登入、權限還在確認：確認完 applyRole 會自動進去，不再跳登入視窗
+      login();                                 // 沒登入：跳 Google 登入，成功後直接進主畫面
+    };
     $('lfWelcome').addEventListener('click', enter);
     $('lfWelcome').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } });
     authBtn.addEventListener('click', () => { if (!role) login(); else setMenu(menu.hidden); });

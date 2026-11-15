@@ -16,12 +16,9 @@
 .lf-ent-note[hidden] { display:none; }
 @keyframes lfEntIn { from { opacity:0; transform:translate(-50%, -50%) scale(.94); } to { opacity:1; transform:translate(-50%, -50%) scale(1); } }
 @keyframes lfEntBreathe { 0%, 100% { transform:translate(-50%, -50%) scale(1); } 50% { transform:translate(-50%, -50%) scale(1.015); } }
-html.lf-pending .lf-welcome > * { visibility:hidden; } /* 確認登入狀態時只顯示底色，不先閃出 Logo */
 @media (prefers-reduced-motion: reduce) { .lf-ent-logo { animation:none; } }
 
 /* 手機直式：放在左下，左邊與下面留一樣的空間（--m） */
 @media (orientation: portrait) {
   .lf-ent-logo { --m:16vw; left:calc(var(--m) + var(--lw) / 2); top:calc(100% - var(--m) - env(safe-area-inset-bottom) - var(--lw) * 594 / 644 / 2); }
 }
-html.lf-pending .lf-ent-logo { animation-play-state:paused; } /* 確認登入中先不開始動 */
-html.lf-signed-hint .lf-welcome { display:none; } /* 上次是登入狀態：直接顯示主畫面，不閃 Welcome */
