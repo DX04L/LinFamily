@@ -408,10 +408,24 @@
         applyRole(d && d.active !== false && (d.role === 'admin' || d.role === 'viewer') ? d.role : '');
       }, () => applyRole(''));
     });
+    // 掛在 DX04 底下（/lf/）時：用 DX04 的 Google 登入，同時登入 DX04（YA、SR 會自動跟著登入）和 LinFamily。
+    // 需要：LinFamily 的 Firebase 已授權網域有 clc-dx04.pages.dev、Google 登入白名單有 DX04 的用戶端 ID。
+    const DX_CONFIG = { apiKey: "AIzaSyDbLv-XgOD7Q3J_wl81eXOuK9rqNAdzxM8", authDomain: "clc-dx04.firebaseapp.com", projectId: "clc-dx04", appId: "1:333844280279:web:84e6f122ae00bf010dd192" };
+    async function loginViaDx() {
+      const dx = firebase.apps.find(a => a.name === 'dx') || firebase.initializeApp(DX_CONFIG, 'dx');
+      const r = await dx.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      const tok = r.credential && r.credential.idToken;
+      await dx.auth().signOut().catch(() => {});
+      if (!tok) throw new Error('沒有取得登入憑證');
+      window.CLCSSO.saveGoogleIdToken(tok);
+      const err = await window.CLCSSO.signInSite(DX_CONFIG, { t: tok }); // 寫入 DX04 的登入狀態
+      if (err) console.warn('DX04 登入失敗', err);
+      return auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(tok));
+    }
     async function login() {
       if (!auth) return toast('登入服務尚未載入，請重新整理。');
       try {
-        const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        const res = window.CLCSSO ? await loginViaDx() : await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
         const email = res.user.email.toLowerCase();
         if (SUPERUSERS.includes(email)) return toast('歡迎回來，' + (res.user.displayName || email));
         const snap = await db.collection('admin_users').doc(email).get();
@@ -513,14 +527,14 @@
     const NO_FRAME = /(^|\.)(google\.[a-z.]+|youtube\.com|youtu\.be|gmail\.com|facebook\.com|instagram\.com|messenger\.com|threads\.net|line\.me|apple\.com|icloud\.com|github\.com|x\.com|twitter\.com|microsoft\.com|live\.com|office\.com|notion\.so|amazon\.[a-z.]+|linkedin\.com|paypal\.com)$/i;
     function tileHref(app) {
       const url = safeUrl(app.url); if (!url) return '#';
-      if (!isExternal(url)) return url;
-      let host = ''; try { host = new URL(url).hostname; } catch (_) {}
-      if (OWN_HOSTS.includes(host)) { // 自家網站直接開，網站左下角會出現「‹ LinFamily」（DX04 的 lf-back.js）
-        const u = new URL(url), sub = host.match(/^clc-(ya|sr)-portal\.pages\.dev$/);
+      let host = ''; try { host = new URL(url, location.href).hostname; } catch (_) {}
+      if (/^https?:/i.test(url) && OWN_HOSTS.includes(host)) { // 自家網站直接開，網站左下角會出現「‹ LinFamily」（DX04 的 lf-back.js）
+        const u = new URL(url, location.href), sub = host.match(/^clc-(ya|sr)-portal\.pages\.dev$/);
         const own = sub ? new URL('https://clc-dx04.pages.dev/' + sub[1] + u.pathname + u.search + u.hash) : u; // YA、SR 走 DX04 底下的 /ya、/sr
         own.searchParams.set('lfhome', location.href.split('#')[0]);
-        return own.href;
+        return own.origin === location.origin ? own.pathname + own.search + own.hash : own.href; // 同網域（LinFamily 在 DX04 的 /lf/ 底下）不會出現瀏覽器那一列
       }
+      if (!isExternal(url)) return url;
       if (app.embeddable === false || (app.embeddable !== true && NO_FRAME.test(host))) return url;
       return 'open.html?u=' + encodeURIComponent(url) + '&n=' + encodeURIComponent(app.name || '');
     }
