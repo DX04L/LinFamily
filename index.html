@@ -271,7 +271,7 @@
   <div class="lf-top">
     <div>
       <p class="lf-date" id="lfDate">&nbsp;</p>
-      <h1 class="lf-title">LinFamily APP</h1>
+      <h1 class="lf-title" id="lfGreeting">Welcome home</h1>
     </div>
     <div class="lf-right">
       <button type="button" id="lfInstallBtn" class="lf-btn lf-install" hidden><span>📲</span><span>安裝</span></button>
@@ -503,6 +503,7 @@
       $('lfUsersItem').hidden = !isSuper();
       // 每次打開都先停在 Welcome；點過（entered）而且已登入才進主畫面。登入中不會先進去又閃回來。
       $('lfWelcome').hidden = !!(role && entered); document.documentElement.classList.remove('lf-pending');
+      if (window.lfGreetingRender) window.lfGreetingRender(false);
       if (!role) { appsReady(); applyLook({}); } // 登入失敗或沒權限：回到 Welcome、主題回預設
       try { if (role && entered) sessionStorage.setItem('linfamily_entered', '1'); else if (!role && authReady) sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
       syncAddBtn();
@@ -998,6 +999,72 @@
     });
     $('lfThemeClose').addEventListener('click', () => $('lfThemeDialog').close());
     $('lfThemeDialog').addEventListener('click', e => { if (e.target === $('lfThemeDialog')) $('lfThemeDialog').close(); });
+
+
+    // ---------- 問候語（照 DX 的做法：依時段、星期隨機一句；LF 是家庭用，語氣生活化、親近） ----------
+    (function () {
+      const POOLS = {
+        early: [ // 05:00–07:59
+          "Morning, {n}! Up early today", "Rise and shine, {n} ☀️", "Early start, {n}? Breakfast first",
+          "Good morning, {n}. Sleep well?", "Hey {n}, the day's just waking up"
+        ],
+        morning: [ // 08:00–11:59
+          "Good morning, {n}", "Morning, {n}! Had breakfast?", "Hi {n}, have a lovely day",
+          "Welcome home, {n}", "Morning, {n}. Coffee or tea?", "Hello {n}, nice to see you"
+        ],
+        lunch: [ // 12:00–13:59
+          "Lunchtime, {n}! What's good today?", "Have you eaten yet, {n}?", "Hi {n}, enjoy your lunch",
+          "Time for a bite, {n}", "Hey {n}, don't skip lunch"
+        ],
+        afternoon: [ // 14:00–17:59
+          "Good afternoon, {n}", "Hey {n}, how's your day going?", "Snack time, {n}?",
+          "Welcome back, {n}", "Hi {n}, take a little break", "Afternoon, {n}. Time for some tea?"
+        ],
+        evening: [ // 18:00–21:59
+          "Good evening, {n}", "Welcome home, {n}", "What's for dinner, {n}?",
+          "Evening, {n}. How was your day?", "Hi {n}, time to relax", "Family time, {n} 🏡"
+        ],
+        late: [ // 22:00–00:59
+          "Still up, {n}?", "Time to get cozy, {n}", "Good night soon, {n}?",
+          "Hey {n}, rest well tonight", "Sweet dreams soon, {n} 🌙"
+        ],
+        night: [ // 01:00–04:59
+          "Can't sleep, {n}?", "It's late, {n}. Get some rest", "Hey night owl 🦉",
+          "Shh… everyone's asleep, {n}", "Off to bed soon, {n}?"
+        ]
+      };
+      const EXTRA = {
+        weekendMorning: ["Happy {d}, {n}!", "Lazy {d} morning, {n}?", "Enjoy your {d}, {n}"],
+        weekendAfternoon: ["Any plans this {d}, {n}?", "Enjoy the weekend, {n}"],
+        mondayMorning: ["New week, {n}! You've got this"],
+        fridayEvening: ["Weekend's here, {n}! 🎉", "Happy Friday night, {n}"],
+        sundayEvening: ["Cozy Sunday night, {n}?"]
+      };
+      const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const slotOf = h => h >= 5 && h < 8 ? 'early' : h < 12 && h >= 8 ? 'morning' : h >= 12 && h < 14 ? 'lunch' : h >= 14 && h < 18 ? 'afternoon' : h >= 18 && h < 22 ? 'evening' : (h >= 22 || h < 1) ? 'late' : 'night';
+      function poolFor(now) {
+        const slot = slotOf(now.getHours()), day = now.getDay(), wk = day === 0 || day === 6;
+        let list = POOLS[slot].slice();
+        if ((slot === 'early' || slot === 'morning') && wk) list = list.concat(EXTRA.weekendMorning);
+        if ((slot === 'lunch' || slot === 'afternoon') && wk) list = list.concat(EXTRA.weekendAfternoon);
+        if ((slot === 'early' || slot === 'morning') && day === 1) list = list.concat(EXTRA.mondayMorning);
+        if (slot === 'evening' && day === 5) list = list.concat(EXTRA.fridayEvening);
+        if (slot === 'evening' && day === 0) list = list.concat(EXTRA.sundayEvening);
+        return { key: slot + day, list, dayName: DAYS[day] };
+      }
+      const nameOf = () => { const n = user && (user.displayName || '').trim().split(/\s+/)[0]; return n || 'there'; };
+      const el = $('lfGreeting'); let curKey = '', curLine = '';
+      function render(force) {
+        const p = poolFor(new Date());
+        if (force || p.key !== curKey) { curKey = p.key; curLine = p.list[Math.floor(Math.random() * p.list.length)].replace('{d}', p.dayName); } // 換時段才重抽
+        const text = curLine.replace('{n}', nameOf()).replace('Hey there night owl', 'Hey night owl');
+        if (el.textContent !== text) el.textContent = text;
+      }
+      window.lfGreetingRender = render;
+      render(true);
+      setInterval(() => render(false), 60000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) render(false); });
+    })();
 
     // ---------- 分頁：主畫面／家庭空間配置 ----------
     document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
