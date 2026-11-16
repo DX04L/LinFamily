@@ -185,7 +185,12 @@
     .lf-gear-menu .lf-menu-head, html.dark .lf-gear-menu .lf-menu-head { border-bottom-color:var(--border); }
     /* 背景主題 */
     .lf-wall { position:fixed; inset:0; z-index:-1; background:center / cover no-repeat; pointer-events:none; }
-    .lf-wall::after { content:''; position:absolute; inset:0; background:var(--bg); opacity:.55; } /* 蓋一層淡淡的底色，字才看得清楚 */
+    .lf-wall::after { content:''; position:absolute; inset:0; background:var(--bg); opacity:.62; } /* 遮罩：蓋一層底色，上面的東西才突出 */
+    /* 有桌布時：分頁框、按鈕改成霧面玻璃，App 名稱加淡淡的光暈，從桌布上浮出來 */
+    html.lf-has-wall .lf-tabs, html.lf-has-wall .lf-search-btn, html.lf-has-wall .lf-btn {
+      background:color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+    html.lf-has-wall .lf-icon { box-shadow:0 6px 16px rgba(0,0,0,.18); }
+    html.lf-has-wall .lf-name, html.lf-has-wall .lf-title, html.lf-has-wall .lf-date { text-shadow:0 0 6px var(--bg), 0 0 2px var(--bg); }
     .lf-wall[hidden] { display:none; }
     html.lf-has-wall body { background:transparent; }
     html.lf-has-wall { background:var(--bg); }
@@ -250,7 +255,7 @@
     html, body { height:100%; }
     body { height:100dvh; min-height:0 !important; overflow:hidden; display:flex; flex-direction:column; }
     main { display:flex; flex-direction:column; min-height:0; padding-bottom:0; }
-    main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
+    main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px 10px calc(16px + env(safe-area-inset-bottom)); margin:-10px -10px 0; } /* 四周留 10px，App 滑鼠放大時不會被切到；負邊距讓位置不變 */
     #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
     #lfApps.is-editing .slot-empty { visibility:visible; }
     @media (max-width:639px) { footer { display:none; } }
