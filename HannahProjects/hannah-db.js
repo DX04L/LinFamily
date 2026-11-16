@@ -68,13 +68,13 @@
     try {
       const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
       const tok = res.credential && res.credential.idToken;
-      const share = () => { if (window.CLCSSO && tok) window.CLCSSO.saveGoogleIdToken(tok); };
+      const share = () => { if (!window.CLCSSO || !tok) return; if (window.CLCSSO.shareLogin) window.CLCSSO.shareLogin(tok); else window.CLCSSO.saveGoogleIdToken(tok); }; // 同時把 DX、YA、SR 登入成同一個帳號
       const email = res.user.email.toLowerCase();
       if (SUPERUSERS.includes(email)) { share(); return toast('歡迎回來，' + (res.user.displayName || email)); }
       const snap = await db.collection('admin_users').doc(email).get();
       const d = snap.exists ? snap.data() : null;
       if (d && d.active !== false && d.role === 'user') { if (window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); }
-      else share(); // User 不保存共用憑證
+      else if (d && d.active !== false && ['admin', 'viewer'].includes(d.role)) share(); // User 不分享登入；沒有權限的帳號也不分享
       if (!(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role))) { await auth.signOut(); toast('帳號【' + email + '】沒有權限。'); }
       else toast('歡迎，' + (res.user.displayName || email));
     } catch (err) {
