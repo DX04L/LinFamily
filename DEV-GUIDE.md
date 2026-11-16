@@ -50,6 +50,7 @@
   - LF 自己的子 App（如 HannahProjects）：引用 LF 根目錄的 `linfamily-home.js`（樣式相同）。
 
 ## 5. 外觀
+- **背景主題**（LF 右邊 ⚙ →「背景主題」）：主題色 6 組、內建桌布 5 張＋上傳自己的照片（自動縮成約 200～600KB 的 JPEG），每個人自己的，存在 `linfamily_desktops/{email}` 的 `theme`、`wall`、`wallImg`。存桌面要用 `set(..., { merge:true })`，才不會蓋掉主題。
 - 字型：英文 Arial（粗體用 Arial Bold）、中文微軟正黑體（`"CLC Arial", Arial, "Microsoft JhengHei", "PingFang TC", sans-serif`）。
 - LF 色系：墨黑 #1C1C1C、松綠 #4E8B7E、鼠尾草綠 #8FBFB0、奶油米 #EADFC8、淺灰 #E6E7E9；深淺模式存在 `localStorage linfamily_theme`。
 - localStorage key 加站名前綴（`linfamily_`、`clc_`…），同網域各站共用儲存空間，避免互蓋。

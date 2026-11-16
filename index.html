@@ -174,6 +174,28 @@
     .lf-search[hidden] { display:none; }
     .lf-tabbar { display:flex; align-items:center; gap:10px; margin:22px 0 24px; }
     .lf-tabbar .lf-tabs { margin:0; }
+    .lf-tabs .lf-tab-icon { border:0; background:none; padding:8px 12px; border-radius:9999px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; }
+    .lf-tabs .lf-tab-icon svg { width:16px; height:16px; }
+    .lf-tabs .lf-tab-icon[aria-expanded="true"] { background:var(--pine); color:#fff; }
+    .lf-gear-wrap { margin-left:auto; position:relative; flex:none; }
+    @media (max-width:430px) { .lf-tabs button { padding:8px 12px; } .lf-tabs .lf-tab-icon { padding:8px 10px; } .lf-tabbar { gap:8px; } } /* 窄手機：一排放得下，不切到齒輪 */
+    @media (max-width:380px) { .lf-tabs button { padding:7px 10px; font-size:13px; } .lf-tabs .lf-tab-icon { padding:7px 8px; } .lf-tabbar { gap:6px; } .lf-tabbar .lf-search-btn { width:36px; height:36px; } }
+    /* 齒輪選單：間距、字級照管理員下拉選單（.lf-menu）；框線顏色跟著 LF 主題 */
+    .lf-gear-menu, html.dark .lf-gear-menu { border-color:var(--border); }
+    .lf-gear-menu .lf-menu-head, html.dark .lf-gear-menu .lf-menu-head { border-bottom-color:var(--border); }
+    /* 背景主題 */
+    .lf-wall { position:fixed; inset:0; z-index:-1; background:center / cover no-repeat; pointer-events:none; }
+    .lf-wall::after { content:''; position:absolute; inset:0; background:var(--bg); opacity:.55; } /* 蓋一層淡淡的底色，字才看得清楚 */
+    .lf-wall[hidden] { display:none; }
+    html.lf-has-wall body { background:transparent; }
+    html.lf-has-wall { background:var(--bg); }
+    .lf-look-sec { font-size:13px; font-weight:700; color:var(--muted); margin:4px 0 0; }
+    .lf-swatches { display:flex; flex-wrap:wrap; gap:10px; }
+    .lf-swatch { width:44px; height:44px; border-radius:50%; border:3px solid transparent; cursor:pointer; padding:0; box-shadow:0 0 0 1px var(--border) inset; }
+    .lf-swatch[aria-pressed="true"] { border-color:var(--text); }
+    .lf-walls { display:grid; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:8px; }
+    .lf-walls button { aspect-ratio:3/4; border-radius:10px; border:3px solid transparent; cursor:pointer; padding:0; background:center / cover no-repeat var(--btn); font-size:12px; font-weight:700; color:var(--muted); box-shadow:0 0 0 1px var(--border) inset; }
+    .lf-walls button[aria-pressed="true"] { border-color:var(--text); }
     .lf-search-btn { flex:none; width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--btn); color:var(--muted); cursor:pointer; display:grid; place-items:center; }
     .lf-search-btn svg { width:18px; height:18px; }
     .lf-search-btn[hidden] { display:none; }
@@ -271,9 +293,16 @@
       <button type="button" role="tab" aria-selected="true" data-tab="apps">Home</button>
       <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
       <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-newdot" id="lfAppsDot" hidden></i></button>
+      <button type="button" class="lf-tab-icon" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
     </div>
     <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-    <button type="button" class="lf-search-btn" id="lfSearchBtn" aria-label="搜尋 App" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
+    <div class="lf-gear-wrap">
+      <button type="button" class="lf-search-btn" id="lfGearBtn" aria-label="設定" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div id="lfGearMenu" class="lf-menu lf-gear-menu" role="menu" hidden>
+        <div class="lf-menu-head">設定</div>
+        <button type="button" role="menuitem" data-gear="theme">🎨 背景主題</button>
+      </div>
+    </div>
     </div>
     <label class="lf-search" for="lfSearch" id="lfSearchBox" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
@@ -389,6 +418,19 @@
   </dialog>
 
   <!-- 安裝說明 -->
+  <div class="lf-wall" id="lfWall" hidden></div>
+  <dialog class="lf-dialog" id="lfThemeDialog">
+    <div class="lf-dialog-body">
+      <h3>背景主題</h3>
+      <p class="lf-look-sec">主題顏色</p>
+      <div class="lf-swatches" id="lfSwatches"></div>
+      <p class="lf-look-sec">桌布</p>
+      <div class="lf-walls" id="lfWalls"></div>
+      <input type="file" id="lfWallFile" accept="image/*" hidden>
+      <p class="lf-note" id="lfLookMsg"></p>
+      <div class="lf-actions"><button type="button" class="lf-primary" id="lfThemeClose">完成</button></div>
+    </div>
+  </dialog>
   <dialog class="lf-dialog" id="lfInstallDialog">
     <div class="lf-dialog-body">
       <h3>安裝 LinFamily</h3>
@@ -461,7 +503,7 @@
       $('lfUsersItem').hidden = !isSuper();
       // 每次打開都先停在 Welcome；點過（entered）而且已登入才進主畫面。登入中不會先進去又閃回來。
       $('lfWelcome').hidden = !!(role && entered); document.documentElement.classList.remove('lf-pending');
-      if (!role) appsReady(); // 登入失敗或沒權限：回到 Welcome
+      if (!role) { appsReady(); applyLook({}); } // 登入失敗或沒權限：回到 Welcome、主題回預設
       try { if (role && entered) sessionStorage.setItem('linfamily_entered', '1'); else if (!role && authReady) sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
       syncAddBtn();
       if (role && role !== 'superuser' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // 只有 Superuser 的登入會帶到 DX、YA、SR
@@ -577,12 +619,14 @@
       if (email === deskEmail) return showApps();
       if (deskUnsub) { deskUnsub(); deskUnsub = null; }
       deskEmail = email; myDesk = null;
+      if (email) try { const c = JSON.parse(localStorage.getItem('linfamily_look_' + email) || 'null'); if (c) applyLook(c); } catch (_) {} // 先用上次的主題，不閃預設色
       if (email) {
         try { const c = JSON.parse(localStorage.getItem(deskKey()) || 'null'); if (Array.isArray(c)) myDesk = c; } catch (_) {}
         if (db) deskUnsub = db.collection(DESK_COL).doc(email).onSnapshot(snap => {
           const d = snap.exists ? snap.data() : null;
           myDesk = d && Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : null;
           mySeen = d && Array.isArray(d.seen) ? d.seen : [];
+          applyLook(d || {}, true);
           try { if (myDesk) localStorage.setItem(deskKey(), JSON.stringify(myDesk)); else localStorage.removeItem(deskKey()); } catch (_) {}
           showApps(); appsReady();
         }, err => { console.warn('個人桌面讀取失敗', err); appsReady(); });
@@ -690,7 +734,7 @@
       if (!db) throw new Error('資料庫尚未載入');
       if (role) { // 個人桌面（seen：已通知過的 App，第一次建立時＝當時全部 App）
         const seen = Array.from(new Set((myDesk ? mySeen : globalApps.map(a => a.id)).concat(seenAdd || [])));
-        await db.collection(DESK_COL).doc(user.email.toLowerCase()).set({ items: next, seen, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        await db.collection(DESK_COL).doc(user.email.toLowerCase()).set({ items: next, seen, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); // merge：不蓋掉背景主題
         myDesk = next; mySeen = seen; try { localStorage.setItem(deskKey(), JSON.stringify(next)); } catch (_) {}
         return showApps();
       }
@@ -865,6 +909,95 @@
     }
     function renderNews() { $('lfAppsDot').hidden = !newApps().length; } // 有新 App → Apps 分頁紅點
     function clearNews() { const n = newApps(); if (n.length) persist(withPos(), n.map(a => a.id)).catch(() => {}); } // 打開 Apps 就算看過
+
+
+    // ---------- 背景主題（每個人自己的，存在 linfamily_desktops/{email} 的 theme、wall、wallImg） ----------
+    const THEMES = {
+      pine:     { name:'松綠',   pine:'#4E8B7E', sage:'#8FBFB0', cloud:'#E6E7E9' },
+      ocean:    { name:'海洋',   pine:'#0F8A92', sage:'#6FC7C9', cloud:'#E3EEF0' },
+      sun:      { name:'暖陽',   pine:'#C07A3E', sage:'#E6B98A', cloud:'#F2ECE3' },
+      lavender: { name:'薰衣草', pine:'#7A6BB0', sage:'#B6A9DD', cloud:'#ECEAF3' },
+      rose:     { name:'玫瑰',   pine:'#B5596B', sage:'#E2A3AE', cloud:'#F3E9EA' },
+      graphite: { name:'石墨',   pine:'#4B5563', sage:'#9CA3AF', cloud:'#E5E7EB' }
+    };
+    const WALLS = {
+      none:   { name:'無', css:'' },
+      coast:  { name:'海岸', css:'linear-gradient(100deg,#02878F,#02A8AB 58%,#F8C4B4 64%,#F5CCBD)' },
+      mist:   { name:'晨霧', css:'linear-gradient(160deg,#E8EEF0,#CFE3DD 50%,#F4EBDD)' },
+      forest: { name:'森林', css:'linear-gradient(135deg,#2F5D50,#4E8B7E 50%,#8FBFB0)' },
+      sunset: { name:'落日', css:'linear-gradient(160deg,#F6C28B,#E58C8A 55%,#7A6BB0)' },
+      night:  { name:'夜空', css:'radial-gradient(ellipse at 30% 20%,#2A3A5E,#0B1020 70%)' }
+    };
+    let look = { theme:'pine', wall:'none', wallImg:'' };
+    const lookKey = () => 'linfamily_look_' + (user ? user.email.toLowerCase() : '');
+    function paintLook() {
+      const t = THEMES[look.theme] || THEMES.pine, st = document.documentElement.style;
+      st.setProperty('--pine', t.pine); st.setProperty('--sage', t.sage); st.setProperty('--cloud', t.cloud);
+      const img = look.wall === 'img' && look.wallImg ? 'url("' + look.wallImg + '")' : (WALLS[look.wall] || WALLS.none).css;
+      $('lfWall').style.backgroundImage = img || 'none'; $('lfWall').hidden = !img;
+      document.documentElement.classList.toggle('lf-has-wall', !!img);
+      if ($('lfThemeDialog').open) renderLook();
+    }
+    function applyLook(d, fromServer) {
+      look = { theme: THEMES[d.theme] ? d.theme : 'pine', wall: d.wall === 'img' || WALLS[d.wall] ? d.wall : 'none', wallImg: d.wallImg || '' };
+      paintLook();
+      if (fromServer) try { localStorage.setItem(lookKey(), JSON.stringify(look)); } catch (_) {}
+    }
+    async function saveLook(patch) {
+      Object.assign(look, patch); paintLook();
+      try { localStorage.setItem(lookKey(), JSON.stringify(look)); } catch (_) {}
+      if (!db || !user) return;
+      try { await db.collection(DESK_COL).doc(user.email.toLowerCase()).set(Object.assign({}, patch, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() }), { merge: true }); $('lfLookMsg').textContent = ''; }
+      catch (err) { $('lfLookMsg').textContent = '儲存失敗：' + errText(err); }
+    }
+    function renderLook() {
+      const sw = $('lfSwatches'); sw.textContent = '';
+      Object.entries(THEMES).forEach(([k, t]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'lf-swatch'; b.title = t.name; b.setAttribute('aria-label', t.name);
+        b.style.background = `linear-gradient(135deg, ${t.pine} 50%, ${t.sage} 50%)`; b.setAttribute('aria-pressed', look.theme === k ? 'true' : 'false');
+        b.addEventListener('click', () => saveLook({ theme: k })); sw.append(b);
+      });
+      const wl = $('lfWalls'); wl.textContent = '';
+      const tile = (k, label, bg) => {
+        const b = document.createElement('button'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', '桌布：' + label);
+        if (bg) b.style.backgroundImage = bg; else b.textContent = label;
+        b.setAttribute('aria-pressed', look.wall === k ? 'true' : 'false'); wl.append(b); return b;
+      };
+      Object.entries(WALLS).forEach(([k, w]) => tile(k, w.name, w.css).addEventListener('click', () => saveLook({ wall: k })));
+      if (look.wallImg) tile('img', '我的照片', 'url("' + look.wallImg + '")').addEventListener('click', () => saveLook({ wall: 'img' }));
+      tile('upload', '＋ 上傳照片', '').addEventListener('click', () => $('lfWallFile').click());
+    }
+    // 上傳照片：先在手機上縮小、壓成 JPEG（約 200～500KB），存在自己的資料裡，不用另外的檔案空間
+    $('lfWallFile').addEventListener('change', async e => {
+      const file = e.target.files && e.target.files[0]; e.target.value = '';
+      if (!file) return;
+      $('lfLookMsg').textContent = '處理照片中…';
+      try {
+        const bmp = await createImageBitmap(file);
+        let max = 1600, q = 0.72, data = '';
+        for (let i = 0; i < 4; i++) {
+          const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+          const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+          c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+          data = c.toDataURL('image/jpeg', q);
+          if (data.length < 650000) break;
+          max = Math.round(max * 0.8); q = Math.max(0.5, q - 0.08);
+        }
+        $('lfLookMsg').textContent = '';
+        await saveLook({ wall: 'img', wallImg: data });
+      } catch (err) { $('lfLookMsg').textContent = '這張照片無法使用，請換一張。'; }
+    });
+    // 齒輪選單
+    const gearBtn = $('lfGearBtn'), gearMenu = $('lfGearMenu');
+    const setGear = open => { gearMenu.hidden = !open; gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+    gearBtn.addEventListener('click', () => setGear(gearMenu.hidden));
+    document.addEventListener('click', e => { if (!gearMenu.hidden && !gearMenu.contains(e.target) && !gearBtn.contains(e.target)) setGear(false); });
+    gearMenu.addEventListener('click', e => {
+      const b = e.target.closest('[data-gear]'); if (!b) return; setGear(false);
+      if (b.dataset.gear === 'theme') { renderLook(); $('lfLookMsg').textContent = role ? '' : '登入後設定會跟著你的帳號。'; $('lfThemeDialog').showModal(); }
+    });
+    $('lfThemeClose').addEventListener('click', () => $('lfThemeDialog').close());
+    $('lfThemeDialog').addEventListener('click', e => { if (e.target === $('lfThemeDialog')) $('lfThemeDialog').close(); });
 
     // ---------- 分頁：主畫面／家庭空間配置 ----------
     document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
