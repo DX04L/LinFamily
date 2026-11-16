@@ -49,7 +49,7 @@
     $('lfAuthDot').hidden = true; // 不顯示已登入小黃點
     $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User' : 'Viewer（唯讀）'}` : '';
     $('lfUsersItem').hidden = role !== 'superuser';
-    if (role === 'user' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // User：登入不帶到 DX、YA、SR
+    if (role && role !== 'superuser' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // 只有 Superuser 的登入會帶到 DX、YA、SR
     $('addBtn').hidden = !window.canEdit;
     if (!role) setMenu(false);
   }
@@ -73,8 +73,7 @@
       if (SUPERUSERS.includes(email)) { share(); return toast('歡迎回來，' + (res.user.displayName || email)); }
       const snap = await db.collection('admin_users').doc(email).get();
       const d = snap.exists ? snap.data() : null;
-      if (d && d.active !== false && d.role === 'user') { if (window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); }
-      else if (d && d.active !== false && ['admin', 'viewer'].includes(d.role)) share(); // User 不分享登入；沒有權限的帳號也不分享
+      if (window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // 跨站登入只給 Superuser：Admin、Viewer、User 都不帶到 DX、YA、SR
       if (!(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role))) { await auth.signOut(); toast('帳號【' + email + '】沒有權限。'); }
       else toast('歡迎，' + (res.user.displayName || email));
     } catch (err) {
