@@ -445,6 +445,7 @@
   </dialog>
 
   <script src="js/clc-slot-grid.js?v=20261116a"></script>
+  <script src="js/clc-icon-upload.js?v=20261116a"></script>
   <script src="js/lf-menu.js?v=20261115c"></script>
   <script>
   (function () {
@@ -649,7 +650,9 @@
       return v;
     }
     const isExternal = url => { try { return new URL(url, location.href).origin !== location.origin; } catch (_) { return false; } };
-    const isImageUrl = v => /^(https?:\/\/|\/|\.\/)/i.test(String(v || '')) || /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(String(v || ''));
+    const isDataIcon = v => !!(window.clcIsDataIcon && window.clcIsDataIcon(v)); // 上傳後存成的 data:image（js/clc-icon-upload.js）
+    const isImageUrl = v => isDataIcon(v) || /^(https?:\/\/|\/|\.\/)/i.test(String(v || '')) || /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(String(v || ''));
+    const safeIcon = v => isDataIcon(v) ? String(v) : safeUrl(v);
     const MONO_COLORS = ['#4E8B7E', '#B5835A', '#5F77A8', '#A8607A', '#4F8FA0', '#7E6FAE', '#6E8B4E'];
     const isGoogleIcon = v => /google\.[a-z.]+\/s2\/favicons/i.test(String(v || ''));
     function monogram(span, app) {
@@ -664,8 +667,8 @@
       span.className = 'lf-icon';
       let icon = String(app.icon || app.iconUrl || '').trim();
       if (isGoogleIcon(icon)) icon = '';
-      if (icon && isImageUrl(icon) && safeUrl(icon)) {
-        const src = safeUrl(icon), i = document.createElement('img');
+      if (icon && isImageUrl(icon) && safeIcon(icon)) {
+        const src = safeIcon(icon), i = document.createElement('img');
         i.alt = ''; i.loading = 'lazy'; i.src = src; span.classList.add('is-img'); span.append(i);
         i.addEventListener('error', () => monogram(span, app), { once: true });
         i.addEventListener('load', () => { if (i.naturalWidth && i.naturalWidth < 96 && !/\.svg(\?|$)/i.test(src)) monogram(span, app); }, { once: true });
@@ -797,7 +800,13 @@
     }, err => console.warn('App 清單讀取失敗（沿用快取）', err));
 
     // ---------- 新增／修改對話框 ----------
-    const dlg = $('lfAppDialog'); let editingId = null;
+    const dlg = $('lfAppDialog'); let editingId = null, uploadedIcon = '';
+    const placeholderIcon = $('lfAppIcon').placeholder;
+    function setUploaded(icon) {
+      uploadedIcon = icon || '';
+      $('lfAppIcon').placeholder = uploadedIcon ? '已使用上傳的圖片（填網址可取代）' : placeholderIcon;
+      if (uploader) uploader.setUploaded(!!uploadedIcon);
+    }
     function showErr(msg) { $('lfAppErr').textContent = msg; $('lfAppErr').hidden = !msg; }
     function openApp(id) {
       if (!role) return;
@@ -806,7 +815,9 @@
       $('lfAppTitle').textContent = app ? '修改 App' : '新增 App';
       $('lfAppUrl').value = app ? app.url || '' : '';
       $('lfAppName').value = app ? app.name : '';
-      $('lfAppIcon').value = app && !isGoogleIcon(app.icon || app.iconUrl) ? (app.icon || app.iconUrl || '') : '';
+      const curIcon = app && !isGoogleIcon(app.icon || app.iconUrl) ? (app.icon || app.iconUrl || '') : '';
+      $('lfAppIcon').value = isDataIcon(curIcon) ? '' : curIcon;
+      setUploaded(isDataIcon(curIcon) ? curIcon : '');
       auto = { name: '', icon: '', embeddable: app ? app.embeddable : undefined, url: app ? safeUrl(app.url) : '' };
       showErr(''); status(''); $('lfAppSave').disabled = false; preview();
       dlg.showModal(); (app ? $('lfAppName') : $('lfAppUrl')).focus();
@@ -816,7 +827,14 @@
     const SITE_INFO = 'https://clc-dx04.pages.dev/api/site-info?url=';
     let auto = {}, fetchSeq = 0, fetchTimer = 0;
     function status(msg) { $('lfAppStatus').textContent = msg; $('lfAppStatus').hidden = !msg; }
-    function preview() { $('lfAppPreview').replaceChildren(iconEl({ name: $('lfAppName').value, icon: $('lfAppIcon').value, url: $('lfAppUrl').value })); }
+    function preview() { $('lfAppPreview').replaceChildren(iconEl({ name: $('lfAppName').value, icon: uploadedIcon || $('lfAppIcon').value, url: $('lfAppUrl').value })); }
+    // 圖示可上傳、拖放或貼上截圖
+    const uploader = window.clcIconUploader ? window.clcIconUploader({
+      dialog: dlg, row: dlg.querySelector('.lf-iconrow'),
+      onIcon: d => { $('lfAppIcon').value = ''; setUploaded(d); showErr(''); preview(); },
+      onClear: () => { setUploaded(''); preview(); },
+      onError: showErr
+    }) : null;
     async function fetchInfo() {
       const url = safeUrl($('lfAppUrl').value);
       if (!url || url === auto.url) return;
@@ -832,23 +850,25 @@
       const name = String(info.name || '').trim().slice(0, 20), icon = info.ok && !isGoogleIcon(info.icon) ? safeUrl(info.icon) : '';
       const nameEl = $('lfAppName'), iconElm = $('lfAppIcon');
       if (name && (!nameEl.value.trim() || nameEl.value === auto.name)) { nameEl.value = name; auto.name = name; }
-      if (!iconElm.value.trim() || iconElm.value === auto.icon) { iconElm.value = icon; auto.icon = icon; }
+      if (!uploadedIcon && (!iconElm.value.trim() || iconElm.value === auto.icon)) { iconElm.value = icon; auto.icon = icon; }
       preview();
     }
     $('lfAppUrl').addEventListener('input', () => { clearTimeout(fetchTimer); fetchTimer = setTimeout(fetchInfo, 600); });
     $('lfAppUrl').addEventListener('change', fetchInfo);
     $('lfAppName').addEventListener('input', preview);
-    $('lfAppIcon').addEventListener('input', preview);
+    $('lfAppIcon').addEventListener('input', () => { if ($('lfAppIcon').value.trim() && uploadedIcon) setUploaded(''); preview(); });
     $('lfAppCancel').addEventListener('click', () => dlg.close());
-    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+    // 按下和放開都在框外才關閉（拖曳選字滑出去不會關掉）
+    if (window.clcDialogBackdropClose) window.clcDialogBackdropClose(dlg);
+    else dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
     dlg.querySelector('form').addEventListener('submit', async e => {
       e.preventDefault();
       if (safeUrl($('lfAppUrl').value) !== auto.url) { clearTimeout(fetchTimer); await fetchInfo(); }
       const url = safeUrl($('lfAppUrl').value);
-      const icon = $('lfAppIcon').value.trim();
+      const icon = uploadedIcon || $('lfAppIcon').value.trim();
       let name = $('lfAppName').value.trim().slice(0, 20);
       if (!url) return showErr('請輸入網址，例如 HannahProjects/home.html 或 https://example.com');
-      if (icon && isImageUrl(icon) && !safeUrl(icon)) return showErr('圖示網址格式不正確。');
+      if (icon && isImageUrl(icon) && !safeIcon(icon)) return showErr('圖示網址格式不正確。');
       if (!name) { try { name = isExternal(url) ? new URL(url).hostname.replace(/^www\./, '') : url.replace(/\/$/, ''); } catch (_) { name = url; } name = name.slice(0, 20); }
       $('lfAppSave').disabled = true;
       const base = withPos(), old = editingId && base.find(a => a.id === editingId);
@@ -1003,7 +1023,8 @@
       if (b.dataset.gear === 'theme') { renderLook(); $('lfLookMsg').textContent = role ? '' : '登入後設定會跟著你的帳號。'; $('lfThemeDialog').showModal(); }
     });
     $('lfThemeClose').addEventListener('click', () => $('lfThemeDialog').close());
-    $('lfThemeDialog').addEventListener('click', e => { if (e.target === $('lfThemeDialog')) $('lfThemeDialog').close(); });
+    if (window.clcDialogBackdropClose) window.clcDialogBackdropClose($('lfThemeDialog'));
+    else $('lfThemeDialog').addEventListener('click', e => { if (e.target === $('lfThemeDialog')) $('lfThemeDialog').close(); });
 
 
     // ---------- 問候語（照 DX 的做法：依時段、星期隨機一句；LF 是家庭用，語氣生活化、親近） ----------
