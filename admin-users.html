@@ -111,7 +111,7 @@
       <div id="tabSecurity" hidden>
         <form class="lf-card" id="lfSecForm">
           <h2>休眠與自動登出（全站、所有使用者）</h2>
-          <p class="lf-note">以「最後一次操作」起算；App 關著的時間也算。LF、DX、YA、SR 一起套用。</p>
+          <p class="lf-note">以「最後一次操作」起算；App 關著的時間也算。<b>從 LinFamily 進來時</b>套用，包含從 LF 點進去的 DX、YA、SR；從 DX 直接進來時照 DX 的設定；YA、SR 用自己的連結開不受管制。休眠回 LF 的 Welcome，登出回 LF。</p>
           <label>休眠：多久沒操作就回到動態首頁
             <select class="field" id="lfSecSleep"><option value="0">關閉</option><option value="5">5 分鐘</option><option value="10">10 分鐘</option><option value="15">15 分鐘</option><option value="30">30 分鐘</option><option value="60">60 分鐘</option></select></label>
           <label>自動登出：多久沒操作就全站登出
@@ -171,8 +171,8 @@
       e.preventDefault();
       try {
         await db.collection('linfamily_settings').doc('security').set({ sleepMin: Number($('lfSecSleep').value), logoutMin: Number($('lfSecLogout').value), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        try { localStorage.setItem('clc_security', JSON.stringify({ sleepMin: Number($('lfSecSleep').value), logoutMin: Number($('lfSecLogout').value) })); } catch (_) {}
-        $('lfSecMsg').textContent = '✅ 已儲存，所有站下次打開或 1 分鐘內生效。';
+        try { localStorage.setItem('clc_security_lf', JSON.stringify({ sleepMin: Number($('lfSecSleep').value), logoutMin: Number($('lfSecLogout').value) })); } catch (_) {}
+        $('lfSecMsg').textContent = '✅ 已儲存，下次打開或 1 分鐘內生效。';
       } catch (err) { $('lfSecMsg').textContent = '儲存失敗：' + errText(err); }
     });
     async function loadUsers() {
