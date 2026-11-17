@@ -20,7 +20,8 @@
  *     save: async items => {},           // 按「完成」時的新清單（含 pos，已扣掉刪除的）
  *     onAdd: pos => {}, onEdit: id => {},
  *     onEditingChange: editing => {},
- *     flow: true                         // 可省略。true＝不留空格、依序排列，拖到別的 App 上＝插到那裡（其他往後移，像手機）
+ *     flow: true                         // 可省略。true＝不留空格、依序排列
+ *   拖到別的 App 上：像 iPhone 一樣把它和後面的 App 往後擠（拖曳中就會預覽讓位），遇到空格就停。
  *   });
  *   g.render(); g.setEditing(false); g.isEditing();
  */
@@ -204,6 +205,11 @@
 
     // ---------- 拖曳 ----------
     function cellAt(x, y) {
+      if (g && g.slots) { // 拖曳中：照開始時的格子位置找（其他 App 正在滑動讓位）
+        const gr = grid.getBoundingClientRect(), px = x - gr.left, py = y - gr.top;
+        for (const [pos, r] of g.slots) if (px >= r.l && px <= r.l + r.w && py >= r.t && py <= r.t + r.h) return grid.querySelector(':scope > [data-slot="' + pos + '"]');
+        return null;
+      }
       const el = document.elementFromPoint(x, y);
       const slot = el && el.closest && el.closest('[data-slot]');
       return slot && grid.contains(slot) ? slot : null;
@@ -222,6 +228,10 @@
       requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('slot-landing')));
       cell.classList.add('slot-source');
       g.dragging = true; g.float = f; g.origin = { x: r.left, y: r.top };
+      const gr0 = grid.getBoundingClientRect();
+      g.slots = new Map(Array.from(grid.querySelectorAll(':scope > [data-slot]')).map(el => {
+        const q = el.getBoundingClientRect(); return [Number(el.dataset.slot), { l: q.left - gr0.left, t: q.top - gr0.top, w: q.width, h: q.height }];
+      }));
       if (!editing) setEditing(true);
     }
     function moveDrag(x, y) {
@@ -232,9 +242,34 @@
       if (g.target !== t) {
         g.target?.classList.remove('slot-target');
         g.target = t && t !== g.cell ? t : null;
-        g.target?.classList.add('slot-target');
+        if (g.target && g.target.classList.contains('slot-cell') && !o.flow) previewPush(); else { clearPreview(); g.target?.classList.add('slot-target'); }
       }
       if (y < 60) window.scrollBy(0, -12); else if (y > innerHeight - 60) window.scrollBy(0, 12);
+    }
+    // 拖到有 App 的格子：像 iPhone 一樣往後擠（遇到空格或拖走留下的空位就停）
+    function pushPlan(from, to) {
+      const occ = new Map(items.filter(it => it.pos !== from).map(it => [it.pos, it]));
+      const plan = new Map(), moving = items.find(it => it.pos === from);
+      if (!moving) return plan;
+      plan.set(moving.id, to);
+      let cur = occ.get(to), p = to, step = from > to ? 1 : -1; // 往前拖：後面的往後擠；往後拖：中間的往前補
+      while (cur) { p += step; plan.set(cur.id, p); cur = p === from ? null : occ.get(p); if (p < 0) break; }
+      return plan;
+    }
+    function previewPush() {
+      clearPreview();
+      const from = Number(g.cell.dataset.slot), to = Number(g.target.dataset.slot);
+      const plan = pushPlan(from, to); g.plan = plan;
+      plan.forEach((pos, id) => {
+        const it = items.find(x => x.id === id); if (!it || it.pos === from) return;
+        const a = g.slots.get(it.pos), b = g.slots.get(pos), cell = grid.querySelector(':scope > .slot-cell[data-id="' + CSS.escape(id) + '"]');
+        if (!a || !b || !cell) return;
+        cell.style.transition = 'transform .22s ease'; cell.style.transform = `translate(${b.l - a.l}px,${b.t - a.t}px)`; cell.classList.add('slot-shifted');
+      });
+    }
+    function clearPreview() {
+      if (g) g.plan = null;
+      grid.querySelectorAll(':scope > .slot-shifted').forEach(c => { c.style.transform = ''; c.classList.remove('slot-shifted'); });
     }
     async function endDrag(commit) {
       const st = g; g = null;
@@ -243,7 +278,8 @@
       land(st.float, (ok ? st.target : st.cell).getBoundingClientRect(), st.origin);
       st.cell.classList.remove('slot-source');
       st.target?.classList.remove('slot-target');
-      if (!ok) return;
+      const plan = st.plan;
+      if (!ok) { grid.querySelectorAll(':scope > .slot-shifted').forEach(c => { c.style.transform = ''; c.classList.remove('slot-shifted'); }); return; }
       const from = Number(st.cell.dataset.slot), to = Number(st.target.dataset.slot);
       if (from === to) return;
       const moving = items.find(it => it.pos === from), other = items.find(it => it.pos === to);
@@ -254,6 +290,8 @@
         const arr = items.slice().sort((a, b) => a.pos - b.pos);
         arr.splice(to, 0, arr.splice(from, 1)[0]);
         arr.forEach((it, i) => pending.pos.set(it.id, i));
+      } else if (plan && other) { // 往後擠（預覽時算好的）
+        plan.forEach((pos, id) => pending.pos.set(id, pos));
       } else {
         pending.pos.set(moving.id, to);
         if (other) pending.pos.set(other.id, from);
