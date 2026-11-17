@@ -112,10 +112,16 @@
         <form class="lf-card" id="lfSecForm">
           <h2>休眠與自動登出（全站、所有使用者）</h2>
           <p class="lf-note">以「最後一次操作」起算；App 關著的時間也算。<b>從 LinFamily 進來時</b>套用，包含從 LF 點進去的 DX、YA、SR；從 DX 直接進來時照 DX 的設定；YA、SR 用自己的連結開不受管制。休眠回 LF 的 Welcome，登出回 LF。</p>
+          <p><b>💻 電腦</b></p>
           <label>休眠：多久沒操作就回到動態首頁
             <select class="field" id="lfSecSleep"><option value="0">關閉</option><option value="5">5 分鐘</option><option value="10">10 分鐘</option><option value="15">15 分鐘</option><option value="30">30 分鐘</option><option value="60">60 分鐘</option></select></label>
           <label>自動登出：多久沒操作就全站登出
             <select class="field" id="lfSecLogout"><option value="0">關閉</option><option value="30">30 分鐘</option><option value="60">1 小時</option><option value="240">4 小時</option><option value="480">8 小時</option><option value="1440">1 天</option></select></label>
+          <p style="margin-top:8px"><b>📱 手機／平板</b></p>
+          <label>休眠：多久沒操作就回到動態首頁
+            <select class="field" id="lfSecMSleep"><option value="0">關閉</option><option value="5">5 分鐘</option><option value="10">10 分鐘</option><option value="15">15 分鐘</option><option value="30">30 分鐘</option><option value="60">60 分鐘</option></select></label>
+          <label>自動登出：多久沒操作就全站登出
+            <select class="field" id="lfSecMLogout"><option value="0">關閉</option><option value="30">30 分鐘</option><option value="60">1 小時</option><option value="240">4 小時</option><option value="480">8 小時</option><option value="1440">1 天</option></select></label>
           <button type="submit" class="lf-primary">儲存</button>
           <p class="lf-note" id="lfSecMsg"></p>
         </form>
@@ -165,13 +171,15 @@
     // 休眠與自動登出：存在 linfamily_settings/security，四站的 clc-sso.js 都會讀
     async function loadSec() {
       try { const d = (await db.collection('linfamily_settings').doc('security').get()).data() || {};
-        $('lfSecSleep').value = String(d.sleepMin || 0); $('lfSecLogout').value = String(d.logoutMin || 0); } catch (err) { $('lfSecMsg').textContent = '讀取失敗：' + errText(err); }
+        $('lfSecSleep').value = String(d.sleepMin || 0); $('lfSecLogout').value = String(d.logoutMin || 0);
+        $('lfSecMSleep').value = String(d.mSleepMin ?? d.sleepMin ?? 0); $('lfSecMLogout').value = String(d.mLogoutMin ?? d.logoutMin ?? 0); } catch (err) { $('lfSecMsg').textContent = '讀取失敗：' + errText(err); }
     }
     $('lfSecForm').addEventListener('submit', async e => {
       e.preventDefault();
       try {
-        await db.collection('linfamily_settings').doc('security').set({ sleepMin: Number($('lfSecSleep').value), logoutMin: Number($('lfSecLogout').value), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        try { localStorage.setItem('clc_security_lf', JSON.stringify({ sleepMin: Number($('lfSecSleep').value), logoutMin: Number($('lfSecLogout').value) })); } catch (_) {}
+        const N = id => Number($(id).value);
+        await db.collection('linfamily_settings').doc('security').set({ sleepMin: N('lfSecSleep'), logoutMin: N('lfSecLogout'), mSleepMin: N('lfSecMSleep'), mLogoutMin: N('lfSecMLogout'), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        try { localStorage.setItem('clc_security_lf', JSON.stringify({ sleepMin: N('lfSecSleep'), logoutMin: N('lfSecLogout') })); localStorage.setItem('clc_security_lf_m', JSON.stringify({ sleepMin: N('lfSecMSleep'), logoutMin: N('lfSecMLogout') })); } catch (_) {}
         $('lfSecMsg').textContent = '✅ 已儲存，下次打開或 1 分鐘內生效。';
       } catch (err) { $('lfSecMsg').textContent = '儲存失敗：' + errText(err); }
     });
