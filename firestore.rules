@@ -1,0 +1,47 @@
+rules_version = '2';
+// LinFamily｜Firestore 規則（備份；只提交 GitHub 不會自動生效，請到 Firebase Console → Firestore → 規則 貼上並發布）
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function supers() { return ['darren710404@gmail.com', 'darren.lin@twclc.org']; }
+    function isSuper() { return signedIn() && myEmail() in supers(); }
+    function memberDoc() { return get(/databases/$(database)/documents/admin_users/$(myEmail())); }
+    function isMember() {
+      return signedIn() && exists(/databases/$(database)/documents/admin_users/$(myEmail()))
+        && memberDoc().data.get('active', true) == true
+        && memberDoc().data.role in ['admin', 'viewer', 'user'];
+    }
+    function isAdmin() { return isSuper() || (isMember() && memberDoc().data.role == 'admin'); }
+
+    // 權限名單：自己可讀自己的；只有 Superuser 可列出、新增、修改（含強制登出 forceLogoutAt）、刪除
+    match /admin_users/{email} {
+      allow get: if signedIn() && (myEmail() == email || isSuper());
+      allow list, delete: if isSuper();
+      allow create, update: if isSuper()
+        && email == email.lower()
+        && !(email in supers())
+        && request.resource.data.keys().hasOnly(['role', 'active', 'updatedAt', 'forceLogoutAt'])
+        && request.resource.data.role in ['admin', 'viewer', 'user']
+        && request.resource.data.active is bool;
+    }
+
+    // 設定：apps（App 櫃＝全部 App）、security（休眠與自動登出）。大家可讀（沒登入也要讀）；只有 Superuser 可改
+    match /linfamily_settings/{doc} {
+      allow read: if true;
+      allow write: if isSuper();
+    }
+
+    // 個人桌面（主畫面排列、背景主題）：只有本人（且在名單內）可讀寫；Superuser 可讀寫全部
+    match /linfamily_desktops/{email} {
+      allow read, write: if isSuper() || (isMember() && myEmail() == email);
+    }
+
+    // Hannah's Studio 作品：大家可看；Superuser、Admin 可新增、修改、刪除
+    match /hannah_artworks/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
