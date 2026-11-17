@@ -283,7 +283,7 @@
       <button type="button" id="lfAuthBtn" class="lf-btn" title="管理員登入 / 狀態" aria-haspopup="menu" aria-expanded="false"><span id="lfAuthIcon">🔐</span><span id="lfAuthDot" class="lf-dot" hidden></span></button>
       <div id="lfMenu" class="lf-menu" role="menu" hidden>
         <div id="lfMenuHead" class="lf-menu-head">管理員已登入</div>
-        <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>👤 權限管理</button>
+        <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>⚙️ 全站設定</button>
         <button type="button" role="menuitem" data-act="theme"><span class="lf-ic-sun">☀️ 切換淺色</span><span class="lf-ic-moon">🌙 切換深色</span></button>
         <div class="lf-sep"></div>
         <button type="button" role="menuitem" data-act="logout" class="lf-danger" id="lfLogoutBtn">🚪 登出帳號</button>
@@ -495,6 +495,11 @@
       document.documentElement.classList.add('lf-apps-wait');
       clearTimeout(waitT); waitT = setTimeout(appsReady, 3000); // 保險：最多等 3 秒
     }
+    window.lfSleep = function () { // 全站設定的「休眠」時間到（clc-sso.js 呼叫）：回到 Welcome，點一下再進
+      entered = false; try { sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
+      document.querySelectorAll('dialog[open]').forEach(d => d.close());
+      $('lfWelcome').hidden = false;
+    };
     function appsReady() { clearTimeout(waitT); document.documentElement.classList.remove('lf-apps-wait'); }
     // 從 DX、Hannah's Studio 等子 App 按 🏠 回來（同一個視窗）：已經進來過，就直接回主畫面，不再停在 Welcome
     let authReady = false;
@@ -528,6 +533,11 @@
       if (SUPERUSERS.includes(email)) return applyRole('superuser');
       roleUnsub = db.collection('admin_users').doc(email).onSnapshot(snap => {
         const d = snap.exists ? snap.data() : null;
+        // 強制登出（全站設定 → 權限管理）：記號時間比這台裝置登入的時間新 → 立刻登出
+        let loginAt = 0; try { loginAt = Number(localStorage.getItem('linfamily_login_at') || 0); if (!loginAt) { loginAt = Date.now(); localStorage.setItem('linfamily_login_at', String(loginAt)); } } catch (_) {}
+        if (d && d.forceLogoutAt && d.forceLogoutAt.toMillis && d.forceLogoutAt.toMillis() > loginAt) {
+          toast('管理員已將這個帳號登出'); (window.CLCSSO && window.CLCSSO.logoutAll ? window.CLCSSO.logoutAll() : Promise.resolve()).finally(() => auth.signOut()); return;
+        }
         applyRole(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role) ? d.role : '');
       }, () => applyRole(''));
     });
@@ -537,6 +547,7 @@
       if (!auth) return toast('登入服務尚未載入，請重新整理。');
       try {
         const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        try { localStorage.setItem('linfamily_login_at', String(Date.now() + 1000)); } catch (_) {} // 登入時間（強制登出用；+1 秒避免和伺服器時間誤差）
         if (entered) goHome(); // 登入一成功就進主畫面（先不顯示 App 圖示），不再回到 Welcome
         const tok = res.credential && res.credential.idToken;
         const share = () => { if (!window.CLCSSO || !tok) return; if (window.CLCSSO.shareLogin) window.CLCSSO.shareLogin(tok); else window.CLCSSO.saveGoogleIdToken(tok); }; // 同時把 DX、YA、SR 登入成同一個帳號

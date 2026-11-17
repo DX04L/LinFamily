@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>權限管理 · LinFamily</title>
+  <title>全站設定 · LinFamily</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="favicon.png?v=3">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
@@ -55,6 +55,10 @@
     .lf-note { color:var(--muted); font-size:.875rem; line-height:1.25rem; margin:0; }
     .lf-box { border:1px solid var(--border); border-radius:.75rem; padding:1rem; font-size:.875rem; }
     #lfBody { display:flex; flex-direction:column; gap:1.25rem; }
+    .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:0 0 1rem; border-radius:9999px; background:var(--btn, rgba(0,0,0,.05)); border:1px solid var(--border); }
+    .lf-tabs button { border:0; background:none; padding:.5rem 1rem; border-radius:9999px; font:inherit; font-size:.875rem; font-weight:700; color:var(--muted, #64748b); cursor:pointer; }
+    .lf-tabs button[aria-selected="true"] { background:var(--teal); color:#fff; }
+    #tabSecurity label { display:block; margin:.75rem 0; font-size:.875rem; font-weight:600; }
     .lf-card { background:var(--surface); border:1px solid var(--border); border-radius:.75rem; padding:1rem; }
     .lf-card h2 { margin:0; font-size:1rem; font-weight:700; }
     form.lf-card > * + * { margin-top:.75rem; }
@@ -83,10 +87,15 @@
   <main>
     <a class="lf-back" id="lfBack" href="./">‹ 返回</a>
     <script>(function(){var b=new URLSearchParams(location.search).get('back');if(b&&/^[\w\/.-]+$/.test(b)&&b.indexOf('..')<0)document.getElementById('lfBack').href=b;})();</script>
-    <h1>👤 權限管理</h1>
+    <h1>⚙️ 全站設定</h1>
     <p class="lf-note">Superuser 為固定名單（寫在程式裡）。Admin 可登入；Viewer 唯讀；User 可登入 LinFamily，但不能開 DX（含 YA、SR），登入也不會帶過去。編輯 App 只限 Superuser。新增者需使用相同 Google Email 登入。</p>
     <div class="lf-box" id="lfGate">確認登入中…</div>
     <div id="lfBody" hidden>
+      <div class="lf-tabs" role="tablist" aria-label="全站設定分頁">
+        <button type="button" role="tab" aria-selected="true" data-tab="users">👤 權限管理</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="security">🔒 休眠與登出</button>
+      </div>
+      <div id="tabUsers">
       <form class="lf-card" id="lfUserAdd">
         <h2>新增成員</h2>
         <label>Google 帳號 Email<input class="field" id="lfUserEmail" type="email" placeholder="name@example.com" autocomplete="off"></label>
@@ -98,6 +107,19 @@
         <div class="lf-users" id="lfUsersList"><div class="lf-note">讀取中…</div></div>
       </section>
       <p class="lf-err" id="lfUsersErr" hidden></p>
+      </div>
+      <div id="tabSecurity" hidden>
+        <form class="lf-card" id="lfSecForm">
+          <h2>休眠與自動登出（全站、所有使用者）</h2>
+          <p class="lf-note">以「最後一次操作」起算；App 關著的時間也算。LF、DX、YA、SR 一起套用。</p>
+          <label>休眠：多久沒操作就回到動態首頁
+            <select class="field" id="lfSecSleep"><option value="0">關閉</option><option value="5">5 分鐘</option><option value="10">10 分鐘</option><option value="15">15 分鐘</option><option value="30">30 分鐘</option><option value="60">60 分鐘</option></select></label>
+          <label>自動登出：多久沒操作就全站登出
+            <select class="field" id="lfSecLogout"><option value="0">關閉</option><option value="30">30 分鐘</option><option value="60">1 小時</option><option value="240">4 小時</option><option value="480">8 小時</option><option value="1440">1 天</option></select></label>
+          <button type="submit" class="lf-primary">儲存</button>
+          <p class="lf-note" id="lfSecMsg"></p>
+        </form>
+      </div>
     </div>
   </main>
   <script>
@@ -131,6 +153,28 @@
       if (ok) loadUsers();
     });
     function usersErr(msg) { $('lfUsersErr').textContent = msg; $('lfUsersErr').hidden = !msg; }
+    function alertOk(t) { $('lfUsersErr').textContent = '✅ ' + t; $('lfUsersErr').hidden = false; }
+    // 分頁
+    document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    function showTab(t) {
+      document.querySelectorAll('.lf-tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', x.dataset.tab === t ? 'true' : 'false'));
+      $('tabUsers').hidden = t !== 'users'; $('tabSecurity').hidden = t !== 'security';
+      if (t === 'security') loadSec();
+    }
+    if (location.hash === '#security') showTab('security');
+    // 休眠與自動登出：存在 linfamily_settings/security，四站的 clc-sso.js 都會讀
+    async function loadSec() {
+      try { const d = (await db.collection('linfamily_settings').doc('security').get()).data() || {};
+        $('lfSecSleep').value = String(d.sleepMin || 0); $('lfSecLogout').value = String(d.logoutMin || 0); } catch (err) { $('lfSecMsg').textContent = '讀取失敗：' + errText(err); }
+    }
+    $('lfSecForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        await db.collection('linfamily_settings').doc('security').set({ sleepMin: Number($('lfSecSleep').value), logoutMin: Number($('lfSecLogout').value), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        try { localStorage.setItem('clc_security', JSON.stringify({ sleepMin: Number($('lfSecSleep').value), logoutMin: Number($('lfSecLogout').value) })); } catch (_) {}
+        $('lfSecMsg').textContent = '✅ 已儲存，所有站下次打開或 1 分鐘內生效。';
+      } catch (err) { $('lfSecMsg').textContent = '儲存失敗：' + errText(err); }
+    });
     async function loadUsers() {
       const list = $('lfUsersList');
       try {
@@ -144,6 +188,7 @@
           <div class="lf-sub">${ROLE_NAME[u.role] || 'Admin'} · ${u.active === false ? '已停用' : '已啟用'}</div></div>
           <div class="lf-btns"><select data-u="role" class="field" style="width:auto;margin:0" aria-label="權限等級">${Object.keys(ROLE_NAME).map(r => `<option value="${r}"${(ROLE_NAME[u.role] ? u.role : 'admin') === r ? ' selected' : ''}>${r === 'admin' ? 'Admin' : r === 'viewer' ? 'Viewer' : 'User'}</option>`).join('')}</select>
           <button type="button" data-u="active" data-active="${u.active === false ? '0' : '1'}" class="${u.active === false ? 'lf-on' : 'lf-off'}">${u.active === false ? '啟用' : '停用'}</button>
+          <button type="button" data-u="force" class="lf-off" title="這個帳號在所有裝置上登出">強制登出</button>
           <button type="button" data-u="del" class="lf-del">刪除</button></div></div>`).join('');
         usersErr('');
       } catch (err) { list.innerHTML = ''; usersErr('讀取失敗：' + errText(err)); }
@@ -153,6 +198,11 @@
       const email = b.closest('[data-email]').dataset.email, ref = db.collection('admin_users').doc(email);
       try {
         if (b.dataset.u === 'del') { if (!confirm('刪除 ' + email + '？')) return; await ref.delete(); }
+        else if (b.dataset.u === 'force') { // 對方 App 開著會立刻登出；沒開著的話下次打開時登出
+          if (!confirm('讓 ' + email + ' 在所有裝置上登出？')) return;
+          await ref.update({ forceLogoutAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          usersErr(''); alertOk(email + ' 已設定強制登出'); return;
+        }
         else await ref.update({ active: b.dataset.active !== '1', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
         loadUsers();
       } catch (err) { usersErr('更新失敗：' + errText(err)); }
