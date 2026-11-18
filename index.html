@@ -76,6 +76,9 @@
     /* 以下尺寸、顏色與 DX 的 Header 按鈕／管理員下拉選單相同 */
     .lf-btn { width:34px; min-width:34px; height:34px; border-radius:9px; font-size:15px; padding:0; display:inline-flex; align-items:center; justify-content:center;
       cursor:pointer; position:relative; background:rgba(226,232,240,.7); color:#334155; border:1px solid rgba(203,213,225,.6); transition:background .15s, transform .1s; }
+    /* 皇冠沿用 DX 的 Arial 字型與 1.5 行高，避免 LF 預設 normal 行高造成偏移。 */
+    #lfAuthBtn { font-family:"CLC Arial",Arial,"Microsoft JhengHei",sans-serif; font-weight:400; line-height:1.5; }
+    #lfAuthIcon { line-height:inherit; }
     .lf-btn:hover { background:rgba(203,213,225,.7); }
     .lf-btn:active { transform:scale(.95); }
     html.dark .lf-btn { background:rgba(255,255,255,.05); color:#cbd5e1; border-color:rgba(255,255,255,.1); }
