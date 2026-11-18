@@ -604,7 +604,9 @@
   resizeCanvas(); initWaves();
   if (reduced) { for (let i = 0; i < 90; i++) { globalTime += 0.05; waveFronts.forEach(w => w.update(0.05)); } running = false; drawLineAndParticleBackdrop(); waveFronts.forEach(w => w.draw(ctx)); updateAndDrawAllParticles(0); }
   addEventListener('resize', () => { resizeCanvas(); if (reduced) { drawLineAndParticleBackdrop(); waveFronts.forEach(w => w.draw(ctx)); } });
-  document.addEventListener('visibilitychange', sync);
+  document.addEventListener('visibilitychange', () => { stop(); sync(); });
+  addEventListener('pagehide', stop);
+  addEventListener('pageshow', () => { stop(); sync(); });
   new MutationObserver(sync).observe(wrap, { attributes: true, attributeFilter: ['hidden'] });
   sync();
 })();
