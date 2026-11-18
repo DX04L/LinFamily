@@ -52,11 +52,15 @@ h3{font-size:19px}
 .card{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);backdrop-filter:blur(12px);padding:clamp(20px,4vw,40px)}
 .card .eyebrow{margin-top:0}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-.verses{font:clamp(16px,2.5vw,21px)/1.95 var(--heading);list-style:none;padding:0}
-.verses li{display:grid;grid-template-columns:2ch 1fr;gap:13px;margin:8px 0}
-.verses small{color:var(--accent);font:600 12px/3 var(--body)}
+.verses{font:clamp(16px,2.5vw,21px)/1.95 var(--heading);list-style:none;padding:0;margin:20px 0 0}
+.verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:13px;margin:16px 0;padding-bottom:14px;border-bottom:1px dashed var(--line)}
+.verses li:last-child{border-bottom:0;padding-bottom:0}
+.verses small{color:var(--accent);font:600 13px/2.6 var(--body)}
+.verse-pair{display:flex;flex-direction:column;gap:6px}
+.eng-verse{font-family:var(--body);font-size:clamp(14px,1.9vw,16.5px);line-height:1.65;color:var(--muted);font-weight:400}
+.eng-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:6px;background:var(--panel);color:var(--accent);margin-right:6px;vertical-align:middle}
 p{line-height:1.85}
-details{border-top:1px solid var(--line);padding-top:16px;color:var(--muted)}
+details{border-top:1px solid var(--line);padding-top:16px;color:var(--muted);margin-top:16px}
 summary{cursor:pointer;font-weight:600;width:fit-content}
 details[open] .context{animation:appear .25s ease-out}
 @keyframes appear{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
@@ -67,8 +71,12 @@ details[open] .context{animation:appear .25s ease-out}
 button:hover,.action:hover{filter:brightness(.95)}
 [data-theme="kids-cute"] button:active{transform:scale(.94)}
 .story{background:linear-gradient(145deg,#fffbeb,#f3e8ff)}
-.prayer{padding:18px 20px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line)}
+.prayer{padding:18px 20px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);margin-top:18px}
 .zhuyin{font-size:clamp(18px,3.5vw,25px);line-height:2.4}
+.kids-verses{list-style:none;padding:0;margin:18px 0 0}
+.kids-verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:18px 0;padding-bottom:16px;border-bottom:1px dashed var(--line)}
+.kids-verses li:last-child{border-bottom:0;padding-bottom:0}
+.kids-verses small{color:var(--accent);font:700 14px/2.8 var(--body)}
 ruby{ruby-position:inter-character;ruby-align:center}
 rt{font-size:.5em;color:var(--annotation);letter-spacing:0;writing-mode:vertical-rl;text-orientation:upright}
 @supports not (ruby-position:inter-character){
@@ -121,7 +129,7 @@ footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-s
 <path fill="#618b7b" d="M0 315q103-108 174-54t148 39q102-19 154-58t144 57v175H0Z"/>
 <path fill="#355e50" d="M0 303q109-32 191 58t166 16q120-100 263-62v160H0Z"/>
 <path fill="#c3bb8e" opacity=".66" d="M374 276q-72 43-8 65t-52 86l-50 20 61 19q138-105 65-132-62-22-16-58Z"/>
-<path transform="translate(135 218) scale(0.24)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(483 222) scale(0.58)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(416 279) scale(0.45)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(323 193) scale(0.55)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(276 147) scale(0.51)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(75 260) scale(0.39)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(560 165) scale(0.45)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(574 149) scale(0.54)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(417 254) scale(0.32)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(86 196) scale(0.66)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(226 238) scale(0.83)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(421 199) scale(0.67)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(338 238) scale(0.56)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(535 165) scale(0.29)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(508 267) scale(0.96)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(236 185) scale(0.32)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(381 280) scale(0.87)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(167 194) scale(0.26)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(486 169) scale(0.21)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(337 214) scale(0.72)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(161 228) scale(0.57)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(362 217) scale(0.62)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(273 298) scale(0.63)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(159 247) scale(0.86)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(172 328) scale(0.98)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(386 258) scale(0.83)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(152 246) scale(0.64)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(510 249) scale(0.31)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(476 235) scale(0.61)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(216 230) scale(0.46)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(63 315) scale(0.63)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(108 331) scale(1.07)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(145 284) scale(0.70)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(436 230) scale(0.68)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(87 252) scale(0.34)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(527 261) scale(0.84)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(520 253) scale(0.57)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(143 255) scale(0.38)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(223 299) scale(0.96)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(294 299) scale(0.63)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(481 240) scale(0.42)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(62 343) scale(0.98)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(401 325) scale(0.89)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(219 332) scale(1.15)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(472 316) scale(0.43)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(294 316) scale(1.02)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(485 265) scale(0.72)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(102 266) scale(0.59)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(75 241) scale(0.87)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(390 245) scale(0.79)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(490 321) scale(0.64)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(130 249) scale(0.59)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(166 429) scale(0.85)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(510 411) scale(0.87)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(396 292) scale(0.76)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(195 297) scale(0.77)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(80 343) scale(0.60)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(482 406) scale(0.55)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(333 398) scale(1.19)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(231 429) scale(1.33)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(354 427) scale(0.90)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(281 313) scale(0.39)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(436 418) scale(0.47)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(471 407) scale(0.91)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(467 372) scale(0.92)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(330 368) scale(0.87)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(446 332) scale(0.41)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(539 398) scale(1.28)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(334 356) scale(0.49)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(272 389) scale(0.82)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(564 328) scale(0.81)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(523 319) scale(0.47)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(502 362) scale(0.40)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(315 300) scale(0.45)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(530 354) scale(0.44)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(131 395) scale(0.83)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(420 342) scale(1.15)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(142 328) scale(0.57)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(455 421) scale(1.46)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(350 383) scale(0.52)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(91 334) scale(0.50)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(69 337) scale(0.54)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(351 326) scale(0.97)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(98 366) scale(0.45)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(384 317) scale(0.35)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(408 325) scale(0.44)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(269 331) scale(0.62)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(374 400) scale(1.39)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(496 347) scale(0.86)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/></g>
+</g>
 <path d="M30 369q171 20 283 94 131-74 277-85l15 25q-138 12-292 83Q204 428 14 404Z" fill="#293e34"/>
 <path d="M26 366q166 15 287 97 132-78 286-88l-9 25q-145 16-277 78-117-63-293-83Z" fill="url(#paper)"/>
 <path d="M23 379q167 17 290 93 146-71 281-83M24 386q185 29 289 89 149-64 279-80" fill="none" stroke="#716445" opacity=".64"/>
@@ -145,7 +153,6 @@ footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-s
 </dialog>
 <noscript><p class="shell">請啟用 JavaScript 以閱讀每日靈修內容。</p></noscript>
 <script>
-// Firebase 設定 (已連線至 linfamily-31cb6)
 const firebaseConfig = {
   apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
   authDomain: "linfamily-31cb6.firebaseapp.com",
@@ -161,39 +168,7 @@ const iconFallbacks = {
   "kids": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="38" fill="#f8d9ed"/><path d="M57 104q-28 0-29-21 0-13 16-13l19 8m60 26q28 0 29-21 0-13-16-13l-19 8" fill="#a66583"/><path d="M48 77q-8-19 13-27 8-17 28-12 17-8 29 9 22 4 16 28 16 15 3 32-2 19-23 21-13 15-29 6-19 6-28-11-18-1-19-22-6-15 10-24Z" fill="#fff8e5"/><ellipse cx="90" cy="94" rx="34" ry="29" fill="#f5c6c3"/><path d="M76 92h.1m28 0h.1" stroke="#543547" stroke-width="6" stroke-linecap="round"/><path d="M83 104q7 8 14 0" fill="none" stroke="#543547" stroke-width="3" stroke-linecap="round"/><ellipse cx="68" cy="103" rx="5" ry="3" fill="#e894a6"/><ellipse cx="112" cy="103" rx="5" ry="3" fill="#e894a6"/></svg>'
 };
 const sampleDate = '2026-11-18';
-
-const sample = {
-  date: sampleDate,
-  source_channel: '詩篇範例',
-  scripture: {
-    reference: '詩篇 23:1–6',
-    verses: [
-      {verse:1,text:'耶和華是我的牧者，我必不致缺乏。'},
-      {verse:2,text:'他使我躺臥在青草地上，領我在可安歇的水邊。'},
-      {verse:3,text:'他使我的靈魂甦醒，為自己的名引導我走義路。'},
-      {verse:4,text:'我雖然行過死蔭的幽谷，也不怕遭害，因為你與我同在；你的杖，你的竿，都安慰我。'},
-      {verse:5,text:'在我敵人面前，你為我擺設筵席；你用油膏了我的頭，使我的福杯滿溢。'},
-      {verse:6,text:'我一生一世必有恩惠慈愛隨著我；我且要住在耶和華的殿中，直到永遠。'}
-    ],
-    context_before: '詩篇 22:31　他們必來把他的公義傳給將要生的民，言明這事是他所行的。',
-    context_after: '詩篇 24:1　地和其中所充滿的，世界和住在其間的，都屬耶和華。'
-  },
-  adult_content: {
-    book_background:'《詩篇》是以色列群體的詩歌與禱告集，收錄讚美、哀求與感恩。第 23 篇是一首表達信靠的詩。',
-    daily_context:'牧羊人帶領羊群找水與草，也保護羊群穿過危險地帶。詩的後半以主人款待賓客的畫面，描寫上帝的恩待。',
-    theology_points:[
-      {title:'牧者的照料',summary:'詩人相信上帝親自供應、引導與保護，也帶領人走正直的道路。',deep_dive_prompt:'我正在讀詩篇 23:1–3。請解釋古近東的牧羊背景，並從大公教會的共同信仰說明上帝的引導。'},
-      {title:'幽谷中的同在',summary:'詩人在危險中直接對上帝說「你與我同在」。他的勇氣源於上帝的陪伴。',deep_dive_prompt:'請解釋詩篇 23:4 從「他」到「你」的變化，並說明上帝的同在如何安慰正在受苦的人。'}
-    ]
-  },
-  kids_content: {
-    plain_explanation_ruby: '<ruby>上<rt>ㄕㄤˋ</rt></ruby><ruby>帝<rt>ㄉㄧˋ</rt></ruby><ruby>像<rt>ㄒㄧㄤˋ</rt></ruby><ruby>牧<rt>ㄇㄨˋ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>人<rt>ㄖㄣˊ</rt></ruby><ruby>一<rt>ㄧˊ</rt></ruby><ruby>樣<rt>ㄧㄤˋ</rt></ruby><ruby>照<rt>ㄓㄠˋ</rt></ruby><ruby>顧<rt>ㄍㄨˋ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby>。<ruby>他<rt>ㄊㄚ</rt></ruby><ruby>帶<rt>ㄉㄞˋ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby><ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>對<rt>ㄉㄨㄟˋ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>路<rt>ㄌㄨˋ</rt></ruby>，<ruby>也<rt>ㄧㄝˇ</rt></ruby><ruby>在<rt>ㄗㄞˋ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby><ruby>害<rt>ㄏㄞˋ</rt></ruby><ruby>怕<rt>ㄆㄚˋ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>時<rt>ㄕˊ</rt></ruby><ruby>候<rt>ㄏㄡˋ</rt></ruby><ruby>陪<rt>ㄆㄟˊ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby>。',
-    bible_story_title: '小羊走過山谷',
-    bible_story_title_ruby: '<ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>過<rt>ㄍㄨㄛˋ</rt></ruby><ruby>山<rt>ㄕㄢ</rt></ruby><ruby>谷<rt>ㄍㄨˇ</rt></ruby>',
-    bible_story_ruby: '<ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>吃<rt>ㄔ</rt></ruby><ruby>飽<rt>ㄅㄠˇ</rt></ruby><ruby>了<rt>˙ㄌㄜ</rt></ruby><ruby>青<rt>ㄑㄧㄥ</rt></ruby><ruby>草<rt>ㄘㄠˇ</rt></ruby>，<ruby>跟<rt>ㄍㄣ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>牧<rt>ㄇㄨˋ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>人<rt>ㄖㄣˊ</rt></ruby><ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>進<rt>ㄐㄧㄣˋ</rt></ruby><ruby>山<rt>ㄕㄢ</rt></ruby><ruby>谷<rt>ㄍㄨˇ</rt></ruby>。<ruby>山<rt>ㄕㄢ</rt></ruby><ruby>谷<rt>ㄍㄨˇ</rt></ruby><ruby>裡<rt>ㄌㄧˇ</rt></ruby><ruby>好<rt>ㄏㄠˇ</rt></ruby><ruby>暗<rt>ㄢˋ</rt></ruby>，<ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>不<rt>ㄅㄨˋ</rt></ruby><ruby>敢<rt>ㄍㄢˇ</rt></ruby><ruby>往<rt>ㄨㄤˇ</rt></ruby><ruby>前<rt>ㄑㄧㄢˊ</rt></ruby>。<ruby>牠<rt>ㄊㄚ</rt></ruby><ruby>抬<rt>ㄊㄞˊ</rt></ruby><ruby>頭<rt>ㄊㄡˊ</rt></ruby><ruby>一<rt>ㄧˊ</rt></ruby><ruby>看<rt>ㄎㄢˋ</rt></ruby>，<ruby>牧<rt>ㄇㄨˋ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>人<rt>ㄖㄣˊ</rt></ruby><ruby>就<rt>ㄐㄧㄡˋ</rt></ruby><ruby>在<rt>ㄗㄞˋ</rt></ruby><ruby>身<rt>ㄕㄣ</rt></ruby><ruby>邊<rt>ㄅㄧㄢ</rt></ruby>，<ruby>正<rt>ㄓㄥˋ</rt></ruby><ruby>等<rt>ㄉㄥˇ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>牠<rt>ㄊㄚ</rt></ruby>。<ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>跟<rt>ㄍㄣ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>他<rt>ㄊㄚ</rt></ruby>，<ruby>一<rt>ㄧˊ</rt></ruby><ruby>步<rt>ㄅㄨˋ</rt></ruby><ruby>一<rt>ㄧˊ</rt></ruby><ruby>步<rt>ㄅㄨˋ</rt></ruby><ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>到<rt>ㄉㄠˋ</rt></ruby><ruby>水<rt>ㄕㄨㄟˇ</rt></ruby><ruby>邊<rt>ㄅㄧㄢ</rt></ruby>。<ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby><ruby>害<rt>ㄏㄞˋ</rt></ruby><ruby>怕<rt>ㄆㄚˋ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>時<rt>ㄕˊ</rt></ruby><ruby>候<rt>ㄏㄡˋ</rt></ruby>，<ruby>也<rt>ㄧㄝˇ</rt></ruby><ruby>可<rt>ㄎㄜˇ</rt></ruby><ruby>以<rt>ㄧˇ</rt></ruby><ruby>像<rt>ㄒㄧㄤˋ</rt></ruby><ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>一<rt>ㄧˊ</rt></ruby><ruby>樣<rt>ㄧㄤˋ</rt></ruby>，<ruby>相<rt>ㄒㄧㄤ</rt></ruby><ruby>信<rt>ㄒㄧㄣˋ</rt></ruby><ruby>上<rt>ㄕㄤˋ</rt></ruby><ruby>帝<rt>ㄉㄧˋ</rt></ruby><ruby>正<rt>ㄓㄥˋ</rt></ruby><ruby>陪<rt>ㄆㄟˊ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby>。',
-    prayer_ruby: '<ruby>親<rt>ㄑㄧㄣ</rt></ruby><ruby>愛<rt>ㄞˋ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>上<rt>ㄕㄤˋ</rt></ruby><ruby>帝<rt>ㄉㄧˋ</rt></ruby>，<ruby>謝<rt>ㄒㄧㄝˋ</rt></ruby><ruby>謝<rt>˙ㄒㄧㄝ</rt></ruby><ruby>你<rt>ㄋㄧˇ</rt></ruby><ruby>陪<rt>ㄆㄟˊ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby>。<ruby>求<rt>ㄑㄧㄡˊ</rt></ruby><ruby>你<rt>ㄋㄧˇ</rt></ruby><ruby>給<rt>ㄍㄟˇ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>勇<rt>ㄩㄥˇ</rt></ruby><ruby>氣<rt>ㄑㄧˋ</rt></ruby>，<ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>今<rt>ㄐㄧㄣ</rt></ruby><ruby>天<rt>ㄊㄧㄢ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>路<rt>ㄌㄨˋ</rt></ruby>。<ruby>阿<rt>ㄚ</rt></ruby><ruby>們<rt>ㄇㄣˊ</rt></ruby>。'
-  }
-};
+const sample = null;
 
 const $ = id => document.getElementById(id);
 const root = document.documentElement;
@@ -232,13 +207,23 @@ function render(data) {
   const adult = data.adult_content;
   const kids = data.kids_content;
   const link = videoLink(data);
+
   $('adult').innerHTML = `
     <section class="card">
-      <p class="eyebrow">今日經文</p><h2>${escapeText(bible.reference)}</h2>
-      <ol class="verses">${bible.verses.map(v => `<li><small>${escapeText(v.verse)}</small><span>${escapeText(v.text)}</span></li>`).join('')}</ol>
+      <p class="eyebrow">今日經文 · 和合本 &amp; NIV</p>
+      <h2>${escapeText(bible.reference)}${bible.eng_reference ? ' · ' + escapeText(bible.eng_reference) : ''}</h2>
+      <ol class="verses">${bible.verses.map(v => `
+        <li>
+          <small>${escapeText(v.verse)}</small>
+          <div class="verse-pair">
+            <span>${escapeText(v.text)}</span>
+            ${v.niv ? `<span class="eng-verse"><span class="eng-tag">NIV</span>${escapeText(v.niv)}</span>` : ''}
+          </div>
+        </li>`).join('')}
+      </ol>
       <details><summary>查看前後文背景經文</summary><div class="context">
-        <p><strong>前文</strong>　${escapeText(bible.context_before || '無前文資料')}</p>
-        <p><strong>後文</strong>　${escapeText(bible.context_after || '無後文資料')}</p>
+        <p><strong>前文</strong> ${escapeText(bible.context_before || '無前文資料')}</p>
+        <p><strong>後文</strong> ${escapeText(bible.context_after || '無後文資料')}</p>
       </div></details>
       ${link ? '<p>' + link + '</p>' : ''}
     </section>
@@ -251,15 +236,33 @@ function render(data) {
         <div class="actions"><button class="action" data-point="${i}" data-ai="chatgpt">與 ChatGPT 深入探討 ↗</button>
         <button class="action" data-point="${i}" data-ai="claude">Claude ↗</button></div></div>`).join('')}
     </section>`;
+
+  const hasKidsVerses = bible.verses && bible.verses.some(v => v.ruby);
   $('kids').innerHTML = `
-    <section class="card"><p class="eyebrow">今日經文 · 注音</p><h2>${escapeText(bible.reference)}</h2>
-      <p class="zhuyin">${rubyMarkup(kids.plain_explanation_ruby)}</p></section>
-    <section class="card story"><p class="eyebrow">今日聖經故事</p>
-      <h2 class="zhuyin">${kids.bible_story_title_ruby ? rubyMarkup(kids.bible_story_title_ruby) : escapeText(kids.bible_story_title)}</h2>
-      <p class="zhuyin">${rubyMarkup(kids.bible_story_ruby)}</p>
+    <section class="card">
+      <p class="eyebrow">今日經文 · 注音 &amp; NIrV</p>
+      <h2>${escapeText(bible.reference)}${bible.eng_reference ? ' · ' + escapeText(bible.eng_reference) : ''}</h2>
+      ${hasKidsVerses ? `
+        <ol class="kids-verses">${bible.verses.map(v => `
+          <li>
+            <small>${escapeText(v.verse)}</small>
+            <div class="verse-pair">
+              <span class="zhuyin">${v.ruby ? rubyMarkup(v.ruby) : escapeText(v.text)}</span>
+              ${v.nirv ? `<span class="eng-verse"><span class="eng-tag">NIrV</span>${escapeText(v.nirv)}</span>` : ''}
+            </div>
+          </li>`).join('')}
+        </ol>` : `<p class="zhuyin">${rubyMarkup(kids.plain_explanation_ruby)}</p>`}
+    </section>
+    ${(kids.bible_story_ruby || kids.prayer_ruby) ? `
+    <section class="card story">
+      ${kids.bible_story_ruby ? `
+        <p class="eyebrow">今日聖經故事</p>
+        <h2 class="zhuyin">${kids.bible_story_title_ruby ? rubyMarkup(kids.bible_story_title_ruby) : escapeText(kids.bible_story_title)}</h2>
+        <p class="zhuyin">${rubyMarkup(kids.bible_story_ruby)}</p>
+      ` : ''}
       ${kids.prayer_ruby ? `<div class="prayer"><h3>♡ 今日小禱告</h3><p class="zhuyin">${rubyMarkup(kids.prayer_ruby)}</p></div>` : ''}
       ${link ? '<p>' + link + '</p>' : ''}
-    </section>`;
+    </section>` : ''}`;
 }
 
 function setTheme(value) {
@@ -289,15 +292,13 @@ function updateView() {
   const isKids = mode === 'kids-cute';
   $('adult').hidden = !current || isKids;
   $('kids').hidden = !current || !isKids;
-  $('hero-label').textContent = current === sample ? '每日靈修 · 範例' : '每日靈修';
-  $('hero-title').textContent = !current ? '每日靈修' : current === sample
-    ? (isKids ? sample.kids_content.bible_story_title : '在牧者的引領中')
-    : (isKids ? current.kids_content.bible_story_title : current.scripture.reference);
-  if (isKids && current?.kids_content.bible_story_title_ruby) {
+  $('hero-label').textContent = '每日靈修';
+  $('hero-title').textContent = !current ? '每日靈修' : current.scripture.reference;
+  if (isKids && current?.kids_content?.bible_story_title_ruby) {
     $('hero-title').innerHTML = rubyMarkup(current.kids_content.bible_story_title_ruby);
   }
   $('hero-lead').hidden = !current;
-  $('hero-lead').textContent = !current ? '' : isKids ? current.scripture.reference : current.scripture.verses[0]?.text ?? '';
+  $('hero-lead').textContent = !current ? '' : (current.scripture.eng_reference || current.scripture.verses[0]?.text || '');
   $('source').textContent = current?.source_channel ? ' · ' + current.source_channel : '';
 }
 
@@ -313,7 +314,6 @@ function showStatus(message) {
 }
 
 async function readDevotional(date) {
-  if (!firebaseConfig?.projectId) return date === sampleDate ? sample : null;
   if (!firestore) {
     firestore = Promise.all([
       import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
@@ -414,11 +414,11 @@ $('previous').addEventListener('click', () => shiftDate(-1));
 $('next').addEventListener('click', () => shiftDate(1));
 $('home').addEventListener('click', event => {
   event.preventDefault();
-  selectDate(firebaseConfig?.projectId ? taipeiDate() : sampleDate);
+  selectDate(taipeiDate());
 });
 try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; } catch {}
 setTheme(mode);
-selectDate(firebaseConfig?.projectId ? taipeiDate() : sampleDate);
+selectDate(taipeiDate());
 </script>
 </body>
 </html>
