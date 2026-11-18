@@ -19,7 +19,7 @@ client = OpenAI(
     api_key=os.environ["LLM_API_KEY"],
     base_url=os.environ.get("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
 )
-MODEL_NAME = os.environ.get("LLM_MODEL", "gemini-2.5-flash")
+MODEL_NAME = os.environ.get("LLM_MODEL", "gemini-2.0-flash")
 
 # 3. 初始化 Firebase Admin
 cred_dict = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
