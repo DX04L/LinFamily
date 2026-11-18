@@ -5,7 +5,6 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 import requests
 from bs4 import BeautifulSoup
-from pypinyin import pinyin, Style
 import firebase_admin
 from firebase_admin import credentials, firestore
 
@@ -101,10 +100,10 @@ def to_zhuyin_ruby(text: str) -> str:
         return ""
     # 源泉圓體注音版 IVS 破音字對應（\uE01E1 為第二讀音，\uE01E2 為第三讀音）
     ivs_rules = [
-        ("耶和華", "耶和\uE01E2華"),  # 「和」讀作 ㄏㄜˋ
-        ("阿們", "阿\uE01E1們"),      # 「阿」讀作 ㄚ
-        ("什麼", "什\uE01E1麼"),      # 「什」讀作 ㄕㄣˊ
-        ("為甚麼", "為什\uE01E1麼"),
+    ("耶和華", "耶和\U000E01E2華"),  # 「和」讀作 ㄏㄜˋ
+    ("阿們", "阿\U000E01E1們"),      # 「阿」讀作 ㄚ
+    ("什麼", "什\U000E01E1麼"),      # 「什」讀作 ㄕㄣˊ
+    ("為甚麼", "為什\U000E01E1麼"),
     ]
     out = text
     for src, dst in ivs_rules:
