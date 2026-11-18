@@ -34,7 +34,7 @@ const QTReader = (() => {
   function refresh(mode = options.getMode()) {
     const key = markContext(mode);
     if (!key) return;
-    blocks('adult');
+    blocks('grown-up');
     blocks('kids');
     blocks(mode).forEach((block, index) => {
       [...block.querySelectorAll('mark.qt-mark')].forEach(mark => mark.replaceWith(...mark.childNodes));
@@ -265,7 +265,16 @@ const QTReader = (() => {
 
   function init(settings) {
     options = settings;
-    try { records = JSON.parse(localStorage.getItem(storageKey)) || {}; } catch {}
+    try {
+      records = JSON.parse(localStorage.getItem(storageKey)) || {};
+      for (const key of Object.keys(records)) {
+        const [date, reference, mode] = JSON.parse(key);
+        if (mode !== 'adult') continue;
+        const newKey = JSON.stringify([date, reference, 'grown-up']);
+        records[newKey] = [...records[key], ...(records[newKey] || [])];
+        delete records[key];
+      }
+    } catch {}
     toolbar = document.createElement('div');
     toolbar.className = 'qt-tools';
     toolbar.hidden = true;
@@ -279,7 +288,7 @@ const QTReader = (() => {
       <dialog id="qt-note" aria-labelledby="qt-note-title"><form method="dialog">
         <h2 id="qt-note-title">備註</h2><p class="qt-note-text"></p>
         <textarea aria-label="備註內容" maxlength="2000"></textarea>
-        <p class="qt-note-help">反白和備註只儲存在此瀏覽器。想長期保留，請點頁首的「匯出 Word」。</p>
+        <p class="qt-note-help">反白和備註只儲存在此瀏覽器。想長期保留，請點頁首的 Word 匯出按鈕。</p>
         <div class="actions"><button class="action" value="save">儲存</button><button class="action" value="cancel">取消</button></div>
       </form></dialog>`);
     dialog = $('qt-note');
@@ -368,17 +377,21 @@ const QTReader = (() => {
       button.disabled = true;
       button.textContent = '匯出中…';
       try {
-        const views = ['adult', 'kids'].map(mode => {
-          refresh(mode);
-          return {mode, panel:$(mode).cloneNode(true), notes:records[markContext(mode)] || []};
-        });
-        const {exportWord} = await import('./export-word.js');
-        await exportWord(entry, views);
+        const mode = options.getMode();
+        refresh(mode);
+        const view = {
+          mode,
+          panel:$(mode).cloneNode(true),
+          notes:records[markContext(mode)] || [],
+          art:document.querySelector(mode === 'kids' ? '.kids-art svg' : '.grown-up-art svg').cloneNode(true),
+        };
+        const {exportWord} = await import('./export-word.js?v=2');
+        await exportWord(entry, view);
       } catch {
         status('無法匯出 Word，請稍後再試。');
       } finally {
         button.disabled = false;
-        button.textContent = '匯出 Word';
+        button.textContent = button.dataset.label;
       }
     });
   }
