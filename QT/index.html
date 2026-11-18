@@ -53,7 +53,7 @@ h2{font-size:clamp(20px,2.5vw,26px)}
 h3{font-size:18px}
 .lead{font-family:var(--body);font-size:clamp(14px,1.6vw,17px);font-weight:600;color:var(--muted);margin:0}
 
-/* 右側精緻徽章化插畫（完整保留兩張插畫，高度縮減為 116px） */
+/* 右側精緻徽章化插畫（完整保留兩張插畫，高度縮減為 125px） */
 .art{flex-shrink:0;width:clamp(120px,16vw,175px)}
 .art svg{display:block;width:100%;height:auto;max-height:125px}
 .kids-art,[data-theme="kids-cute"] .adult-art{display:none}
@@ -85,19 +85,43 @@ details[open] .context{animation:appear .25s ease-out}
 .action{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:14px;font-weight:700;text-decoration:none}
 button:hover,.action:hover{filter:brightness(.95)}
 [data-theme="kids-cute"] button:active{transform:scale(.94)}
+.video-card{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .story{background:linear-gradient(145deg,#fffbeb,#f3e8ff)}
 .prayer{padding:16px 18px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);margin-top:16px}
-.zhuyin{font-size:clamp(18px,3vw,24px);line-height:2.35}
+.zhuyin{font-size:clamp(18px,3vw,24px);line-height:2.45}
 .kids-verses{list-style:none;padding:0;margin:6px 0 0}
 .kids-verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:0 0 16px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
 .kids-verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
 .kids-verses small{color:var(--accent);font:700 14px/2.7 var(--body)}
+
+/* 台灣標準直排注音排版（二、三、四聲標示在最後一個注音符號右上角，輕聲置於正上方） */
 ruby{ruby-position:inter-character;ruby-align:center}
-rt{font-size:.5em;color:var(--annotation);letter-spacing:0;writing-mode:vertical-rl;text-orientation:upright}
-@supports not (ruby-position:inter-character){
-  ruby{display:inline-flex;align-items:center;vertical-align:middle;gap:.08em;line-height:1}
-  rt{display:block;line-height:1;min-height:3.9em;text-align:center;white-space:nowrap}
+rt{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  font-size:.46em;
+  line-height:1.05;
+  color:var(--annotation);
+  font-weight:600;
+  margin-left:.06em;
+  margin-right:.32em;
 }
+rt .tone{
+  position:absolute;
+  left:100%;
+  bottom:-.15em;
+  font-size:.95em;
+  line-height:1;
+}
+rt .tone-neutral{
+  position:static;
+  line-height:.85;
+  margin-bottom:.05em;
+}
+
 #warning-banner{margin:0 0 18px;padding:13px 18px;border-radius:var(--radius);background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-weight:700;font-size:14px;line-height:1.6}
 #status{margin:0 0 40px}
 #toast{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:1;width:max-content;max-width:calc(100% - 32px);padding:13px 20px;background:var(--button);color:var(--on-button);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -121,7 +145,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 <header><div class="bar shell">
   <a id="home" class="brand" href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a>
   <div class="modes" role="group" aria-label="閱讀模式">
-    <button type="button" data-mode="literary" aria-pressed="true">成人</button>
+    <button type="button" data-mode="literary" aria-pressed="true">大人</button>
     <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
   </div>
 </div></header>
@@ -238,9 +262,20 @@ function escapeText(value) {
 }
 
 function rubyMarkup(value) {
-  return escapeText(value).replace(
+  // 修正聖經常見破音字讀音（如「耶和華」的「和」讀 ㄏㄜˋ）
+  const fixed = escapeText(value).replace(
+    /(&lt;ruby&gt;耶&lt;rt&gt;ㄧㄝ&lt;\/rt&gt;&lt;\/ruby&gt;)&lt;ruby&gt;和&lt;rt&gt;ㄏㄜˊ&lt;\/rt&gt;&lt;\/ruby&gt;(&lt;ruby&gt;華&lt;rt&gt;ㄏㄨㄚˊ&lt;\/rt&gt;&lt;\/ruby&gt;)/g,
+    '$1<ruby>和<rt>ㄏㄜˋ</rt></ruby>$2'
+  );
+  return fixed.replace(
     /&lt;ruby&gt;([^&<>]+)&lt;rt&gt;([ㄅ-ㄩˊˇˋ˙]+)&lt;\/rt&gt;&lt;\/ruby&gt;/g,
-    '<ruby>$1<rt>$2</rt></ruby>'
+    (_, char, bopo) => {
+      const neutral = bopo.startsWith('˙') ? '<span class="tone-neutral">˙</span>' : '';
+      const toneMatch = bopo.match(/[ˊˇˋ]$/);
+      const tone = toneMatch ? `<span class="tone">${toneMatch[0]}</span>` : '';
+      const letters = bopo.replace(/[˙ˊˇˋ]/g, '').split('').join('<br>');
+      return `<ruby>${char}<rt>${neutral}${letters}${tone}</rt></ruby>`;
+    }
   );
 }
 
@@ -249,7 +284,7 @@ function videoLink(data) {
     const url = new URL(data.video_url);
     const hosts = ['www.youtube.com', 'youtube.com', 'm.youtube.com', 'youtu.be'];
     if (url.protocol === 'https:' && hosts.includes(url.hostname) && !url.username && !url.password) {
-      return '<a href="' + escapeText(url.href) + '" target="_blank" rel="noopener noreferrer">觀看靈修影片 ↗</a>';
+      return '<a class="action" href="' + escapeText(url.href) + '" target="_blank" rel="noopener noreferrer">觀看靈修影片 ↗</a>';
     }
   } catch {}
   return '';
@@ -277,7 +312,6 @@ function render(data) {
         <p><strong>前文</strong> ${escapeText(bible.context_before || '無前文資料')}</p>
         <p><strong>後文</strong> ${escapeText(bible.context_after || '無後文資料')}</p>
       </div></details>
-      ${link ? '<p>' + link + '</p>' : ''}
     </section>
     <div class="split">
       <section class="card"><h3>全書背景</h3><p>${escapeText(adult.book_background)}</p></section>
@@ -287,7 +321,8 @@ function render(data) {
       ${adult.theology_points.map((point,i) => `<div class="point"><h3>${escapeText(point.title)}</h3><p>${escapeText(point.summary)}</p>
         <div class="actions"><button class="action" data-point="${i}" data-ai="chatgpt">與 ChatGPT 深入探討 ↗</button>
         <button class="action" data-point="${i}" data-ai="claude">Claude ↗</button></div></div>`).join('')}
-    </section>`;
+    </section>
+    ${link ? `<section class="card video-card"><div><h3>每日靈修影音</h3><p style="margin:4px 0 0;color:var(--muted);font-size:14px">搭配《活潑的生命》YouTube 頻道收看今日信息解說</p></div>${link}</section>` : ''}`;
 
   const hasKidsVerses = bible.verses && bible.verses.some(v => v.ruby);
   $('kids').innerHTML = `
@@ -312,7 +347,6 @@ function render(data) {
         <p class="zhuyin">${rubyMarkup(kids.bible_story_ruby)}</p>
       ` : ''}
       ${kids.prayer_ruby ? `<div class="prayer"><h3>♡ 今日小禱告</h3><p class="zhuyin">${rubyMarkup(kids.prayer_ruby)}</p></div>` : ''}
-      ${link ? '<p>' + link + '</p>' : ''}
     </section>` : ''}`;
 }
 
