@@ -3,7 +3,7 @@ const QTReader = (() => {
   const storageKey = 'qt-annotations-v1';
   const $ = id => document.getElementById(id);
   const selection = () => window.getSelection();
-  let options, toolbar, dialog, active, touch, overlay, handles, customRange, records = {};
+  let options, toolbar, dialog, active, touch, overlay, handles, customRange, paper, records = {};
 
   function blocks(mode) {
     const elements = [...$(mode).querySelectorAll('p,h2,h3,li > span')];
@@ -323,26 +323,42 @@ const QTReader = (() => {
 
     const main = document.querySelector('main');
     main.addEventListener('touchstart', event => {
-      touch = null;
-      if (event.touches.length !== 1 || active || dialog.open || $('date-picker').open ||
+      cancelDrag();
+      if (event.touches.length !== 1 || active || paper || dialog.open || $('date-picker').open ||
           event.target.closest('a,button,summary,input,textarea,select,mark') || !selection()?.isCollapsed) return;
       const {clientX:x, clientY:y} = event.touches[0];
-      if (x >= innerWidth * .1 && x <= innerWidth * .9) touch = {x,y,start:performance.now()};
+      if (x >= innerWidth * .1 && x <= innerWidth * .9) touch = {x,y,started:performance.now()};
     }, {passive:true});
     main.addEventListener('touchmove', event => {
       if (!touch) return;
       const point = event.touches[0];
-      if (event.touches.length !== 1 ||
-          Math.abs(point.clientY - touch.y) > Math.max(24, Math.abs(point.clientX - touch.x))) touch = null;
+      const dx = point.clientX - touch.x, dy = point.clientY - touch.y;
+      if (event.touches.length !== 1 || active || customRange ||
+          (!touch.direction && Math.abs(dy) > Math.max(12, Math.abs(dx)))) {
+        cancelDrag();
+        return;
+      }
+      if (!touch.direction && Math.abs(dx) > Math.max(12, Math.abs(dy) * 1.5)) {
+        if (performance.now() - touch.started > 360) return cancelDrag();
+        touch.direction = dx < 0 ? 1 : -1;
+        const next = options.adjacent(touch.direction);
+        if (!next) return cancelDrag();
+        if (!reducedMotion()) beginPaper(next, touch.direction === 1);
+      }
+      if (paper && touch.direction) drawPaper(Math.max(0, -dx * touch.direction) / paper.width);
     }, {passive:true});
-    main.addEventListener('touchcancel', () => { touch = null; });
+    main.addEventListener('touchcancel', cancelDrag);
     main.addEventListener('touchend', event => {
       const start = touch;
       touch = null;
-      if (!start || active || !selection()?.isCollapsed || performance.now() - start.start > 500) return;
+      if (!start?.direction) return;
       const end = event.changedTouches[0];
-      const dx = end.clientX - start.x, dy = end.clientY - start.y;
-      if (Math.abs(dx) >= Math.max(55, Math.abs(dy) * 1.7)) options.turn(dx < 0 ? 1 : -1);
+      const travel = (start.x - end.clientX) * start.direction;
+      const threshold = Math.min(100, innerWidth * .22);
+      const velocity = travel / Math.max(1, performance.now() - start.started);
+      const commit = !active && !customRange && (travel >= threshold || (travel >= 52 && velocity > .45));
+      if (commit) options.turn(start.direction);
+      else if (paper) animatePaper(0);
     }, {passive:true});
 
     $('export-word').addEventListener('click', async () => {
@@ -367,15 +383,97 @@ const QTReader = (() => {
     });
   }
 
-  function flip(forward) {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const page = $(options.getMode());
-    page.getAnimations().forEach(animation => animation.cancel());
-    page.animate([
-      {transform:`perspective(1100px) rotateY(${forward ? -13 : 13}deg)`,opacity:.45},
-      {transform:'perspective(1100px) rotateY(0deg)',opacity:1},
-    ], {duration:310,easing:'ease-out'});
+  const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function beginPaper(next, forward) {
+    const source = $('reading-sheet');
+    const bounds = source.getBoundingClientRect();
+    const top = document.querySelector('header').getBoundingClientRect().bottom;
+    const stage = document.createElement('div');
+    stage.className = 'qt-paper-turn';
+    stage.style.top = Math.max(0, top) + 'px';
+    stage.inert = true;
+    stage.setAttribute('aria-hidden', 'true');
+
+    const incoming = options.preview(next);
+    incoming.removeAttribute('id');
+    incoming.className = 'qt-paper-incoming';
+    const outgoing = document.createElement('div');
+    outgoing.className = 'qt-paper-outgoing';
+    const surface = source.cloneNode(true);
+    surface.removeAttribute('id');
+    surface.style.transform = `translateY(${Math.min(0, bounds.top - top)}px)`;
+    outgoing.append(surface);
+    const fold = document.createElement('div');
+    fold.className = 'qt-paper-fold';
+    const shadow = document.createElement('div');
+    shadow.className = 'qt-paper-shadow';
+    stage.append(incoming, outgoing, shadow, fold);
+    document.body.append(stage);
+    paper = {stage,outgoing,fold,shadow,forward,width:stage.clientWidth,height:stage.clientHeight,progress:0};
+    drawPaper(0);
   }
 
-  return {init, refresh, clear, flip};
+  function drawPaper(value) {
+    if (!paper) return;
+    const {outgoing,fold,shadow,forward,width,height} = paper;
+    const progress = Math.max(0, Math.min(value, 1));
+    paper.progress = progress;
+    const edge = (forward ? 1 - progress : progress) * width;
+    const bend = Math.sin(progress * Math.PI);
+    const curve = bend * Math.min(22, width * .045);
+    const a = edge - curve, b = edge + curve;
+    outgoing.style.clipPath = forward
+      ? `polygon(0 0,${a}px 0,${b}px 100%,0 100%)`
+      : `polygon(${b}px 0,100% 0,100% 100%,${a}px 100%)`;
+    const mid = height / 2;
+    const curveX = edge + (forward ? -1 : 1) * curve * 2;
+    const outline = forward
+      ? `M 0 0 H ${a} Q ${curveX} ${mid} ${b} ${height} H 0 Z`
+      : `M ${b} 0 H ${width} V ${height} H ${a} Q ${curveX} ${mid} ${b} 0 Z`;
+    const curvedClip = `path("${outline}")`;
+    if (CSS.supports('clip-path', curvedClip)) outgoing.style.clipPath = curvedClip;
+    for (const detail of [fold,shadow]) {
+      detail.style.left = edge + 'px';
+      detail.style.opacity = Math.min(1, bend * 3);
+    }
+    fold.style.width = (12 + bend * Math.min(58,width * .16)) + 'px';
+    fold.style.transform = `translateX(${forward ? '-66%' : '-34%'}) skewX(${forward ? -5 : 5}deg)`;
+    shadow.style.transform = `translateX(${forward ? '-25%' : '-75%'})`;
+  }
+
+  function animatePaper(target, done) {
+    const animation = paper;
+    if (!animation || animation.settling) return;
+    animation.settling = true;
+    const from = animation.progress;
+    const duration = target ? Math.max(150, 330 * (1 - from)) : 180;
+    const start = performance.now();
+    function frame(now) {
+      if (paper !== animation) return;
+      const fraction = Math.min(1, (now - start) / duration);
+      drawPaper(from + (target - from) * (1 - (1 - fraction) ** 2));
+      if (fraction < 1) requestAnimationFrame(frame);
+      else {
+        paper = null;
+        done?.();
+        animation.stage.remove();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function cancelDrag() {
+    touch = null;
+    if (paper && !paper.settling) animatePaper(0);
+  }
+
+  function turn(data, forward, commit) {
+    if (reducedMotion()) return commit();
+    if (paper?.settling) return;
+    if (!paper) beginPaper(data, forward);
+    animatePaper(1, commit);
+  }
+
+  return {init, refresh, clear, turn};
 })();

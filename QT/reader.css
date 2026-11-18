@@ -32,3 +32,16 @@ main{touch-action:pan-y pinch-zoom}
 @media(any-pointer:coarse){
   main [data-lf-menu-ignore],.qt-selection-handle{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 }
+.qt-paper-turn{
+  position:fixed;inset-inline:0;bottom:0;z-index:19;overflow:hidden;
+  background:var(--bg);pointer-events:none;isolation:isolate
+}
+.qt-paper-incoming,.qt-paper-outgoing{position:absolute;inset:0 0 auto;background:var(--bg);min-height:100%}
+.qt-paper-outgoing{inset:0;will-change:clip-path}
+.qt-paper-fold,.qt-paper-shadow{position:absolute;inset-block:-5%;pointer-events:none}
+.qt-paper-fold{
+  border-radius:45% 18% 32% 48% / 50% 33% 33% 50%;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--bg),#665445 12%) 38%,var(--bg) 70%,#fff8 82%,transparent);
+  box-shadow:7px 0 16px #392b241a
+}
+.qt-paper-shadow{width:108px;background:linear-gradient(90deg,transparent,#392b2426 42%,transparent);filter:blur(5px)}

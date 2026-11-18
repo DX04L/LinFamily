@@ -140,7 +140,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
-<link rel="stylesheet" href="reader.css?v=2">
+<link rel="stylesheet" href="reader.css?v=3">
 </head>
 <body>
 <header><div class="bar shell">
@@ -150,6 +150,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
     <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
   </div>
 </div></header>
+<div id="reading-sheet">
 <main class="shell">
   <div class="hero">
     <div class="hero-copy">
@@ -195,6 +196,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <div id="warning-banner" role="alert" hidden></div>
 </main>
 <footer><div class="shell">Daily QT · 每日靈修 <span id="source"></span></div></footer>
+</div>
 <div id="toast" role="status" hidden></div>
 <dialog id="manual-copy" aria-labelledby="copy-title">
   <h2 id="copy-title">複製神學提問</h2>
@@ -203,7 +205,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <div class="actions"><a class="action" id="manual-ai" target="_blank" rel="noopener noreferrer">前往 AI 對話</a><form method="dialog"><button class="action">關閉</button></form></div>
 </dialog>
 <noscript><p class="shell">請啟用 JavaScript 以閱讀每日靈修內容。</p></noscript>
-<script src="reader.js?v=2"></script>
+<script src="reader.js?v=3"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
@@ -279,14 +281,14 @@ function rubyMarkup(value) {
   return escapeText(plain);
 }
 
-function render(data) {
+function render(data, node = $) {
   const bible = data.scripture;
   const crossesChapters = bible.verses?.[0]?.chapter !== bible.verses?.at(-1)?.chapter;
   const verseLabel = v => crossesChapters && v.chapter ? `${v.chapter}:${v.verse}` : v.verse;
   const adult = data.adult_content;
   const kids = data.kids_content;
 
-  $('adult').innerHTML = `
+  node('adult').innerHTML = `
     <section class="card">
       <p class="eyebrow">今日經文 · 和合本 &amp; NIV</p>
       <ol class="verses">${bible.verses.map(v => `
@@ -313,7 +315,7 @@ function render(data) {
     </section>`;
 
   const hasKidsVerses = bible.verses && bible.verses.some(v => v.ruby || v.text);
-  $('kids').innerHTML = `
+  node('kids').innerHTML = `
     ${hasKidsVerses ? `
     <section class="card">
       <p class="eyebrow">今日經文 · 注音 &amp; NIrV</p>
@@ -361,20 +363,24 @@ function setTheme(value) {
 }
 
 function updateView() {
-  const isKids = mode === 'kids-cute';
-  $('adult').hidden = !current || isKids;
-  $('kids').hidden = !current || !isKids;
-  $('warning-banner').hidden = isKids || !current?.mismatch_warning;
-  $('warning-banner').textContent = current?.mismatch_warning || '';
-  $('export-word').hidden = !current;
+  renderView(current);
   QTReader.refresh();
-  $('hero-title').textContent = !current ? '每日靈修' : current.scripture.reference;
-  if (isKids && current?.kids_content?.bible_story_title_ruby) {
-    $('hero-title').innerHTML = rubyMarkup(current.kids_content.bible_story_title_ruby);
+}
+
+function renderView(data, node = $) {
+  const isKids = mode === 'kids-cute';
+  node('adult').hidden = !data || isKids;
+  node('kids').hidden = !data || !isKids;
+  node('warning-banner').hidden = isKids || !data?.mismatch_warning;
+  node('warning-banner').textContent = data?.mismatch_warning || '';
+  node('export-word').hidden = !data;
+  node('hero-title').textContent = !data ? '每日靈修' : data.scripture.reference;
+  if (isKids && data?.kids_content?.bible_story_title_ruby) {
+    node('hero-title').innerHTML = rubyMarkup(data.kids_content.bible_story_title_ruby);
   }
-  $('hero-lead').hidden = !current;
-  $('hero-lead').textContent = !current ? '' : (current.scripture.eng_reference || current.scripture.verses[0]?.text || '');
-  $('source').textContent = current?.source_channel ? ' · ' + current.source_channel : '';
+  node('hero-lead').hidden = !data;
+  node('hero-lead').textContent = !data ? '' : (data.scripture.eng_reference || data.scripture.verses[0]?.text || '');
+  node('source').textContent = data?.source_channel ? ' · ' + data.source_channel : '';
 }
 
 function taipeiDate() {
@@ -424,15 +430,39 @@ function updateDates() {
   }));
 }
 
+function renderDate(element, date) {
+  element.dateTime = date;
+  element.textContent = new Intl.DateTimeFormat('zh-TW', {
+    timeZone:'UTC', year:'numeric', month:'long', day:'numeric', weekday:'short'
+  }).format(new Date(date + 'T00:00:00Z'));
+}
+
+function previewDate(data) {
+  const preview = $('reading-sheet').cloneNode(true);
+  const node = id => preview.querySelector('#' + id);
+  node('date-picker').open = false;
+  node('status').hidden = true;
+  renderDate(node('date'), data.date);
+  render(data, node);
+  renderView(data, node);
+  const index = recent.indexOf(data);
+  node('previous').disabled = index >= recent.length - 1;
+  node('next').disabled = index <= 0;
+  return preview;
+}
+
 async function selectDate(date, animate = true) {
+  const next = recent.find(entry => entry.date === date);
+  if (animate && current && next && current.date !== date) {
+    $('date-picker').open = false;
+    QTReader.turn(next, date > current.date, () => selectDate(date, false));
+    return;
+  }
   const id = ++request;
   const previousDate = $('date').dateTime;
   $('date-picker').open = false;
   QTReader.clear();
-  $('date').dateTime = date;
-  $('date').textContent = new Intl.DateTimeFormat('zh-TW', {
-    timeZone:'UTC', year:'numeric', month:'long', day:'numeric', weekday:'short'
-  }).format(new Date(date + 'T00:00:00Z'));
+  renderDate($('date'), date);
   current = null;
   updateView();
   showStatus('正在讀取靈修內容…');
@@ -448,10 +478,7 @@ async function selectDate(date, animate = true) {
     if (data) render(data);
     updateView();
     updateDates();
-    if (data && animate && previousDate && previousDate !== date) {
-      window.scrollTo(0, 0);
-      QTReader.flip(date > previousDate);
-    }
+    if (data && previousDate && previousDate !== date) window.scrollTo(0, 0);
     showStatus(data ? '' : '這天沒有靈修資料。');
   } catch {
     if (id !== request) return;
@@ -462,9 +489,13 @@ async function selectDate(date, animate = true) {
   }
 }
 
-function shiftDate(days) {
+function adjacentDate(days) {
   const index = recent.findIndex(entry => entry.date === $('date').dateTime);
-  const target = index >= 0 ? recent[index - days] : null;
+  return index >= 0 ? recent[index - days] : null;
+}
+
+function shiftDate(days) {
+  const target = adjacentDate(days);
   if (target) selectDate(target.date);
 }
 
@@ -530,6 +561,8 @@ QTReader.init({
   getMode: () => mode === 'kids-cute' ? 'kids' : 'adult',
   copy: copyPrompt,
   turn: shiftDate,
+  adjacent: adjacentDate,
+  preview: previewDate,
 });
 try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; } catch {}
 setTheme(mode);
