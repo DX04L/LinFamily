@@ -114,6 +114,7 @@ button:hover,.action:hover{filter:brightness(.95)}
 }
 .kids-verses{list-style:none;padding:0;margin:6px 0 0}
 .kids-verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:0 0 16px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
+.cross-chapter li{grid-template-columns:6ch 1fr}
 .kids-verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
 .kids-verses small{color:var(--accent);font:700 13px/2.5 var(--body)}
 
@@ -274,15 +275,17 @@ function rubyMarkup(value) {
 
 function render(data) {
   const bible = data.scripture;
+  const crossesChapters = bible.verses?.[0]?.chapter !== bible.verses?.at(-1)?.chapter;
+  const verseLabel = v => crossesChapters && v.chapter ? `${v.chapter}:${v.verse}` : v.verse;
   const adult = data.adult_content;
   const kids = data.kids_content;
 
   $('adult').innerHTML = `
     <section class="card">
       <p class="eyebrow">今日經文 · 和合本 &amp; NIV</p>
-      <ol class="verses">${bible.verses.map(v => `
+      <ol class="verses${crossesChapters ? ' cross-chapter' : ''}">${bible.verses.map(v => `
         <li>
-          <small>${escapeText(v.verse)}</small>
+          <small>${escapeText(verseLabel(v))}</small>
           <div class="verse-pair">
             <span>${escapeText(v.text)}</span>
             ${v.niv ? `<span class="eng-verse"><span class="eng-tag">NIV</span>${escapeText(v.niv)}</span>` : ''}
@@ -310,9 +313,9 @@ function render(data) {
     ${hasKidsVerses ? `
     <section class="card">
       <p class="eyebrow">今日經文 · 注音 &amp; NIrV</p>
-        <ol class="kids-verses">${bible.verses.map(v => `
+        <ol class="kids-verses${crossesChapters ? ' cross-chapter' : ''}">${bible.verses.map(v => `
           <li>
-            <small>${escapeText(v.verse)}</small>
+            <small>${escapeText(verseLabel(v))}</small>
             <div class="verse-pair">
               <span class="zhuyin">${rubyMarkup(v.ruby || v.text)}</span>
               ${v.nirv ? `<span class="eng-verse"><span class="eng-tag">NIrV</span>${escapeText(v.nirv)}</span>` : ''}
