@@ -50,7 +50,7 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    [data-lf-menu-trigger] { -webkit-touch-callout:none; }
+    [data-lf-menu-trigger] { -webkit-touch-callout:none; user-select:none; }
     .lf-ctx { position:fixed; z-index:2147483600; width:280px; max-width:calc(100vw - 16px); padding:4px; border-radius:8px; background:#fff; color:#1a1a1a; border:1px solid rgba(0,0,0,.12); box-shadow:0 8px 24px rgba(0,0,0,.18); font:14px/20px "Segoe UI",Arial,sans-serif; }
     html.dark .lf-ctx { background:#2c2c2c; color:#fff; border-color:rgba(255,255,255,.1); box-shadow:0 8px 24px rgba(0,0,0,.5); }
     .lf-ctx button { display:block; width:100%; padding:6px 12px; border:0; border-radius:4px; background:transparent; color:inherit; font:inherit; text-align:left; cursor:default; }
@@ -99,10 +99,11 @@
     openedAt = Date.now();
     menu.querySelector('button').focus({ preventScroll: true });
   }
-  const canOpen = target => target instanceof Element
-    && (!target.closest(OBJECT) || target.closest(OBJECT).hasAttribute('data-lf-menu-trigger'))
-    && !document.querySelector('dialog[open]')
-    && !String(getSelection() || '').trim();
+  function canOpen(target) {
+    if (!(target instanceof Element) || document.querySelector('dialog[open]') || String(getSelection() || '').trim()) return false;
+    const control = target.closest(OBJECT);
+    return !control || Boolean(control.closest('[data-lf-menu-trigger]'));
+  }
 
   // 電腦右鍵（Android 長按也會觸發 contextmenu）
   document.addEventListener('contextmenu', e => {

@@ -37,7 +37,7 @@
 自家 App 沿用 `js/lf-menu.js`。在頁首或空白處按右鍵（手機長按），會出現與 DX04 Header 一致的 **Copy link** 和 **Open in new window**。普通連結、按鈕和輸入欄保留原本的操作。
 
 ```html
-<script defer src="../js/lf-menu.js?v=2"></script>
+<script defer src="../js/lf-menu.js?v=3"></script>
 ```
 
-以上路徑適用於 LF 的第一層子 App。獨立部署的自家 App 改用 `https://clc-dx04.pages.dev/lf/js/lf-menu.js?v=2`。若頁首的品牌連結也要開啟選單，可在該連結加 `data-lf-menu-trigger`，一般點擊仍會照常。新增 App 時請引用共用檔案，避免另寫一份選單。
+以上路徑適用於 LF 的第一層子 App。獨立部署的自家 App 改用 `https://clc-dx04.pages.dev/lf/js/lf-menu.js?v=3`。若頁首的品牌連結也要開啟選單，可在該連結加 `data-lf-menu-trigger`，一般點擊仍會照常。新增 App 時請引用共用檔案，避免另寫一份選單。
