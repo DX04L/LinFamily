@@ -11,13 +11,13 @@
 <style>
 :root{
   --bg:#f9f7f2;--ink:#2c2c2a;--muted:#5b7065;--accent:#9a5737;--line:#ded9cb;--surface:#fffdf7d9;
-  --panel:#f1eee3;--button:#30483c;--on-button:#fffdf4;--annotation:#87684e;--radius:12px;
-  --shadow:0 14px 50px #3c38260a;--heading:"Noto Serif TC",serif;--body:"Noto Sans TC",sans-serif;
+  --panel:#f1eee3;--button:#30483c;--on-button:#fffdf4;--annotation:#87684e;--radius:14px;
+  --shadow:0 10px 34px #3c38260a;--heading:"Noto Serif TC",serif;--body:"Noto Sans TC",sans-serif;
 }
 [data-theme="kids-cute"]{
   --bg:#fff5f7;--ink:#52394d;--muted:#72516a;--accent:#a43c66;--line:#f0d8e5;--surface:#fffafde8;
-  --panel:#fff0f6;--button:#ff7597;--on-button:#421b32;--annotation:#885776;--radius:28px;
-  --shadow:0 14px 45px #a8457613;--heading:"Noto Sans TC",sans-serif;
+  --panel:#fff0f6;--button:#ff7597;--on-button:#421b32;--annotation:#885776;--radius:26px;
+  --shadow:0 10px 32px #a8457613;--heading:"Noto Sans TC",sans-serif;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -26,57 +26,72 @@ button,a{font:inherit}
 button{cursor:pointer}
 button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 a{color:var(--accent)}
-.shell{width:min(1136px,calc(100% - 64px));margin:auto}
-header{border-bottom:1px solid var(--line)}
+
+/* 左右滿版配置（保留舒適邊距） */
+.shell{width:100%;padding-inline:clamp(16px,3.2vw,48px)}
+
+header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(10px)}
 .bar,.brand,.date-nav,.modes{display:flex;align-items:center}
-.bar{min-height:76px;justify-content:space-between;gap:16px}
-.brand{gap:11px;font-family:var(--heading);font-weight:700;text-decoration:none;color:var(--ink)}
-.brand img{width:36px;height:36px}
+.bar{min-height:62px;justify-content:space-between;gap:12px}
+.brand{gap:10px;font-family:var(--heading);font-weight:700;text-decoration:none;color:var(--ink)}
+.brand img{width:32px;height:32px;border-radius:8px}
 .brand span{font-size:14px}
-.modes{padding:4px;gap:4px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
-.modes button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:8px 17px;font-size:14px;font-weight:700}
+.modes{padding:3px;gap:4px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
+.modes button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:6px 15px;font-size:13px;font-weight:700}
 .modes [aria-pressed="true"]{color:var(--on-button);background:var(--button)}
-.hero{display:grid;grid-template-columns:1fr 1.32fr;align-items:center;gap:18px;min-height:440px;padding:22px 0}
-.date-nav{gap:10px;color:var(--muted);font-size:13px;font-weight:600}
-.date-nav button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:19px;line-height:1}
-.eyebrow{color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.15em;margin:26px 0 12px}
-h1,h2,h3{font-family:var(--heading);line-height:1.42;margin:0}
-h1{font-size:clamp(34px,5vw,62px);letter-spacing:.02em;font-weight:600}
-h2{font-size:clamp(23px,3vw,32px)}
-h3{font-size:19px}
-.lead{font-family:var(--heading);font-size:clamp(15px,2vw,19px);line-height:1.9;color:var(--muted);margin:18px 0 0}
-.art svg{display:block;width:100%;max-height:480px}
+
+/* 精簡版 Hero Banner（像大型聖經 App 頂部橫幅，保留插畫但不佔高度，一進來直接看到經文） */
+.hero{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 0 16px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.hero-copy{min-width:0;flex:1}
+.date-nav{gap:8px;color:var(--muted);font-size:13px;font-weight:600}
+.date-nav button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
+.eyebrow{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.14em;margin:0}
+h1,h2,h3{font-family:var(--heading);line-height:1.35;margin:0}
+h1{font-size:clamp(26px,3.6vw,40px);letter-spacing:.02em;font-weight:700}
+h2{font-size:clamp(20px,2.5vw,26px)}
+h3{font-size:18px}
+.lead{font-family:var(--body);font-size:clamp(14px,1.6vw,17px);font-weight:600;color:var(--muted);margin:0}
+
+/* 右側精緻徽章化插畫（完整保留兩張插畫，高度縮減為 116px） */
+.art{flex-shrink:0;width:clamp(120px,16vw,175px)}
+.art svg{display:block;width:100%;height:auto;max-height:125px}
 .kids-art,[data-theme="kids-cute"] .adult-art{display:none}
 [data-theme="kids-cute"] .kids-art{display:block}
-.content{display:grid;gap:22px;margin:0 auto 60px}
-.card{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);backdrop-filter:blur(12px);padding:clamp(20px,4vw,40px)}
-.card .eyebrow{margin-top:0}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-.verses{font:clamp(16px,2.5vw,21px)/1.95 var(--heading);list-style:none;padding:0;margin:20px 0 0}
-.verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:13px;margin:16px 0;padding-bottom:14px;border-bottom:1px dashed var(--line)}
-.verses li:last-child{border-bottom:0;padding-bottom:0}
-.verses small{color:var(--accent);font:600 13px/2.6 var(--body)}
-.verse-pair{display:flex;flex-direction:column;gap:6px}
-.eng-verse{font-family:var(--body);font-size:clamp(14px,1.9vw,16.5px);line-height:1.65;color:var(--muted);font-weight:400}
+
+/* 滿版內容區 */
+.content{display:grid;gap:20px;margin:0 0 56px}
+.card{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);backdrop-filter:blur(12px);padding:clamp(18px,3vw,32px)}
+.card .eyebrow{margin-bottom:8px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* 經文排版（無重複標題，直接進入經文） */
+.verses{font:clamp(17px,2.2vw,21px)/1.9 var(--heading);list-style:none;padding:0;margin:6px 0 0}
+.verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:0 0 14px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
+.verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
+.verses small{color:var(--accent);font:700 13px/2.5 var(--body)}
+.verse-pair{display:flex;flex-direction:column;gap:5px}
+.eng-verse{font-family:var(--body);font-size:clamp(14px,1.7vw,16.5px);line-height:1.62;color:var(--muted);font-weight:400}
 .eng-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:6px;background:var(--panel);color:var(--accent);margin-right:6px;vertical-align:middle}
+
 p{line-height:1.85}
-details{border-top:1px solid var(--line);padding-top:16px;color:var(--muted);margin-top:16px}
-summary{cursor:pointer;font-weight:600;width:fit-content}
+details{border-top:1px solid var(--line);padding-top:14px;color:var(--muted);margin-top:16px}
+summary{cursor:pointer;font-weight:600;width:fit-content;font-size:14px}
 details[open] .context{animation:appear .25s ease-out}
 @keyframes appear{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
-.point{padding:20px 0;border-bottom:1px solid var(--line)}
+.point{padding:18px 0;border-bottom:1px solid var(--line)}
 .point:last-child{border-bottom:0;padding-bottom:0}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
 .action{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:14px;font-weight:700;text-decoration:none}
 button:hover,.action:hover{filter:brightness(.95)}
 [data-theme="kids-cute"] button:active{transform:scale(.94)}
 .story{background:linear-gradient(145deg,#fffbeb,#f3e8ff)}
-.prayer{padding:18px 20px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);margin-top:18px}
-.zhuyin{font-size:clamp(18px,3.5vw,25px);line-height:2.4}
-.kids-verses{list-style:none;padding:0;margin:18px 0 0}
-.kids-verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:18px 0;padding-bottom:16px;border-bottom:1px dashed var(--line)}
-.kids-verses li:last-child{border-bottom:0;padding-bottom:0}
-.kids-verses small{color:var(--accent);font:700 14px/2.8 var(--body)}
+.prayer{padding:16px 18px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);margin-top:16px}
+.zhuyin{font-size:clamp(18px,3vw,24px);line-height:2.35}
+.kids-verses{list-style:none;padding:0;margin:6px 0 0}
+.kids-verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:0 0 16px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
+.kids-verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
+.kids-verses small{color:var(--accent);font:700 14px/2.7 var(--body)}
 ruby{ruby-position:inter-character;ruby-align:center}
 rt{font-size:.5em;color:var(--annotation);letter-spacing:0;writing-mode:vertical-rl;text-orientation:upright}
 @supports not (ruby-position:inter-character){
@@ -88,15 +103,15 @@ rt{font-size:.5em;color:var(--annotation);letter-spacing:0;writing-mode:vertical
 dialog{width:min(490px,calc(100% - 32px));border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);color:var(--ink);padding:24px}
 dialog::backdrop{background:#241a2559}
 textarea{width:100%;min-height:110px;font:inherit;margin:12px 0}
-footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:13px}
+footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-size:13px}
+
 @media(max-width:670px){
-  .shell{width:calc(100% - 32px)}
-  .hero{grid-template-columns:1fr;gap:0;min-height:0;padding:24px 0 17px}
-  .hero-copy{padding:0 6px}
-  .art svg{max-height:300px}
+  .hero{padding:14px 0 12px;gap:12px}
+  .art{width:96px}
+  .art svg{max-height:92px}
   .split{grid-template-columns:1fr}
-  .bar{min-height:66px;gap:8px}
-  .modes button{padding:6px 11px}
+  .bar{min-height:56px;gap:8px}
+  .modes button{padding:5px 11px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -112,10 +127,16 @@ footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-s
 <main class="shell">
   <div class="hero">
     <div class="hero-copy">
-      <div class="date-nav"><button id="previous" aria-label="前一天">‹</button><time id="date" aria-live="polite"></time><button id="next" aria-label="後一天">›</button></div>
-      <p class="eyebrow" id="hero-label">每日靈修</p>
-      <h1 id="hero-title">每日靈修</h1>
-      <p class="lead" id="hero-lead" hidden></p>
+      <div class="date-nav">
+        <button id="previous" aria-label="前一天">‹</button>
+        <time id="date" aria-live="polite"></time>
+        <button id="next" aria-label="後一天">›</button>
+        <span class="eyebrow" id="hero-label">· 每日靈修</span>
+      </div>
+      <div class="title-row">
+        <h1 id="hero-title">每日靈修</h1>
+        <p class="lead" id="hero-lead" hidden></p>
+      </div>
     </div>
     <div class="art"><div class="adult-art"><svg viewBox="0 0 620 510" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
 <linearGradient id="sky" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#f9f6e9"/><stop offset="1" stop-color="#d5ded0"/></linearGradient>
@@ -199,8 +220,6 @@ const iconFallbacks = {
 </svg>`,
   "kids": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="38" fill="#f8d9ed"/><path d="M57 104q-28 0-29-21 0-13 16-13l19 8m60 26q28 0 29-21 0-13-16-13l-19 8" fill="#a66583"/><path d="M48 77q-8-19 13-27 8-17 28-12 17-8 29 9 22 4 16 28 16 15 3 32-2 19-23 21-13 15-29 6-19 6-28-11-18-1-19-22-6-15 10-24Z" fill="#fff8e5"/><ellipse cx="90" cy="94" rx="34" ry="29" fill="#f5c6c3"/><path d="M76 92h.1m28 0h.1" stroke="#543547" stroke-width="6" stroke-linecap="round"/><path d="M83 104q7 8 14 0" fill="none" stroke="#543547" stroke-width="3" stroke-linecap="round"/><ellipse cx="68" cy="103" rx="5" ry="3" fill="#e894a6"/><ellipse cx="112" cy="103" rx="5" ry="3" fill="#e894a6"/></svg>'
 };
-const sampleDate = '2026-11-18';
-const sample = null;
 
 const $ = id => document.getElementById(id);
 const root = document.documentElement;
@@ -243,7 +262,6 @@ function render(data) {
   $('adult').innerHTML = `
     <section class="card">
       <p class="eyebrow">今日經文 · 和合本 &amp; NIV</p>
-      <h2>${escapeText(bible.reference)}${bible.eng_reference ? ' · ' + escapeText(bible.eng_reference) : ''}</h2>
       <ol class="verses">${bible.verses.map(v => `
         <li>
           <small>${escapeText(v.verse)}</small>
@@ -273,7 +291,6 @@ function render(data) {
   $('kids').innerHTML = `
     <section class="card">
       <p class="eyebrow">今日經文 · 注音 &amp; NIrV</p>
-      <h2>${escapeText(bible.reference)}${bible.eng_reference ? ' · ' + escapeText(bible.eng_reference) : ''}</h2>
       ${hasKidsVerses ? `
         <ol class="kids-verses">${bible.verses.map(v => `
           <li>
@@ -324,7 +341,7 @@ function updateView() {
   const isKids = mode === 'kids-cute';
   $('adult').hidden = !current || isKids;
   $('kids').hidden = !current || !isKids;
-  $('hero-label').textContent = '每日靈修';
+  $('hero-label').textContent = '· 每日靈修';
   $('hero-title').textContent = !current ? '每日靈修' : current.scripture.reference;
   if (isKids && current?.kids_content?.bible_story_title_ruby) {
     $('hero-title').innerHTML = rubyMarkup(current.kids_content.bible_story_title_ruby);
