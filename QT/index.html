@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f9f7f2">
 <title>Daily QT · 每日靈修</title>
-<link id="favicon" rel="icon" type="image/svg+xml" href="icons/adult.svg">
-<link id="touch-icon" rel="apple-touch-icon" sizes="180x180" href="icons/adult-touch.png">
+<link id="favicon" rel="icon" type="image/svg+xml" href="icons/grownup.svg">
+<link id="touch-icon" rel="apple-touch-icon" sizes="180x180" href="icons/grownup-touch.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&display=swap">
 <style>
 @font-face{
@@ -53,16 +53,16 @@ header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;back
 .modes [aria-pressed="true"]{color:var(--on-button);background:var(--button)}
 
 /* 精簡版 Hero Banner */
-.hero{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0 14px;border-bottom:1px solid var(--line);margin-bottom:18px}
-.hero-copy{min-width:0;flex:1}
-.date-nav{gap:7px;color:var(--muted);font-size:13px;font-weight:600;flex-wrap:nowrap;white-space:nowrap}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px 16px;padding:16px 0 14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.title-row{grid-column:1;grid-row:2}
+.date-nav{gap:7px;color:var(--muted);font-size:13px;font-weight:600;flex-wrap:wrap;white-space:nowrap}
 .date-nav button{
   width:28px;height:28px;padding:0;border-radius:50%;border:1px solid var(--line);
   background:var(--surface);color:var(--ink);
   display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .date-nav button svg{width:14px;height:14px;display:block}
-.title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;margin-top:9px}
+.title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
 .eyebrow{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.1em;margin:0;white-space:nowrap}
 h1,h2,h3{font-family:var(--heading);line-height:1.35;margin:0}
 h1{font-size:clamp(25px,3.6vw,40px);letter-spacing:.02em;font-weight:700}
@@ -71,7 +71,7 @@ h3{font-size:18px}
 .lead{font-family:var(--body);font-size:clamp(14px,1.6vw,17px);font-weight:600;color:var(--muted);margin:0}
 
 /* 右側精緻徽章化插畫 */
-.art{flex-shrink:0;width:clamp(96px,15vw,170px)}
+.art{grid-column:2;grid-row:1 / span 2;width:clamp(96px,15vw,170px)}
 .art svg{display:block;width:100%;height:auto;max-height:120px}
 .kids-art,[data-theme="kids-cute"] .adult-art{display:none}
 [data-theme="kids-cute"] .kids-art{display:block}
@@ -127,7 +127,8 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 
 @media(max-width:670px){
   .hero{padding:12px 0;gap:8px;align-items:flex-end}
-  .date-nav{font-size:12px;gap:5px}
+  .date-nav{grid-column:1 / -1;font-size:12px;gap:5px}
+  .art{grid-row:2}
   .date-nav button{width:25px;height:25px}
   .eyebrow{font-size:11px;letter-spacing:.05em}
   .art{width:76px}
@@ -141,7 +142,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 </head>
 <body>
 <header><div class="bar shell">
-  <a id="home" class="brand" href="/lf/QT/"><img id="brand-icon" src="icons/adult.svg" alt=""><span>Daily QT · 每日靈修</span></a>
+  <a id="home" class="brand" href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a>
   <div class="modes" role="group" aria-label="閱讀模式">
     <button type="button" data-mode="literary" aria-pressed="true">大人</button>
     <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
@@ -149,17 +150,15 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 </div></header>
 <main class="shell">
   <div class="hero">
-    <div class="hero-copy">
-      <div class="date-nav">
-        <button id="previous" aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-        <time id="date" aria-live="polite"></time>
-        <button id="next" aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-        <span class="eyebrow" id="hero-label">· 每日靈修</span>
-      </div>
-      <div class="title-row">
-        <h1 id="hero-title">每日靈修</h1>
-        <p class="lead" id="hero-lead" hidden></p>
-      </div>
+    <div class="date-nav">
+      <button id="previous" aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <time id="date" aria-live="polite"></time>
+      <button id="next" aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      <span class="eyebrow" id="hero-label">· 每日靈修</span>
+    </div>
+    <div class="title-row">
+      <h1 id="hero-title">每日靈修</h1>
+      <p class="lead" id="hero-lead" hidden></p>
     </div>
     <div class="art"><div class="adult-art"><svg viewBox="0 0 620 510" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
 <linearGradient id="sky" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#f9f6e9"/><stop offset="1" stop-color="#d5ded0"/></linearGradient>
@@ -209,7 +208,7 @@ const firebaseConfig = {
 };
 const collectionName = 'devotionals';
 const iconFallbacks = {
-  "adult": `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" role="img" aria-labelledby="title">
+  "grownup": `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" role="img" aria-labelledby="title">
   <title id="title">山景書本</title>
   <rect width="180" height="180" rx="38" fill="#f7f5ef"/>
   <g transform="translate(-.5 18.5) scale(.215)">
@@ -332,7 +331,7 @@ function setTheme(value) {
   mode = value;
   root.dataset.theme = mode;
   const isKids = mode === 'kids-cute';
-  const icon = isKids ? 'kids' : 'adult';
+  const icon = isKids ? 'kids' : 'grownup';
   const iconSvg = `icons/${icon}.svg`;
   const inlineIcon = 'data:image/svg+xml,' + encodeURIComponent(iconFallbacks[icon]);
   $('favicon').href = iconSvg;
@@ -482,22 +481,6 @@ try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; }
 setTheme(mode);
 selectDate(taipeiDate());
 </script>
-<script src="../linfamily-home.js?v=drag4" data-home="../"></script>
-<script>
-// 確保手機切換視窗大小時，懸浮回首頁按鈕不會跑出可視範圍外
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const btn = document.querySelector('[data-linfamily-home], #linfamily-home-btn, a[href="../"]');
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    if (rect.right > window.innerWidth || rect.left < 0 || rect.bottom > window.innerHeight || rect.top < 0) {
-      btn.style.left = 'auto';
-      btn.style.top = 'auto';
-      btn.style.right = '16px';
-      btn.style.bottom = '20px';
-    }
-  }, 300);
-});
-</script>
+<script src="../linfamily-home.js?v=drag5" data-home="../"></script>
 </body>
 </html>

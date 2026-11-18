@@ -10,13 +10,13 @@
     // 🏠：可以停在畫面任何地方（圓形）；放在左右邊緣附近會吸附、收成半圓貼邊，碰到時變成圓頭長方形；
     // 長按（不移動）回到預設位置（左下貼邊）。位置記在這個瀏覽器（每站各自記）。點一下回 LinFamily。
     var CSS = '#lfHomeBtn{position:fixed;z-index:Z;width:44px;height:44px;border-radius:22px;display:grid;place-items:center;' +
-      'background:rgba(28,28,28,.45);color:#fff;opacity:.28;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,.15);' +
+      'background:rgba(28,28,28,.45);color:#fff;opacity:.55;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,.15);' +
       'cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden;' +
       'transition:opacity .2s,width .2s ease,border-radius .2s ease,left .25s ease,top .25s ease}' +
       '#lfHomeBtn svg{width:22px;height:22px;display:block;pointer-events:none;flex:none;transition:transform .2s}' +
       '#lfHomeBtn.edge-left{width:22px;border-radius:0 22px 22px 0}' +
       '#lfHomeBtn.edge-right{width:22px;border-radius:22px 0 0 22px}' +
-      '#lfHomeBtn.edge-left svg{transform:translateX(-11px)}#lfHomeBtn.edge-right svg{transform:translateX(11px)}' + // 收起來時房子正好切在螢幕邊緣，只露出一半
+      '#lfHomeBtn.edge-left svg,#lfHomeBtn.edge-right svg{width:16px;height:16px}' + // 收合時保留完整的房屋圖示
       // 拉出來＝圓頭長方形（貼邊那側是平的）；手機只在手指按住時拉出，放開就收回半圓（不用 :hover，避免手機點完一直卡在拉出狀態）
       '#lfHomeBtn.is-active,#lfHomeBtn:focus-visible{opacity:.9;outline:none}' +
       '#lfHomeBtn.edge-left.is-active,#lfHomeBtn.edge-right.is-active,#lfHomeBtn.edge-left:focus-visible,#lfHomeBtn.edge-right:focus-visible{width:50px;place-items:center}' +
