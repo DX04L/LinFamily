@@ -34,4 +34,26 @@
     return true;
   };
   if (inApp && note && !isAndroid && !isLine) note.hidden = false;
+
+  // 歡迎頁先啟動，Firebase／桌面元件載入期間也能回應點擊。
+  let bootTimer;
+  function waiting() {
+    if (typeof window.lfEnter === 'function' || window.lfEntranceGuard()) return;
+    if (note) { note.hidden = false; note.textContent = '正在載入登入服務，請稍候…'; }
+  }
+  wrap.addEventListener('click', waiting);
+  wrap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') waiting(); });
+  window.lfEntranceReady = function () {
+    clearTimeout(bootTimer);
+    if (note && !inApp) { note.hidden = true; note.textContent = ''; }
+  };
+  if (typeof window.lfEnter !== 'function') bootTimer = setTimeout(() => {
+    if (typeof window.lfEnter === 'function' || !note || wrap.hidden || inApp) return;
+    note.hidden = false; note.textContent = '登入服務載入較慢，請確認網路。';
+    const retry = document.createElement('button');
+    retry.type = 'button'; retry.textContent = '重新載入';
+    retry.style.cssText = 'pointer-events:auto;margin-left:10px;padding:8px 12px;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit;font:inherit';
+    retry.addEventListener('click', e => { e.stopPropagation(); location.reload(); });
+    note.appendChild(retry);
+  }, 12000);
 })();

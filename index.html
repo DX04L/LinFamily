@@ -27,9 +27,9 @@
     })();
   </script>
 
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js" defer></script>
 
   <style>
     /* 字型與 DX 相同：英文 Arial（粗體用 Arial Bold）、中文微軟正黑體 */
@@ -275,8 +275,8 @@
     <div class="lf-ent-logo"><img src="assets/lf-mark.v2.svg" alt="" width="644" height="594"></div>
     <p class="lf-ent-note" hidden>請用 Safari 或 Chrome 開啟本頁再登入</p>
   </div>
-  <script src="js/entrance.js" defer></script>
-  <script src="js/entrance-waves.js?v=20261118-ios-resume" defer></script>
+  <script src="js/entrance.js?v=20261118-boot" async></script>
+  <script src="js/entrance-waves.js?v=20261118-ios-resume" async></script>
   <script>try{localStorage.removeItem('linfamily_signed_in');}catch(_){}document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
   <div class="lf-top">
     <div>
@@ -453,7 +453,7 @@
   <script src="js/clc-icon-upload.js?v=20261116-menu2"></script>
   <script src="js/lf-menu.js?v=3"></script>
   <script>
-  (function () {
+  window.addEventListener('DOMContentLoaded', function () {
     'use strict';
     // ---------- Firebase（LinFamily 自己的專案） ----------
     const firebaseConfig = {
@@ -543,14 +543,24 @@
           toast('管理員已將這個帳號登出'); (window.CLCSSO && window.CLCSSO.logoutAll ? window.CLCSSO.logoutAll() : Promise.resolve()).finally(() => auth.signOut()); return;
         }
         applyRole(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role) ? d.role : '');
-      }, () => applyRole(''));
+      }, () => { applyRole(''); toast('無法確認帳號權限，請檢查網路後再試。'); });
+    }, err => {
+      authReady = true;
+      applyRole('');
+      toast('無法讀取登入狀態，請點選畫面重試。');
+      console.warn('Firebase 登入狀態讀取失敗', err);
     });
     // 掛在 DX04 底下（/lf/）時，LinFamily 是主站：登入後保存 Google 憑證，DX04、YA、SR 打開時自動登入（clc-sso.js）。
     // 需要：DX04、YA、SR 各自的 Firebase「外部專案用戶端 ID 白名單」加上 LinFamily 的 Web client ID。
+    let loginBusy = false;
     async function login() {
       if (!auth) return toast('登入服務尚未載入，請重新整理。');
+      if (loginBusy) return toast('正在開啟 Google 登入，請稍候。');
+      loginBusy = true;
+      const loginTimer = setTimeout(() => toast('登入回應較慢，請檢查網路；若未出現登入視窗，請重新整理。'), 12000);
       try {
         const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        clearTimeout(loginTimer);
         try { localStorage.setItem('linfamily_login_at', String(Date.now() + 1000)); } catch (_) {} // 登入時間（強制登出用；+1 秒避免和伺服器時間誤差）
         const tok = res.credential && res.credential.idToken;
         const share = () => { if (!window.CLCSSO || !tok) return; if (window.CLCSSO.shareLogin) window.CLCSSO.shareLogin(tok); else window.CLCSSO.saveGoogleIdToken(tok); }; // 同時把 DX、YA、SR 登入成同一個帳號
@@ -564,6 +574,9 @@
         } else toast('歡迎，' + (res.user.displayName || email));
       } catch (err) {
         if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err && err.code)) toast('登入未完成，請確認瀏覽器允許彈出視窗。');
+      } finally {
+        clearTimeout(loginTimer);
+        loginBusy = false;
       }
     }
 
@@ -575,9 +588,11 @@
       entered = true;
       if (role) return applyRole(role);        // 已登入：點一下直接進主畫面
       if (auth && auth.currentUser) return toast('正在確認帳號權限，請稍候。');
-      if (auth && !authReady) return;          // 剛打開、還在讀登入狀態：先等，已登入會自動進去，不跳登入視窗
+      // 直接在使用者點擊時開啟登入；不可因為狀態回呼延遲而吞掉點擊。
       login();                                 // 確定沒登入：跳 Google 登入，成功後直接進主畫面
     };
+    window.lfEnter = enter;
+    if (window.lfEntranceReady) window.lfEntranceReady();
     $('lfWelcome').addEventListener('click', enter);
     $('lfWelcome').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } });
     authBtn.addEventListener('click', () => { if (!role) login(); else setMenu(menu.hidden); });
@@ -1197,7 +1212,7 @@
     new MutationObserver(() => { if (search.value.trim()) applySearch(); }).observe($('lfApps'), { childList: true });
 
     slots.render(); requestAnimationFrame(() => slots.render()); // 第二次依實際格子高度補滿畫面
-  })();
+  });
   </script>
   <script src="js/lf-pull-refresh.js" defer></script>
 </body>
