@@ -98,6 +98,7 @@ rt{font-size:.5em;color:var(--annotation);letter-spacing:0;writing-mode:vertical
   ruby{display:inline-flex;align-items:center;vertical-align:middle;gap:.08em;line-height:1}
   rt{display:block;line-height:1;min-height:3.9em;text-align:center;white-space:nowrap}
 }
+#warning-banner{margin:0 0 18px;padding:13px 18px;border-radius:var(--radius);background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-weight:700;font-size:14px;line-height:1.6}
 #status{margin:0 0 40px}
 #toast{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:1;width:max-content;max-width:calc(100% - 32px);padding:13px 20px;background:var(--button);color:var(--on-button);border-radius:var(--radius);box-shadow:var(--shadow)}
 dialog{width:min(490px,calc(100% - 32px));border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);color:var(--ink);padding:24px}
@@ -160,6 +161,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 <path d="M438 79q12-9 22 1 10-13 23-9m23 49q8-6 15 0 5-8 14-6" stroke="#58685a" stroke-width="2" fill="none" stroke-linecap="round"/>
 </svg></div><div class="kids-art"><svg viewBox="0 0 620 510" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><ellipse cx="312" cy="268" rx="224" ry="181" fill="#f6e6fa"/><circle cx="435" cy="134" r="52" fill="#ffe4ae"/><path d="M91 253q59-42 128 1t151-7q111-53 167 28l-4 85q-103 97-223 91Q155 443 88 353Z" fill="#d8c6ef"/><path d="M87 310q85-37 225 13t221-23v58q-99 92-223 94Q154 445 87 352Z" fill="#f9c7da"/><path d="M157 211h78q10-15-11-22-5-19-24-16-11-15-28 1-21-1-19 18-16 7 4 19m292 18h61q13-10-1-18-3-15-20-14-12-9-22 4-13 0-14 13-13 5-4 15" fill="#fffaf1"/><ellipse cx="307" cy="371" rx="98" ry="15" fill="#ab719b" opacity=".2"/><g transform="translate(156 125) scale(1.7)"><path d="M64 118v17m51-17v17" stroke="#8f587a" stroke-width="9" stroke-linecap="round"/><path d="M57 104q-28 0-29-21 0-13 16-13l19 8m60 26q28 0 29-21 0-13-16-13l-19 8" fill="#a66583"/><path d="M48 77q-8-19 13-27 8-17 28-12 17-8 29 9 22 4 16 28 16 15 3 32-2 19-23 21-13 15-29 6-19 6-28-11-18-1-19-22-6-15 10-24Z" fill="#fff8e5"/><ellipse cx="90" cy="94" rx="34" ry="29" fill="#f5c6c3"/><path d="M76 92h.1m28 0h.1" stroke="#543547" stroke-width="6" stroke-linecap="round"/><path d="M83 104q7 8 14 0" fill="none" stroke="#543547" stroke-width="3" stroke-linecap="round"/><ellipse cx="68" cy="103" rx="5" ry="3" fill="#e894a6"/><ellipse cx="112" cy="103" rx="5" ry="3" fill="#e894a6"/></g><g fill="#fffbef"><path d="M140 288l5 11 12 2-9 8 2 12-10-6-10 6 2-12-9-8 12-2Z"/><path d="M480 283l4 9 10 2-7 7 1 9-8-5-8 5 1-9-7-7 10-2Z"/></g><path d="M243 118c-12-15-30 2 0 20 30-18 12-35 0-20Z" fill="#df8dad"/></svg></div></div>
   </div>
+  <div id="warning-banner" role="alert" hidden></div>
   <p id="status" role="status" hidden></p>
   <div id="adult" class="content" hidden></div>
   <div id="kids" class="content" hidden></div>
@@ -341,6 +343,8 @@ function updateView() {
   const isKids = mode === 'kids-cute';
   $('adult').hidden = !current || isKids;
   $('kids').hidden = !current || !isKids;
+  $('warning-banner').hidden = !current?.mismatch_warning;
+  $('warning-banner').textContent = current?.mismatch_warning || '';
   $('hero-label').textContent = '· 每日靈修';
   $('hero-title').textContent = !current ? '每日靈修' : current.scripture.reference;
   if (isKids && current?.kids_content?.bible_story_title_ruby) {
