@@ -141,11 +141,11 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
-<link rel="stylesheet" href="reader.css?v=4">
+<link rel="stylesheet" href="reader.css?v=5">
 </head>
 <body>
 <header><div class="bar shell">
-  <a id="home" class="brand" data-lf-menu-trigger href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a>
+  <div class="qt-brand-group"><a id="home" class="brand" data-lf-menu-trigger href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a><small id="qt-welcome" hidden></small></div>
   <div class="modes" role="group" aria-label="閱讀模式">
     <button type="button" data-mode="literary" aria-pressed="true">大人</button>
     <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
@@ -206,7 +206,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <div class="actions"><a class="action" id="manual-ai" target="_blank" rel="noopener noreferrer">前往 AI 對話</a><form method="dialog"><button class="action">關閉</button></form></div>
 </dialog>
 <noscript><p class="shell">請啟用 JavaScript 以閱讀每日靈修內容。</p></noscript>
-<script src="reader.js?v=5"></script>
+<script src="reader.js?v=6"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
@@ -262,6 +262,7 @@ let current;
 let request = 0;
 let toastTimer;
 let firestore;
+let firebaseApp;
 let recent = [];
 
 function escapeText(value) {
@@ -398,18 +399,67 @@ function showStatus(message) {
   $('status').textContent = message;
 }
 
-async function readRecent() {
-  if (!firestore) {
-    firestore = Promise.all([
-      import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
-      import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js')
-    ]).then(([app, db]) => ({...db, instance:db.getFirestore(app.initializeApp(firebaseConfig))}))
-      .catch(error => {
-        firestore = null;
-        throw error;
-      });
+const firebaseSDK = 'https://www.gstatic.com/firebasejs/11.10.0/';
+
+function getFirebaseApp() {
+  return firebaseApp ||= import(firebaseSDK + 'firebase-app.js')
+    .then(sdk => sdk.getApps().some(app => app.name === '[DEFAULT]') ? sdk.getApp() : sdk.initializeApp(firebaseConfig))
+    .catch(error => { firebaseApp = null; throw error; });
+}
+
+function getDatabase() {
+  return firestore ||= Promise.all([getFirebaseApp(), import(firebaseSDK + 'firebase-firestore.js')])
+    .then(([app, sdk]) => ({...sdk, instance:sdk.getFirestore(app)}))
+    .catch(error => { firestore = null; throw error; });
+}
+
+async function watchLinFamilyAuth() {
+  const greetings = [
+    '歡迎回來，一起讀經吧。',
+    '讓我們到上帝面前安靜。',
+    '把今天交託給神，一起讀經。',
+    '歡迎回來，留一點時間聆聽神的話。',
+    '一起慢下來，默想今天的經文。',
+  ];
+  const welcome = $('qt-welcome');
+  const authUnavailable = () => {
+    welcome.hidden = true;
+    welcome.textContent = '';
+    QTReader.setAccount(undefined, true);
+  };
+  try {
+    const [app, sdk] = await Promise.all([getFirebaseApp(), import(firebaseSDK + 'firebase-auth.js')]);
+    sdk.onAuthStateChanged(sdk.getAuth(app), user => {
+      const signedIn = user && !user.isAnonymous;
+      welcome.hidden = !signedIn;
+      if (signedIn) {
+        const day = Math.floor(Date.parse(taipeiDate()) / 86400000);
+        welcome.textContent = greetings[day % greetings.length];
+        QTReader.setAccount({
+          subscribe: async (entry, next, error) => {
+            const db = await getDatabase();
+            const annotations = db.collection(db.instance, 'qt_readers', user.uid, 'annotations');
+            return db.onSnapshot(db.query(annotations, db.where('entry', '==', entry)), next, error);
+          },
+          save: async (entry, item) => {
+            const db = await getDatabase();
+            const {id, ...payload} = item;
+            await db.setDoc(db.doc(db.instance, 'qt_readers', user.uid, 'annotations', id),
+              {entry, payload:JSON.stringify(payload)});
+          },
+        });
+      } else {
+        welcome.textContent = '';
+        QTReader.setAccount(null);
+      }
+    }, authUnavailable);
+  } catch {
+    authUnavailable();
   }
-  const {collection, query, orderBy, limit, getDocs, instance} = await firestore;
+}
+
+async function readRecent() {
+  const {collection, query, orderBy, limit, getDocs, instance} = await getDatabase();
   const snapshot = await getDocs(query(collection(instance, collectionName), orderBy('date', 'desc'), limit(7)));
   return snapshot.docs.filter(doc => /^\d{4}-\d{2}-\d{2}$/.test(doc.id))
     .map(doc => {
@@ -574,6 +624,7 @@ QTReader.init({
 try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; } catch {}
 setTheme(mode);
 selectDate(taipeiDate());
+watchLinFamilyAuth();
 </script>
   <script defer src="../js/lf-menu.js?v=4"></script>
   <script defer src="https://clc-dx04.pages.dev/lf-back.js?v=8" data-home="../"></script>

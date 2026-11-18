@@ -3,7 +3,8 @@ const QTReader = (() => {
   const storageKey = 'qt-annotations-v1';
   const $ = id => document.getElementById(id);
   const selection = () => window.getSelection();
-  let options, toolbar, dialog, active, touch, overlay, handles, customRange, paper, records = {};
+  let options, toolbar, dialog, active, touch, overlay, handles, customRange, paper;
+  let guest = {}, records = {}, account, authFailed = false, watchedKey, unsubscribe, subscription = 0;
 
   function blocks(mode) {
     const elements = [...$(mode).querySelectorAll('p,h2,h3,li > span')];
@@ -23,6 +24,49 @@ const QTReader = (() => {
     return entry && JSON.stringify([entry.date, entry.scripture.reference, mode]);
   }
 
+  function setAccount(next, failed = false) {
+    unsubscribe?.();
+    unsubscribe = null;
+    subscription++;
+    watchedKey = null;
+    account = next;
+    authFailed = failed;
+    records = next === null ? guest : {};
+    clear();
+    selection()?.removeAllRanges();
+    if (dialog?.open) dialog.close();
+    $('qt-note-storage').textContent = failed ? '目前無法確認登入狀態，請重新整理後再儲存。'
+      : next ? '反白和備註會同步到你的 LinFamily 帳戶。'
+      : '反白和備註只儲存在此瀏覽器。想長期保留，請點頁首的 Word 匯出按鈕。';
+    refresh();
+  }
+
+  function watchAnnotations(key) {
+    if (!account || key === watchedKey) return;
+    watchedKey = key;
+    unsubscribe?.();
+    unsubscribe = null;
+    const revision = ++subscription;
+    const onError = () => {
+      if (revision !== subscription) return;
+      watchedKey = null;
+      status('目前無法同步反白和備註。');
+    };
+    account.subscribe(key, snapshot => {
+      if (revision !== subscription) return;
+      records[key] = snapshot.docs.flatMap(doc => {
+        try {
+          const item = JSON.parse(doc.data().payload);
+          return Array.isArray(item.parts) && typeof item.quote === 'string' ? [{...item,id:doc.id}] : [];
+        } catch { return []; }
+      });
+      if (!active && !dialog.open) refresh();
+    }, onError).then(stop => {
+      if (revision === subscription) unsubscribe = stop;
+      else stop();
+    }).catch(onError);
+  }
+
   function clear() {
     active = null;
     customRange = null;
@@ -34,6 +78,7 @@ const QTReader = (() => {
   function refresh(mode = options.getMode()) {
     const key = markContext(mode);
     if (!key) return;
+    if (mode === options.getMode()) watchAnnotations(key);
     blocks('grown-up');
     blocks('kids');
     blocks(mode).forEach((block, index) => {
@@ -80,14 +125,36 @@ const QTReader = (() => {
     });
   }
 
-  function save(patch) {
+  async function save(patch) {
     if (!active) return;
+    if (account === undefined) {
+      status(authFailed ? '無法確認登入狀態，請重新整理。' : '正在確認登入狀態，請稍後再試。');
+      return;
+    }
     const {key, item} = active;
     const updated = {...item, ...patch};
     const previous = records[key];
     records[key] = [...(previous || []).filter(saved => saved.id !== item.id), updated];
+    if (account) {
+      const savingAccount = account;
+      clear();
+      selection()?.removeAllRanges();
+      refresh();
+      try {
+        await savingAccount.save(key, updated);
+      } catch {
+        if (account !== savingAccount) return;
+        const latest = records[key] || [];
+        if (latest.includes(updated)) {
+          records[key] = [...latest.filter(mark => mark.id !== updated.id), ...(previous || []).filter(mark => mark.id === updated.id)];
+        }
+        refresh();
+        status('同步失敗，請重新選取文字再試。');
+      }
+      return;
+    }
     try {
-      localStorage.setItem(storageKey, JSON.stringify(records));
+      localStorage.setItem(storageKey, JSON.stringify(guest));
     } catch {
       records[key] = previous || [];
       status('無法儲存標記，請檢查此瀏覽器的網站儲存空間。');
@@ -266,13 +333,13 @@ const QTReader = (() => {
   function init(settings) {
     options = settings;
     try {
-      records = JSON.parse(localStorage.getItem(storageKey)) || {};
-      for (const key of Object.keys(records)) {
+      guest = JSON.parse(localStorage.getItem(storageKey)) || {};
+      for (const key of Object.keys(guest)) {
         const [date, reference, mode] = JSON.parse(key);
         if (mode !== 'adult') continue;
         const newKey = JSON.stringify([date, reference, 'grown-up']);
-        records[newKey] = [...records[key], ...(records[newKey] || [])];
-        delete records[key];
+        guest[newKey] = [...guest[key], ...(guest[newKey] || [])];
+        delete guest[key];
       }
     } catch {}
     toolbar = document.createElement('div');
@@ -288,7 +355,7 @@ const QTReader = (() => {
       <dialog id="qt-note" aria-labelledby="qt-note-title"><form method="dialog">
         <h2 id="qt-note-title">備註</h2><p class="qt-note-text"></p>
         <textarea aria-label="備註內容" maxlength="2000"></textarea>
-        <p class="qt-note-help">反白和備註只儲存在此瀏覽器。想長期保留，請點頁首的 Word 匯出按鈕。</p>
+        <p id="qt-note-storage" class="qt-note-help">正在確認登入狀態…</p>
         <div class="actions"><button class="action" value="save">儲存</button><button class="action" value="cancel">取消</button></div>
       </form></dialog>`);
     dialog = $('qt-note');
@@ -466,5 +533,5 @@ const QTReader = (() => {
     animatePaper(1, commit);
   }
 
-  return {init, refresh, clear, turn};
+  return {init, refresh, clear, turn, setAccount};
 })();
