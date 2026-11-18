@@ -126,7 +126,11 @@ textarea{width:100%;min-height:110px;font:inherit;margin:12px 0}
 footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-size:13px}
 
 @media(max-width:670px){
-  .hero{padding:14px 0 12px;gap:12px}
+  .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;padding:14px 0 12px;gap:12px}
+  .hero-copy{display:contents}
+  .date-nav{grid-column:1 / -1;flex-wrap:wrap}
+  .date-nav time,.date-nav .eyebrow{white-space:nowrap}
+  .title-row{margin-top:0}
   .art{width:96px}
   .art svg{max-height:92px}
   .split{grid-template-columns:1fr}
