@@ -476,26 +476,34 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
             raise RuntimeError("API Key 查詢不到任何支援 generateContent 的 Gemini 模型")
         print(f"🔍 自動偵測到可用模型清單（前 5 個）：{available_models[:5]}")
 
-        resp = None
-        last_err = None
-        for model_path in available_models[:5]:
-            clean_path = model_path.lstrip("/")
-            url = f"{GEMINI_API_ROOT}/{clean_path}:generateContent?key={api_key}"
-            r = requests.post(url, json=payload, timeout=55)
-            if not r.ok:
-                last_err = f"{clean_path} -> HTTP {r.status_code}"
-                print(f"⚠️ 嘗試 {clean_path} 失敗 ({r.status_code})，自動切換下一個模型...")
+        # Keep the Flash fallback pool diverse when several recent models are overloaded.
+        stable_models = [model for model in available_models if model in (
+            "models/gemini-2.5-flash", "models/gemini-2.5-flash-lite",
+        )]
+        candidates = list(dict.fromkeys(available_models[:2] + stable_models + available_models))[:5]
+        for model in candidates:
+            try:
+                response = requests.post(
+                    f"{GEMINI_API_ROOT}/{model.lstrip('/')}:generateContent",
+                    headers={"x-goog-api-key": api_key},
+                    json=payload, timeout=(10, 55),
+                )
+                if not response.ok:
+                    print(f"⚠️ {model} 回傳 HTTP {response.status_code}，改試下一個模型。")
+                    continue
+                raw_text = response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                ai = json.loads(re.sub(r"^```json\s*|\s*```$", "", raw_text))
+                story = ai.get("kids_story")
+                if not isinstance(story, str) or not story.strip():
+                    print(f"⚠️ {model} 未回傳兒童故事，改試下一個模型。")
+                    continue
+            except (requests.RequestException, ValueError, KeyError, IndexError, TypeError, AttributeError) as error:
+                print(f"⚠️ {model} 生成未完成（{type(error).__name__}），改試下一個模型。")
                 continue
-            resp = r
-            print(f"✅ 成功使用自動偵測模型：{clean_path}")
+            print(f"✅ 成功使用自動偵測模型：{model}")
             break
-
-        if resp is None:
-            raise RuntimeError(f"候選模型皆無法使用 ({last_err})")
-
-        raw_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-        raw_text = re.sub(r"^```json\s*|\s*```$", "", raw_text)
-        ai = json.loads(raw_text)
+        else:
+            raise RuntimeError("所有候選模型都未產出完整的兒童故事")
 
         points = []
         for p in ai.get("theology_points", [])[:3]:
