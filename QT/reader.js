@@ -417,42 +417,20 @@ const QTReader = (() => {
     surface.removeAttribute('id');
     surface.style.transform = `translateY(${Math.min(0, bounds.top - top)}px)`;
     outgoing.append(surface);
-    const fold = document.createElement('div');
-    fold.className = 'qt-paper-fold';
-    const shadow = document.createElement('div');
-    shadow.className = 'qt-paper-shadow';
-    stage.append(incoming, outgoing, shadow, fold);
+    stage.append(incoming, outgoing);
     document.body.append(stage);
-    paper = {stage,outgoing,fold,shadow,forward,width:stage.clientWidth,height:stage.clientHeight,progress:0};
+    paper = {stage,incoming,outgoing,forward,width:stage.clientWidth,progress:0};
     drawPaper(0);
   }
 
   function drawPaper(value) {
     if (!paper) return;
-    const {outgoing,fold,shadow,forward,width,height} = paper;
+    const {incoming,outgoing,forward,width} = paper;
     const progress = Math.max(0, Math.min(value, 1));
     paper.progress = progress;
-    const edge = (forward ? 1 - progress : progress) * width;
-    const bend = Math.sin(progress * Math.PI);
-    const curve = bend * Math.min(22, width * .045);
-    const a = edge - curve, b = edge + curve;
-    outgoing.style.clipPath = forward
-      ? `polygon(0 0,${a}px 0,${b}px 100%,0 100%)`
-      : `polygon(${b}px 0,100% 0,100% 100%,${a}px 100%)`;
-    const mid = height / 2;
-    const curveX = edge + (forward ? -1 : 1) * curve * 2;
-    const outline = forward
-      ? `M 0 0 H ${a} Q ${curveX} ${mid} ${b} ${height} H 0 Z`
-      : `M ${b} 0 H ${width} V ${height} H ${a} Q ${curveX} ${mid} ${b} 0 Z`;
-    const curvedClip = `path("${outline}")`;
-    if (CSS.supports('clip-path', curvedClip)) outgoing.style.clipPath = curvedClip;
-    for (const detail of [fold,shadow]) {
-      detail.style.left = edge + 'px';
-      detail.style.opacity = Math.min(1, bend * 3);
-    }
-    fold.style.width = (12 + bend * Math.min(58,width * .16)) + 'px';
-    fold.style.transform = `translateX(${forward ? '-66%' : '-34%'}) skewX(${forward ? -5 : 5}deg)`;
-    shadow.style.transform = `translateX(${forward ? '-25%' : '-75%'})`;
+    const direction = forward ? -1 : 1;
+    outgoing.style.transform = `translate3d(${direction * width * progress}px,0,0)`;
+    incoming.style.transform = `translate3d(${-direction * width * (1 - progress)}px,0,0)`;
   }
 
   function animatePaper(target, done) {
