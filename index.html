@@ -1,6 +1,34 @@
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
+  <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
+  <script>
+    (function () {
+      var enabled = /iPhone/i.test(navigator.userAgent) &&
+        (navigator.standalone === true || matchMedia('(display-mode: standalone)').matches);
+      if (!enabled) return;
+      document.documentElement.classList.add('lf-iphone-probe');
+      var state = '等待啟動', touches = 0;
+      function render() {
+        var label = document.getElementById('lfBootStatus');
+        if (label) label.textContent = 'LF 檢查版 B1 · ' + state + ' · 觸控 ' + touches;
+      }
+      window.lfBootMark = function (message) { state = message; render(); };
+      document.addEventListener('pointerdown', function () { touches++; render(); }, { capture:true, passive:true });
+      window.addEventListener('error', function (event) {
+        var target = event.target;
+        state = target && target.tagName === 'SCRIPT' ? '元件載入失敗' : '程式錯誤';
+        render();
+      }, true);
+      window.addEventListener('unhandledrejection', function () { state = '服務回應失敗'; render(); });
+    })();
+  </script>
+  <style>
+    #lfBootProbe { display:none; }
+    html.lf-iphone-probe #lfBootProbe[hidden] { display:none; }
+    html.lf-iphone-probe #lfBootProbe:not([hidden]) { display:block; position:fixed; z-index:2147483647; left:12px; right:12px; bottom:calc(16px + env(safe-area-inset-bottom)); padding:12px; border-radius:10px; background:#111; color:#fff; font:13px/1.5 Arial,"Microsoft JhengHei",sans-serif; text-align:center; }
+    #lfBootProbe button { margin-top:8px; padding:6px 12px; border:1px solid #aaa; border-radius:6px; background:transparent; color:#fff; font:inherit; }
+  </style>
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -268,6 +296,17 @@
   </style>
 </head>
 <body>
+  <div id="lfBootProbe" role="status"><span id="lfBootStatus">LF 檢查版 B1 · 等待啟動</span><br><button type="button" id="lfBootReload">重新載入新版</button></div>
+  <script>
+    if (window.lfBootMark) {
+      window.lfBootMark('畫面已載入');
+      document.getElementById('lfBootReload').addEventListener('click', function () {
+        var url = new URL(location.href);
+        url.searchParams.set('lf_boot', String(Date.now()));
+        location.replace(url.href);
+      });
+    }
+  </script>
   <!-- 沒登入：停在 Welcome 畫面，點一下就跳出 Google 登入（參照 DX） -->
   <div class="lf-welcome" id="lfWelcome" role="button" tabindex="0" aria-label="LinFamily：按一下以 Google 帳號登入">
     <canvas class="lf-ent-canvas" aria-hidden="true"></canvas>
@@ -472,6 +511,7 @@
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
+    if (window.lfBootMark) window.lfBootMark('登入程式已啟動');
     // ---------- Firebase（LinFamily 自己的專案） ----------
     const firebaseConfig = {
       apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
@@ -528,6 +568,7 @@
     try { if (sessionStorage.getItem('linfamily_entered') === '1') { entered = true; } } catch (_) {}
     function applyRole(r) {
       role = r || '';
+      if (window.lfBootMark && role && entered) { window.lfBootMark('已進入主頁'); document.getElementById('lfBootProbe').hidden = true; }
       window.isSuperuser = role === 'superuser';
       $('lfAuthIcon').textContent = role === 'superuser' ? '👑' : role ? '☰' : '🔐'; // 一般帳號用三條線選單
       $('lfLogoutBtn').textContent = isSuper() ? '🚪 登出管理員' : '🚪 登出帳號';
@@ -547,6 +588,7 @@
     }
     if (auth) auth.onAuthStateChanged(u => {
       authReady = true;
+      if (window.lfBootMark) window.lfBootMark(u ? '已讀取帳號，確認權限中' : '可點選登入');
       if (roleUnsub) { roleUnsub(); roleUnsub = null; }
       user = u && u.email && u.emailVerified ? u : null;
       if (!user) return applyRole('');
@@ -576,6 +618,7 @@
       loginBusy = true;
       const loginTimer = setTimeout(() => toast('登入回應較慢，請檢查網路；若未出現登入視窗，請重新整理。'), 12000);
       try {
+        if (window.lfBootMark) window.lfBootMark('開啟 Google 登入中');
         const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
         clearTimeout(loginTimer);
         try { localStorage.setItem('linfamily_login_at', String(Date.now() + 1000)); } catch (_) {} // 登入時間（強制登出用；+1 秒避免和伺服器時間誤差）
@@ -590,6 +633,7 @@
           await auth.signOut(); toast('帳號【' + email + '】沒有權限。');
         } else toast('歡迎，' + (res.user.displayName || email));
       } catch (err) {
+        if (window.lfBootMark) window.lfBootMark('登入未完成 ' + (/^auth\/[a-z-]+$/.test(err && err.code) ? err.code : ''));
         if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err && err.code)) toast('登入未完成，請確認瀏覽器允許彈出視窗。');
       } finally {
         clearTimeout(loginTimer);
@@ -602,6 +646,7 @@
     function setMenu(open) { menu.hidden = !open; authBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
     const enter = () => {
       if (window.lfEntranceGuard && window.lfEntranceGuard()) return; // 內建瀏覽器先處理（js/entrance.js）
+      if (window.lfBootMark) window.lfBootMark('收到登入點擊');
       entered = true;
       if (role) return applyRole(role);        // 已登入：點一下直接進主畫面
       if (auth && auth.currentUser) return toast('正在確認帳號權限，請稍候。');
