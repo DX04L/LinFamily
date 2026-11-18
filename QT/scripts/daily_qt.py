@@ -94,6 +94,8 @@ HEADERS = {
     "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7"
 }
 
+GEMINI_API_ROOT = "https://generativelanguage.googleapis.com/v1beta"
+
 # 3. 配合 BpmfGenSenRounded 注音字體：輸出純文字並為聖經破音字加上標準 8 碼 Unicode IVS
 def to_zhuyin_ruby(text: str) -> str:
     if not text:
@@ -348,19 +350,20 @@ def get_scripture_data(ref_info: dict):
 
 # 4. 自動向 Google API 偵測目前帳號支援的模型，不寫死模型名稱
 def discover_gemini_models(api_key: str) -> list:
-    list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+    list_url = f"{GEMINI_API_ROOT}/models?key={api_key}"
     resp = requests.get(list_url, timeout=20)
     resp.raise_for_status()
     models = resp.json().get("models", [])
 
     candidates = []
+    skip_keywords = ["embedding", "imagen", "image", "veo", "tts", "aqa", "bisect", "robotics", "computer-use", "audio", "vision"]
     for m in models:
-        name = m.get("name", "")
+        name = m.get("name", "").strip()
         methods = m.get("supportedGenerationMethods", [])
         if "generateContent" not in methods:
             continue
         lower_name = name.lower()
-        if any(skip in lower_name for skip in ["embedding", "imagen", "veo", "tts", "aqa", "bisect", "robotics", "computer-use"]):
+        if any(skip in lower_name for skip in skip_keywords):
             continue
         if "gemini" in lower_name:
             candidates.append(name)
@@ -455,14 +458,15 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
         resp = None
         last_err = None
         for model_path in available_models[:5]:
-            url = f"[https://generativelanguage.googleapis.com/v1beta/](https://generativelanguage.googleapis.com/v1beta/){model_path}:generateContent?key={api_key}"
+            clean_path = model_path.lstrip("/")
+            url = f"{GEMINI_API_ROOT}/{clean_path}:generateContent?key={api_key}"
             r = requests.post(url, json=payload, timeout=55)
             if not r.ok:
-                last_err = f"{model_path} -> HTTP {r.status_code}"
-                print(f"⚠️ 嘗試 {model_path} 失敗 ({r.status_code})，自動切換下一個模型...")
+                last_err = f"{clean_path} -> HTTP {r.status_code}"
+                print(f"⚠️ 嘗試 {clean_path} 失敗 ({r.status_code})，自動切換下一個模型...")
                 continue
             resp = r
-            print(f"✅ 成功使用自動偵測模型：{model_path}")
+            print(f"✅ 成功使用自動偵測模型：{clean_path}")
             break
 
         if resp is None:
