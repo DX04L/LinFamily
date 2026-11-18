@@ -110,7 +110,6 @@ def to_zhuyin_ruby(text: str) -> str:
     return out
 
 def parse_reference_from_text(text: str):
-    # 過濾掉 Duranno 網站頁首固定的標語金句（阿摩司書 8:11）
     cleaned = re.sub(r"阿摩司書\s*8\s*[:：]\s*11", "", text)
 
     books_sorted = sorted(BOOK_MAP.keys(), key=len, reverse=True)
@@ -151,7 +150,6 @@ def fetch_duranno():
         return None, f"Duranno 連線失敗 ({e})"
 
 def fetch_youtube():
-    # 多組頻道 URL 備援，避免單一 handle 頁面改版抓不到 channelId
     urls = [
         "https://www.youtube.com/@CGNChinese_%E6%B4%BB%E6%BD%91%E7%9A%84%E7%94%9F%E5%91%BD/videos",
         "https://www.youtube.com/@CGNChinese/videos"
@@ -179,7 +177,6 @@ def fetch_youtube():
         if not entries:
             return None, "", "YouTube RSS 無影片紀錄"
 
-        # 優先找標題含今天日期（如 11/18 或 11月18日）或最新一集含經文座標的影片
         month = int(TODAY_STR[5:7])
         day = int(TODAY_STR[8:10])
         date_hints = [f"{month}/{day}", f"{month:02d}/{day:02d}", f"{month}月{day}日", f"{month:02d}{day:02d}"]
@@ -349,7 +346,37 @@ def get_scripture_data(ref_info: dict):
         "context_after": context_after
     }
 
-# 4. 透過 Gemini API 生成保守福音派解經、學者註腳、神學議題與兒童故事
+# 4. 自動向 Google API 偵測目前帳號支援的模型，不寫死模型名稱
+def discover_gemini_models(api_key: str) -> list:
+    list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+    resp = requests.get(list_url, timeout=20)
+    resp.raise_for_status()
+    models = resp.json().get("models", [])
+
+    candidates = []
+    for m in models:
+        name = m.get("name", "")
+        methods = m.get("supportedGenerationMethods", [])
+        if "generateContent" not in methods:
+            continue
+        lower_name = name.lower()
+        if any(skip in lower_name for skip in ["embedding", "imagen", "veo", "tts", "aqa", "bisect", "robotics", "computer-use"]):
+            continue
+        if "gemini" in lower_name:
+            candidates.append(name)
+
+    def model_priority(model_path: str):
+        s = model_path.lower()
+        is_flash = 0 if "flash" in s else 1
+        is_lite = 1 if "lite" in s else 0
+        ver_match = re.search(r"gemini-(\d+(?:\.\d+)?)", s)
+        ver = float(ver_match.group(1)) if ver_match else 0.0
+        return (is_flash, is_lite, -ver, s)
+
+    candidates.sort(key=model_priority)
+    return candidates
+
+# 5. 透過 Gemini API 生成保守福音派解經、學者註腳、神學議題與兒童故事
 def generate_ai_devotional(ref_info: dict, scripture: dict):
     fallback_adult = {
         "book_background": f"今日靈修進度為《{ref_info['reference']}》（{ref_info['eng_reference']}）。點擊下方按鈕可隨時與 AI 深入探討本段經文的歷史背景與神學意義。",
@@ -411,7 +438,6 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
   "kids_prayer": "溫暖的今日小禱告（約 50-80 字，第一人稱「親愛的天父……奉主耶穌的名禱告，阿們。」）"
 }}"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -421,8 +447,27 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
     }
 
     try:
-        resp = requests.post(url, json=payload, timeout=55)
-        resp.raise_for_status()
+        available_models = discover_gemini_models(api_key)
+        if not available_models:
+            raise RuntimeError("API Key 查詢不到任何支援 generateContent 的 Gemini 模型")
+        print(f"🔍 自動偵測到可用模型清單（前 5 個）：{available_models[:5]}")
+
+        resp = None
+        last_err = None
+        for model_path in available_models[:5]:
+            url = f"[https://generativelanguage.googleapis.com/v1beta/](https://generativelanguage.googleapis.com/v1beta/){model_path}:generateContent?key={api_key}"
+            r = requests.post(url, json=payload, timeout=55)
+            if not r.ok:
+                last_err = f"{model_path} -> HTTP {r.status_code}"
+                print(f"⚠️ 嘗試 {model_path} 失敗 ({r.status_code})，自動切換下一個模型...")
+                continue
+            resp = r
+            print(f"✅ 成功使用自動偵測模型：{model_path}")
+            break
+
+        if resp is None:
+            raise RuntimeError(f"候選模型皆無法使用 ({last_err})")
+
         raw_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
         raw_text = re.sub(r"^```json\s*|\s*```$", "", raw_text)
         ai = json.loads(raw_text)
