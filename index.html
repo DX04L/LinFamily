@@ -276,7 +276,24 @@
     <p class="lf-ent-note" hidden>請用 Safari 或 Chrome 開啟本頁再登入</p>
   </div>
   <script src="js/entrance.js?v=20261118-boot" async></script>
-  <script src="js/entrance-waves.js?v=20261118-ios-resume" async></script>
+  <!-- 暫停測試：改成 false 即恢復 iPhone 動畫；動畫檔案保留。 -->
+  <script>
+    (function () {
+      var pauseIPhoneIntro = true;
+      if (pauseIPhoneIntro && /iPhone/i.test(navigator.userAgent)) {
+        document.documentElement.classList.add('lf-iphone-static');
+        return;
+      }
+      var script = document.createElement('script');
+      script.src = 'js/entrance-waves.js?v=20261118-ios-resume';
+      script.async = true;
+      document.head.appendChild(script);
+    })();
+  </script>
+  <style>
+    html.lf-iphone-static .lf-ent-canvas { display:none; }
+    html.lf-iphone-static .lf-ent-logo { animation:none !important; opacity:1; }
+  </style>
   <script>try{localStorage.removeItem('linfamily_signed_in');}catch(_){}document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
   <div class="lf-top">
     <div>
