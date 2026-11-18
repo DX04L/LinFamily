@@ -1,0 +1,65 @@
+name: Deploy QT annotation rules
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: qt-annotation-rules
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install google-auth requests
+      - name: Add QT-only rules to the active Firestore release
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+          from google.auth.transport.requests import AuthorizedSession
+          from google.oauth2.service_account import Credentials
+
+          project = 'linfamily-31cb6'
+          info = json.loads(os.environ['FIREBASE_SERVICE_ACCOUNT'])
+          session = AuthorizedSession(Credentials.from_service_account_info(
+              info, scopes=['https://www.googleapis.com/auth/cloud-platform']))
+          api = 'https://firebaserules.googleapis.com/v1/'
+          release = f'projects/{project}/releases/cloud.firestore'
+
+          def request(method, name, **kwargs):
+              response = session.request(method, api + name, timeout=25, **kwargs)
+              if not response.ok:
+                  raise SystemExit(f'{method} {name}: HTTP {response.status_code}')
+              return response.json()
+
+          active = request('GET', release)['rulesetName']
+          files = request('GET', active)['source']['files']
+          if any('match /qt_readers/' in file['content'] for file in files):
+              raise SystemExit('QT rules already exist. Review the active rules before replacing them.')
+          if len(files) != 1:
+              raise SystemExit('Expected one Firestore rules source file.')
+          local = Path('firestore.rules').read_text()
+          marker = '    // QT marks are private'
+          block = local[local.index(marker):local.rindex('  }')]
+          content = files[0]['content']
+          tail = re.search(r'\}\s*\}\s*$', content)
+          if not tail or 'match /databases/{database}/documents' not in content:
+              raise SystemExit('Unrecognized live rules structure. Review required.')
+          updated = content[:tail.start()] + '\n' + block + '  ' + content[tail.start():]
+          source = {'files': [{**files[0], 'content': updated}]}
+          created = request('POST', f'projects/{project}/rulesets', json={'source': source})['name']
+          if request('GET', release)['rulesetName'] != active:
+              raise SystemExit('Live rules changed during deployment. Review required.')
+          request('PATCH', release, json={'release': {'name': release, 'rulesetName': created},
+                                          'updateMask': 'rulesetName'})
+          if request('GET', release)['rulesetName'] != created:
+              raise SystemExit('Release verification failed.')
+          print('QT-only Firestore rules published.')
+          PY

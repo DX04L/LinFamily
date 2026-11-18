@@ -49,5 +49,24 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isSuper();
     }
+
+    // QT marks are private to the UID in the path. Each document holds one mark.
+    match /qt_readers/{uid}/annotations/{annotationId} {
+      function ownsAnnotations() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      function validAnnotation() {
+        let data = request.resource.data;
+        return data.keys().hasAll(['entry', 'payload'])
+          && data.keys().hasOnly(['entry', 'payload'])
+          && data.entry is string && data.entry.size() > 0 && data.entry.size() <= 240
+          && data.payload is string && data.payload.size() > 0 && data.payload.size() <= 40000
+          && annotationId.matches('[0-9a-f-]{36}');
+      }
+      allow get, list: if ownsAnnotations();
+      allow create: if ownsAnnotations() && validAnnotation();
+      allow update: if ownsAnnotations() && validAnnotation()
+        && request.resource.data.entry == resource.data.entry;
+    }
   }
 }
