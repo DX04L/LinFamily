@@ -21,3 +21,13 @@
 ## 部署方式
 1. 解壓縮本 `.zip` 檔案。
 2. 直接將 `index.html` 上傳至 **GitHub Pages**、**Cloudflare Pages**、**Vercel** 或任何靜態網頁主機即可一鍵上線。
+
+## 新增 App 的共用 Home 按鈕
+
+新 App 要提供「回 LinFamily 主畫面」時，一律載入 DX04 維護的共用 `lf-back.js`。請勿複製、重寫或另做一套 Home 按鈕。共用按鈕貼邊時顯示半個房子，拉出時顯示完整圖示。
+
+```html
+<script src="https://clc-dx04.pages.dev/lf-back.js?v=8" data-home="../"></script>
+```
+
+`data-home` 以 App 頁面為基準。LF 的第一層子 App 用 `../`，獨立網域的 App 用 `https://clc-dx04.pages.dev/lf/`。嵌入 `open.html` 時由外層提供按鈕。已由 DX04 Worker 注入的 DX／YA／SR 入口沿用 `?lfhome=` 接法。LF 主畫面本身就是返回目的地。

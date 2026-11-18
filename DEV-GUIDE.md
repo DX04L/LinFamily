@@ -44,10 +44,7 @@
   - 外部網站可內嵌：在 `open.html` 框內開（右上角 ↗ 直接開啟）。
   - 外部網站不可內嵌（Google 等）：直接開，接受那一列。
 - 空白處按右鍵／手機長按：自訂選單「Copy link」「Open in new window」，外觀照 DX 的 Header 選單；Copy link 後面顯示網址，選單寬度固定，網址太長時跑馬灯流過去；複製的是各站**原本的網址**（DX 底下的 `/ya/`、`/sr/` 換回 YA、SR 自己的網域，`/lf/` 維持 DX 底下）（LF 的 `js/lf-menu.js`，DX、YA、SR 的 `header.js`）；新分頁盡量用預設瀏覽器開（Android 用 `intent://`、LINE 加 `openExternalBrowser=1`）。
-- **回首頁鈕**：從 LF 開出來的所有站（DX、YA、SR、`open.html` 內的外部網站）左下角都有一顆**淡淡的圓形 🏠 浮動鈕**（平常幾乎透明，碰到才變清楚），按了回 LF 主畫面。不要再用「‹ LinFamily」文字鈕。
-  - 自家站：LF 帶 `?lfhome=` 進入，由 DX04 的 `lf-back.js` 顯示（Worker 自動插入，各站不用改）。
-  - `open.html`：直接寫在頁面裡（樣式相同）。
-  - LF 自己的子 App（如 HannahProjects）：引用 LF 根目錄的 `linfamily-home.js`（樣式相同）。
+- **回首頁鈕**：所有 App 統一使用 DX04 的 `lf-back.js`，貼邊時露出半個房子。新 App、外部站與 iframe 的接法請見 [README 的共用 Home 按鈕說明](README.md#新增-app-的共用-home-按鈕)。
 
 ## 5. 外觀
 - **背景主題**（LF 右邊 ⚙ →「背景主題」）：主題色 6 組、內建桌布 5 張＋上傳自己的照片（自動縮成約 200～600KB 的 JPEG），每個人自己的，存在 `linfamily_desktops/{email}` 的 `theme`、`wall`、`wallImg`。存桌面要用 `set(..., { merge:true })`，才不會蓋掉主題。
