@@ -16,3 +16,19 @@ main{touch-action:pan-y pinch-zoom}
 .qt-tools button[data-color]{background:var(--mark)}
 .qt-note-help{color:var(--muted);font-size:13px}
 .qt-note-text{white-space:pre-wrap;max-height:25vh;overflow:auto}
+.qt-tools[aria-label]{
+  position:fixed;inset:auto;transform:none;display:grid;min-width:188px;
+  gap:3px;padding:7px;border-radius:var(--radius);border-color:var(--line)
+}
+.qt-swatches{display:flex;justify-content:space-between;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.qt-tools button[data-color]{display:grid;place-items:center;padding:0;border:0;background:transparent}
+.qt-tools button[data-color]::after{content:"";width:20px;height:20px;border-radius:50%;background:var(--mark);border:1px solid #0002}
+.qt-tools[aria-label] button[data-action]{text-align:start;padding-inline:11px;border:0;background:transparent}
+.qt-tools[aria-label] button[data-action]:hover{background:var(--panel)}
+.qt-selection{position:fixed;inset:0;pointer-events:none;z-index:91}
+.qt-selection span{position:absolute;background:#668d9170;border-radius:2px}
+.qt-selection-handle{position:fixed;z-index:92;width:28px;height:26px;transform:translateX(-50%);touch-action:none}
+.qt-selection-handle::after{content:"";position:absolute;left:7px;top:0;width:14px;height:14px;border-radius:50%;background:var(--button)}
+@media(any-pointer:coarse){
+  main [data-lf-menu-ignore],.qt-selection-handle{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+}

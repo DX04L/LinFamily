@@ -3,7 +3,7 @@ const QTReader = (() => {
   const storageKey = 'qt-annotations-v1';
   const $ = id => document.getElementById(id);
   const selection = () => window.getSelection();
-  let options, toolbar, dialog, active, touch, records = {};
+  let options, toolbar, dialog, active, touch, overlay, handles, customRange, records = {};
 
   function blocks(mode) {
     const elements = [...$(mode).querySelectorAll('p,h2,h3,li > span')];
@@ -25,6 +25,9 @@ const QTReader = (() => {
 
   function clear() {
     active = null;
+    customRange = null;
+    if (overlay) overlay.replaceChildren();
+    handles?.forEach(handle => { handle.hidden = true; });
     if (toolbar) toolbar.hidden = true;
   }
 
@@ -63,9 +66,9 @@ const QTReader = (() => {
               if (hit.item.note) mark.setAttribute('data-note', '');
               mark.textContent = segment;
               mark.addEventListener('click', () => {
-                if (selection()?.isCollapsed === false) return;
+                if (customRange || selection()?.isCollapsed === false) return;
                 active = { key, item: hit.item };
-                toolbar.hidden = false;
+                showTools(mark.getBoundingClientRect());
               });
               content.append(mark);
             }
@@ -105,15 +108,30 @@ const QTReader = (() => {
   }
 
   function readSelection() {
-    if (dialog.open) return;
+    if (dialog.open || customRange) return;
     const value = selection();
     if (!value?.rangeCount || value.isCollapsed) {
       if (!active?.key || !(records[active.key] || []).some(item => item.id === active.item.id)) clear();
       return;
     }
+    showRange(value.getRangeAt(0));
+  }
+
+  function showTools(rect) {
+    toolbar.hidden = false;
+    const view = window.visualViewport;
+    const left = view?.offsetLeft || 0, top = view?.offsetTop || 0;
+    const right = left + (view?.width || innerWidth), bottom = top + (view?.height || innerHeight);
+    const x = (rect.left + rect.right - toolbar.offsetWidth) / 2;
+    const above = rect.top - toolbar.offsetHeight - 12;
+    const y = above >= top + 8 ? above : rect.bottom + 30;
+    toolbar.style.left = Math.max(left + 8, Math.min(x, right - toolbar.offsetWidth - 8)) + 'px';
+    toolbar.style.top = Math.max(top + 8, Math.min(y, bottom - toolbar.offsetHeight - 8)) + 'px';
+  }
+
+  function showRange(range) {
     const key = markContext();
     if (!key) return clear();
-    const range = value.getRangeAt(0);
     const panel = $(options.getMode());
     if (!panel.contains(range.startContainer) || !panel.contains(range.endContainer)) return clear();
     const parts = [];
@@ -132,7 +150,117 @@ const QTReader = (() => {
     });
     if (!parts.length) return clear();
     active = {key, item:{id:crypto.randomUUID(), parts, quote:parts.map(part => part.quote).join('\n')}};
-    toolbar.hidden = false;
+    showTools(range.getBoundingClientRect());
+  }
+
+  function caretAt(x, y) {
+    const hit = document.caretPositionFromPoint?.(x, y);
+    const legacy = !hit && document.caretRangeFromPoint?.(x, y);
+    const node = hit?.offsetNode || legacy?.startContainer;
+    const offset = hit?.offset ?? legacy?.startOffset;
+    return node?.nodeType === Node.TEXT_NODE &&
+      $(options.getMode()).contains(node) && node.parentElement.closest('[data-lf-menu-ignore]')
+      ? {node, offset} : null;
+  }
+
+  function paintSelection() {
+    if (!customRange) return;
+    const rects = [...customRange.getClientRects()].filter(rect => rect.width > 0);
+    const first = rects[0], last = rects.at(-1);
+    if (!first) return;
+    overlay.replaceChildren(...rects.map(rect => {
+      const box = document.createElement('span');
+      Object.assign(box.style, {left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});
+      return box;
+    }));
+    handles.forEach((handle, index) => {
+      const rect = index ? last : first;
+      handle.style.left = (index ? rect.right : rect.left) + 'px';
+      handle.style.top = rect.bottom + 'px';
+      handle.hidden = false;
+    });
+    showTools(customRange.getBoundingClientRect());
+  }
+
+  function enableTouchSelection() {
+    overlay = document.createElement('div');
+    overlay.className = 'qt-selection';
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.append(overlay);
+    handles = ['start','end'].map(edge => {
+      const handle = document.createElement('span');
+      handle.className = 'qt-selection-handle ' + edge;
+      handle.hidden = true;
+      handle.setAttribute('aria-hidden', 'true');
+      document.body.append(handle);
+      let yOffset = 0;
+      handle.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        const rect = handle.getBoundingClientRect();
+        yOffset = event.clientY - rect.top + 6;
+        handle.setPointerCapture(event.pointerId);
+      });
+      handle.addEventListener('pointermove', event => {
+        if (!customRange || !handle.hasPointerCapture(event.pointerId)) return;
+        const point = caretAt(event.clientX, event.clientY - yOffset);
+        if (!point || customRange.comparePoint(point.node, point.offset) === (edge === 'start' ? 1 : -1)) return;
+        const next = customRange.cloneRange();
+        if (edge === 'start') next.setStart(point.node, point.offset);
+        else next.setEnd(point.node, point.offset);
+        if (next.collapsed) return;
+        customRange = next;
+        showRange(next);
+        paintSelection();
+      });
+      return handle;
+    });
+
+    let press;
+    const cancel = () => { clearTimeout(press?.timer); press = null; };
+    const main = document.querySelector('main');
+    main.addEventListener('touchstart', event => {
+      cancel();
+      if (event.touches.length !== 1 || dialog.open || !event.target.closest('[data-lf-menu-ignore]')) return;
+      const {clientX:x, clientY:y} = event.touches[0];
+      press = {x,y,timer:setTimeout(() => {
+        const point = caretAt(x,y);
+        if (!point || !point.node.length) return;
+        const text = point.node.data;
+        const position = Math.min(point.offset, text.length - 1);
+        const segments = Intl.Segmenter ? new Intl.Segmenter(document.documentElement.lang, {granularity:'word'}).segment(text) : null;
+        const hit = segments?.containing(position);
+        const start = hit?.index ?? position;
+        const end = start + (hit?.segment.length ?? 1);
+        const range = document.createRange();
+        range.setStart(point.node, start);
+        range.setEnd(point.node, end);
+        selection()?.removeAllRanges();
+        customRange = range;
+        showRange(range);
+        if (customRange) paintSelection();
+      }, 420)};
+    }, {passive:true});
+    main.addEventListener('touchmove', event => {
+      const point = event.touches[0];
+      if (press && (event.touches.length !== 1 || Math.hypot(point.clientX - press.x, point.clientY - press.y) > 10)) cancel();
+    }, {passive:true});
+    main.addEventListener('touchend', event => {
+      cancel();
+      if (customRange && event.cancelable) event.preventDefault();
+    }, {passive:false});
+    main.addEventListener('touchcancel', cancel);
+    main.addEventListener('contextmenu', event => {
+      if (event.target.closest('[data-lf-menu-ignore]') && (matchMedia('(any-pointer: coarse)').matches || active)) event.preventDefault();
+    });
+    const reposition = () => {
+      if (dialog.open || toolbar.hidden) return;
+      if (customRange) paintSelection();
+      else if (selection()?.rangeCount && !selection().isCollapsed) showTools(selection().getRangeAt(0).getBoundingClientRect());
+      else clear();
+    };
+    window.addEventListener('scroll', reposition, {passive:true});
+    window.addEventListener('resize', reposition);
+    window.visualViewport?.addEventListener('resize', reposition);
   }
 
   function init(settings) {
@@ -142,9 +270,9 @@ const QTReader = (() => {
     toolbar.className = 'qt-tools';
     toolbar.hidden = true;
     toolbar.setAttribute('aria-label', '閱讀標記');
-    toolbar.innerHTML = Object.entries(colors).map(([label, color]) =>
-      `<button type="button" data-color="${color}" style="--mark:#${color}" aria-label="${label}色反白">${label}</button>`).join('')
-      + '<button type="button" data-action="note">備註</button><button type="button" data-action="copy">複製</button>';
+    toolbar.innerHTML = '<div class="qt-swatches">' + Object.entries(colors).map(([label, color]) =>
+      `<button type="button" data-color="${color}" style="--mark:#${color}" aria-label="${label}色反白"></button>`).join('')
+      + '</div><button type="button" data-action="note">Add note</button><button type="button" data-action="copy">Copy</button>';
     document.body.appendChild(toolbar);
     document.body.insertAdjacentHTML('beforeend', `
       <div id="qt-reader-status" class="qt-tools" role="status" hidden></div>
@@ -155,6 +283,7 @@ const QTReader = (() => {
         <div class="actions"><button class="action" value="save">儲存</button><button class="action" value="cancel">取消</button></div>
       </form></dialog>`);
     dialog = $('qt-note');
+    enableTouchSelection();
     const note = dialog.querySelector('textarea');
     toolbar.addEventListener('pointerdown', event => event.preventDefault());
     toolbar.addEventListener('click', async event => {
@@ -182,7 +311,7 @@ const QTReader = (() => {
     });
     document.addEventListener('selectionchange', readSelection);
     document.addEventListener('pointerdown', event => {
-      if (!event.target.closest('.qt-tools, .qt-mark, dialog')) clear();
+      if (!event.target.closest('.qt-tools, .qt-mark, .qt-selection-handle, dialog')) clear();
       if (!event.target.closest('#date-picker')) $('date-picker').open = false;
     });
     document.addEventListener('keydown', event => {
