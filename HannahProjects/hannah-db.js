@@ -88,7 +88,7 @@
     const b = e.target.closest('button[data-act]'); if (!b) return;
     setMenu(false);
     if (b.dataset.act === 'logout') { if (confirm('確定要登出嗎？')) { await auth.signOut(); toast('已登出'); } }
-    else if (b.dataset.act === 'users') location.href = '../admin-users.html?back=HannahProjects/home';
+    else if (b.dataset.act === 'users') location.href = '../admin-users.html?back=HannahProjects/';
   });
 
   // ---------- Add Artwork：分類 → 圖示 → 拍照（網站內相機）→ 旋轉／裁切 → 上傳 ----------
