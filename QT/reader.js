@@ -442,7 +442,7 @@ const QTReader = (() => {
       if (!entry) return;
       const button = $('export-word');
       button.disabled = true;
-      button.textContent = '匯出中…';
+      button.setAttribute('aria-busy', 'true');
       try {
         const mode = options.getMode();
         refresh(mode);
@@ -458,7 +458,7 @@ const QTReader = (() => {
         status('無法匯出 Word，請稍後再試。');
       } finally {
         button.disabled = false;
-        button.textContent = button.dataset.label;
+        button.removeAttribute('aria-busy');
       }
     });
   }

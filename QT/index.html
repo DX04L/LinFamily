@@ -141,14 +141,19 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
-<link rel="stylesheet" href="reader.css?v=5">
+<link rel="stylesheet" href="reader.css?v=6">
 </head>
 <body>
 <header><div class="bar shell">
-  <div class="qt-brand-group"><a id="home" class="brand" data-lf-menu-trigger href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a><small id="qt-welcome" hidden></small></div>
-  <div class="modes" role="group" aria-label="閱讀模式">
+  <div class="qt-brand-group"><a id="home" class="brand" data-lf-menu-trigger href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a><span id="qt-welcome" hidden></span></div>
+  <div class="qt-header-actions">
+    <button id="export-word" type="button" aria-label="匯出 Word" title="匯出 Word" hidden>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></svg>
+    </button>
+    <div class="modes" role="group" aria-label="閱讀模式">
     <button type="button" data-mode="literary" aria-pressed="true">大人</button>
     <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
+    </div>
   </div>
 </div></header>
 <div id="reading-sheet">
@@ -162,7 +167,6 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
           <div id="date-list" aria-label="最近七天的經文"></div>
         </details>
         <button id="next" disabled aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-        <button type="button" id="export-word" hidden>匯出 Word</button>
       </div>
       <div class="title-row">
         <h1 id="hero-title">每日靈修</h1>
@@ -206,7 +210,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <div class="actions"><a class="action" id="manual-ai" target="_blank" rel="noopener noreferrer">前往 AI 對話</a><form method="dialog"><button class="action">關閉</button></form></div>
 </dialog>
 <noscript><p class="shell">請啟用 JavaScript 以閱讀每日靈修內容。</p></noscript>
-<script src="reader.js?v=6"></script>
+<script src="reader.js?v=7"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
@@ -366,6 +370,11 @@ function setTheme(value) {
 
 function updateView() {
   renderView(current);
+  const exportButton = $('export-word');
+  exportButton.hidden = !current;
+  const label = mode === 'kids-cute' ? '匯出兒童 Word' : '匯出大人 Word';
+  exportButton.setAttribute('aria-label', label);
+  exportButton.title = label;
   QTReader.refresh();
 }
 
@@ -375,10 +384,6 @@ function renderView(data, node = $) {
   node('kids').hidden = !data || !isKids;
   node('warning-banner').hidden = isKids || !data?.mismatch_warning;
   node('warning-banner').textContent = data?.mismatch_warning || '';
-  node('export-word').hidden = !data;
-  const exportLabel = isKids ? '匯出兒童 Word' : '匯出大人 Word';
-  node('export-word').dataset.label = exportLabel;
-  if (!node('export-word').disabled) node('export-word').textContent = exportLabel;
   node('hero-title').textContent = !data ? '每日靈修' : data.scripture.reference;
   if (isKids && data?.kids_content?.bible_story_title_ruby) {
     node('hero-title').innerHTML = rubyMarkup(data.kids_content.bible_story_title_ruby);
@@ -415,10 +420,10 @@ function getDatabase() {
 
 async function watchLinFamilyAuth() {
   const greetings = [
-    '歡迎回來，一起讀經吧。',
+    '一起讀經吧。',
     '讓我們到上帝面前安靜。',
     '把今天交託給神，一起讀經。',
-    '歡迎回來，留一點時間聆聽神的話。',
+    '留一點時間聆聽神的話。',
     '一起慢下來，默想今天的經文。',
   ];
   const welcome = $('qt-welcome');
@@ -434,7 +439,12 @@ async function watchLinFamilyAuth() {
       welcome.hidden = !signedIn;
       if (signedIn) {
         const day = Math.floor(Date.parse(taipeiDate()) / 86400000);
-        welcome.textContent = greetings[day % greetings.length];
+        const name = user.displayName?.trim() || '朋友';
+        const hour = Number(new Intl.DateTimeFormat('en-GB', {
+          timeZone:'Asia/Taipei',hour:'2-digit',hourCycle:'h23',
+        }).format());
+        const greeting = hour >= 5 && hour < 12 ? '早安' : '歡迎';
+        welcome.textContent = `｜${greeting}，${name}。${greetings[day % greetings.length]}`;
         QTReader.setAccount({
           subscribe: async (entry, next, error) => {
             const db = await getDatabase();
