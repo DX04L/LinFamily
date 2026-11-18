@@ -20,7 +20,7 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# 66 卷聖經標準名稱對照表：(全名/常見別名) -> (信望愛簡稱, 英文標準書卷名)
+# 66 卷聖經標準名稱對照表
 BOOK_MAP = {
     "創世記": ("創", "Genesis"), "創": ("創", "Genesis"),
     "出埃及記": ("出", "Exodus"), "出": ("出", "Exodus"),
@@ -90,7 +90,11 @@ BOOK_MAP = {
     "啟示錄": ("啟", "Revelation"), "啟": ("啟", "Revelation")
 }
 
-# 3. 台灣標準注音轉換函式
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+
 def to_zhuyin_ruby(text: str) -> str:
     if not text:
         return ""
@@ -108,19 +112,17 @@ def to_zhuyin_ruby(text: str) -> str:
             result.append(char)
     return "".join(result)
 
-# 4. 正規表示式自動解析經文出處 (過濾網站固定標語並優先抓取完整範圍)
 def parse_reference_from_text(text: str):
     # 過濾掉 Duranno 網站頁首固定的標語金句（阿摩司書 8:11）
     cleaned = re.sub(r"阿摩司書\s*8\s*[:：]\s*11", "", text)
 
     books_sorted = sorted(BOOK_MAP.keys(), key=len, reverse=True)
     books_pattern = "|".join(re.escape(b) for b in books_sorted)
-    pattern = rf"({books_pattern})\s*(\d+)\s*[:：]\s*(\d+(?:\s*[-–~]\s*\d+)?)"
+    pattern = rf"({books_pattern})\s*(\d+)\s*(?:[:：]|章\s*)\s*(\d+(?:\s*[-–~]\s*\d+)?)"
     matches = list(re.finditer(pattern, cleaned))
     if not matches:
-        raise ValueError(f"無法從網頁文字解析出經文座標，前 300 字：{cleaned[:300]}")
+        return None
 
-    # 優先選擇「有節數範圍（包含 - ）」的匹配項，避免誤抓單節金句
     chosen = next((m for m in matches if "-" in m.group(3) or "–" in m.group(3) or "~" in m.group(3)), matches[0])
 
     book_raw = chosen.group(1)
@@ -136,40 +138,120 @@ def parse_reference_from_text(text: str):
         "sec": sec
     }
 
-# 5. 抓取今日靈修進度（優先 Duranno，備用 CGN YouTube）
-def fetch_daily_source():
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"}
+def fetch_duranno():
     try:
-        resp = requests.get("https://www.duranno.tw/livinglife/index.php/daily", headers=headers, timeout=15)
+        resp = requests.get("https://www.duranno.tw/livinglife/index.php/daily", headers=HEADERS, timeout=15)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
-        page_text = soup.get_text(" ", strip=True)
-        ref_info = parse_reference_from_text(page_text)
-        return {"source_name": "活潑的生命", "video_url": "", "ref_info": ref_info}
+        extra_attrs = " ".join(
+            el.get("title", "") + " " + el.get("alt", "") + " " + el.get("content", "")
+            for el in soup.find_all(["a", "img", "meta", "div", "span"])
+        )
+        combined = soup.get_text(" ", strip=True) + " " + extra_attrs
+        ref = parse_reference_from_text(combined)
+        return ref, None if ref else "Duranno 頁面未解析出經文範圍"
     except Exception as e:
-        print(f"主來源 Duranno 抓取失敗 ({e})，切換至備用 YouTube 頻道...")
+        return None, f"Duranno 連線失敗 ({e})"
 
-    yt_handle_url = "https://www.youtube.com/@CGNChinese_%E6%B4%BB%E6%BD%91%E7%9A%84%E7%94%9F%E5%91%BD"
-    html = requests.get(yt_handle_url, headers=headers, timeout=15).text
-    match = re.search(r'"channelId":"(UC[\w-]+)"', html)
-    if not match:
-        raise RuntimeError("無法取得備用 YouTube 頻道 ID")
-    channel_id = match.group(1)
+def fetch_youtube():
+    # 多組頻道 URL 備援，避免單一 handle 頁面改版抓不到 channelId
+    urls = [
+        "https://www.youtube.com/@CGNChinese_%E6%B4%BB%E6%BD%91%E7%9A%84%E7%94%9F%E5%91%BD/videos",
+        "https://www.youtube.com/@CGNChinese/videos"
+    ]
+    channel_id = None
+    for u in urls:
+        try:
+            html = requests.get(u, headers=HEADERS, timeout=15).text
+            m = re.search(r'"channelId":"(UC[\w-]{22})"', html) or re.search(r'channel_id=(UC[\w-]{22})', html)
+            if m:
+                channel_id = m.group(1)
+                break
+        except Exception:
+            continue
 
-    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-    rss_xml = requests.get(rss_url, headers=headers, timeout=15).text
-    root = ET.fromstring(rss_xml)
-    ns = {"atom": "http://www.w3.org/2005/Atom"}
-    latest_entry = root.find("atom:entry", ns)
-    title = latest_entry.find("atom:title", ns).text
-    link = latest_entry.find("atom:link", ns).attrib["href"]
-    ref_info = parse_reference_from_text(title)
-    return {"source_name": "活潑的生命 (YouTube)", "video_url": link, "ref_info": ref_info}
+    if not channel_id:
+        return None, "", "YouTube 無法取得頻道 ID"
 
-# 6. 從 BibleGateway 抓取英文經文 (NIV 或 NIrV)，若被擋則自動用免費 API 補上
+    try:
+        rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+        rss_xml = requests.get(rss_url, headers=HEADERS, timeout=15).text
+        root = ET.fromstring(rss_xml)
+        ns = {"atom": "http://www.w3.org/2005/Atom"}
+        entries = root.findall("atom:entry", ns)
+        if not entries:
+            return None, "", "YouTube RSS 無影片紀錄"
+
+        # 優先找標題含今天日期（如 11/18 或 11月18日）或最新一集含經文座標的影片
+        month = int(TODAY_STR[5:7])
+        day = int(TODAY_STR[8:10])
+        date_hints = [f"{month}/{day}", f"{month:02d}/{day:02d}", f"{month}月{day}日", f"{month:02d}{day:02d}"]
+
+        chosen_entry = None
+        for entry in entries[:6]:
+            t = entry.find("atom:title", ns).text or ""
+            if any(h in t for h in date_hints) and parse_reference_from_text(t):
+                chosen_entry = entry
+                break
+        if not chosen_entry:
+            for entry in entries[:5]:
+                t = entry.find("atom:title", ns).text or ""
+                if parse_reference_from_text(t):
+                    chosen_entry = entry
+                    break
+
+        if not chosen_entry:
+            latest_t = entries[0].find("atom:title", ns).text
+            return None, "", f"YouTube 最新影片標題無法解析經文：{latest_t}"
+
+        title = chosen_entry.find("atom:title", ns).text
+        link = chosen_entry.find("atom:link", ns).attrib["href"]
+        return parse_reference_from_text(title), link, None
+    except Exception as e:
+        return None, "", f"YouTube RSS 讀取失敗 ({e})"
+
+def fetch_and_verify_sources():
+    dur_ref, dur_err = fetch_duranno()
+    yt_ref, yt_link, yt_err = fetch_youtube()
+
+    print(f"[比對報告] Duranno: {dur_ref['reference'] if dur_ref else dur_err}")
+    print(f"[比對報告] YouTube: {yt_ref['reference'] if yt_ref else yt_err}")
+
+    if not dur_ref and not yt_ref:
+        raise RuntimeError(f"雙來源皆抓取失敗！Duranno: {dur_err} | YouTube: {yt_err}")
+
+    warning_msg = ""
+    if dur_ref and yt_ref:
+        if dur_ref["reference"] == yt_ref["reference"]:
+            print(f"✅ 雙來源比對完全一致：{dur_ref['reference']}")
+            chosen_ref = dur_ref
+            source_name = "活潑的生命（官網 & YouTube 驗證一致）"
+        else:
+            warning_msg = f"⚠️ 經文來源比對不一致：Duranno 官網為「{dur_ref['reference']}」，YouTube 頻道為「{yt_ref['reference']}」，請留意核對。"
+            print(f"::warning::{warning_msg}")
+            chosen_ref = dur_ref
+            source_name = "活潑的生命（來源存在差異）"
+    elif dur_ref:
+        warning_msg = f"⚠️ 僅抓到 Duranno 官網進度（YouTube 狀態：{yt_err}），未完成交叉比對。"
+        print(f"::warning::{warning_msg}")
+        chosen_ref = dur_ref
+        source_name = "活潑的生命 (Duranno)"
+    else:
+        warning_msg = f"⚠️ 僅抓到 YouTube 頻道進度（Duranno 狀態：{dur_err}），未完成交叉比對。"
+        print(f"::warning::{warning_msg}")
+        chosen_ref = yt_ref
+        source_name = "活潑的生命 (YouTube)"
+
+    return {
+        "source_name": source_name,
+        "video_url": yt_link,
+        "ref_info": chosen_ref,
+        "mismatch_warning": warning_msg
+    }
+
 def fetch_english_verses(eng_reference: str, version: str) -> dict:
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        **HEADERS,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9"
     }
@@ -207,7 +289,6 @@ def fetch_english_verses(eng_reference: str, version: str) -> dict:
     except Exception as e:
         print(f"BibleGateway {version} 抓取失敗 ({e})")
 
-    # 備援：若 BibleGateway 阻擋雲端 IP，自動改用免費開放聖經 API (WEB 譯本) 補上英文經文
     try:
         api_url = f"https://bible-api.com/{requests.utils.quote(eng_reference)}"
         r = requests.get(api_url, timeout=12).json()
@@ -221,7 +302,6 @@ def fetch_english_verses(eng_reference: str, version: str) -> dict:
         print(f"備援英文 API 失敗 ({e})")
     return {}
 
-# 7. 組合中英文經文 (和合本 + 成人NIV + 兒童注音 + 兒童NIrV)
 def get_scripture_data(ref_info: dict):
     fhl_url = "https://bible.fhl.net/json/qb.php"
     params = {
@@ -249,7 +329,6 @@ def get_scripture_data(ref_info: dict):
             "nirv": nirv_map.get(v_num, "")
         })
 
-    # 前後各 1 節
     context_before = ""
     context_after = ""
     if verses:
@@ -274,18 +353,17 @@ def get_scripture_data(ref_info: dict):
     }
 
 def main():
-    print(f"開始執行 {TODAY_STR} 每日 QT 經文抓取與注音排版...")
-    source = fetch_daily_source()
+    print(f"開始執行 {TODAY_STR} 每日 QT 雙來源比對與經文排版...")
+    source = fetch_and_verify_sources()
     ref_info = source["ref_info"]
-    print(f"成功解析今日進度：{ref_info['reference']} ({ref_info['eng_reference']})")
 
     scripture = get_scripture_data(ref_info)
 
-    # 組合無 AI 階段的預設神學探討提問與兒童注音經文
     doc_data = {
         "date": TODAY_STR,
         "source_channel": source["source_name"],
         "video_url": source["video_url"],
+        "mismatch_warning": source["mismatch_warning"],
         "scripture": scripture,
         "adult_content": {
             "book_background": f"今日靈修進度為《{ref_info['reference']}》（{ref_info['eng_reference']}）。點擊下方按鈕可隨時與 AI 深入探討本段經文的歷史背景與神學意義。",
