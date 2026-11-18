@@ -653,8 +653,20 @@
       showApps();
     }
 
+    function normalizeHannahUrl(value) {
+      if (!/HannahProjects\/home(?:\.html)?(?:[?#]|$)/.test(value)) return value;
+      try {
+        const url = new URL(value, location.href);
+        const home = new URL(HANNAH.url, location.href);
+        if (url.origin === home.origin &&
+            (url.pathname === home.pathname + 'home' || url.pathname === home.pathname + 'home.html')) {
+          return HANNAH.url + url.search + url.hash;
+        }
+      } catch (_) {}
+      return value;
+    }
     function safeUrl(value) {
-      const v = String(value || '').trim();
+      const v = normalizeHannahUrl(String(value || '').trim());
       if (!v || v.startsWith('//')) return '';
       if (/^[a-z][a-z0-9+.-]*:/i.test(v)) { try { const u = new URL(v); return /^https?:$/.test(u.protocol) ? u.href : ''; } catch (_) { return ''; } }
       // 看起來像網域（example.com、www.xxx）就補 https://；其他當作站內路徑（例如 HannahProjects/）
@@ -825,7 +837,7 @@
       const app = id ? apps.find(a => a.id === id) : null;
       editingId = app ? app.id : null; if (app) { addPos = null; cabinetOnly = false; }
       $('lfAppTitle').textContent = app ? '修改 App' : '新增 App';
-      $('lfAppUrl').value = app ? app.url || '' : '';
+      $('lfAppUrl').value = app ? normalizeHannahUrl(app.url || '') : '';
       $('lfAppName').value = app ? app.name : '';
       const curIcon = app && !isGoogleIcon(app.icon || app.iconUrl) ? (app.icon || app.iconUrl || '') : '';
       $('lfAppIcon').value = isDataIcon(curIcon) ? '' : curIcon;
