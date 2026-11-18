@@ -1,424 +1,1184 @@
-<!doctype html>
-<html lang="zh-Hant-TW" data-theme="literary">
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f9f7f2">
-<title>Daily QT · 每日靈修</title>
-<link id="favicon" rel="icon" type="image/svg+xml" href="icons/adult.svg">
-<link id="touch-icon" rel="apple-touch-icon" sizes="180x180" href="icons/adult-touch.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&display=swap">
-<style>
-:root{
-  --bg:#f9f7f2;--ink:#2c2c2a;--muted:#5b7065;--accent:#9a5737;--line:#ded9cb;--surface:#fffdf7d9;
-  --panel:#f1eee3;--button:#30483c;--on-button:#fffdf4;--annotation:#87684e;--radius:12px;
-  --shadow:0 14px 50px #3c38260a;--heading:"Noto Serif TC",serif;--body:"Noto Sans TC",sans-serif;
-}
-[data-theme="kids-cute"]{
-  --bg:#fff5f7;--ink:#52394d;--muted:#72516a;--accent:#a43c66;--line:#f0d8e5;--surface:#fffafde8;
-  --panel:#fff0f6;--button:#ff7597;--on-button:#421b32;--annotation:#885776;--radius:28px;
-  --shadow:0 14px 45px #a8457613;--heading:"Noto Sans TC",sans-serif;
-}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);transition:background-color .25s,color .25s}
-button,a{font:inherit}
-button{cursor:pointer}
-button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
-a{color:var(--accent)}
-.shell{width:min(1136px,calc(100% - 64px));margin:auto}
-header{border-bottom:1px solid var(--line)}
-.bar,.brand,.date-nav,.modes{display:flex;align-items:center}
-.bar{min-height:76px;justify-content:space-between;gap:16px}
-.brand{gap:11px;font-family:var(--heading);font-weight:700;text-decoration:none;color:var(--ink)}
-.brand img{width:36px;height:36px}
-.brand span{font-size:14px}
-.modes{padding:4px;gap:4px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
-.modes button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:8px 17px;font-size:14px;font-weight:700}
-.modes [aria-pressed="true"]{color:var(--on-button);background:var(--button)}
-.hero{display:grid;grid-template-columns:1fr 1.32fr;align-items:center;gap:18px;min-height:440px;padding:22px 0}
-.date-nav{gap:10px;color:var(--muted);font-size:13px;font-weight:600}
-.date-nav button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:19px;line-height:1}
-.eyebrow{color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.15em;margin:26px 0 12px}
-h1,h2,h3{font-family:var(--heading);line-height:1.42;margin:0}
-h1{font-size:clamp(34px,5vw,62px);letter-spacing:.02em;font-weight:600}
-h2{font-size:clamp(23px,3vw,32px)}
-h3{font-size:19px}
-.lead{font-family:var(--heading);font-size:clamp(15px,2vw,19px);line-height:1.9;color:var(--muted);margin:18px 0 0}
-.art svg{display:block;width:100%;max-height:480px}
-.kids-art,[data-theme="kids-cute"] .adult-art{display:none}
-[data-theme="kids-cute"] .kids-art{display:block}
-.content{display:grid;gap:22px;margin:0 auto 60px}
-.card{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);backdrop-filter:blur(12px);padding:clamp(20px,4vw,40px)}
-.card .eyebrow{margin-top:0}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-.verses{font:clamp(16px,2.5vw,21px)/1.95 var(--heading);list-style:none;padding:0}
-.verses li{display:grid;grid-template-columns:2ch 1fr;gap:13px;margin:8px 0}
-.verses small{color:var(--accent);font:600 12px/3 var(--body)}
-p{line-height:1.85}
-details{border-top:1px solid var(--line);padding-top:16px;color:var(--muted)}
-summary{cursor:pointer;font-weight:600;width:fit-content}
-details[open] .context{animation:appear .25s ease-out}
-@keyframes appear{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
-.point{padding:20px 0;border-bottom:1px solid var(--line)}
-.point:last-child{border-bottom:0;padding-bottom:0}
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-.action{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:14px;font-weight:700;text-decoration:none}
-button:hover,.action:hover{filter:brightness(.95)}
-[data-theme="kids-cute"] button:active{transform:scale(.94)}
-.story{background:linear-gradient(145deg,#fffbeb,#f3e8ff)}
-.prayer{padding:18px 20px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line)}
-.zhuyin{font-size:clamp(18px,3.5vw,25px);line-height:2.4}
-ruby{ruby-position:inter-character;ruby-align:center}
-rt{font-size:.5em;color:var(--annotation);letter-spacing:0;writing-mode:vertical-rl;text-orientation:upright}
-@supports not (ruby-position:inter-character){
-  ruby{display:inline-flex;align-items:center;vertical-align:middle;gap:.08em;line-height:1}
-  rt{display:block;line-height:1;min-height:3.9em;text-align:center;white-space:nowrap}
-}
-#status{margin:0 0 40px}
-#toast{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:1;width:max-content;max-width:calc(100% - 32px);padding:13px 20px;background:var(--button);color:var(--on-button);border-radius:var(--radius);box-shadow:var(--shadow)}
-dialog{width:min(490px,calc(100% - 32px));border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);color:var(--ink);padding:24px}
-dialog::backdrop{background:#241a2559}
-textarea{width:100%;min-height:110px;font:inherit;margin:12px 0}
-footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:13px}
-@media(max-width:670px){
-  .shell{width:calc(100% - 32px)}
-  .hero{grid-template-columns:1fr;gap:0;min-height:0;padding:24px 0 17px}
-  .hero-copy{padding:0 6px}
-  .art svg{max-height:300px}
-  .split{grid-template-columns:1fr}
-  .bar{min-height:66px;gap:8px}
-  .modes button{padding:6px 11px}
-}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>LinFamily</title>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="favicon.png?v=3">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LinFamily">
+  <meta name="theme-color" content="#161716" id="metaThemeColor">
+  <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__lfBIP=e;});</script><!-- 安裝事件可能很早就來，先接住 -->
+  <link rel="stylesheet" href="css/entrance.css?v=17">
+
+  <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
+  <script>
+    (function () {
+      var v = null; try { v = localStorage.getItem('linfamily_theme') || localStorage.getItem('linfamily_pixel_theme'); } catch (_) {}
+      var dark = v ? v === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', dark);
+      document.getElementById('metaThemeColor').setAttribute('content', dark ? '#161716' : '#E6E7E9');
+    })();
+  </script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* 字型與 DX 相同：英文 Arial（粗體用 Arial Bold）、中文微軟正黑體 */
+    @font-face { font-family:"CLC Arial"; src:local("Arial"),local("ArialMT"); font-weight:100 549; }
+    @font-face { font-family:"CLC Arial"; src:local("Arial Bold"),local("Arial-BoldMT"); font-weight:550 1000; }
+
+    /* 色系：墨黑 #1C1C1C、松綠 #4E8B7E、鼠尾草綠 #8FBFB0、奶油米 #EADFC8、淺灰 #E6E7E9（底色） */
+    :root {
+      --ink:#1C1C1C; --pine:#4E8B7E; --sage:#8FBFB0; --cream:#EADFC8; --cloud:#E6E7E9;
+      --teal:var(--pine);
+      --bg:var(--cloud); --surface:#FFFFFF; --text:var(--ink); --muted:#5E6B67;
+      --border:rgba(28,28,28,.12); --btn:rgba(28,28,28,.06); --btn-h:rgba(28,28,28,.11);
+      --shadow:0 18px 40px rgba(28,28,28,.16);
+    }
+    html.dark {
+      --teal:var(--sage);
+      --bg:#161716; --surface:#161924; --text:#F1F1EF; --muted:#A8B5B0;
+      --border:rgba(255,255,255,.1); --btn:rgba(255,255,255,.05); --btn-h:rgba(255,255,255,.1);
+      --shadow:0 20px 45px rgba(0,0,0,.55);
+      color-scheme:dark;
+    }
+    * { box-sizing:border-box; }
+    html, body { margin:0; }
+    body {
+      min-height:100vh; min-height:100dvh; display:flex; flex-direction:column;
+      background:var(--bg); color:var(--text);
+      font-family:"CLC Arial", Arial, "Microsoft JhengHei", "微軟正黑體", "PingFang TC", "Noto Sans TC", sans-serif;
+      -webkit-font-smoothing:antialiased; transition:background-color .3s, color .3s;
+    }
+    button, input, select { font:inherit; color:inherit; }
+    a { color:inherit; }
+
+    /* ---------- 頂部（沒有外框；左：日期＋標題，右：照 DX 的安裝與管理員按鈕） ---------- */
+    .lf-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding:calc(16px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+      width:100%; margin:0 auto; }
+    .lf-date { margin:0; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.02em; }
+    .lf-title { margin:2px 0 0; font-size:clamp(24px, 6.6vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
+    /* 右上角按鈕位置照 DX 的 Header：離上緣 6px（DX 的 Header 高 46／48px、按鈕 34／36px 置中），離右緣 14／20／24／32px，貼齊整個畫面右邊 */
+    .lf-right { display:flex; align-items:center; gap:6px; flex:none; position:fixed; z-index:40; top:calc(6px + env(safe-area-inset-top)); right:max(14px, env(safe-area-inset-right)); }
+    @media (min-width:640px) { .lf-right { right:max(20px, env(safe-area-inset-right)); gap:7.1px; } } /* DX 的 gap-1.5 在寬畫面量起來是 7.1px */
+    @media (min-width:1024px) { .lf-right { right:24px; } }
+    @media (min-width:1440px) { .lf-right { right:32px; } }
+    /* 以下尺寸、顏色與 DX 的 Header 按鈕／管理員下拉選單相同 */
+    .lf-btn { width:34px; min-width:34px; height:34px; border-radius:9px; font-size:15px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+      cursor:pointer; position:relative; background:rgba(226,232,240,.7); color:#334155; border:1px solid rgba(203,213,225,.6); transition:background .15s, transform .1s; }
+    .lf-btn:hover { background:rgba(203,213,225,.7); }
+    .lf-btn:active { transform:scale(.95); }
+    html.dark .lf-btn { background:rgba(255,255,255,.05); color:#cbd5e1; border-color:rgba(255,255,255,.1); }
+    html.dark .lf-btn:hover { background:rgba(255,255,255,.1); }
+    .lf-install { width:auto; padding:0 10px; font-size:12px; font-weight:600; gap:4px; line-height:1; white-space:nowrap; } /* line-height:1：字在按鈕裡上下置中 */
+    .lf-install > span { display:block; }
+    .lf-install[hidden] { display:none; }
+    .lf-dot { position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:#fbbf24; animation:lfPulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+    .lf-dot[hidden] { display:none; }
+    @keyframes lfPulse { 50% { opacity:.5; } }
+    @media (min-width:640px) {
+      .lf-btn { width:36px; min-width:36px; height:36px; border-radius:10px; font-size:16px; }
+      .lf-install { width:auto; height:36px; font-size:13px; padding:0 12px; }
+    }
+    .lf-menu { position:absolute; right:0; top:100%; margin-top:7.5px; width:210px; padding:7.5px 0; border-radius:11.25px; z-index:50; text-align:left;
+      background:#fff; border:1px solid #e2e8f0; box-shadow:0 25px 50px -12px rgba(0,0,0,.25); }
+    html.dark .lf-menu { background:#161924; border-color:rgba(255,255,255,.1); }
+    .lf-menu[hidden] { display:none; }
+    .lf-menu .lf-menu-head { padding:7.5px 15px; font-size:11.25px; line-height:15px; font-weight:700; color:#94a3b8; border-bottom:1px solid #f1f5f9;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    html.dark .lf-menu .lf-menu-head { border-bottom-color:rgba(255,255,255,.05); }
+    .lf-menu button { display:block; width:100%; padding:9.375px 15px; border:0; background:none; text-align:left; font-size:13.125px; line-height:18.75px; font-weight:600;
+      color:#334155; cursor:pointer; transition:background .15s; }
+    html.dark .lf-menu button { color:#e2e8f0; }
+    .lf-menu button:hover { background:#f1f5f9; }
+    html.dark .lf-menu button:hover { background:rgba(255,255,255,.05); }
+    @media (min-width:640px) { .lf-menu button { font-size:15px; } }
+    .lf-menu button[hidden] { display:none; }
+    .lf-menu .lf-sep { border-top:1px solid #f1f5f9; margin:5.625px 0; }
+    html.dark .lf-menu .lf-sep { border-top-color:rgba(255,255,255,.05); }
+    .lf-menu .lf-danger { color:#e11d48; font-weight:700; }
+    html.dark .lf-menu .lf-danger { color:#fb7185; }
+    .lf-menu .lf-danger:hover { background:#fff1f2; }
+    html.dark .lf-menu .lf-danger:hover { background:rgba(244,63,94,.1); }
+    html.dark .lf-ic-moon, html:not(.dark) .lf-ic-sun { display:none; }
+
+    /* ---------- 主畫面 ---------- */
+    main { flex:1; width:100%; margin:0 auto; padding:18px max(20px, env(safe-area-inset-left)) 40px; }
+    @media (min-width:1024px) { .lf-top, main { padding-left:32px; padding-right:32px; } } /* 電腦版全寬，左右邊距跟右上角按鈕一樣 32px */
+    .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0 24px; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
+    .lf-tabs button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
+    .lf-tabs button[aria-selected="true"] { background:var(--pine); color:#fff; }
+    .lf-newdot { display:inline-block; width:8px; height:8px; margin-left:5px; vertical-align:top; border-radius:50%; background:#E5484D; }
+    .lf-newdot[hidden] { display:none; }
+    .lf-all button { border:0; border-radius:9999px; padding:6px 14px; font:inherit; font-size:13px; font-weight:700; background:var(--pine); color:#fff; cursor:pointer; }
+    .lf-all-note { font-size:13px; opacity:.7; margin:0 0 12px; }
+    .lf-all { display:grid; gap:8px; }
+    .lf-all-row { display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:14px; background:var(--btn); }
+    .lf-all-row a { flex:1; display:flex; align-items:center; gap:12px; color:inherit; text-decoration:none; min-width:0; font-weight:700; }
+    .lf-all-row .lf-icon { width:40px; height:40px; flex:none; }
+    .lf-all-row button:disabled { background:var(--btn-h); color:inherit; opacity:.7; cursor:default; }
+
+    /* App 格子：手機 4 欄、平板 6 欄、電腦 8 欄 */
+    /* 整個畫面都放 App：一行放得下幾個就放幾個，超過就換下一行 */
+    #lfApps { display:grid; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:22px 16px; }
+    @media (min-width:640px) { #lfApps { grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:26px 22px; } }
+    #lfApps .slot-cell { aspect-ratio:auto; }
+    .lf-app { display:flex; flex-direction:column; align-items:center; gap:7px; text-decoration:none; color:var(--text); -webkit-tap-highlight-color:transparent; }
+    .lf-icon { width:100%; aspect-ratio:1; border-radius:22%; display:grid; place-items:center; overflow:hidden; transition:transform .2s; }
+    .lf-app:hover .lf-icon { transform:scale(1.05); }
+    .lf-app:active .lf-icon { transform:scale(.95); }
+    .lf-icon.is-emoji { background:var(--pine); font-size:clamp(26px, 8vw, 38px); }
+    .lf-icon.is-mono { color:#fff; font-weight:800; font-size:clamp(18px, 5.4vw, 26px); letter-spacing:-.02em; }
+    .lf-iconrow { display:flex; gap:10px; align-items:center; }
+    .lf-iconrow input { flex:1; min-width:0; }
+    #lfAppPreview { width:44px; flex:none; }
+    #lfAppPreview .lf-icon.is-mono { font-size:16px; } #lfAppPreview .lf-icon.is-emoji { font-size:24px; }
+    .lf-icon.is-img img { width:100%; height:100%; object-fit:cover; }
+    .lf-icon img { display:block; pointer-events:none; }
+    .lf-name { font-size:12.5px; font-weight:700; line-height:1.25; text-align:center; max-width:100%; word-break:keep-all; overflow-wrap:anywhere; }
+    @media (min-width:640px) { .lf-name { font-size:13.5px; } }
+    .lf-slot { aspect-ratio:1; border-radius:22%; border:2px dashed var(--border); color:var(--muted); background:transparent; display:grid; place-content:center;
+      font-size:26px; font-weight:300; margin-bottom:25px; opacity:.75; }
+    html:not(.dark) .lf-slot { border-color:rgba(14,44,78,.22); }
+    .lf-slot.is-admin { cursor:pointer; }
+    .lf-slot.is-admin:hover { border-color:var(--teal); color:var(--teal); opacity:1; }
+    .lf-remove { position:absolute; top:-9px; left:-9px; width:34px; height:34px; display:grid; place-content:center; border:0; background:none; padding:0; cursor:pointer; z-index:2; }
+    .lf-remove span { width:22px; height:22px; border-radius:50%; background:#475569; box-shadow:0 1px 4px rgba(0,0,0,.35); display:grid; place-content:center; }
+    .lf-remove span::after { content:""; width:10px; height:2px; border-radius:2px; background:#fff; }
+    .lf-remove:hover span { background:#e11d48; }
+    .slot-floating .lf-name { visibility:hidden; }
+    .lf-hint { color:var(--muted); font-size:12.5px; margin-top:18px; }
+    .lf-hint[hidden] { display:none; }
+
+    /* ---------- 搜尋列（DX 輸入框樣式：圓角、細框、聚焦時松綠框） ---------- */
+    .lf-search { display:flex; align-items:center; gap:10px; height:48px; padding:0 8px 0 16px; margin-top:20px; max-width:520px; border-radius:16px;
+      background:var(--surface); border:1px solid var(--border); transition:border-color .15s; }
+    html.dark .lf-search { background:rgba(255,255,255,.04); }
+    .lf-search:focus-within { border-color:var(--pine); }
+    html.dark .lf-search:focus-within { border-color:var(--sage); }
+    .lf-search svg { width:18px; height:18px; flex:none; color:var(--muted); }
+    .lf-search input { flex:1; min-width:0; height:100%; border:0; outline:none; background:transparent; font-size:15px; color:var(--text); }
+    .lf-search input::placeholder { color:var(--muted); opacity:.75; }
+    .lf-search input::-webkit-search-cancel-button { display:none; }
+    .lf-search button { flex:none; width:32px; height:32px; border:0; border-radius:10px; background:none; color:var(--muted); cursor:pointer; font-size:16px; }
+    .lf-search button:hover { background:var(--btn); }
+    .lf-search button[hidden] { display:none; }
+    .lf-search[hidden] { display:none; }
+    .lf-tabbar { display:flex; align-items:center; gap:10px; margin:22px 0 24px; }
+    .lf-tabbar .lf-tabs { margin:0; }
+    .lf-tabs .lf-tab-icon { border:0; background:none; padding:8px 12px; border-radius:9999px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; }
+    .lf-tabs .lf-tab-icon svg { width:16px; height:16px; }
+    .lf-tabs .lf-tab-icon[aria-expanded="true"] { background:var(--pine); color:#fff; }
+    .lf-gear-wrap { margin-left:auto; position:relative; flex:none; }
+    @media (max-width:430px) { .lf-tabs button { padding:8px 12px; } .lf-tabs .lf-tab-icon { padding:8px 10px; } .lf-tabbar { gap:8px; } } /* 窄手機：一排放得下，不切到齒輪 */
+    @media (max-width:380px) { .lf-tabs button { padding:7px 10px; font-size:13px; } .lf-tabs .lf-tab-icon { padding:7px 8px; } .lf-tabbar { gap:6px; } .lf-tabbar .lf-search-btn { width:36px; height:36px; } }
+    /* 齒輪選單：間距、字級照管理員下拉選單（.lf-menu）；框線顏色跟著 LF 主題 */
+    .lf-gear-menu, html.dark .lf-gear-menu { border-color:var(--border); }
+    .lf-gear-menu .lf-menu-head, html.dark .lf-gear-menu .lf-menu-head { border-bottom-color:var(--border); }
+    /* 背景主題 */
+    .lf-wall { position:fixed; inset:0; z-index:-1; background:center / cover no-repeat; pointer-events:none; }
+    .lf-wall::after { content:''; position:absolute; inset:0; background:var(--bg); opacity:.62; } /* 遮罩：蓋一層底色，上面的東西才突出 */
+    /* 有桌布時：分頁框、按鈕改成霧面玻璃，App 名稱加淡淡的光暈，從桌布上浮出來 */
+    html.lf-has-wall .lf-tabs, html.lf-has-wall .lf-search-btn, html.lf-has-wall .lf-btn {
+      background:color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+    html.lf-has-wall .lf-icon { box-shadow:0 6px 16px rgba(0,0,0,.18); }
+    html.lf-has-wall .lf-name, html.lf-has-wall .lf-title, html.lf-has-wall .lf-date { text-shadow:0 0 6px var(--bg), 0 0 2px var(--bg); }
+    .lf-wall[hidden] { display:none; }
+    html.lf-has-wall body { background:transparent; }
+    html.lf-has-wall { background:var(--bg); }
+    .lf-look-sec { font-size:13px; font-weight:700; color:var(--muted); margin:4px 0 0; }
+    .lf-swatches { display:flex; flex-wrap:wrap; gap:10px; }
+    .lf-swatch { width:44px; height:44px; border-radius:50%; border:3px solid transparent; cursor:pointer; padding:0; box-shadow:0 0 0 1px var(--border) inset; }
+    .lf-swatch[aria-pressed="true"] { border-color:var(--text); }
+    .lf-walls { display:grid; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:8px; }
+    .lf-walls button { aspect-ratio:3/4; border-radius:10px; border:3px solid transparent; cursor:pointer; padding:0; background:center / cover no-repeat var(--btn); font-size:12px; font-weight:700; color:var(--muted); box-shadow:0 0 0 1px var(--border) inset; }
+    .lf-walls button[aria-pressed="true"] { border-color:var(--text); }
+    .lf-search-btn { flex:none; width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--btn); color:var(--muted); cursor:pointer; display:grid; place-items:center; }
+    .lf-search-btn svg { width:18px; height:18px; }
+    .lf-search-btn[hidden] { display:none; }
+    .lf-search-btn[aria-expanded="true"] { background:var(--pine); color:#fff; border-color:var(--pine); }
+    .lf-tabbar + .lf-search { margin:-12px 0 20px; }
+    @media (min-width:640px) { .lf-search { max-width:780px; } }
+    @media (min-width:1024px) { .lf-search { max-width:1040px; } }
+    #lfApps.is-searching > * { transition:opacity .15s; }
+    #lfApps.is-searching > .lf-dim { opacity:.15; pointer-events:none; }
+    .lf-noresult { color:var(--muted); font-size:13.5px; margin:-6px 0 14px; }
+    .lf-noresult[hidden] { display:none; }
+
+    /* ---------- 家庭空間配置 ---------- */
+    .lf-board { background:#fff; border-radius:18px; padding:10px; overflow-x:auto; border:1px solid var(--border); }
+    .lf-board svg { display:block; width:100%; min-width:620px; height:auto; }
+    .svg-hotspot { cursor:pointer; outline:none; }
+    .svg-hotspot .zone-box { transition:fill .2s, stroke .2s; }
+    .svg-hotspot:hover .zone-box, .svg-hotspot:focus-visible .zone-box { fill:#EEF5F2; }
+    .svg-hotspot.is-active .zone-box { fill:#E3EFEA; stroke:#4E8B7E; stroke-width:3; }
+    .svg-hotspot.is-active .zone-pin { fill:#4E8B7E; }
+    .lf-zone { margin-top:16px; padding:18px; border-radius:18px; background:var(--surface); border:1px solid var(--border); }
+    .lf-zone h3 { margin:0 0 10px; font-size:16px; }
+    .lf-zone ul { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+    .lf-zone li a { display:flex; gap:12px; align-items:flex-start; text-decoration:none; padding:10px; border-radius:12px; background:var(--btn); }
+    .lf-zone li a:hover { background:var(--btn-h); }
+    .lf-zone .lf-icon { width:44px; flex:none; font-size:22px; }
+    .lf-zone small { display:block; color:var(--muted); font-size:12.5px; line-height:1.5; margin-top:2px; }
+
+    /* ---------- 對話框 ---------- */
+    dialog.lf-dialog { width:min(92vw, 420px); padding:0; border:0; border-radius:20px; background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+    dialog.lf-dialog::backdrop { background:rgba(5,15,28,.6); }
+    .lf-dialog form, .lf-dialog .lf-dialog-body { padding:22px; display:flex; flex-direction:column; gap:12px; }
+    .lf-dialog h3 { margin:0; font-size:18px; font-weight:800; }
+    .lf-dialog label { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:700; color:var(--muted); }
+    .lf-dialog input, .lf-dialog select { height:44px; padding:0 14px; border-radius:12px; font-size:15px; background:var(--btn); border:1px solid var(--border); outline:none; }
+    .lf-dialog input:focus, .lf-dialog select:focus { border-color:var(--teal); }
+    .lf-dialog .lf-err { color:#E0525E; font-size:13px; margin:0; }
+    .lf-dialog .lf-err[hidden] { display:none; }
+    .lf-dialog .lf-note { color:var(--muted); font-size:13px; line-height:1.6; margin:0; }
+    .lf-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+    .lf-actions button { height:42px; padding:0 18px; border-radius:12px; font-weight:700; font-size:15px; border:0; cursor:pointer; background:var(--btn); }
+    .lf-actions .lf-primary { background:var(--pine); color:#fff; }
+    .lf-actions .lf-primary:disabled { opacity:.5; }
+    .lf-users { list-style:none; margin:0; padding:0; display:grid; gap:8px; max-height:45vh; overflow:auto; }
+    .lf-users li { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:12px; background:var(--btn); font-size:13.5px; }
+    .lf-users li span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .lf-users li button { border:0; background:none; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--teal); padding:4px 6px; }
+    .lf-users li button.lf-del { color:#E0525E; }
+    .lf-toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:100; padding:10px 18px; border-radius:12px;
+      background:#1C1C1C; color:#fff; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+    /* 上面（標題、分頁）固定，只有下面的 App 區捲動；App 沒滿就不能捲 */
+    html, body { height:100%; }
+    body { height:100dvh; min-height:0 !important; overflow:hidden; display:flex; flex-direction:column; }
+    main { display:flex; flex-direction:column; min-height:0; padding-bottom:0; }
+    main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px 10px calc(16px + env(safe-area-inset-bottom)); margin:-10px -10px 0; } /* 四周留 10px，App 滑鼠放大時不會被切到；負邊距讓位置不變 */
+    #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
+    #lfApps.is-editing .slot-empty { visibility:visible; }
+    @media (max-width:639px) { footer { display:none; } }
+    footer { text-align:center; font-size:11px; color:var(--muted); padding:14px 0 calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
+  </style>
 </head>
 <body>
-<header><div class="bar shell">
-  <a id="home" class="brand" href="/QT/"><img id="brand-icon" src="icons/adult.svg" alt=""><span>Daily QT · 每日靈修</span></a>
-  <div class="modes" role="group" aria-label="閱讀模式">
-    <button type="button" data-mode="literary" aria-pressed="true">成人</button>
-    <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
+  <!-- 沒登入：停在 Welcome 畫面，點一下就跳出 Google 登入（參照 DX） -->
+  <div class="lf-welcome" id="lfWelcome" role="button" tabindex="0" aria-label="LinFamily：按一下以 Google 帳號登入">
+    <canvas class="lf-ent-canvas" aria-hidden="true"></canvas>
+    <div class="lf-ent-shade"></div>
+    <div class="lf-ent-logo"><img src="assets/lf-mark.v2.svg" alt="" width="644" height="594"></div>
+    <p class="lf-ent-note" hidden>請用 Safari 或 Chrome 開啟本頁再登入</p>
   </div>
-</div></header>
-<main class="shell">
-  <div class="hero">
-    <div class="hero-copy">
-      <div class="date-nav"><button id="previous" aria-label="前一天">‹</button><time id="date" aria-live="polite"></time><button id="next" aria-label="後一天">›</button></div>
-      <p class="eyebrow" id="hero-label">每日靈修</p>
-      <h1 id="hero-title">每日靈修</h1>
-      <p class="lead" id="hero-lead" hidden></p>
+  <script src="js/entrance.js" defer></script>
+  <script src="js/entrance-waves.js" defer></script>
+  <script>try{localStorage.removeItem('linfamily_signed_in');}catch(_){}document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
+  <div class="lf-top">
+    <div>
+      <p class="lf-date" id="lfDate">&nbsp;</p>
+      <h1 class="lf-title" id="lfGreeting">Welcome home</h1>
     </div>
-    <div class="art"><div class="adult-art"><svg viewBox="0 0 620 510" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
-<linearGradient id="sky" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#f9f6e9"/><stop offset="1" stop-color="#d5ded0"/></linearGradient>
-<linearGradient id="paper" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#f8edcf"/><stop offset="1" stop-color="#a88e63"/></linearGradient>
-<clipPath id="land"><path d="M27 381 44 270 120 194 174 109 212 151 339 34 426 153 477 117 574 237 599 373Q437 405 313 463 206 400 27 381Z"/></clipPath></defs>
-<ellipse cx="316" cy="474" rx="267" ry="21" fill="#a99875" opacity=".16"/>
-<circle cx="354" cy="102" r="48" fill="#eadabc"/>
-<g clip-path="url(#land)"><path fill="url(#sky)" d="M0 0h620v480H0z"/>
-<path fill="#d5dace" d="m32 248 142-139 48 60L339 34l87 119 51-36 132 137v146H32Z"/><path fill="#efeee0" d="m220 175 119-141 88 120-56-37-16 22-24-48-37 61-33 1Z"/>
-<path fill="#9eb5a7" d="M0 264q109-99 182-29t171-12q140-123 267 25v225H0Z"/>
-<path fill="#618b7b" d="M0 315q103-108 174-54t148 39q102-19 154-58t144 57v175H0Z"/>
-<path fill="#355e50" d="M0 303q109-32 191 58t166 16q120-100 263-62v160H0Z"/>
-<path fill="#c3bb8e" opacity=".66" d="M374 276q-72 43-8 65t-52 86l-50 20 61 19q138-105 65-132-62-22-16-58Z"/>
-<path transform="translate(135 218) scale(0.24)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(483 222) scale(0.58)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(416 279) scale(0.45)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(323 193) scale(0.55)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(276 147) scale(0.51)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(75 260) scale(0.39)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(560 165) scale(0.45)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(574 149) scale(0.54)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(417 254) scale(0.32)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(86 196) scale(0.66)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(226 238) scale(0.83)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(421 199) scale(0.67)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(338 238) scale(0.56)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(535 165) scale(0.29)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(508 267) scale(0.96)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(236 185) scale(0.32)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(381 280) scale(0.87)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(167 194) scale(0.26)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(486 169) scale(0.21)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(337 214) scale(0.72)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(161 228) scale(0.57)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(362 217) scale(0.62)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#688f80"/><path transform="translate(273 298) scale(0.63)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(159 247) scale(0.86)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(172 328) scale(0.98)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(386 258) scale(0.83)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(152 246) scale(0.64)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(510 249) scale(0.31)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(476 235) scale(0.61)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(216 230) scale(0.46)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(63 315) scale(0.63)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(108 331) scale(1.07)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(145 284) scale(0.70)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(436 230) scale(0.68)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(87 252) scale(0.34)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(527 261) scale(0.84)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(520 253) scale(0.57)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(143 255) scale(0.38)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(223 299) scale(0.96)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(294 299) scale(0.63)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(481 240) scale(0.42)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(62 343) scale(0.98)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(401 325) scale(0.89)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(219 332) scale(1.15)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(472 316) scale(0.43)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(294 316) scale(1.02)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(485 265) scale(0.72)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(102 266) scale(0.59)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(75 241) scale(0.87)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(390 245) scale(0.79)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(490 321) scale(0.64)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(130 249) scale(0.59)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#3a6555"/><path transform="translate(166 429) scale(0.85)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(510 411) scale(0.87)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(396 292) scale(0.76)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(195 297) scale(0.77)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(80 343) scale(0.60)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(482 406) scale(0.55)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(333 398) scale(1.19)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(231 429) scale(1.33)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(354 427) scale(0.90)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(281 313) scale(0.39)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(436 418) scale(0.47)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(471 407) scale(0.91)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(467 372) scale(0.92)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(330 368) scale(0.87)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(446 332) scale(0.41)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(539 398) scale(1.28)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(334 356) scale(0.49)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(272 389) scale(0.82)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(564 328) scale(0.81)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(523 319) scale(0.47)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(502 362) scale(0.40)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(315 300) scale(0.45)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(530 354) scale(0.44)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(131 395) scale(0.83)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(420 342) scale(1.15)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(142 328) scale(0.57)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(455 421) scale(1.46)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(350 383) scale(0.52)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(91 334) scale(0.50)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(69 337) scale(0.54)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(351 326) scale(0.97)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(98 366) scale(0.45)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(384 317) scale(0.35)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(408 325) scale(0.44)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(269 331) scale(0.62)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(374 400) scale(1.39)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/><path transform="translate(496 347) scale(0.86)" d="M0 -31 4-20 2-21 8-12 5-13 11-4 2-6 2 0H-2v-6l-8 2 5-9-3 1 6-9-2 1Z" fill="#203f36"/></g>
-<path d="M30 369q171 20 283 94 131-74 277-85l15 25q-138 12-292 83Q204 428 14 404Z" fill="#293e34"/>
-<path d="M26 366q166 15 287 97 132-78 286-88l-9 25q-145 16-277 78-117-63-293-83Z" fill="url(#paper)"/>
-<path d="M23 379q167 17 290 93 146-71 281-83M24 386q185 29 289 89 149-64 279-80" fill="none" stroke="#716445" opacity=".64"/>
-<path d="M51 357q35-62 53-167m-31 123q-15-38-58-56m69 26q29-25 54-38m-46 8q-9-33-31-50M522 397q20-59 66-111m-56 84q-4-35-18-54m37 21q20-12 45-11" fill="none" stroke="#80744e" stroke-width="3" stroke-linecap="round"/>
-<g fill="#587866"><path d="M76 315q-40 0-58-53 45 3 58 53ZM86 283q14-38 55-43-19 40-55 43ZM94 254q-33-10-35-60 36 20 35 60ZM101 219q-1-36 28-61 8 40-28 61ZM534 372q-35-19-20-61 22 24 20 61ZM551 339q16-33 50-14-25 18-50 14Z"/></g>
-<g fill="#b18d55"><circle cx="104" cy="188" r="7"/><circle cx="587" cy="288" r="8"/><circle cx="598" cy="294" r="4"/></g>
-<path d="M438 79q12-9 22 1 10-13 23-9m23 49q8-6 15 0 5-8 14-6" stroke="#58685a" stroke-width="2" fill="none" stroke-linecap="round"/>
-</svg></div><div class="kids-art"><svg viewBox="0 0 620 510" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><ellipse cx="312" cy="268" rx="224" ry="181" fill="#f6e6fa"/><circle cx="435" cy="134" r="52" fill="#ffe4ae"/><path d="M91 253q59-42 128 1t151-7q111-53 167 28l-4 85q-103 97-223 91Q155 443 88 353Z" fill="#d8c6ef"/><path d="M87 310q85-37 225 13t221-23v58q-99 92-223 94Q154 445 87 352Z" fill="#f9c7da"/><path d="M157 211h78q10-15-11-22-5-19-24-16-11-15-28 1-21-1-19 18-16 7 4 19m292 18h61q13-10-1-18-3-15-20-14-12-9-22 4-13 0-14 13-13 5-4 15" fill="#fffaf1"/><ellipse cx="307" cy="371" rx="98" ry="15" fill="#ab719b" opacity=".2"/><g transform="translate(156 125) scale(1.7)"><path d="M64 118v17m51-17v17" stroke="#8f587a" stroke-width="9" stroke-linecap="round"/><path d="M57 104q-28 0-29-21 0-13 16-13l19 8m60 26q28 0 29-21 0-13-16-13l-19 8" fill="#a66583"/><path d="M48 77q-8-19 13-27 8-17 28-12 17-8 29 9 22 4 16 28 16 15 3 32-2 19-23 21-13 15-29 6-19 6-28-11-18-1-19-22-6-15 10-24Z" fill="#fff8e5"/><ellipse cx="90" cy="94" rx="34" ry="29" fill="#f5c6c3"/><path d="M76 92h.1m28 0h.1" stroke="#543547" stroke-width="6" stroke-linecap="round"/><path d="M83 104q7 8 14 0" fill="none" stroke="#543547" stroke-width="3" stroke-linecap="round"/><ellipse cx="68" cy="103" rx="5" ry="3" fill="#e894a6"/><ellipse cx="112" cy="103" rx="5" ry="3" fill="#e894a6"/></g><g fill="#fffbef"><path d="M140 288l5 11 12 2-9 8 2 12-10-6-10 6 2-12-9-8 12-2Z"/><path d="M480 283l4 9 10 2-7 7 1 9-8-5-8 5 1-9-7-7 10-2Z"/></g><path d="M243 118c-12-15-30 2 0 20 30-18 12-35 0-20Z" fill="#df8dad"/></svg></div></div>
+    <div class="lf-right">
+      <button type="button" id="lfInstallBtn" class="lf-btn lf-install" hidden><span>📲</span><span>安裝</span></button>
+      <button type="button" id="lfAuthBtn" class="lf-btn" title="管理員登入 / 狀態" aria-haspopup="menu" aria-expanded="false"><span id="lfAuthIcon">🔐</span><span id="lfAuthDot" class="lf-dot" hidden></span></button>
+      <div id="lfMenu" class="lf-menu" role="menu" hidden>
+        <div id="lfMenuHead" class="lf-menu-head">管理員已登入</div>
+        <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>⚙️ 全站設定</button>
+        <button type="button" role="menuitem" data-act="theme"><span class="lf-ic-sun">☀️ 切換淺色</span><span class="lf-ic-moon">🌙 切換深色</span></button>
+        <div class="lf-sep"></div>
+        <button type="button" role="menuitem" data-act="logout" class="lf-danger" id="lfLogoutBtn">🚪 登出帳號</button>
+      </div>
+    </div>
   </div>
-  <p id="status" role="status" hidden></p>
-  <div id="adult" class="content" hidden></div>
-  <div id="kids" class="content" hidden></div>
-</main>
-<footer><div class="shell">Daily QT · 每日靈修 <span id="source"></span></div></footer>
-<div id="toast" role="status" hidden></div>
-<dialog id="manual-copy" aria-labelledby="copy-title">
-  <h2 id="copy-title">複製神學提問</h2>
-  <p>請手動複製下方提問，再前往 AI 對話視窗。</p>
-  <textarea id="prompt-text" aria-label="神學提問" readonly></textarea>
-  <div class="actions"><a class="action" id="manual-ai" target="_blank" rel="noopener noreferrer">前往 AI 對話</a><form method="dialog"><button class="action">關閉</button></form></div>
-</dialog>
-<noscript><p class="shell">請啟用 JavaScript 以閱讀每日靈修內容。</p></noscript>
-<script>
-// Firebase 設定 (已連線至 linfamily-31cb6)
-const firebaseConfig = {
-  apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
-  authDomain: "linfamily-31cb6.firebaseapp.com",
-  projectId: "linfamily-31cb6",
-  storageBucket: "linfamily-31cb6.firebasestorage.app",
-  messagingSenderId: "299667187224",
-  appId: "1:299667187224:web:8df32264698caad761c56d",
-  measurementId: "G-3SHGWYKKVZ"
-};
-const collectionName = 'devotionals';
-const iconFallbacks = {
-  "adult": "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="38" fill="#243b31"/><path d="M90 128Q62 105 28 111V57q37-6 62 18 25-24 62-18v54q-34-6-62 17Z" fill="#f3ead5"/><path d="M90 120V80M40 68q23 1 40 14m-40 0q23 1 40 14m60-28q-23 1-40 14m40 0q-23 1-40 14" fill="none" stroke="#887356" stroke-width="3" stroke-linecap="round"/><path d="M90 42v16m-8-8h16" stroke="#d4ac74" stroke-width="3" stroke-linecap="round"/></svg>",
-  "kids": "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="38" fill="#f8d9ed"/><path d="M57 104q-28 0-29-21 0-13 16-13l19 8m60 26q28 0 29-21 0-13-16-13l-19 8" fill="#a66583"/><path d="M48 77q-8-19 13-27 8-17 28-12 17-8 29 9 22 4 16 28 16 15 3 32-2 19-23 21-13 15-29 6-19 6-28-11-18-1-19-22-6-15 10-24Z" fill="#fff8e5"/><ellipse cx="90" cy="94" rx="34" ry="29" fill="#f5c6c3"/><path d="M76 92h.1m28 0h.1" stroke="#543547" stroke-width="6" stroke-linecap="round"/><path d="M83 104q7 8 14 0" fill="none" stroke="#543547" stroke-width="3" stroke-linecap="round"/><ellipse cx="68" cy="103" rx="5" ry="3" fill="#e894a6"/><ellipse cx="112" cy="103" rx="5" ry="3" fill="#e894a6"/></svg>"
-};
-const sampleDate = '2026-11-18';
 
-const sample = {
-  date: sampleDate,
-  source_channel: '詩篇範例',
-  scripture: {
-    reference: '詩篇 23:1–6',
-    verses: [
-      {verse:1,text:'耶和華是我的牧者，我必不致缺乏。'},
-      {verse:2,text:'他使我躺臥在青草地上，領我在可安歇的水邊。'},
-      {verse:3,text:'他使我的靈魂甦醒，為自己的名引導我走義路。'},
-      {verse:4,text:'我雖然行過死蔭的幽谷，也不怕遭害，因為你與我同在；你的杖，你的竿，都安慰我。'},
-      {verse:5,text:'在我敵人面前，你為我擺設筵席；你用油膏了我的頭，使我的福杯滿溢。'},
-      {verse:6,text:'我一生一世必有恩惠慈愛隨著我；我且要住在耶和華的殿中，直到永遠。'}
-    ],
-    context_before: '詩篇 22:31　他們必來把他的公義傳給將要生的民，言明這事是他所行的。',
-    context_after: '詩篇 24:1　地和其中所充滿的，世界和住在其間的，都屬耶和華。'
-  },
-  adult_content: {
-    book_background:'《詩篇》是以色列群體的詩歌與禱告集，收錄讚美、哀求與感恩。第 23 篇是一首表達信靠的詩。',
-    daily_context:'牧羊人帶領羊群找水與草，也保護羊群穿過危險地帶。詩的後半以主人款待賓客的畫面，描寫上帝的恩待。',
-    theology_points:[
-      {title:'牧者的照料',summary:'詩人相信上帝親自供應、引導與保護，也帶領人走正直的道路。',deep_dive_prompt:'我正在讀詩篇 23:1–3。請解釋古近東的牧羊背景，並從大公教會的共同信仰說明上帝的引導。'},
-      {title:'幽谷中的同在',summary:'詩人在危險中直接對上帝說「你與我同在」。他的勇氣源於上帝的陪伴。',deep_dive_prompt:'請解釋詩篇 23:4 從「他」到「你」的變化，並說明上帝的同在如何安慰正在受苦的人。'}
-    ]
-  },
-  kids_content: {
-    plain_explanation_ruby: '<ruby>上<rt>ㄕㄤˋ</rt></ruby><ruby>帝<rt>ㄉㄧˋ</rt></ruby><ruby>像<rt>ㄒㄧㄤˋ</rt></ruby><ruby>牧<rt>ㄇㄨˋ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>人<rt>ㄖㄣˊ</rt></ruby><ruby>一<rt>ㄧˊ</rt></ruby><ruby>樣<rt>ㄧㄤˋ</rt></ruby><ruby>照<rt>ㄓㄠˋ</rt></ruby><ruby>顧<rt>ㄍㄨˋ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby>。<ruby>他<rt>ㄊㄚ</rt></ruby><ruby>帶<rt>ㄉㄞˋ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby><ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>對<rt>ㄉㄨㄟˋ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>路<rt>ㄌㄨˋ</rt></ruby>，<ruby>也<rt>ㄧㄝˇ</rt></ruby><ruby>在<rt>ㄗㄞˋ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby><ruby>害<rt>ㄏㄞˋ</rt></ruby><ruby>怕<rt>ㄆㄚˋ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>時<rt>ㄕˊ</rt></ruby><ruby>候<rt>ㄏㄡˋ</rt></ruby><ruby>陪<rt>ㄆㄟˊ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby>。',
-    bible_story_title: '小羊走過山谷',
-    bible_story_title_ruby: '<ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>過<rt>ㄍㄨㄛˋ</rt></ruby><ruby>山<rt>ㄕㄢ</rt></ruby><ruby>谷<rt>ㄍㄨˇ</rt></ruby>',
-    bible_story_ruby: '<ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>吃<rt>ㄔ</rt></ruby><ruby>飽<rt>ㄅㄠˇ</rt></ruby><ruby>了<rt>˙ㄌㄜ</rt></ruby><ruby>青<rt>ㄑㄧㄥ</rt></ruby><ruby>草<rt>ㄘㄠˇ</rt></ruby>，<ruby>跟<rt>ㄍㄣ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>牧<rt>ㄇㄨˋ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>人<rt>ㄖㄣˊ</rt></ruby><ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>進<rt>ㄐㄧㄣˋ</rt></ruby><ruby>山<rt>ㄕㄢ</rt></ruby><ruby>谷<rt>ㄍㄨˇ</rt></ruby>。<ruby>山<rt>ㄕㄢ</rt></ruby><ruby>谷<rt>ㄍㄨˇ</rt></ruby><ruby>裡<rt>ㄌㄧˇ</rt></ruby><ruby>好<rt>ㄏㄠˇ</rt></ruby><ruby>暗<rt>ㄢˋ</rt></ruby>，<ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>不<rt>ㄅㄨˋ</rt></ruby><ruby>敢<rt>ㄍㄢˇ</rt></ruby><ruby>往<rt>ㄨㄤˇ</rt></ruby><ruby>前<rt>ㄑㄧㄢˊ</rt></ruby>。<ruby>牠<rt>ㄊㄚ</rt></ruby><ruby>抬<rt>ㄊㄞˊ</rt></ruby><ruby>頭<rt>ㄊㄡˊ</rt></ruby><ruby>一<rt>ㄧˊ</rt></ruby><ruby>看<rt>ㄎㄢˋ</rt></ruby>，<ruby>牧<rt>ㄇㄨˋ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>人<rt>ㄖㄣˊ</rt></ruby><ruby>就<rt>ㄐㄧㄡˋ</rt></ruby><ruby>在<rt>ㄗㄞˋ</rt></ruby><ruby>身<rt>ㄕㄣ</rt></ruby><ruby>邊<rt>ㄅㄧㄢ</rt></ruby>，<ruby>正<rt>ㄓㄥˋ</rt></ruby><ruby>等<rt>ㄉㄥˇ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>牠<rt>ㄊㄚ</rt></ruby>。<ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>跟<rt>ㄍㄣ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>他<rt>ㄊㄚ</rt></ruby>，<ruby>一<rt>ㄧˊ</rt></ruby><ruby>步<rt>ㄅㄨˋ</rt></ruby><ruby>一<rt>ㄧˊ</rt></ruby><ruby>步<rt>ㄅㄨˋ</rt></ruby><ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>到<rt>ㄉㄠˋ</rt></ruby><ruby>水<rt>ㄕㄨㄟˇ</rt></ruby><ruby>邊<rt>ㄅㄧㄢ</rt></ruby>。<ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby><ruby>害<rt>ㄏㄞˋ</rt></ruby><ruby>怕<rt>ㄆㄚˋ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>時<rt>ㄕˊ</rt></ruby><ruby>候<rt>ㄏㄡˋ</rt></ruby>，<ruby>也<rt>ㄧㄝˇ</rt></ruby><ruby>可<rt>ㄎㄜˇ</rt></ruby><ruby>以<rt>ㄧˇ</rt></ruby><ruby>像<rt>ㄒㄧㄤˋ</rt></ruby><ruby>小<rt>ㄒㄧㄠˇ</rt></ruby><ruby>羊<rt>ㄧㄤˊ</rt></ruby><ruby>一<rt>ㄧˊ</rt></ruby><ruby>樣<rt>ㄧㄤˋ</rt></ruby>，<ruby>相<rt>ㄒㄧㄤ</rt></ruby><ruby>信<rt>ㄒㄧㄣˋ</rt></ruby><ruby>上<rt>ㄕㄤˋ</rt></ruby><ruby>帝<rt>ㄉㄧˋ</rt></ruby><ruby>正<rt>ㄓㄥˋ</rt></ruby><ruby>陪<rt>ㄆㄟˊ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>們<rt>˙ㄇㄣ</rt></ruby>。',
-    prayer_ruby: '<ruby>親<rt>ㄑㄧㄣ</rt></ruby><ruby>愛<rt>ㄞˋ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>上<rt>ㄕㄤˋ</rt></ruby><ruby>帝<rt>ㄉㄧˋ</rt></ruby>，<ruby>謝<rt>ㄒㄧㄝˋ</rt></ruby><ruby>謝<rt>˙ㄒㄧㄝ</rt></ruby><ruby>你<rt>ㄋㄧˇ</rt></ruby><ruby>陪<rt>ㄆㄟˊ</rt></ruby><ruby>著<rt>˙ㄓㄜ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby>。<ruby>求<rt>ㄑㄧㄡˊ</rt></ruby><ruby>你<rt>ㄋㄧˇ</rt></ruby><ruby>給<rt>ㄍㄟˇ</rt></ruby><ruby>我<rt>ㄨㄛˇ</rt></ruby><ruby>勇<rt>ㄩㄥˇ</rt></ruby><ruby>氣<rt>ㄑㄧˋ</rt></ruby>，<ruby>走<rt>ㄗㄡˇ</rt></ruby><ruby>今<rt>ㄐㄧㄣ</rt></ruby><ruby>天<rt>ㄊㄧㄢ</rt></ruby><ruby>的<rt>˙ㄉㄜ</rt></ruby><ruby>路<rt>ㄌㄨˋ</rt></ruby>。<ruby>阿<rt>ㄚ</rt></ruby><ruby>們<rt>ㄇㄣˊ</rt></ruby>。'
-  }
-};
+  <main>
 
-const $ = id => document.getElementById(id);
-const root = document.documentElement;
-let mode = 'literary';
-let current;
-let request = 0;
-let toastTimer;
-let firestore;
+    <div class="lf-tabbar">
+    <div class="lf-tabs" role="tablist" aria-label="切換">
+      <button type="button" role="tab" aria-selected="true" data-tab="apps">Home</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-newdot" id="lfAppsDot" hidden></i></button>
+      <button type="button" class="lf-tab-icon" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
+    </div>
+    <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <div class="lf-gear-wrap">
+      <button type="button" class="lf-search-btn" id="lfGearBtn" aria-label="設定" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div id="lfGearMenu" class="lf-menu lf-gear-menu" role="menu" hidden>
+        <div class="lf-menu-head">設定</div>
+        <button type="button" role="menuitem" data-gear="theme">🎨 背景主題</button>
+      </div>
+    </div>
+    </div>
+    <label class="lf-search" for="lfSearch" id="lfSearchBox" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
+      <input type="search" id="lfSearch" placeholder="搜尋 App…" autocomplete="off" enterkeyhint="go" aria-label="搜尋 App">
+      <button type="button" id="lfSearchClear" aria-label="清除搜尋" hidden>✕</button>
+    </label>
 
-function escapeText(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-  })[char]);
-}
-
-function rubyMarkup(value) {
-  return escapeText(value).replace(
-    /&lt;ruby&gt;([^&<>]+)&lt;rt&gt;([ㄅ-ㄩˊˇˋ˙]+)&lt;\/rt&gt;&lt;\/ruby&gt;/g,
-    '<ruby>$1<rt>$2</rt></ruby>'
-  );
-}
-
-function videoLink(data) {
-  try {
-    const url = new URL(data.video_url);
-    const hosts = ['www.youtube.com', 'youtube.com', 'm.youtube.com', 'youtu.be'];
-    if (url.protocol === 'https:' && hosts.includes(url.hostname) && !url.username && !url.password) {
-      return '<a href="' + escapeText(url.href) + '" target="_blank" rel="noopener noreferrer">觀看靈修影片 ↗</a>';
-    }
-  } catch {}
-  return '';
-}
-
-function render(data) {
-  const bible = data.scripture;
-  const adult = data.adult_content;
-  const kids = data.kids_content;
-  const link = videoLink(data);
-  $('adult').innerHTML = `
-    <section class="card">
-      <p class="eyebrow">今日經文</p><h2>${escapeText(bible.reference)}</h2>
-      <ol class="verses">${bible.verses.map(v => `<li><small>${escapeText(v.verse)}</small><span>${escapeText(v.text)}</span></li>`).join('')}</ol>
-      <details><summary>查看前後文背景經文</summary><div class="context">
-        <p><strong>前文</strong>　${escapeText(bible.context_before || '無前文資料')}</p>
-        <p><strong>後文</strong>　${escapeText(bible.context_after || '無後文資料')}</p>
-      </div></details>
-      ${link ? '<p>' + link + '</p>' : ''}
+    <section id="panelApps" aria-label="App">
+      <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
+           登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到任何位置（空位編輯時才看得到）或和別的 App 互換、「−」移除、點 App 修改、＋ 圓鈕新增、按「完成」結束。 -->
+      <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
+      <nav id="lfApps" aria-label="App"></nav>
     </section>
-    <div class="split">
-      <section class="card"><h3>全書背景</h3><p>${escapeText(adult.book_background)}</p></section>
-      <section class="card"><h3>當日文化背景</h3><p>${escapeText(adult.daily_context)}</p></section>
+
+    <section id="panelAll" aria-label="所有 App" hidden>
+      <p class="lf-all-note" id="lfAllNote"></p>
+      <div class="lf-all" id="lfAll"></div>
+    </section>
+
+    <section id="panelFamily" aria-label="家庭空間配置" hidden>
+      <div class="lf-board" id="floorplanBoard">
+        <svg viewBox="0 0 760 320" role="img" aria-label="LinFamily 家庭空間配置平面圖">
+          <defs>
+            <marker id="pixelArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#111111"/>
+            </marker>
+            <pattern id="pixelDots" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1" fill="#E4E4E7"/>
+            </pattern>
+          </defs>
+
+          <!-- 純白高對比底層 -->
+          <rect x="0" y="0" width="760" height="320" rx="16" fill="#FFFFFF"/>
+          <rect x="12" y="12" width="736" height="296" rx="12" fill="url(#pixelDots)" stroke="#111111" stroke-width="1.8"/>
+
+          <!-- 建築隔間牆線 -->
+          <line x1="260" y1="12" x2="260" y2="308" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <line x1="510" y1="12" x2="510" y2="308" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <line x1="260" y1="165" x2="748" y2="165" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
+
+          <!-- 動線箭頭 -->
+          <path d="M 135 245 L 135 160 L 365 160 L 365 95" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
+          <path d="M 385 120 L 385 225 L 590 225" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
+          <path d="M 455 85 L 590 85" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
+
+          <!-- 熱區 1：玄關門禁 -->
+          <g class="svg-hotspot" data-zone-id="zone-entry" tabindex="0" role="button" aria-label="1 玄關門禁與影像">
+            <rect class="zone-box" x="32" y="34" width="206" height="252" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="62" cy="64" r="15" fill="#111111"/>
+            <text x="62" y="69" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">1</text>
+            <text x="88" y="69" fill="#111111" font-size="15" font-weight="700">玄關門禁與影像</text>
+            <text x="48" y="102" fill="#3F3F46" font-size="12.5">• 智慧門鎖狀態監控</text>
+            <text x="48" y="126" fill="#3F3F46" font-size="12.5">• 門口監視器即時串流</text>
+            <text x="48" y="150" fill="#3F3F46" font-size="12.5">• 家人回家推播通知</text>
+            <rect x="48" y="218" width="174" height="44" rx="12" fill="#F4F4F5" stroke="#111111" stroke-width="1.2"/>
+            <text x="135" y="245" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="700">主入口動線起點 →</text>
+          </g>
+
+          <!-- 熱區 2：客廳影音與相簿 -->
+          <g class="svg-hotspot" data-zone-id="zone-living" tabindex="0" role="button" aria-label="2 客廳影音與相簿">
+            <rect class="zone-box" x="278" y="34" width="214" height="114" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="306" cy="62" r="15" fill="#111111"/>
+            <text x="306" y="67" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">2</text>
+            <text x="330" y="67" fill="#111111" font-size="15" font-weight="700">客廳影音與相簿</text>
+            <text x="294" y="96" fill="#3F3F46" font-size="12.5">• LinFamily 共享相簿牆</text>
+            <text x="294" y="118" fill="#3F3F46" font-size="12.5">• 客廳電視與家庭劇院中控</text>
+          </g>
+
+          <!-- 熱區 3：書房 NAS 與雲端 -->
+          <g class="svg-hotspot" data-zone-id="zone-cloud" tabindex="0" role="button" aria-label="3 書房 NAS 雲端">
+            <rect class="zone-box" x="528" y="34" width="202" height="114" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="556" cy="62" r="15" fill="#111111"/>
+            <text x="556" y="67" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">3</text>
+            <text x="580" y="67" fill="#111111" font-size="15" font-weight="700">書房 NAS 雲端</text>
+            <text x="544" y="96" fill="#3F3F46" font-size="12.5">• 私有雲檔案與自動備份</text>
+            <text x="544" y="118" fill="#3F3F46" font-size="12.5">• 家庭網路與路由器監控</text>
+          </g>
+
+          <!-- 熱區 4：餐廚生活共享區 -->
+          <g class="svg-hotspot" data-zone-id="zone-life" tabindex="0" role="button" aria-label="4 家庭行事曆、帳本與採買清單">
+            <rect class="zone-box" x="278" y="182" width="452" height="104" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="306" cy="212" r="15" fill="#111111"/>
+            <text x="306" y="217" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">4</text>
+            <text x="330" y="217" fill="#111111" font-size="15" font-weight="700">家庭行事曆、帳本與採買清單</text>
+            <text x="294" y="246" fill="#3F3F46" font-size="12.5">• 全家人行程同步、紀念日提醒、家庭共同記帳與日常採買清單</text>
+            <text x="294" y="268" fill="#111111" font-size="12" font-weight="700">動線節點：客廳 → 餐廚生活共享區</text>
+          </g>
+        </svg>
+      </div>
+      <div class="lf-zone" id="lfZone">
+        <h3 id="lfZoneTitle">點平面圖上的區域，查看相關 App</h3>
+        <ul id="lfZoneList"></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>© 2026 LinFamily</footer>
+
+  <!-- 新增／修改 App -->
+  <dialog class="lf-dialog" id="lfAppDialog">
+    <form method="dialog" novalidate>
+      <h3 id="lfAppTitle">新增 App</h3>
+      <label>網址<input id="lfAppUrl" placeholder="例如 HannahProjects/home.html 或 https://…" autocomplete="off" inputmode="url"></label>
+      <label>名稱<input id="lfAppName" maxlength="20" placeholder="貼上網址後自動抓取，可修改" autocomplete="off"></label>
+      <label>圖示<span class="lf-iconrow"><span id="lfAppPreview"></span><input id="lfAppIcon" maxlength="300" placeholder="自動抓取；也可填 emoji 或圖片網址" autocomplete="off"></span></label>
+      <p class="lf-note" id="lfAppStatus" hidden></p>
+      <p class="lf-err" id="lfAppErr" hidden></p>
+      <div class="lf-actions">
+        <button type="button" id="lfAppCancel">取消</button>
+        <button type="submit" class="lf-primary" id="lfAppSave">儲存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 安裝說明 -->
+  <div class="lf-wall" id="lfWall" hidden></div>
+  <dialog class="lf-dialog" id="lfThemeDialog">
+    <div class="lf-dialog-body">
+      <h3>背景主題</h3>
+      <p class="lf-look-sec">主題顏色</p>
+      <div class="lf-swatches" id="lfSwatches"></div>
+      <p class="lf-look-sec">桌布</p>
+      <div class="lf-walls" id="lfWalls"></div>
+      <input type="file" id="lfWallFile" accept="image/*" hidden>
+      <p class="lf-note" id="lfLookMsg"></p>
+      <div class="lf-actions"><button type="button" class="lf-primary" id="lfThemeClose">完成</button></div>
     </div>
-    <section class="card"><h2>重要神學議題</h2>
-      ${adult.theology_points.map((point,i) => `<div class="point"><h3>${escapeText(point.title)}</h3><p>${escapeText(point.summary)}</p>
-        <div class="actions"><button class="action" data-point="${i}" data-ai="chatgpt">與 ChatGPT 深入探討 ↗</button>
-        <button class="action" data-point="${i}" data-ai="claude">Claude ↗</button></div></div>`).join('')}
-    </section>`;
-  $('kids').innerHTML = `
-    <section class="card"><p class="eyebrow">今日經文 · 注音</p><h2>${escapeText(bible.reference)}</h2>
-      <p class="zhuyin">${rubyMarkup(kids.plain_explanation_ruby)}</p></section>
-    <section class="card story"><p class="eyebrow">今日聖經故事</p>
-      <h2 class="zhuyin">${kids.bible_story_title_ruby ? rubyMarkup(kids.bible_story_title_ruby) : escapeText(kids.bible_story_title)}</h2>
-      <p class="zhuyin">${rubyMarkup(kids.bible_story_ruby)}</p>
-      ${kids.prayer_ruby ? `<div class="prayer"><h3>♡ 今日小禱告</h3><p class="zhuyin">${rubyMarkup(kids.prayer_ruby)}</p></div>` : ''}
-      ${link ? '<p>' + link + '</p>' : ''}
-    </section>`;
-}
+  </dialog>
+  <dialog class="lf-dialog" id="lfInstallDialog">
+    <div class="lf-dialog-body">
+      <h3>安裝 LinFamily</h3>
+      <p class="lf-note" id="lfInstallText"></p>
+      <div class="lf-actions"><button type="button" class="lf-primary" id="lfInstallClose">知道了</button></div>
+    </div>
+  </dialog>
 
-function setTheme(value) {
-  mode = value;
-  root.dataset.theme = mode;
-  const isKids = mode === 'kids-cute';
-  const icon = isKids ? 'kids' : 'adult';
-  const iconSvg = `icons/${icon}.svg`;
-  $('favicon').href = iconSvg;
-  if (location.protocol === 'file:') {
-    const inlineIcon = 'data:image/svg+xml,' + encodeURIComponent(iconFallbacks[icon]);
-    $('favicon').href = inlineIcon;
-    $('brand-icon').src = inlineIcon;
-  } else {
-    $('brand-icon').src = iconSvg;
-  }
-  $('touch-icon').href = `icons/${icon}-touch.png`;
-  document.querySelector('meta[name=theme-color]').content = isKids ? '#fff5f7' : '#f9f7f2';
-  document.querySelectorAll('[data-mode]').forEach(button => {
-    button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
-  });
-  try { localStorage.setItem('qt-mode', mode); } catch {}
-  updateView();
-}
+  <script src="js/clc-slot-grid.js?v=20261117push"></script>
+  <script src="js/clc-icon-upload.js?v=20261116-menu2"></script>
+  <script src="js/lf-menu.js?v=20261115c"></script>
+  <script>
+  (function () {
+    'use strict';
+    // ---------- Firebase（LinFamily 自己的專案） ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
+      authDomain: "linfamily-31cb6.firebaseapp.com",
+      projectId: "linfamily-31cb6",
+      storageBucket: "linfamily-31cb6.firebasestorage.app",
+      messagingSenderId: "299667187224",
+      appId: "1:299667187224:web:8df32264698caad761c56d"
+    };
+    let auth = null, db = null;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth(); db = firebase.firestore();
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+    } catch (err) { console.warn('Firebase 無法啟動', err); }
 
-function updateView() {
-  const isKids = mode === 'kids-cute';
-  $('adult').hidden = !current || isKids;
-  $('kids').hidden = !current || !isKids;
-  $('hero-label').textContent = current === sample ? '每日靈修 · 範例' : '每日靈修';
-  $('hero-title').textContent = !current ? '每日靈修' : current === sample
-    ? (isKids ? sample.kids_content.bible_story_title : '在牧者的引領中')
-    : (isKids ? current.kids_content.bible_story_title : current.scripture.reference);
-  if (isKids && current?.kids_content.bible_story_title_ruby) {
-    $('hero-title').innerHTML = rubyMarkup(current.kids_content.bible_story_title_ruby);
-  }
-  $('hero-lead').hidden = !current;
-  $('hero-lead').textContent = !current ? '' : isKids ? current.scripture.reference : current.scripture.verses[0]?.text ?? '';
-  $('source').textContent = current?.source_channel ? ' · ' + current.source_channel : '';
-}
-
-function taipeiDate() {
-  const parts = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts();
-  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
-function showStatus(message) {
-  $('status').hidden = !message;
-  $('status').textContent = message;
-}
-
-async function readDevotional(date) {
-  if (!firebaseConfig?.projectId) return date === sampleDate ? sample : null;
-  if (!firestore) {
-    firestore = Promise.all([
-      import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
-      import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js')
-    ]).then(([app, db]) => ({...db, instance:db.getFirestore(app.initializeApp(firebaseConfig))}))
-      .catch(error => {
-        firestore = null;
-        throw error;
-      });
-  }
-  const {doc, getDoc, instance} = await firestore;
-  const snapshot = await getDoc(doc(instance, collectionName, date));
-  return snapshot.exists() ? snapshot.data() : null;
-}
-
-async function selectDate(date) {
-  const id = ++request;
-  $('date').dateTime = date;
-  $('date').textContent = new Intl.DateTimeFormat('zh-TW', {
-    timeZone:'UTC', year:'numeric', month:'long', day:'numeric', weekday:'short'
-  }).format(new Date(date + 'T00:00:00Z'));
-  current = null;
-  updateView();
-  showStatus('正在讀取靈修內容…');
-  try {
-    const data = await readDevotional(date);
-    if (id !== request) return;
-    if (data) render(data);
-    current = data;
-    updateView();
-    showStatus(data ? '' : '這天沒有靈修資料。');
-  } catch {
-    if (id !== request) return;
-    current = null;
-    updateView();
-    showStatus('暫時無法讀取靈修資料，請稍後再試。');
-  }
-}
-
-function shiftDate(days) {
-  const date = new Date($('date').dateTime + 'T00:00:00Z');
-  date.setUTCDate(date.getUTCDate() + days);
-  selectDate(date.toISOString().slice(0,10));
-}
-
-async function copyPrompt(prompt) {
-  try {
-    await navigator.clipboard.writeText(prompt);
-    return true;
-  } catch {
-    const input = document.createElement('textarea');
-    input.value = prompt;
-    input.style.position = 'fixed';
-    input.style.opacity = '0';
-    const focused = document.activeElement;
-    document.body.append(input);
-    input.select();
-    try { return document.execCommand('copy'); }
-    catch { return false; }
-    finally {
-      input.remove();
-      focused?.focus();
+    // Superuser 固定名單（沿用舊版）
+    const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
+    const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const $ = id => document.getElementById(id);
+    function toast(msg) {
+      document.querySelectorAll('.lf-toast').forEach(t => t.remove());
+      const t = document.createElement('div'); t.className = 'lf-toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+      document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
     }
-  }
-}
 
-async function openDiscussion(prompt, url) {
-  const tab = window.open('about:blank', '_blank');
-  if (tab) tab.opener = null;
-  const copied = await copyPrompt(prompt);
-  if (!copied || !tab) {
-    tab?.close();
-    $('prompt-text').value = prompt;
-    $('manual-ai').href = url;
-    $('manual-copy').showModal();
-    $('prompt-text').select();
-    return;
-  }
-  const toast = $('toast');
-  clearTimeout(toastTimer);
-  toast.textContent = '已為您複製神學提問！正在前往 AI 對話視窗…';
-  toast.hidden = false;
-  setTimeout(() => { if (!tab.closed) tab.location.replace(url); }, 800);
-  toastTimer = setTimeout(() => { toast.hidden = true; }, 2500);
-}
+    // ---------- 問候與日期 ----------
+    function clock() {
+      const now = new Date();
+      $('lfDate').textContent = now.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' }) + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+    }
+    clock(); setInterval(clock, 1000);
 
-document.querySelectorAll('[data-mode]').forEach(button => {
-  button.addEventListener('click', () => setTheme(button.dataset.mode));
-});
-$('adult').addEventListener('click', event => {
-  const button = event.target.closest('[data-point]');
-  if (!button || !current) return;
-  const prompt = current.adult_content.theology_points[button.dataset.point]?.deep_dive_prompt;
-  if (typeof prompt !== 'string' || !prompt.trim()) return;
-  openDiscussion(prompt, button.dataset.ai === 'claude' ? 'https://claude.ai/' : 'https://chatgpt.com/');
-});
-$('previous').addEventListener('click', () => shiftDate(-1));
-$('next').addEventListener('click', () => shiftDate(1));
-$('home').addEventListener('click', event => {
-  event.preventDefault();
-  selectDate(firebaseConfig?.projectId ? taipeiDate() : sampleDate);
-});
-try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; } catch {}
-setTheme(mode);
-selectDate(firebaseConfig?.projectId ? taipeiDate() : sampleDate);
-</script>
+    // ---------- 登入與權限 ----------
+    let user = null, role = '', roleUnsub = null, slots = null;
+    const isSuper = () => role === 'superuser';
+    window.isSuperuser = false;
+    let entered = false; // 這次打開有沒有在 Welcome 點過
+    let waitT = null;
+    function goHome() { // 先顯示「沒有 App 圖示」的主畫面，等權限與個人桌面讀到再讓圖示出現
+      $('lfWelcome').hidden = true;
+      document.documentElement.classList.add('lf-apps-wait');
+      clearTimeout(waitT); waitT = setTimeout(appsReady, 3000); // 保險：最多等 3 秒
+    }
+    window.lfSleep = function () { // 全站設定的「休眠」時間到（clc-sso.js 呼叫）：回到 Welcome，點一下再進
+      entered = false; try { sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
+      document.querySelectorAll('dialog[open]').forEach(d => d.close());
+      $('lfWelcome').hidden = false;
+    };
+    function appsReady() { clearTimeout(waitT); document.documentElement.classList.remove('lf-apps-wait'); }
+    // 從 DX、Hannah's Studio 等子 App 按 🏠 回來（同一個視窗）：已經進來過，就直接回主畫面，不再停在 Welcome
+    let authReady = false;
+    try { if (sessionStorage.getItem('linfamily_entered') === '1') { entered = true; goHome(); } } catch (_) {}
+    function applyRole(r) {
+      role = r || '';
+      window.isSuperuser = role === 'superuser';
+      $('lfAuthIcon').textContent = role === 'superuser' ? '👑' : role ? '☰' : '🔐'; // 一般帳號用三條線選單
+      $('lfLogoutBtn').textContent = isSuper() ? '🚪 登出管理員' : '🚪 登出帳號';
+      $('lfAuthDot').hidden = true; // 不顯示已登入小黃點
+      $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
+      $('lfUsersItem').hidden = !isSuper();
+      // 每次打開都先停在 Welcome；點過（entered）而且已登入才進主畫面。登入中不會先進去又閃回來。
+      $('lfWelcome').hidden = !!(role && entered); document.documentElement.classList.remove('lf-pending');
+      if (window.lfGreetingRender) window.lfGreetingRender(false);
+      if (!role) { appsReady(); applyLook({}); } // 登入失敗或沒權限：回到 Welcome、主題回預設
+      try { if (role && entered) sessionStorage.setItem('linfamily_entered', '1'); else if (!role && authReady) sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
+      syncAddBtn();
+      if (role && role !== 'superuser' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // 只有 Superuser 的登入會帶到 DX、YA、SR
+      if (!role) setMenu(false);
+      watchDesk();
+      if (slots) { slots.render(); if (isSuper()) seedIfNeeded(); }
+    }
+    if (auth) auth.onAuthStateChanged(u => {
+      authReady = true;
+      if (u && entered) goHome(); // 點過 Welcome（或從子 App 回來）且確實已登入：直接進主畫面
+      if (roleUnsub) { roleUnsub(); roleUnsub = null; }
+      user = u && u.email && u.emailVerified ? u : null;
+      if (!user) return applyRole('');
+      const email = user.email.toLowerCase();
+      if (SUPERUSERS.includes(email)) return applyRole('superuser');
+      roleUnsub = db.collection('admin_users').doc(email).onSnapshot(snap => {
+        const d = snap.exists ? snap.data() : null;
+        // 強制登出（全站設定 → 權限管理）：記號時間比這台裝置登入的時間新 → 立刻登出
+        let loginAt = 0; try { loginAt = Number(localStorage.getItem('linfamily_login_at') || 0); if (!loginAt) { loginAt = Date.now(); localStorage.setItem('linfamily_login_at', String(loginAt)); } } catch (_) {}
+        if (d && d.forceLogoutAt && d.forceLogoutAt.toMillis && d.forceLogoutAt.toMillis() > loginAt) {
+          toast('管理員已將這個帳號登出'); (window.CLCSSO && window.CLCSSO.logoutAll ? window.CLCSSO.logoutAll() : Promise.resolve()).finally(() => auth.signOut()); return;
+        }
+        applyRole(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role) ? d.role : '');
+      }, () => applyRole(''));
+    });
+    // 掛在 DX04 底下（/lf/）時，LinFamily 是主站：登入後保存 Google 憑證，DX04、YA、SR 打開時自動登入（clc-sso.js）。
+    // 需要：DX04、YA、SR 各自的 Firebase「外部專案用戶端 ID 白名單」加上 LinFamily 的 Web client ID。
+    async function login() {
+      if (!auth) return toast('登入服務尚未載入，請重新整理。');
+      try {
+        const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        try { localStorage.setItem('linfamily_login_at', String(Date.now() + 1000)); } catch (_) {} // 登入時間（強制登出用；+1 秒避免和伺服器時間誤差）
+        if (entered) goHome(); // 登入一成功就進主畫面（先不顯示 App 圖示），不再回到 Welcome
+        const tok = res.credential && res.credential.idToken;
+        const share = () => { if (!window.CLCSSO || !tok) return; if (window.CLCSSO.shareLogin) window.CLCSSO.shareLogin(tok); else window.CLCSSO.saveGoogleIdToken(tok); }; // 同時把 DX、YA、SR 登入成同一個帳號
+        const email = res.user.email.toLowerCase();
+        if (SUPERUSERS.includes(email)) { share(); return toast('歡迎回來，' + (res.user.displayName || email)); }
+        const snap = await db.collection('admin_users').doc(email).get();
+        const d = snap.exists ? snap.data() : null;
+        if (window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // 跨站登入只給 Superuser：Admin、Viewer、User 都不帶到 DX、YA、SR
+        if (!(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role))) {
+          await auth.signOut(); toast('帳號【' + email + '】沒有權限。');
+        } else toast('歡迎，' + (res.user.displayName || email));
+      } catch (err) {
+        if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err && err.code)) toast('登入未完成，請確認瀏覽器允許彈出視窗。');
+      }
+    }
+
+    // ---------- 皇冠選單 ----------
+    const menu = $('lfMenu'), authBtn = $('lfAuthBtn');
+    function setMenu(open) { menu.hidden = !open; authBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    const enter = () => {
+      if (window.lfEntranceGuard && window.lfEntranceGuard()) return; // 內建瀏覽器先處理（js/entrance.js）
+      entered = true;
+      if (role) return applyRole(role);        // 已登入：點一下直接進主畫面
+      if (auth && auth.currentUser) return goHome(); // 已登入、權限還在確認：先進主畫面，圖示確認完才出現
+      if (auth && !authReady) return;          // 剛打開、還在讀登入狀態：先等，已登入會自動進去，不跳登入視窗
+      login();                                 // 確定沒登入：跳 Google 登入，成功後直接進主畫面
+    };
+    $('lfWelcome').addEventListener('click', enter);
+    $('lfWelcome').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } });
+    authBtn.addEventListener('click', () => { if (!role) login(); else setMenu(menu.hidden); });
+    document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && !authBtn.contains(e.target)) setMenu(false); });
+    menu.addEventListener('click', async e => {
+      const b = e.target.closest('button[data-act]'); if (!b) return;
+      const act = b.dataset.act;
+      if (act !== 'theme') setMenu(false);
+      if (act === 'logout') { if (confirm(isSuper() ? '確定要登出管理員身分嗎？' : '確定要登出帳號嗎？')) { await auth.signOut(); toast('已登出'); } }
+      else if (act === 'theme') toggleTheme();
+      else if (act === 'users') location.href = 'admin-users.html';
+    });
+    function toggleTheme() {
+      const dark = !document.documentElement.classList.contains('dark');
+      document.documentElement.classList.toggle('dark', dark);
+      $('metaThemeColor').setAttribute('content', dark ? '#161716' : '#E6E7E9');
+      try { localStorage.setItem('linfamily_theme', dark ? 'dark' : 'light'); } catch (_) {}
+    }
+
+    // ---------- 安裝（PWA） ----------
+    let deferredPrompt = window.__lfBIP || null;
+    const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    // 安裝鈕：只要不是從已安裝的 App 開啟就顯示。層級規則（從上層站進來時不顯示）由 clc-sso.js 處理。
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; if (!standalone()) $('lfInstallBtn').hidden = false; });
+    window.addEventListener('appinstalled', () => { deferredPrompt = null; $('lfInstallBtn').hidden = true; toast('已安裝'); });
+    try { localStorage.removeItem('linfamily_installed'); } catch (_) {}
+    $('lfInstallBtn').hidden = standalone(); // 不是從已安裝的 App 開啟就顯示（Chrome 還沒準備好時，按了會顯示安裝說明）
+    $('lfInstallBtn').addEventListener('click', install);
+    async function install() {
+      deferredPrompt = deferredPrompt || window.__lfBIP || null;
+      if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; window.__lfBIP = null; return; }
+      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      $('lfInstallText').innerHTML = ios
+        ? '請用 Safari 開啟這一頁，按下方的「分享」<b>⬆︎</b>，再選「<b>加入主畫面</b>」。'
+        : '這個瀏覽器沒有讓網頁直接跳出安裝（例如 Brave）。請按<b>網址列右邊的安裝圖示</b>（螢幕或圓圈加向下箭頭），或從瀏覽器選單（右上角 ⋮ 或 ≡）選「<b>安裝 LinFamily</b>／安裝應用程式」。如果網址列顯示的是「在應用程式中開啟」，代表已經裝過，從桌面或應用程式清單開啟即可。';
+      $('lfInstallDialog').showModal();
+    }
+    $('lfInstallClose').addEventListener('click', () => $('lfInstallDialog').close());
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+    // ---------- App 清單 ----------
+    const CACHE_KEY = 'linfamily_apps_v2';
+    const HANNAH = { id: 'hannah', name: "Hannah's Studio", url: 'HannahProjects/home.html', icon: 'HannahProjects/apple-touch-icon.png', pos: 0 };
+    const DX04 = { id: 'dx04', name: 'CLC DX04', url: 'https://clc-dx04.pages.dev/', icon: 'https://clc-dx04.pages.dev/apple-touch-icon.png' };
+    const PRESET_EMOJI = { photos:'📷', calendar:'📅', home:'🏠', cloud:'☁️', notes:'📝', finance:'💰', security:'📹', map:'📍', media:'🎬', link:'🔗' };
+    let apps = [HANNAH, Object.assign({}, DX04, { pos: 1 })], needsSeed = false, seeding = false, seededList = ['hannah', 'dx04'];
+    try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (Array.isArray(c) && c.length) apps = c; } catch (_) {}
+    // 個人桌面：linfamily_desktops/{email}（每人自己排列、新增、移除）。沒有個人桌面時顯示預設桌面（Superuser 編的全部 App）。
+    // Superuser 永遠看、編預設桌面＝全部 App。之後要做「哪些 App 給哪些人」時，在預設桌面的 App 上加權限欄位即可。
+    const DESK_COL = 'linfamily_desktops';
+    let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '';
+    const deskKey = () => 'linfamily_desk_' + deskEmail;
+    function showApps() {
+      apps = (myDesk || globalApps).filter(a => isSuper() || !isOwnSite(a)); // DX、YA、SR 只有 Superuser 看得到
+      if (slots) { slots.render(); renderZone(); renderNews(); if (!$('panelAll').hidden) renderAll(); }
+    }
+    function watchDesk() {
+      const email = role && user ? user.email.toLowerCase() : ''; // Superuser 也有自己的主畫面
+      if (email === deskEmail) return showApps();
+      if (deskUnsub) { deskUnsub(); deskUnsub = null; }
+      deskEmail = email; myDesk = null;
+      if (email) try { const c = JSON.parse(localStorage.getItem('linfamily_look_' + email) || 'null'); if (c) applyLook(c); } catch (_) {} // 先用上次的主題，不閃預設色
+      if (email) {
+        try { const c = JSON.parse(localStorage.getItem(deskKey()) || 'null'); if (Array.isArray(c)) myDesk = c; } catch (_) {}
+        if (db) deskUnsub = db.collection(DESK_COL).doc(email).onSnapshot(snap => {
+          const d = snap.exists ? snap.data() : null;
+          myDesk = d && Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : null;
+          mySeen = d && Array.isArray(d.seen) ? d.seen : [];
+          applyLook(d || {}, true);
+          try { if (myDesk) localStorage.setItem(deskKey(), JSON.stringify(myDesk)); else localStorage.removeItem(deskKey()); } catch (_) {}
+          showApps(); appsReady();
+        }, err => { console.warn('個人桌面讀取失敗', err); appsReady(); });
+      }
+      showApps();
+    }
+
+    function safeUrl(value) {
+      const v = String(value || '').trim();
+      if (!v || v.startsWith('//')) return '';
+      if (/^[a-z][a-z0-9+.-]*:/i.test(v)) { try { const u = new URL(v); return /^https?:$/.test(u.protocol) ? u.href : ''; } catch (_) { return ''; } }
+      // 看起來像網域（example.com、www.xxx）就補 https://；其他當作站內路徑（例如 HannahProjects/）
+      if (/^www\./i.test(v) || (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/.*)?$/i.test(v) && !/\.html?($|[?#/])/i.test(v) && !/\/$/.test(v))) return safeUrl('https://' + v);
+      return v;
+    }
+    const isExternal = url => { try { return new URL(url, location.href).origin !== location.origin; } catch (_) { return false; } };
+    const isDataIcon = v => !!(window.clcIsDataIcon && window.clcIsDataIcon(v)); // 上傳後存成的 data:image（js/clc-icon-upload.js）
+    const isImageUrl = v => isDataIcon(v) || /^(https?:\/\/|\/|\.\/)/i.test(String(v || '')) || /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(String(v || ''));
+    const safeIcon = v => isDataIcon(v) ? String(v) : safeUrl(v);
+    const MONO_COLORS = ['#4E8B7E', '#B5835A', '#5F77A8', '#A8607A', '#4F8FA0', '#7E6FAE', '#6E8B4E'];
+    const isGoogleIcon = v => /google\.[a-z.]+\/s2\/favicons/i.test(String(v || ''));
+    function monogram(span, app) {
+      const n = String(app.name || '').trim() || (() => { try { return new URL(safeUrl(app.url), location.href).hostname.replace(/^www\./, ''); } catch (_) { return '?'; } })();
+      const cjk = /[\u3400-\u9fff]/.test(n[0] || '');
+      let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      span.className = 'lf-icon is-mono'; span.style.background = MONO_COLORS[h % MONO_COLORS.length];
+      span.textContent = cjk ? n[0] : (n.replace(/[^A-Za-z0-9]/g, '').slice(0, 2) || n[0] || '?').replace(/^./, c => c.toUpperCase());
+    }
+    function iconEl(app) {
+      const span = document.createElement('span');
+      span.className = 'lf-icon';
+      let icon = String(app.icon || app.iconUrl || '').trim();
+      if (isGoogleIcon(icon)) icon = '';
+      if (icon && isImageUrl(icon) && safeIcon(icon)) {
+        const src = safeIcon(icon), i = document.createElement('img');
+        i.alt = ''; i.loading = 'lazy'; i.src = src; span.classList.add('is-img'); span.append(i);
+        i.addEventListener('error', () => monogram(span, app), { once: true });
+        i.addEventListener('load', () => { if (i.naturalWidth && i.naturalWidth < 96 && !/\.svg(\?|$)/i.test(src)) monogram(span, app); }, { once: true });
+      }
+      else if (icon) { span.classList.add('is-emoji'); span.textContent = icon; }
+      else if (PRESET_EMOJI[app.preset]) { span.classList.add('is-emoji'); span.textContent = PRESET_EMOJI[app.preset]; }
+      else monogram(span, app);
+      return span;
+    }
+    // 自家網站：直接開（網站本身用 DX04 的 lf-back.js 顯示淡淡的圓形 🏠 回首頁鈕）；外部網站：放進 open.html 框內（左下角同樣有圓形 🏠 鈕，右上角 ↗）；
+    // 不允許被放進框內的網站（Google 等）：直接開，接受瀏覽器那一列。
+    const OWN_HOSTS = ['clc-dx04.pages.dev', 'clc-ya-portal.pages.dev', 'clc-sr-portal.pages.dev'];
+    const NO_FRAME = /(^|\.)(google\.[a-z.]+|youtube\.com|youtu\.be|gmail\.com|facebook\.com|instagram\.com|messenger\.com|threads\.net|line\.me|apple\.com|icloud\.com|github\.com|x\.com|twitter\.com|microsoft\.com|live\.com|office\.com|notion\.so|amazon\.[a-z.]+|linkedin\.com|paypal\.com)$/i;
+    function isOwnSite(app) { try { if (!/^https?:/i.test(safeUrl(app.url))) return false; const u = new URL(safeUrl(app.url), location.href); return OWN_HOSTS.includes(u.hostname) || (u.origin === location.origin && !/^\/lf(\/|$)/.test(u.pathname)); } catch (_) { return false; } }
+    apps = apps.filter(a => !isOwnSite(a)); // 權限確認前先不放 DX、YA、SR（確認是 Superuser 才出現），避免打開時先閃出來
+    function tileHref(app) {
+      const url = safeUrl(app.url); if (!url) return '#';
+      let host = ''; try { host = new URL(url, location.href).hostname; } catch (_) {}
+      if (/^https?:/i.test(url) && OWN_HOSTS.includes(host)) { // 自家網站直接開，網站左下角會出現淡淡的圓形 🏠 鈕（DX04 的 lf-back.js）
+        const u = new URL(url, location.href), sub = host.match(/^clc-(ya|sr)-portal\.pages\.dev$/);
+        const own = sub ? new URL('https://clc-dx04.pages.dev/' + sub[1] + u.pathname + u.search + u.hash) : u; // YA、SR 走 DX04 底下的 /ya、/sr
+        own.searchParams.set('lfhome', location.href.split('#')[0]);
+        return own.origin === location.origin ? own.pathname + own.search + own.hash : own.href; // 同網域（LinFamily 在 DX04 的 /lf/ 底下）不會出現瀏覽器那一列
+      }
+      if (!isExternal(url)) return url;
+      if (app.embeddable === false || (app.embeddable !== true && NO_FRAME.test(host))) return url;
+      return 'open.html?u=' + encodeURIComponent(url) + '&n=' + encodeURIComponent(app.name || '');
+    }
+    function renderTile(app, editing) {
+      const a = document.createElement('a');
+      a.className = 'lf-app';
+      a.href = tileHref(app); // 同一個視窗換頁（不開新分頁、不用左右滑）
+      a.setAttribute('aria-label', editing ? '編輯 ' + app.name : app.name);
+      const name = document.createElement('span'); name.className = 'lf-name'; name.textContent = app.name;
+      a.append(iconEl(app), name);
+      if (role === 'user' && !editing && isOwnSite(app)) { // User 不能開 DX、YA、SR
+        a.href = '#'; a.style.opacity = '.4'; a.title = '此帳號不能開啟 ' + app.name;
+        a.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + app.name + '。'); });
+      }
+      return a;
+    }
+    let addPos = null;
+    let curTab = 'apps', cabinetOnly = false; // cabinetOnly：Superuser 在 Apps 分頁按 ＋，只加到 App 櫃（不放自己的主畫面）
+    // ＋ 只在用得到的地方出現：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）；Family 等其他分頁收起來
+    function syncAddBtn() { $('lfAddBtn').hidden = !role || !(curTab === 'apps' || (curTab === 'all' && isSuper())); }
+    // 整個 App 區都可以放 App（含最底部）：格數＝畫面放得下的行數 × 每行個數；放滿才多一行（只有 App 區捲動）
+    function fitSlots() {
+      const p = $('panelApps'), gr = $('lfApps'), cs = getComputedStyle(gr);
+      const cols = cs.gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+      const c = gr.querySelector('.slot-cell') || gr.querySelector('.slot-empty');
+      const h = c ? c.offsetHeight : 96, gap = parseFloat(cs.rowGap) || 22;
+      const avail = p.clientHeight - 24 - ($('lfApps').nextElementSibling && !$('lfApps').nextElementSibling.hidden ? 50 : 0);
+      return Math.max(1, Math.floor((avail + gap) / (h + gap))) * cols;
+    }
+    let fitT = null;
+    window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(() => slots.render(), 150); });
+    slots = window.clcSlotGrid($('lfApps'), {
+      minSlots: fitSlots, cellClass: 'lf-cell', emptyClass: 'lf-slot', removeClass: 'lf-remove',
+      canEdit: () => !!role, // 登入者都能編自己的桌面
+      getItems: () => apps,
+      renderTile,
+      save: persist,
+      error: err => toast('排列儲存失敗：' + errText(err)),
+      onAdd: pos => { addPos = pos; openApp(null); },
+      onEdit: id => openApp(id),
+      onRemove: id => removeApp(id)
+    });
+    const withPos = () => window.clcSlotGridNormalize(apps);
+    function errText(err) { return err && err.code === 'permission-denied' ? '權限不足（請確認已登入，以及 Firestore 規則）。' : '請稍後再試。'; }
+    // 主畫面＝個人桌面（每人一份，含 Superuser）；App 櫃＝linfamily_settings/apps（全部 App，只有 Superuser 改）
+    async function persist(next, seenAdd) {
+      if (!db) throw new Error('資料庫尚未載入');
+      if (role) { // 個人桌面（seen：已通知過的 App，第一次建立時＝當時全部 App）
+        const seen = Array.from(new Set((myDesk ? mySeen : globalApps.map(a => a.id)).concat(seenAdd || [])));
+        await db.collection(DESK_COL).doc(user.email.toLowerCase()).set({ items: next, seen, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); // merge：不蓋掉背景主題
+        myDesk = next; mySeen = seen; try { localStorage.setItem(deskKey(), JSON.stringify(next)); } catch (_) {}
+        return showApps();
+      }
+      throw new Error('尚未登入');
+    }
+    async function saveGlobal(next) {
+      await db.collection('linfamily_settings').doc('apps').set({
+        items: next, seeded: seededList, hannahSeeded: true,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: user ? user.email : ''
+      });
+      globalApps = next; needsSeed = false;
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(next)); } catch (_) {}
+      showApps();
+    }
+    async function removeApp(id) {
+      const app = apps.find(a => a.id === id);
+      if (!app || !confirm('從主畫面移除「' + app.name + '」？')) return;
+      try { await persist(withPos().filter(a => a.id !== id)); } catch (err) { toast('移除失敗：' + errText(err)); }
+    }
+    // 預設 App 只自動加一次（記在雲端 seeded 清單；之後刪掉也不會再跑回來）：
+    // Hannah's Studio 放第一格（其餘往後），CLC DX04 放到第一個空格。由 Superuser 登入時寫回雲端。
+    function fromCloud(d) {
+      let items = Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : [];
+      const seeded = new Set(Array.isArray(d.seeded) ? d.seeded : []);
+      if (d.hannahSeeded) seeded.add('hannah');
+      let changed = false;
+      if (!seeded.has('hannah')) {
+        seeded.add('hannah');
+        if (!items.some(a => a.id === HANNAH.id)) {
+          items = [HANNAH].concat(window.clcSlotGridNormalize(items).sort((a, b) => a.pos - b.pos).map((a, i) => Object.assign({}, a, { pos: i + 1 })));
+          changed = true;
+        }
+      }
+      if (!seeded.has('dx04')) {
+        seeded.add('dx04');
+        if (!items.some(a => a.id === DX04.id || /clc-dx04\.pages\.dev\/?$/.test(String(a.url || '')))) {
+          items = window.clcSlotGridNormalize(items);
+          let pos = 0; while (items.some(a => a.pos === pos)) pos++;
+          items = items.concat(Object.assign({}, DX04, { pos }));
+          changed = true;
+        }
+      }
+      return { items, seed: changed || !Array.isArray(d.seeded) || d.seeded.length !== seeded.size, seeded: Array.from(seeded) };
+    }
+    function seedIfNeeded() {
+      if (!needsSeed || seeding || !isSuper()) return;
+      seeding = true; saveGlobal(globalApps).catch(err => console.warn('Hannah 預設寫入失敗', err)).finally(() => { seeding = false; });
+    }
+    if (db) db.collection('linfamily_settings').doc('apps').onSnapshot(snap => {
+      const r = fromCloud(snap.exists ? snap.data() : {});
+      globalApps = r.items; needsSeed = r.seed; seededList = r.seeded;
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(globalApps)); } catch (_) {}
+      showApps(); seedIfNeeded();
+    }, err => console.warn('App 清單讀取失敗（沿用快取）', err));
+
+    // ---------- 新增／修改對話框 ----------
+    const dlg = $('lfAppDialog'); let editingId = null, uploadedIcon = '';
+    const placeholderIcon = $('lfAppIcon').placeholder;
+    function setUploaded(icon) {
+      uploadedIcon = icon || '';
+      $('lfAppIcon').placeholder = uploadedIcon ? '已使用上傳的圖片（填網址可取代）' : placeholderIcon;
+      if (uploader) uploader.setUploaded(!!uploadedIcon);
+    }
+    function showErr(msg) { $('lfAppErr').textContent = msg; $('lfAppErr').hidden = !msg; }
+    function openApp(id) {
+      if (!role) return;
+      const app = id ? apps.find(a => a.id === id) : null;
+      editingId = app ? app.id : null; if (app) { addPos = null; cabinetOnly = false; }
+      $('lfAppTitle').textContent = app ? '修改 App' : '新增 App';
+      $('lfAppUrl').value = app ? app.url || '' : '';
+      $('lfAppName').value = app ? app.name : '';
+      const curIcon = app && !isGoogleIcon(app.icon || app.iconUrl) ? (app.icon || app.iconUrl || '') : '';
+      $('lfAppIcon').value = isDataIcon(curIcon) ? '' : curIcon;
+      setUploaded(isDataIcon(curIcon) ? curIcon : '');
+      auto = { name: '', icon: '', embeddable: app ? app.embeddable : undefined, url: app ? safeUrl(app.url) : '' };
+      showErr(''); status(''); $('lfAppSave').disabled = false; preview();
+      dlg.showModal(); (app ? $('lfAppName') : $('lfAppUrl')).focus();
+    }
+    // 貼上網址 → 由 DX04 的 /api/site-info 抓名稱、圖示（和手機「加入主畫面」相同來源）、能否放進框內。
+    // 名稱、圖示只在空白或仍是上次自動抓的值時才覆蓋；抓不到圖就用自動生成的字母圖示。
+    const SITE_INFO = 'https://clc-dx04.pages.dev/api/site-info?url=';
+    let auto = {}, fetchSeq = 0, fetchTimer = 0;
+    function status(msg) { $('lfAppStatus').textContent = msg; $('lfAppStatus').hidden = !msg; }
+    function preview() { $('lfAppPreview').replaceChildren(iconEl({ name: $('lfAppName').value, icon: uploadedIcon || $('lfAppIcon').value, url: $('lfAppUrl').value })); }
+    // 圖示可上傳、拖放或貼上截圖
+    const uploader = window.clcIconUploader ? window.clcIconUploader({
+      dialog: dlg, row: dlg.querySelector('.lf-iconrow'),
+      onIcon: d => { $('lfAppIcon').value = ''; setUploaded(d); showErr(''); preview(); },
+      onClear: () => { setUploaded(''); preview(); },
+      onError: showErr
+    }) : null;
+    async function fetchInfo() {
+      const url = safeUrl($('lfAppUrl').value);
+      if (!url || url === auto.url) return;
+      auto.url = url; auto.embeddable = undefined;
+      if (!isExternal(url)) return;
+      const seq = ++fetchSeq; status('讀取網站名稱與圖示…');
+      let info = null;
+      try { const r = await fetch(SITE_INFO + encodeURIComponent(url)); info = await r.json(); } catch (_) {}
+      if (seq !== fetchSeq) return;
+      status(info && info.ok ? '' : '讀取不到網站資訊，請自行填寫（圖示可留空）。');
+      if (!info) return;
+      if (typeof info.embeddable === 'boolean') auto.embeddable = info.embeddable;
+      const name = String(info.name || '').trim().slice(0, 20), icon = info.ok && !isGoogleIcon(info.icon) ? safeUrl(info.icon) : '';
+      const nameEl = $('lfAppName'), iconElm = $('lfAppIcon');
+      if (name && (!nameEl.value.trim() || nameEl.value === auto.name)) { nameEl.value = name; auto.name = name; }
+      if (!uploadedIcon && (!iconElm.value.trim() || iconElm.value === auto.icon)) { iconElm.value = icon; auto.icon = icon; }
+      preview();
+    }
+    $('lfAppUrl').addEventListener('input', () => { clearTimeout(fetchTimer); fetchTimer = setTimeout(fetchInfo, 600); });
+    $('lfAppUrl').addEventListener('change', fetchInfo);
+    $('lfAppName').addEventListener('input', preview);
+    $('lfAppIcon').addEventListener('input', () => { if ($('lfAppIcon').value.trim() && uploadedIcon) setUploaded(''); preview(); });
+    $('lfAppCancel').addEventListener('click', () => dlg.close());
+    // 按下和放開都在框外才關閉（拖曳選字滑出去不會關掉）
+    if (window.clcDialogBackdropClose) window.clcDialogBackdropClose(dlg);
+    else dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+    dlg.querySelector('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (safeUrl($('lfAppUrl').value) !== auto.url) { clearTimeout(fetchTimer); await fetchInfo(); }
+      const url = safeUrl($('lfAppUrl').value);
+      const icon = uploadedIcon || $('lfAppIcon').value.trim();
+      let name = $('lfAppName').value.trim().slice(0, 20);
+      if (!url) return showErr('請輸入網址，例如 HannahProjects/home.html 或 https://example.com');
+      if (icon && isImageUrl(icon) && !safeIcon(icon)) return showErr('圖示網址格式不正確。');
+      if (!name) { try { name = isExternal(url) ? new URL(url).hostname.replace(/^www\./, '') : url.replace(/\/$/, ''); } catch (_) { name = url; } name = name.slice(0, 20); }
+      $('lfAppSave').disabled = true;
+      const base = withPos(), old = editingId && base.find(a => a.id === editingId);
+      const patch = { name, url, icon, iconUrl: '' };
+      if (typeof auto.embeddable === 'boolean') patch.embeddable = auto.embeddable; else if (old) patch.embeddable = null;
+      const next = old
+        ? base.map(a => a.id === old.id ? Object.assign({}, a, patch) : a)
+        : base.concat(Object.assign({ id: 'app_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, patch,
+            Number.isInteger(addPos) && !base.some(a => a.pos === addPos) ? { pos: addPos } : {}));
+      try {
+        if (cabinetOnly && !old && isSuper()) { // Apps 分頁新增：只放進 App 櫃，大家都能從 Apps 加；自己的主畫面不動
+          const g = window.clcSlotGridNormalize(globalApps); let p = 0; while (g.some(a => a.pos === p)) p++;
+          const added = Object.assign({ id: 'app_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, patch, { pos: p });
+          await saveGlobal(g.concat(added));
+          cabinetOnly = false; dlg.close(); renderAll(); clearNews(); toast('已加到 App 櫃：' + name); return; // clearNews：自己加的不用亮紅點
+        }
+        if (isSuper()) { // Superuser 新增／修改 → 同步到 App 櫃，大家的 Apps 會看到
+          const saved = next.find(a => a.id === (old ? old.id : next[next.length - 1].id));
+          const g = window.clcSlotGridNormalize(globalApps), inG = g.some(a => a.id === saved.id);
+          if (old && inG) await saveGlobal(g.map(a => a.id === saved.id ? Object.assign({}, a, patch) : a));
+          else if (!old) { let p = 0; while (g.some(a => a.pos === p)) p++; await saveGlobal(g.concat(Object.assign({}, saved, { pos: p }))); }
+        }
+        await persist(next, old ? [] : [next[next.length - 1].id]); dlg.close();
+      }
+      catch (err) { showErr('儲存失敗：' + errText(err)); $('lfAppSave').disabled = false; }
+    });
+
+    // ---------- 權限管理 ----------
+    // ---------- 所有 App（預設桌面＝目前全部 App）／新 App 通知 ----------
+    const onDesk = a => apps.some(m => m.id === a.id);
+    const locked = a => !isSuper() && isOwnSite(a);
+    const newApps = () => role && myDesk ? globalApps.filter(a => !mySeen.includes(a.id) && !onDesk(a) && !locked(a)) : [];
+    async function addToDesk(a) {
+      const base = withPos(); let pos = 0; while (base.some(m => m.pos === pos)) pos++;
+      try { await persist(base.concat(Object.assign({}, a, { pos })), [a.id]); toast('已加到主畫面：' + a.name); }
+      catch (err) { toast('加入失敗：' + errText(err)); }
+    }
+    function renderAll() {
+      const list = role ? window.clcSlotGridNormalize(globalApps).filter(a => !onDesk(a) && !locked(a)).sort((a, b) => a.pos - b.pos) : [];
+      $('lfAllNote').textContent = !role ? '登入後，還沒加到主畫面的 App 會列在這裡。' : list.length ? '還沒加到主畫面的 App（從主畫面移除的也會回到這裡）。' : '全部 App 都在你的主畫面了。';
+      const box = $('lfAll'); box.textContent = '';
+      list.forEach(a => {
+        const row = document.createElement('div'); row.className = 'lf-all-row';
+        const link = document.createElement('a'); link.href = locked(a) ? '#' : tileHref(a);
+        const name = document.createElement('span'); name.textContent = a.name;
+        link.append(iconEl(a), name);
+        if (locked(a)) { link.style.opacity = '.4'; link.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + a.name + '。'); }); }
+        row.append(link);
+        if (role) {
+          const b = document.createElement('button'); b.type = 'button';
+          b.textContent = '＋ 加到主畫面'; b.addEventListener('click', () => { b.disabled = true; addToDesk(a); });
+          row.append(b);
+        }
+        if (isSuper()) { // Superuser：從 App 櫃刪除（所有人都不會再看到新增選項）
+          const d = document.createElement('button'); d.type = 'button'; d.textContent = '刪除'; d.style.background = '#B5483D';
+          d.addEventListener('click', async () => {
+            if (!confirm('從 App 櫃刪除「' + a.name + '」？（已加到別人主畫面的不受影響）')) return;
+            try { await saveGlobal(globalApps.filter(x => x.id !== a.id)); } catch (err) { toast('刪除失敗：' + errText(err)); }
+          });
+          row.append(d);
+        }
+        box.append(row);
+      });
+    }
+    function renderNews() { $('lfAppsDot').hidden = !newApps().length; } // 有新 App → Apps 分頁紅點
+    function clearNews() { const n = newApps(); if (n.length) persist(withPos(), n.map(a => a.id)).catch(() => {}); } // 打開 Apps 就算看過
+
+
+    // ---------- 背景主題（每個人自己的，存在 linfamily_desktops/{email} 的 theme、wall、wallImg） ----------
+    const THEMES = {
+      pine:     { name:'松綠',   pine:'#4E8B7E', sage:'#8FBFB0', cloud:'#E6E7E9' },
+      ocean:    { name:'海洋',   pine:'#0F8A92', sage:'#6FC7C9', cloud:'#E3EEF0' },
+      sun:      { name:'暖陽',   pine:'#C07A3E', sage:'#E6B98A', cloud:'#F2ECE3' },
+      lavender: { name:'薰衣草', pine:'#7A6BB0', sage:'#B6A9DD', cloud:'#ECEAF3' },
+      rose:     { name:'玫瑰',   pine:'#B5596B', sage:'#E2A3AE', cloud:'#F3E9EA' },
+      graphite: { name:'石墨',   pine:'#4B5563', sage:'#9CA3AF', cloud:'#E5E7EB' }
+    };
+    const WALLS = {
+      none:   { name:'無', css:'' },
+      coast:  { name:'海岸', css:'linear-gradient(100deg,#02878F,#02A8AB 58%,#F8C4B4 64%,#F5CCBD)' },
+      mist:   { name:'晨霧', css:'linear-gradient(160deg,#E8EEF0,#CFE3DD 50%,#F4EBDD)' },
+      forest: { name:'森林', css:'linear-gradient(135deg,#2F5D50,#4E8B7E 50%,#8FBFB0)' },
+      sunset: { name:'落日', css:'linear-gradient(160deg,#F6C28B,#E58C8A 55%,#7A6BB0)' },
+      night:  { name:'夜空', css:'radial-gradient(ellipse at 30% 20%,#2A3A5E,#0B1020 70%)' }
+    };
+    let look = { theme:'pine', wall:'none', wallImg:'' };
+    const lookKey = () => 'linfamily_look_' + (user ? user.email.toLowerCase() : '');
+    function paintLook() {
+      const t = THEMES[look.theme] || THEMES.pine, st = document.documentElement.style;
+      st.setProperty('--pine', t.pine); st.setProperty('--sage', t.sage); st.setProperty('--cloud', t.cloud);
+      const img = look.wall === 'img' && look.wallImg ? 'url("' + look.wallImg + '")' : (WALLS[look.wall] || WALLS.none).css;
+      $('lfWall').style.backgroundImage = img || 'none'; $('lfWall').hidden = !img;
+      document.documentElement.classList.toggle('lf-has-wall', !!img);
+      if ($('lfThemeDialog').open) renderLook();
+    }
+    function applyLook(d, fromServer) {
+      look = { theme: THEMES[d.theme] ? d.theme : 'pine', wall: d.wall === 'img' || WALLS[d.wall] ? d.wall : 'none', wallImg: d.wallImg || '' };
+      paintLook();
+      if (fromServer) try { localStorage.setItem(lookKey(), JSON.stringify(look)); } catch (_) {}
+    }
+    async function saveLook(patch) {
+      Object.assign(look, patch); paintLook();
+      try { localStorage.setItem(lookKey(), JSON.stringify(look)); } catch (_) {}
+      if (!db || !user) return;
+      try { await db.collection(DESK_COL).doc(user.email.toLowerCase()).set(Object.assign({}, patch, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() }), { merge: true }); $('lfLookMsg').textContent = ''; }
+      catch (err) { $('lfLookMsg').textContent = '儲存失敗：' + errText(err); }
+    }
+    function renderLook() {
+      const sw = $('lfSwatches'); sw.textContent = '';
+      Object.entries(THEMES).forEach(([k, t]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'lf-swatch'; b.title = t.name; b.setAttribute('aria-label', t.name);
+        b.style.background = `linear-gradient(135deg, ${t.pine} 50%, ${t.sage} 50%)`; b.setAttribute('aria-pressed', look.theme === k ? 'true' : 'false');
+        b.addEventListener('click', () => saveLook({ theme: k })); sw.append(b);
+      });
+      const wl = $('lfWalls'); wl.textContent = '';
+      const tile = (k, label, bg) => {
+        const b = document.createElement('button'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', '桌布：' + label);
+        if (bg) b.style.backgroundImage = bg; else b.textContent = label;
+        b.setAttribute('aria-pressed', look.wall === k ? 'true' : 'false'); wl.append(b); return b;
+      };
+      Object.entries(WALLS).forEach(([k, w]) => tile(k, w.name, w.css).addEventListener('click', () => saveLook({ wall: k })));
+      if (look.wallImg) tile('img', '我的照片', 'url("' + look.wallImg + '")').addEventListener('click', () => saveLook({ wall: 'img' }));
+      tile('upload', '＋ 上傳照片', '').addEventListener('click', () => $('lfWallFile').click());
+    }
+    // 上傳照片：先在手機上縮小、壓成 JPEG（約 200～500KB），存在自己的資料裡，不用另外的檔案空間
+    $('lfWallFile').addEventListener('change', async e => {
+      const file = e.target.files && e.target.files[0]; e.target.value = '';
+      if (!file) return;
+      $('lfLookMsg').textContent = '處理照片中…';
+      try {
+        const bmp = await createImageBitmap(file);
+        let max = 1600, q = 0.72, data = '';
+        for (let i = 0; i < 4; i++) {
+          const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+          const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+          c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+          data = c.toDataURL('image/jpeg', q);
+          if (data.length < 650000) break;
+          max = Math.round(max * 0.8); q = Math.max(0.5, q - 0.08);
+        }
+        $('lfLookMsg').textContent = '';
+        await saveLook({ wall: 'img', wallImg: data });
+      } catch (err) { $('lfLookMsg').textContent = '這張照片無法使用，請換一張。'; }
+    });
+    // 齒輪選單
+    const gearBtn = $('lfGearBtn'), gearMenu = $('lfGearMenu');
+    const setGear = open => { gearMenu.hidden = !open; gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+    gearBtn.addEventListener('click', () => setGear(gearMenu.hidden));
+    document.addEventListener('click', e => { if (!gearMenu.hidden && !gearMenu.contains(e.target) && !gearBtn.contains(e.target)) setGear(false); });
+    gearMenu.addEventListener('click', e => {
+      const b = e.target.closest('[data-gear]'); if (!b) return; setGear(false);
+      if (b.dataset.gear === 'theme') { renderLook(); $('lfLookMsg').textContent = role ? '' : '登入後設定會跟著你的帳號。'; $('lfThemeDialog').showModal(); }
+    });
+    $('lfThemeClose').addEventListener('click', () => $('lfThemeDialog').close());
+    if (window.clcDialogBackdropClose) window.clcDialogBackdropClose($('lfThemeDialog'));
+    else $('lfThemeDialog').addEventListener('click', e => { if (e.target === $('lfThemeDialog')) $('lfThemeDialog').close(); });
+
+
+    // ---------- 問候語（照 DX 的做法：依時段、星期隨機一句；LF 是家庭用，語氣生活化、親近） ----------
+    (function () {
+      const POOLS = {
+        early: [ // 05:00–07:59
+          "Morning, {n}! Up early today", "Rise and shine, {n} ☀️", "Early start, {n}? Breakfast first",
+          "Good morning, {n}. Sleep well?", "Hey {n}, the day's just waking up"
+        ],
+        morning: [ // 08:00–11:59
+          "Good morning, {n}", "Morning, {n}! Had breakfast?", "Hi {n}, have a lovely day",
+          "Welcome home, {n}", "Morning, {n}. Coffee or tea?", "Hello {n}, nice to see you"
+        ],
+        lunch: [ // 12:00–13:59
+          "Lunchtime, {n}! What's good today?", "Have you eaten yet, {n}?", "Hi {n}, enjoy your lunch",
+          "Time for a bite, {n}", "Hey {n}, don't skip lunch"
+        ],
+        afternoon: [ // 14:00–17:59
+          "Good afternoon, {n}", "Hey {n}, how's your day going?", "Snack time, {n}?",
+          "Welcome back, {n}", "Hi {n}, take a little break", "Afternoon, {n}. Time for some tea?"
+        ],
+        evening: [ // 18:00–21:59
+          "Good evening, {n}", "Welcome home, {n}", "What's for dinner, {n}?",
+          "Evening, {n}. How was your day?", "Hi {n}, time to relax", "Family time, {n} 🏡"
+        ],
+        late: [ // 22:00–00:59
+          "Still up, {n}?", "Time to get cozy, {n}", "Good night soon, {n}?",
+          "Hey {n}, rest well tonight", "Sweet dreams soon, {n} 🌙"
+        ],
+        night: [ // 01:00–04:59
+          "Can't sleep, {n}?", "It's late, {n}. Get some rest", "Hey night owl 🦉",
+          "Shh… everyone's asleep, {n}", "Off to bed soon, {n}?"
+        ]
+      };
+      const EXTRA = {
+        weekendMorning: ["Happy {d}, {n}!", "Lazy {d} morning, {n}?", "Enjoy your {d}, {n}"],
+        weekendAfternoon: ["Any plans this {d}, {n}?", "Enjoy the weekend, {n}"],
+        mondayMorning: ["New week, {n}! You've got this"],
+        fridayEvening: ["Weekend's here, {n}! 🎉", "Happy Friday night, {n}"],
+        sundayEvening: ["Cozy Sunday night, {n}?"]
+      };
+      const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const slotOf = h => h >= 5 && h < 8 ? 'early' : h < 12 && h >= 8 ? 'morning' : h >= 12 && h < 14 ? 'lunch' : h >= 14 && h < 18 ? 'afternoon' : h >= 18 && h < 22 ? 'evening' : (h >= 22 || h < 1) ? 'late' : 'night';
+      function poolFor(now) {
+        const slot = slotOf(now.getHours()), day = now.getDay(), wk = day === 0 || day === 6;
+        let list = POOLS[slot].slice();
+        if ((slot === 'early' || slot === 'morning') && wk) list = list.concat(EXTRA.weekendMorning);
+        if ((slot === 'lunch' || slot === 'afternoon') && wk) list = list.concat(EXTRA.weekendAfternoon);
+        if ((slot === 'early' || slot === 'morning') && day === 1) list = list.concat(EXTRA.mondayMorning);
+        if (slot === 'evening' && day === 5) list = list.concat(EXTRA.fridayEvening);
+        if (slot === 'evening' && day === 0) list = list.concat(EXTRA.sundayEvening);
+        return { key: slot + day, list, dayName: DAYS[day] };
+      }
+      const nameOf = () => { const n = user && (user.displayName || '').trim().split(/\s+/)[0]; return n || 'there'; };
+      const el = $('lfGreeting'); let curKey = '', curLine = '';
+      function render(force) {
+        const p = poolFor(new Date());
+        if (force || p.key !== curKey) { curKey = p.key; curLine = p.list[Math.floor(Math.random() * p.list.length)].replace('{d}', p.dayName); } // 換時段才重抽
+        const text = curLine.replace('{n}', nameOf()).replace('Hey there night owl', 'Hey night owl');
+        if (el.textContent !== text) el.textContent = text;
+      }
+      window.lfGreetingRender = render;
+      render(true);
+      setInterval(() => render(false), 60000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) render(false); });
+    })();
+
+    // ---------- 分頁：主畫面／家庭空間配置 ----------
+    document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
+      const tab = b.dataset.tab;
+      curTab = tab; syncAddBtn();
+      document.querySelectorAll('.lf-tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
+      $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family'; $('panelAll').hidden = tab !== 'all';
+      if (tab === 'all') { renderAll(); clearNews(); }
+      if (tab === 'apps') slots.render();
+      if (tab !== 'apps') slots.setEditing(false);
+    }));
+    // 平面圖：點區域 → 列出這個區域的 App（App 的 zoneId 沿用舊資料）
+    let activeZone = '';
+    function renderZone() {
+      const list = $('lfZoneList');
+      document.querySelectorAll('.svg-hotspot').forEach(g => g.classList.toggle('is-active', g.dataset.zoneId === activeZone));
+      if (!activeZone) { list.replaceChildren(); $('lfZoneTitle').textContent = '點平面圖上的區域，查看相關 App'; return; }
+      const g = document.querySelector('.svg-hotspot[data-zone-id="' + CSS.escape(activeZone) + '"]');
+      $('lfZoneTitle').textContent = (g && g.getAttribute('aria-label')) || '';
+      const items = apps.filter(a => a.zoneId === activeZone);
+      list.replaceChildren(...(items.length ? items.map(a => {
+        const li = document.createElement('li'), link = document.createElement('a');
+        link.href = safeUrl(a.url) || '#';
+        const text = document.createElement('div');
+        text.innerHTML = `<strong>${esc(a.name)}</strong>${a.rolePrimary ? `<small>${esc(a.rolePrimary)}</small>` : ''}${a.roleSecondary ? `<small>${esc(a.roleSecondary)}</small>` : ''}`;
+        link.append(iconEl(a), text); li.append(link); return li;
+      }) : [Object.assign(document.createElement('li'), { textContent: '這個區域還沒有 App。' })]));
+    }
+    document.querySelectorAll('.svg-hotspot').forEach(g => {
+      const pick = () => { activeZone = activeZone === g.dataset.zoneId ? '' : g.dataset.zoneId; renderZone(); };
+      g.addEventListener('click', pick);
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    });
+
+    // ---------- 搜尋：符合的 App 保持清楚，其他變淡；Enter 開第一個符合的 App ----------
+    const search = $('lfSearch');
+    function applySearch() {
+      const q = search.value.trim().toLowerCase();
+      const grid = $('lfApps');
+      $('lfSearchClear').hidden = !q;
+      grid.classList.toggle('is-searching', !!q);
+      let hits = 0;
+      grid.querySelectorAll(':scope > [data-slot]').forEach(el => {
+        const app = el.dataset.id && apps.find(a => a.id === el.dataset.id);
+        const match = !q || (app && (String(app.name).toLowerCase().includes(q) || String(app.url || '').toLowerCase().includes(q)));
+        el.classList.toggle('lf-dim', !!q && !match);
+        if (q && match && app) hits++;
+      });
+      $('lfNoResult').hidden = !q || hits > 0;
+      if (q) { document.querySelector('.lf-tabs [data-tab="apps"]').click(); slots.setEditing(false); }
+    }
+    search.addEventListener('input', applySearch);
+    search.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { search.value = ''; applySearch(); showSearch(false); }
+      if (e.key === 'Enter') {
+        const first = $('lfApps').querySelector(':scope > .slot-cell:not(.lf-dim) a');
+        if (search.value.trim() && first) location.href = first.href;
+      }
+    });
+    // 放大鏡：點了才出現搜尋列；清空或離開（沒有字）就收起來，不占版面
+    $('lfAddBtn').addEventListener('click', () => {
+      addPos = null; cabinetOnly = curTab === 'all' && isSuper();
+      openApp(null);
+      if (cabinetOnly) $('lfAppTitle').textContent = '新增 App 到 App 櫃';
+    });
+    const sBox = $('lfSearchBox'), sBtn = $('lfSearchBtn');
+    function showSearch(on) { sBox.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) search.focus(); }
+    sBtn.addEventListener('click', () => { if (sBox.hidden) showSearch(true); else { search.value = ''; applySearch(); showSearch(false); } });
+    search.addEventListener('blur', () => setTimeout(() => { if (!search.value.trim() && document.activeElement !== search) showSearch(false); }, 150));
+    $('lfSearchClear').addEventListener('mousedown', e => e.preventDefault());
+    $('lfSearchClear').addEventListener('click', () => { search.value = ''; applySearch(); showSearch(false); });
+    new MutationObserver(() => { if (search.value.trim()) applySearch(); }).observe($('lfApps'), { childList: true });
+
+    slots.render(); requestAnimationFrame(() => slots.render()); // 第二次依實際格子高度補滿畫面
+  })();
+  </script>
+  <script src="js/lf-pull-refresh.js" defer></script>
 </body>
 </html>
