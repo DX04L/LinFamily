@@ -411,7 +411,7 @@
   <dialog class="lf-dialog" id="lfAppDialog">
     <form method="dialog" novalidate>
       <h3 id="lfAppTitle">新增 App</h3>
-      <label>網址<input id="lfAppUrl" placeholder="例如 HannahProjects/home.html 或 https://…" autocomplete="off" inputmode="url"></label>
+      <label>網址<input id="lfAppUrl" placeholder="例如 HannahProjects/ 或 https://…" autocomplete="off" inputmode="url"></label>
       <label>名稱<input id="lfAppName" maxlength="20" placeholder="貼上網址後自動抓取，可修改" autocomplete="off"></label>
       <label>圖示<span class="lf-iconrow"><span id="lfAppPreview"></span><input id="lfAppIcon" maxlength="300" placeholder="自動抓取；也可填 emoji 或圖片網址" autocomplete="off"></span></label>
       <p class="lf-note" id="lfAppStatus" hidden></p>
@@ -619,7 +619,7 @@
 
     // ---------- App 清單 ----------
     const CACHE_KEY = 'linfamily_apps_v2';
-    const HANNAH = { id: 'hannah', name: "Hannah's Studio", url: 'HannahProjects/home.html', icon: 'HannahProjects/apple-touch-icon.png', pos: 0 };
+    const HANNAH = { id: 'hannah', name: "Hannah's Studio", url: 'HannahProjects/', icon: 'HannahProjects/apple-touch-icon.png', pos: 0 };
     const DX04 = { id: 'dx04', name: 'CLC DX04', url: 'https://clc-dx04.pages.dev/', icon: 'https://clc-dx04.pages.dev/apple-touch-icon.png' };
     const PRESET_EMOJI = { photos:'📷', calendar:'📅', home:'🏠', cloud:'☁️', notes:'📝', finance:'💰', security:'📹', map:'📍', media:'🎬', link:'🔗' };
     let apps = [HANNAH, Object.assign({}, DX04, { pos: 1 })], needsSeed = false, seeding = false, seededList = ['hannah', 'dx04'];
@@ -653,8 +653,20 @@
       showApps();
     }
 
+    function normalizeHannahUrl(value) {
+      if (!/HannahProjects\/home(?:\.html)?(?:[?#]|$)/.test(value)) return value;
+      try {
+        const url = new URL(value, location.href);
+        const home = new URL(HANNAH.url, location.href);
+        if (url.origin === home.origin &&
+            (url.pathname === home.pathname + 'home' || url.pathname === home.pathname + 'home.html')) {
+          return HANNAH.url + url.search + url.hash;
+        }
+      } catch (_) {}
+      return value;
+    }
     function safeUrl(value) {
-      const v = String(value || '').trim();
+      const v = normalizeHannahUrl(String(value || '').trim());
       if (!v || v.startsWith('//')) return '';
       if (/^[a-z][a-z0-9+.-]*:/i.test(v)) { try { const u = new URL(v); return /^https?:$/.test(u.protocol) ? u.href : ''; } catch (_) { return ''; } }
       // 看起來像網域（example.com、www.xxx）就補 https://；其他當作站內路徑（例如 HannahProjects/）
@@ -825,7 +837,7 @@
       const app = id ? apps.find(a => a.id === id) : null;
       editingId = app ? app.id : null; if (app) { addPos = null; cabinetOnly = false; }
       $('lfAppTitle').textContent = app ? '修改 App' : '新增 App';
-      $('lfAppUrl').value = app ? app.url || '' : '';
+      $('lfAppUrl').value = app ? normalizeHannahUrl(app.url || '') : '';
       $('lfAppName').value = app ? app.name : '';
       const curIcon = app && !isGoogleIcon(app.icon || app.iconUrl) ? (app.icon || app.iconUrl || '') : '';
       $('lfAppIcon').value = isDataIcon(curIcon) ? '' : curIcon;
@@ -879,7 +891,7 @@
       const url = safeUrl($('lfAppUrl').value);
       const icon = uploadedIcon || $('lfAppIcon').value.trim();
       let name = $('lfAppName').value.trim().slice(0, 20);
-      if (!url) return showErr('請輸入網址，例如 HannahProjects/home.html 或 https://example.com');
+      if (!url) return showErr('請輸入網址，例如 HannahProjects/ 或 https://example.com');
       if (icon && isImageUrl(icon) && !safeIcon(icon)) return showErr('圖示網址格式不正確。');
       if (!name) { try { name = isExternal(url) ? new URL(url).hostname.replace(/^www\./, '') : url.replace(/\/$/, ''); } catch (_) { name = url; } name = name.slice(0, 20); }
       $('lfAppSave').disabled = true;
