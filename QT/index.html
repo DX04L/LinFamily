@@ -84,10 +84,11 @@ h3{font-size:18px}
 
 /* 經文排版 */
 .verses{font:clamp(17px,2.2vw,21px)/1.9 var(--heading);list-style:none;padding:0;margin:6px 0 0}
-.verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:0 0 14px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
+.verses li{margin:0 0 14px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
 .verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
 .verses small{color:var(--accent);font:700 13px/2.5 var(--body)}
-.verse-pair{display:flex;flex-direction:column;gap:5px}
+.eng-verse{display:block;margin-top:5px}
+.verses small,.kids-verses small{margin-inline-end:.6em;white-space:nowrap}
 .eng-verse{font-family:var(--body);font-size:clamp(14px,1.7vw,16.5px);line-height:1.62;color:var(--muted);font-weight:400}
 .eng-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:6px;background:var(--panel);color:var(--accent);margin-right:6px;vertical-align:middle}
 
@@ -113,8 +114,7 @@ button:hover,.action:hover{filter:brightness(.95)}
   letter-spacing:.03em;
 }
 .kids-verses{list-style:none;padding:0;margin:6px 0 0}
-.kids-verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:0 0 16px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
-.cross-chapter li{grid-template-columns:6ch 1fr}
+.kids-verses li{margin:0 0 16px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
 .kids-verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
 .kids-verses small{color:var(--accent);font:700 13px/2.5 var(--body)}
 
@@ -140,6 +140,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
+<link rel="stylesheet" href="reader.css?v=1">
 </head>
 <body>
 <header><div class="bar shell">
@@ -153,10 +154,13 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <div class="hero">
     <div class="hero-copy">
       <div class="date-nav">
-        <button id="previous" aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-        <time id="date" aria-live="polite"></time>
-        <button id="next" aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-        <span class="eyebrow" id="hero-label">· 每日靈修</span>
+        <button id="previous" disabled aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <details class="date-picker" id="date-picker">
+          <summary aria-label="選擇日期"><time id="date"></time></summary>
+          <div id="date-list" aria-label="最近七天的經文"></div>
+        </details>
+        <button id="next" disabled aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+        <button type="button" id="export-word" hidden>匯出 Word</button>
       </div>
       <div class="title-row">
         <h1 id="hero-title">每日靈修</h1>
@@ -199,6 +203,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <div class="actions"><a class="action" id="manual-ai" target="_blank" rel="noopener noreferrer">前往 AI 對話</a><form method="dialog"><button class="action">關閉</button></form></div>
 </dialog>
 <noscript><p class="shell">請啟用 JavaScript 以閱讀每日靈修內容。</p></noscript>
+<script src="reader.js?v=1"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
@@ -254,6 +259,7 @@ let current;
 let request = 0;
 let toastTimer;
 let firestore;
+let recent = [];
 
 function escapeText(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -283,13 +289,11 @@ function render(data) {
   $('adult').innerHTML = `
     <section class="card">
       <p class="eyebrow">今日經文 · 和合本 &amp; NIV</p>
-      <ol class="verses${crossesChapters ? ' cross-chapter' : ''}">${bible.verses.map(v => `
+      <ol class="verses">${bible.verses.map(v => `
         <li>
           <small>${escapeText(verseLabel(v))}</small>
-          <div class="verse-pair">
-            <span>${escapeText(v.text)}</span>
+          <span>${escapeText(v.text)}</span>
             ${v.niv ? `<span class="eng-verse"><span class="eng-tag">NIV</span>${escapeText(v.niv)}</span>` : ''}
-          </div>
         </li>`).join('')}
       </ol>
       <details><summary>查看前後文背景經文</summary><div class="context">
@@ -313,13 +317,11 @@ function render(data) {
     ${hasKidsVerses ? `
     <section class="card">
       <p class="eyebrow">今日經文 · 注音 &amp; NIrV</p>
-        <ol class="kids-verses${crossesChapters ? ' cross-chapter' : ''}">${bible.verses.map(v => `
+        <ol class="kids-verses">${bible.verses.map(v => `
           <li>
             <small>${escapeText(verseLabel(v))}</small>
-            <div class="verse-pair">
-              <span class="zhuyin">${rubyMarkup(v.ruby || v.text)}</span>
+            <span class="zhuyin">${rubyMarkup(v.ruby || v.text)}</span>
               ${v.nirv ? `<span class="eng-verse"><span class="eng-tag">NIrV</span>${escapeText(v.nirv)}</span>` : ''}
-            </div>
           </li>`).join('')}
         </ol>
     </section>` : ''}
@@ -335,6 +337,7 @@ function render(data) {
 }
 
 function setTheme(value) {
+  QTReader.clear();
   mode = value;
   root.dataset.theme = mode;
   const isKids = mode === 'kids-cute';
@@ -363,7 +366,8 @@ function updateView() {
   $('kids').hidden = !current || !isKids;
   $('warning-banner').hidden = isKids || !current?.mismatch_warning;
   $('warning-banner').textContent = current?.mismatch_warning || '';
-  $('hero-label').textContent = '· 每日靈修';
+  $('export-word').hidden = !current;
+  QTReader.refresh();
   $('hero-title').textContent = !current ? '每日靈修' : current.scripture.reference;
   if (isKids && current?.kids_content?.bible_story_title_ruby) {
     $('hero-title').innerHTML = rubyMarkup(current.kids_content.bible_story_title_ruby);
@@ -384,7 +388,7 @@ function showStatus(message) {
   $('status').textContent = message;
 }
 
-async function readDevotional(date) {
+async function readRecent() {
   if (!firestore) {
     firestore = Promise.all([
       import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
@@ -395,13 +399,36 @@ async function readDevotional(date) {
         throw error;
       });
   }
-  const {doc, getDoc, instance} = await firestore;
-  const snapshot = await getDoc(doc(instance, collectionName, date));
-  return snapshot.exists() ? snapshot.data() : null;
+  const {collection, query, orderBy, documentId, limit, getDocs, instance} = await firestore;
+  const snapshot = await getDocs(query(collection(instance, collectionName), orderBy(documentId(), 'desc'), limit(7)));
+  return snapshot.docs.filter(doc => /^\d{4}-\d{2}-\d{2}$/.test(doc.id))
+    .map(doc => ({...doc.data(), date: doc.id}));
 }
 
-async function selectDate(date) {
+const bookShortNames = {"創世記":"創","出埃及記":"出","利未記":"利","民數記":"民","申命記":"申","約書亞記":"書","士師記":"士","路得記":"得","撒母耳記上":"撒上","撒母耳記下":"撒下","列王紀上":"王上","列王紀下":"王下","歷代志上":"代上","歷代志下":"代下","以斯拉記":"拉","尼希米記":"尼","以斯帖記":"斯","約伯記":"伯","詩篇":"詩","箴言":"箴","傳道書":"傳","雅歌":"歌","以賽亞書":"賽","耶利米書":"耶","耶利米哀歌":"哀","以西結書":"結","但以理書":"但","何西阿書":"何","約珥書":"珥","阿摩司書":"摩","俄巴底亞書":"俄","約拿書":"拿","彌迦書":"彌","那鴻書":"鴻","哈巴谷書":"哈","西番雅書":"番","哈該書":"該","撒迦利亞書":"亞","瑪拉基書":"瑪","馬太福音":"太","馬可福音":"可","路加福音":"路","約翰福音":"約","使徒行傳":"徒","羅馬書":"羅","哥林多前書":"林前","哥林多後書":"林後","加拉太書":"加","以弗所書":"弗","腓立比書":"腓","歌羅西書":"西","帖撒羅尼迦前書":"帖前","帖撒羅尼迦後書":"帖後","提摩太前書":"提前","提摩太後書":"提後","提多書":"多","腓利門書":"門","希伯來書":"來","雅各書":"雅","彼得前書":"彼前","彼得後書":"彼後","約翰一書":"約一","約翰二書":"約二","約翰三書":"約三","猶大書":"猶","啟示錄":"啟"};
+function updateDates() {
+  const date = $('date').dateTime;
+  const index = recent.findIndex(entry => entry.date === date);
+  $('previous').disabled = index < 0 || index === recent.length - 1;
+  $('next').disabled = index <= 0;
+  $('date-list').replaceChildren(...recent.map(entry => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    const [, month, day] = entry.date.split('-');
+    const reference = entry.scripture.reference.replace(/^(.+?)\s+(?=\d)/,
+      (match, book) => (bookShortNames[book] || book) + ' ');
+    button.textContent = `${Number(month)}/${Number(day)} ${entry.scripture.short_reference || reference}`;
+    if (entry.date === date) button.setAttribute('aria-current', 'date');
+    button.addEventListener('click', () => selectDate(entry.date));
+    return button;
+  }));
+}
+
+async function selectDate(date, animate = true) {
   const id = ++request;
+  const previousDate = $('date').dateTime;
+  $('date-picker').open = false;
+  QTReader.clear();
   $('date').dateTime = date;
   $('date').textContent = new Intl.DateTimeFormat('zh-TW', {
     timeZone:'UTC', year:'numeric', month:'long', day:'numeric', weekday:'short'
@@ -410,24 +437,35 @@ async function selectDate(date) {
   updateView();
   showStatus('正在讀取靈修內容…');
   try {
-    const data = await readDevotional(date);
+    if (!recent.length) recent = await readRecent();
     if (id !== request) return;
-    if (data) render(data);
+    const data = recent.find(entry => entry.date === date) || (!previousDate ? recent[0] : null);
+    if (data && data.date !== date) {
+      selectDate(data.date, false);
+      return;
+    }
     current = data;
+    if (data) render(data);
     updateView();
+    updateDates();
+    if (data && animate && previousDate && previousDate !== date) {
+      window.scrollTo(0, 0);
+      QTReader.flip(date > previousDate);
+    }
     showStatus(data ? '' : '這天沒有靈修資料。');
   } catch {
     if (id !== request) return;
     current = null;
     updateView();
+    updateDates();
     showStatus('暫時無法讀取靈修資料，請稍後再試。');
   }
 }
 
 function shiftDate(days) {
-  const date = new Date($('date').dateTime + 'T00:00:00Z');
-  date.setUTCDate(date.getUTCDate() + days);
-  selectDate(date.toISOString().slice(0,10));
+  const index = recent.findIndex(entry => entry.date === $('date').dateTime);
+  const target = index >= 0 ? recent[index - days] : null;
+  if (target) selectDate(target.date);
 }
 
 async function copyPrompt(prompt) {
@@ -487,12 +525,17 @@ $('home').addEventListener('click', event => {
   event.preventDefault();
   selectDate(taipeiDate());
 });
+QTReader.init({
+  getCurrent: () => current,
+  getMode: () => mode === 'kids-cute' ? 'kids' : 'adult',
+  copy: copyPrompt,
+  turn: shiftDate,
+});
 try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; } catch {}
 setTheme(mode);
 selectDate(taipeiDate());
 </script>
-<script src="../linfamily-home.js?v=drag4" data-home="../"></script>
-  <script defer src="../js/lf-menu.js?v=3"></script>
+  <script defer src="../js/lf-menu.js?v=4"></script>
   <script defer src="https://clc-dx04.pages.dev/lf-back.js?v=8" data-home="../"></script>
 </body>
 </html>

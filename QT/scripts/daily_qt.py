@@ -156,32 +156,16 @@ def fetch_duranno():
         return None, "", f"Duranno 連線失敗 ({e})"
 
 def fetch_youtube():
-    urls = [
-        "https://www.youtube.com/@CGNChinese_%E6%B4%BB%E6%BD%91%E7%9A%84%E7%94%9F%E5%91%BD/videos",
-        "https://www.youtube.com/@CGNChinese/videos"
-    ]
-    channel_id = None
-    for u in urls:
-        try:
-            html = requests.get(u, headers=HEADERS, timeout=15).text
-            m = re.search(r'"channelId":"(UC[\w-]{22})"', html) or re.search(r'channel_id=(UC[\w-]{22})', html)
-            if m:
-                channel_id = m.group(1)
-                break
-        except Exception:
-            continue
-
-    if not channel_id:
-        return None, "", "", "YouTube 無法取得頻道 ID"
-
+    playlist_id = "PLUkEOfQnxIpEMVHWNpAh5LWxQJB1vZcOh"
     try:
-        rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-        rss_xml = requests.get(rss_url, headers=HEADERS, timeout=15).text
-        root = ET.fromstring(rss_xml)
+        response = requests.get("https://www.youtube.com/feeds/videos.xml",
+                                params={"playlist_id": playlist_id}, headers=HEADERS, timeout=15)
+        response.raise_for_status()
+        root = ET.fromstring(response.content)
         ns = {"atom": "http://www.w3.org/2005/Atom"}
         entries = root.findall("atom:entry", ns)
         if not entries:
-            return None, "", "", "YouTube RSS 無影片紀錄"
+            return None, "", "", "YouTube 播放清單沒有影片紀錄"
 
         month = int(TODAY_STR[5:7])
         day = int(TODAY_STR[8:10])
@@ -364,6 +348,7 @@ def get_scripture_data(ref_info: dict):
     return {
         "reference": ref_info["reference"],
         "eng_reference": ref_info["eng_reference"],
+        "short_reference": ref_info["chineses"] + " " + ref_info["reference"].split(" ", 1)[1],
         "verses": verses,
         "context_before": context(start, -1),
         "context_after": context(end, 1),
@@ -541,6 +526,31 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
         print(f"⚠️ Gemini API 生成失敗，改用預設模板 ({e})")
         return fallback_adult, fallback_kids
 
+def store_recent_devotional(database, data):
+    collection = database.collection("devotionals")
+    entry = collection.document(data["date"])
+
+    @firestore.transactional
+    def update(transaction):
+        previous = entry.get(transaction=transaction).to_dict() or {}
+        if not data["kids_content"]["bible_story_ruby"]:
+            if (previous.get("scripture", {}).get("reference") != data["scripture"]["reference"]
+                    or not previous.get("kids_content", {}).get("bible_story_ruby")):
+                raise RuntimeError("兒童故事未生成，本次保留先前的每日資料。")
+            data.update(adult_content=previous["adult_content"], kids_content=previous["kids_content"])
+
+        dates = {snap.id for snap in collection.select([]).stream(transaction=transaction)
+                 if re.fullmatch(r"\d{4}-\d{2}-\d{2}", snap.id)}
+        dates.add(data["date"])
+        expired = sorted(dates, reverse=True)[7:]
+        if data["date"] not in expired:
+            transaction.set(entry, data)
+        for date in expired:
+            if date != data["date"] or previous:
+                transaction.delete(collection.document(date))
+
+    update(database.transaction())
+
 def main():
     print(f"開始執行 {TODAY_STR} 每日 QT 雙來源比對與經文排版...")
     source = fetch_and_verify_sources()
@@ -559,7 +569,7 @@ def main():
         "kids_content": kids_content
     }
 
-    db.collection("devotionals").document(TODAY_STR).set(doc_data)
+    store_recent_devotional(db, doc_data)
     print(f"成功寫入 Firestore: devotionals/{TODAY_STR} ({scripture['reference']})")
 
 if __name__ == "__main__":

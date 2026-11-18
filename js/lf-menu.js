@@ -9,7 +9,7 @@
  */
 (function () {
   'use strict';
-  const OBJECT = 'a, button, input, textarea, select, label, img, svg, video, audio, iframe, canvas, dialog, summary, [contenteditable], [role="button"], [data-slot], [role="menu"], #lfHomeBtn, .slot-cell, .slot-empty, .lf-menu, .lf-ctx';
+  const OBJECT = 'a, button, input, textarea, select, label, img, svg, video, audio, iframe, canvas, dialog, summary, [contenteditable], [role="button"], [data-slot], [role="menu"], [data-lf-menu-ignore], #lfHomeBtn, .slot-cell, .slot-empty, .lf-menu, .lf-ctx';
   const ua = navigator.userAgent || '';
   const isAndroid = /Android/i.test(ua);
   const isLine = /\bLine\//i.test(ua);
