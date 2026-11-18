@@ -19,7 +19,26 @@ client = OpenAI(
     api_key=os.environ["LLM_API_KEY"],
     base_url=os.environ.get("LLM_BASE_URL") or "https://generativelanguage.googleapis.com/v1beta/openai/"
 )
-MODEL_NAME = os.environ.get("LLM_MODEL") or "gemini-2.5-flash"
+
+# 自動偵測此 API Key 目前可用的免費 Flash 模型，避免 404
+def detect_working_model():
+    if os.environ.get("LLM_MODEL"):
+        return os.environ["LLM_MODEL"]
+    candidates = ["gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
+    try:
+        available = [m.id.replace("models/", "") for m in client.models.list().data]
+        print("此 Key 可用模型列表:", available[:10])
+        for c in candidates:
+            if c in available:
+                print("自動選用模型:", c)
+                return c
+        if available:
+            return available[0]
+    except Exception as e:
+        print("讀取模型列表失敗，使用預設:", e)
+    return "gemini-2.0-flash"
+
+MODEL_NAME = detect_working_model()
 
 # 3. 初始化 Firebase Admin
 cred_dict = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
