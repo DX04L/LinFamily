@@ -95,22 +95,21 @@ HEADERS = {
     "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7"
 }
 
+# 3. 配合 BpmfGenSenRounded 注音字體：輸出純文字並為聖經破音字加上 Unicode 變體選擇器 (IVS)
 def to_zhuyin_ruby(text: str) -> str:
     if not text:
         return ""
-    result = []
-    custom_map = {"阿": "ㄚ", "們": "˙ㄇㄣ", "耶": "ㄧㄝ", "和": "ㄏㄜˊ"}
-    for char in text:
-        if "\u4e00" <= char <= "\u9fff":
-            bopo = custom_map.get(char) or pinyin(char, style=Style.BOPOMOFO, heteronym=False)[0][0]
-            bopo_clean = re.sub(r"[^ㄅ-ㄩˊˇˋ˙]", "", bopo)
-            if bopo_clean:
-                result.append(f"<ruby>{char}<rt>{bopo_clean}</rt></ruby>")
-            else:
-                result.append(char)
-        else:
-            result.append(char)
-    return "".join(result)
+    # 源泉圓體注音版 IVS 破音字對應（\uE01E1 為第二讀音，\uE01E2 為第三讀音）
+    ivs_rules = [
+        ("耶和華", "耶和\uE01E2華"),  # 「和」讀作 ㄏㄜˋ
+        ("阿們", "阿\uE01E1們"),      # 「阿」讀作 ㄚ
+        ("什麼", "什\uE01E1麼"),      # 「什」讀作 ㄕㄣˊ
+        ("為甚麼", "為什\uE01E1麼"),
+    ]
+    out = text
+    for src, dst in ivs_rules:
+        out = out.replace(src, dst)
+    return out
 
 def parse_reference_from_text(text: str):
     # 過濾掉 Duranno 網站頁首固定的標語金句（阿摩司書 8:11）
