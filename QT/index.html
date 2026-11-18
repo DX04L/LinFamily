@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f9f7f2">
 <title>Daily QT · 每日靈修</title>
-<link id="favicon" rel="icon" type="image/svg+xml" href="icons/adult.svg">
-<link id="touch-icon" rel="apple-touch-icon" sizes="180x180" href="icons/adult-touch.png">
+<link id="favicon" rel="icon" type="image/svg+xml" href="icons/grownup.svg">
+<link id="touch-icon" rel="apple-touch-icon" sizes="180x180" href="icons/grownup-touch.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&display=swap">
 <style>
 :root{
@@ -103,7 +103,7 @@ footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-s
 </head>
 <body>
 <header><div class="bar shell">
-  <a id="home" class="brand" href="/lf/QT/"><img id="brand-icon" src="icons/adult.svg" alt=""><span>Daily QT · 每日靈修</span></a>
+  <a id="home" class="brand" href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a>
   <div class="modes" role="group" aria-label="閱讀模式">
     <button type="button" data-mode="literary" aria-pressed="true">成人</button>
     <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
@@ -164,7 +164,39 @@ const firebaseConfig = {
 };
 const collectionName = 'devotionals';
 const iconFallbacks = {
-  "adult": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="38" fill="#243b31"/><path d="M90 128Q62 105 28 111V57q37-6 62 18 25-24 62-18v54q-34-6-62 17Z" fill="#f3ead5"/><path d="M90 120V80M40 68q23 1 40 14m-40 0q23 1 40 14m60-28q-23 1-40 14m40 0q-23 1-40 14" fill="none" stroke="#887356" stroke-width="3" stroke-linecap="round"/><path d="M90 42v16m-8-8h16" stroke="#d4ac74" stroke-width="3" stroke-linecap="round"/></svg>',
+  "grownup": `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" role="img" aria-labelledby="title">
+  <title id="title">山景書本</title>
+  <rect width="180" height="180" rx="38" fill="#f7f5ef"/>
+  <g transform="translate(-.5 18.5) scale(.215)">
+    <ellipse cx="437" cy="574" rx="314" ry="25" fill="#eae5dc"/>
+    <circle cx="481" cy="137" r="57" fill="#e8d8b9"/>
+    <path fill="#eeeee0" d="M180 281 270 146l43 50L464 57l102 140 60-42 56 69-111 130Z"/>
+    <path fill="#d2d8cc" d="m112 339 61-64 62-76 35-53 56 70L464 57 324 223l48-26 39-1 43-72 28 56 19-25 65 42 60-42 56 69 58 72 30 160-339 115L99 449Z"/>
+    <defs>
+      <clipPath id="land">
+        <path d="m99 449 13-110c51-53 61-80 92-80 66 4 84 62 144 71 52 8 101-25 149-65 71-59 136-59 185-41l58 72 30 160-339 115Z"/>
+      </clipPath>
+    </defs>
+    <g clip-path="url(#land)">
+      <path fill="#9db4a7" d="M88 202h690v370H88z"/>
+      <path fill="#5e8779" d="M100 351c78-62 118-63 177-20 57 42 114 51 165 38 79-18 128-31 185-69 39-27 80-4 120 25l34 132-350 116L90 451Z"/>
+      <path fill="#31594d" d="M101 366c68-12 130 16 184 72 59 62 119 87 194 23 106-90 211-101 278-75l20 81-346 110L90 455Z"/>
+      <path fill="#9ba283" d="M503 342c-53 45 5 62 28 72 61 28-14 96-99 151l-58-23c76-29 130-60 145-89 19-36-59-37-59-64 0-15 21-33 43-47Z"/>
+    </g>
+    <path d="M580 110q13-11 26 1 12-15 27-10m27 57q10-7 18 0 7-9 16-7" fill="none" stroke="#53675a" stroke-width="2.4" stroke-linecap="round"/>
+    <path fill="#273d33" d="M96 461c132 20 226 51 336 113 103-58 204-92 329-113l16 30c-142 16-248 49-344 98-106-53-208-80-352-96Z"/>
+    <path fill="#d8c9a6" d="M95 455c134 19 231 51 338 112 102-57 210-92 337-110l-11 31c-132 19-233 49-326 92-111-51-218-82-345-98Z"/>
+    <path fill="#eee1c2" d="M99 448c127 13 231 48 334 115 102-63 209-95 337-107l-5 15c-130 17-232 50-332 101-107-56-208-88-337-110Z"/>
+    <path d="M93 465c138 21 238 52 340 108 96-49 197-79 330-98M91 474c133 20 235 51 342 103 98-46 199-76 328-96" fill="none" stroke="#998866" stroke-width="1.3"/>
+    <path d="M124 438c41-73 47-145 65-202m-39 151c-13-41-41-57-68-68m597 166c17-49 42-97 77-129" fill="none" stroke="#857b55" stroke-width="3.5" stroke-linecap="round"/>
+    <path fill="#557666" d="M154 388c-34 0-56-27-68-63 33 6 57 24 68 63Zm7-38c14-30 38-49 70-51-14 31-35 50-70 51Zm14-36c-28-8-39-36-41-69 26 14 44 40 41 69Zm7-38c-1-34 15-56 34-73 7 31-7 59-34 73Zm510 177c-29-13-34-39-23-70 17 17 25 42 23 70Zm23-37c14-25 32-32 57-17-18 12-34 20-57 17Z"/>
+    <g fill="#b59055">
+      <circle cx="187" cy="238" r="8.3"/>
+      <circle cx="755" cy="356" r="9.5"/>
+      <circle cx="768" cy="363" r="4.8"/>
+    </g>
+  </g>
+</svg>`,
   "kids": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="38" fill="#f8d9ed"/><path d="M57 104q-28 0-29-21 0-13 16-13l19 8m60 26q28 0 29-21 0-13-16-13l-19 8" fill="#a66583"/><path d="M48 77q-8-19 13-27 8-17 28-12 17-8 29 9 22 4 16 28 16 15 3 32-2 19-23 21-13 15-29 6-19 6-28-11-18-1-19-22-6-15 10-24Z" fill="#fff8e5"/><ellipse cx="90" cy="94" rx="34" ry="29" fill="#f5c6c3"/><path d="M76 92h.1m28 0h.1" stroke="#543547" stroke-width="6" stroke-linecap="round"/><path d="M83 104q7 8 14 0" fill="none" stroke="#543547" stroke-width="3" stroke-linecap="round"/><ellipse cx="68" cy="103" rx="5" ry="3" fill="#e894a6"/><ellipse cx="112" cy="103" rx="5" ry="3" fill="#e894a6"/></svg>'
 };
 const sampleDate = '2026-11-18';
@@ -269,7 +301,7 @@ function setTheme(value) {
   mode = value;
   root.dataset.theme = mode;
   const isKids = mode === 'kids-cute';
-  const icon = isKids ? 'kids' : 'adult';
+  const icon = isKids ? 'kids' : 'grownup';
   const iconSvg = `icons/${icon}.svg`;
   $('favicon').href = iconSvg;
   if (location.protocol === 'file:') {
