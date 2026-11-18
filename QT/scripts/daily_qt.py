@@ -94,16 +94,15 @@ HEADERS = {
     "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7"
 }
 
-# 3. 配合 BpmfGenSenRounded 注音字體：輸出純文字並為聖經破音字加上 Unicode 變體選擇器 (IVS)
+# 3. 配合 BpmfGenSenRounded 注音字體：輸出純文字並為聖經破音字加上標準 8 碼 Unicode IVS
 def to_zhuyin_ruby(text: str) -> str:
     if not text:
         return ""
-    # 源泉圓體注音版 IVS 破音字對應（\uE01E1 為第二讀音，\uE01E2 為第三讀音）
     ivs_rules = [
-    ("耶和華", "耶和\U000E01E2華"),  # 「和」讀作 ㄏㄜˋ
-    ("阿們", "阿\U000E01E1們"),      # 「阿」讀作 ㄚ
-    ("什麼", "什\U000E01E1麼"),      # 「什」讀作 ㄕㄣˊ
-    ("為甚麼", "為什\U000E01E1麼"),
+        ("耶和華", "耶和\U000E01E2華"),  # 「和」讀作 ㄏㄜˋ
+        ("阿們", "阿\U000E01E1們"),      # 「阿」讀作 ㄚ
+        ("什麼", "什\U000E01E1麼"),      # 「什」讀作 ㄕㄣˊ
+        ("為甚麼", "為什\U000E01E1麼"),
     ]
     out = text
     for src, dst in ivs_rules:
@@ -350,12 +349,125 @@ def get_scripture_data(ref_info: dict):
         "context_after": context_after
     }
 
+# 4. 透過 Gemini API 生成保守福音派解經、學者註腳、神學議題與兒童故事
+def generate_ai_devotional(ref_info: dict, scripture: dict):
+    fallback_adult = {
+        "book_background": f"今日靈修進度為《{ref_info['reference']}》（{ref_info['eng_reference']}）。點擊下方按鈕可隨時與 AI 深入探討本段經文的歷史背景與神學意義。",
+        "daily_context": "建議先完整閱讀上方和合本與 NIV 英文經文，並展開「查看前後文背景經文」掌握上下文脈絡。",
+        "key_exegesis": "請設定 GEMINI_API_KEY 後重新執行工作流程，系統將自動生成福音保守派釋經解析與學者著述註腳。",
+        "theology_points": [
+            {
+                "title": f"{ref_info['reference']} 歷史與神學背景",
+                "summary": "點擊下方按鈕，將自動複製本段經文專屬的神學探討提問，帶您前往 AI 深入研讀。",
+                "deep_dive_prompt": f"我正在研讀聖經《{ref_info['reference']}》（{ref_info['eng_reference']}）。請以福音保守派立場，引用至少兩位著名保守派聖經學者（如 D. A. Carson、Bruce Waltke、Gordon Fee 等）或教父著述，為我解析這段經文的歷史脈絡與神學重點。"
+            }
+        ]
+    }
+    fallback_kids = {
+        "plain_explanation_ruby": to_zhuyin_ruby(f"今天我們一起來讀《{ref_info['reference']}》，看看上帝在聖經裡對我們說了什麼話！"),
+        "bible_story_title": f"{ref_info['reference']} · 每日經文",
+        "bible_story_title_ruby": to_zhuyin_ruby(ref_info["reference"]),
+        "bible_story_ruby": "",
+        "prayer_ruby": to_zhuyin_ruby("親愛的天父，謝謝你賜給我們寶貴的聖經。求你幫助我明白你的話語，每天喜樂地跟隨你。奉主耶穌的名禱告，阿們。")
+    }
+
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        print("⚠️ 未偵測到 GEMINI_API_KEY，將使用預設解經模板。")
+        return fallback_adult, fallback_kids
+
+    verses_text = "\n".join(f"{v['verse']}. {v['text']}" for v in scripture["verses"])
+    prompt = f"""你是一位嚴謹的保守福音派（Conservative Evangelical）聖經學者兼台灣主日學牧者，熟悉信望愛信仰與聖經資源中心（FHL）的釋經傳統。
+請針對今日聖經進度《{ref_info['reference']}》（{ref_info['eng_reference']}）與下方和合本經文，以繁體中文（台灣慣用語）產出每日靈修內容，並嚴格只回傳 JSON 物件（不要包含 Markdown ```json 標記）。
+
+【最高學術準則（務必嚴格遵守）】
+1. 立場：完全立足於大公教會正統信仰與保守福音派釋經立場（肯定聖經無誤、歷史文法釋經法、救贖歷史脈絡）。
+2. 零幻覺與寧缺勿濫：凡是史料有爭議、不確定、或你沒有百分之百把握的細節與書名，**絕對不要寫出來**！寧可精簡少寫，也絕不可猜測或編造不存在的書名與引言。
+3. 多重權威學者支持：大人版的「全書背景」、「當日文化背景(或上下文處境)」、「重要解經」與「神學議題」，每項核心論證都必須有**超過一位（至少兩位）**著名學者支持，且**其中至少一位必須是當代著名保守福音派釋經學者**（例如：D. A. Carson、Bruce Waltke、Gordon Fee、Tremper Longman III、Douglas Moo、F. F. Bruce、John Stott、Wayne Grudem、Leon Morris、I. Howard Marshall、G. K. Beale、Craig Blomberg、Richard Bauckham、Willem VanGemeren 等），並可搭配早期教父或改教家（如奧古斯丁、屈梭多模、加爾文、馬丁路德），且在括號或註腳中標明**真實確定的著述／註釋書名稱**（例如：`[註：參 Bruce Waltke《舊約神學》；加爾文《聖經註釋》]`）。
+
+【今日經文】
+{verses_text}
+
+【JSON 欄位規格】
+{{
+  "book_background": "1. 全書背景（約 150-220 字：說明作者、成書年代、受眾與全書神學主題，並附上至少兩位保守福音派學者／教父著述註腳）",
+  "daily_context": "2. 當日文化背景與上下文處境（約 150-220 字：說明本段經文在該卷書中的段落結構位置、古近東或希羅歷史文化背景，並附上學者著述註腳）",
+  "key_exegesis": "3. 重要解經（約 220-320 字：按經文節次或核心意象進行歷史文法釋經、關鍵希伯來文/希臘文詞義解析，每一論點皆須有超過一位保守福音派學者［含至少一位當代學者］或教父的支持與註腳）",
+  "theology_points": [
+    {{
+      "title": "神學議題標題 1",
+      "summary": "議題解析（約 130-180 字，包含救贖歷史與教義連結，並附上至少兩位保守學者／教父著述註腳）",
+      "deep_dive_prompt": "給讀者在 ChatGPT/Claude 繼續深入提問的具體 Prompt（包含經文出處、神學問題與指定參考的保守派學者）"
+    }},
+    {{
+      "title": "神學議題標題 2",
+      "summary": "議題解析（約 130-180 字，並附上至少兩位保守學者／教父著述註腳）",
+      "deep_dive_prompt": "給讀者在 ChatGPT/Claude 繼續深入提問的具體 Prompt"
+    }}
+  ],
+  "kids_plain_explanation": "白話經文大意（約 80-120 字：用國小低中年級孩子一聽就懂的白話文，簡明扼要說出這段經文在講什麼）",
+  "kids_story_title": "生動的兒童聖經故事標題（10 字以內，不需加書卷章節）",
+  "kids_story": "生動的兒童聖經故事重寫（約 200-260 字：忠於聖經原意，用溫暖、有畫面感的故事筆法重寫經文事件與上帝的心意，避免枯燥說教）",
+  "kids_prayer": "溫暖的今日小禱告（約 50-80 字，第一人稱「親愛的天父……奉主耶穌的名禱告，阿們。」）"
+}}"""
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "temperature": 0.3
+        }
+    }
+
+    try:
+        resp = requests.post(url, json=payload, timeout=55)
+        resp.raise_for_status()
+        raw_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        raw_text = re.sub(r"^```json\s*|\s*```$", "", raw_text)
+        ai = json.loads(raw_text)
+
+        points = []
+        for p in ai.get("theology_points", [])[:3]:
+            if p.get("title") and p.get("summary"):
+                points.append({
+                    "title": str(p["title"]).strip(),
+                    "summary": str(p["summary"]).strip(),
+                    "deep_dive_prompt": str(p.get("deep_dive_prompt") or f"請以保守福音派立場解析《{ref_info['reference']}》中的「{p['title']}」，並列出相關保守派學者著述。").strip()
+                })
+
+        adult_content = {
+            "book_background": str(ai.get("book_background") or fallback_adult["book_background"]).strip(),
+            "daily_context": str(ai.get("daily_context") or fallback_adult["daily_context"]).strip(),
+            "key_exegesis": str(ai.get("key_exegesis") or fallback_adult["key_exegesis"]).strip(),
+            "theology_points": points or fallback_adult["theology_points"]
+        }
+
+        plain_exp = str(ai.get("kids_plain_explanation") or "").strip()
+        story_title = str(ai.get("kids_story_title") or ref_info["reference"]).strip()
+        story_body = str(ai.get("kids_story") or "").strip()
+        prayer_body = str(ai.get("kids_prayer") or "").strip()
+
+        kids_content = {
+            "plain_explanation_ruby": to_zhuyin_ruby(plain_exp or story_body or fallback_kids["plain_explanation_ruby"]),
+            "bible_story_title": story_title,
+            "bible_story_title_ruby": to_zhuyin_ruby(story_title),
+            "bible_story_ruby": to_zhuyin_ruby(story_body),
+            "prayer_ruby": to_zhuyin_ruby(prayer_body) if prayer_body else fallback_kids["prayer_ruby"]
+        }
+        print("✅ Gemini AI 保守派釋經、學者註腳與兒童故事生成成功！")
+        return adult_content, kids_content
+    except Exception as e:
+        print(f"⚠️ Gemini API 生成失敗，改用預設模板 ({e})")
+        return fallback_adult, fallback_kids
+
 def main():
     print(f"開始執行 {TODAY_STR} 每日 QT 雙來源比對與經文排版...")
     source = fetch_and_verify_sources()
     ref_info = source["ref_info"]
 
     scripture = get_scripture_data(ref_info)
+    adult_content, kids_content = generate_ai_devotional(ref_info, scripture)
 
     doc_data = {
         "date": TODAY_STR,
@@ -363,24 +475,8 @@ def main():
         "video_url": source["video_url"],
         "mismatch_warning": source["mismatch_warning"],
         "scripture": scripture,
-        "adult_content": {
-            "book_background": f"今日靈修進度為《{ref_info['reference']}》（{ref_info['eng_reference']}）。點擊下方按鈕可隨時與 AI 深入探討本段經文的歷史背景與神學意義。",
-            "daily_context": "建議先完整閱讀上方和合本與 NIV 英文經文，並展開「查看前後文背景經文」掌握上下文脈絡。",
-            "theology_points": [
-                {
-                    "title": f"{ref_info['reference']} 歷史與神學背景",
-                    "summary": "點擊下方按鈕，將自動複製本段經文專屬的神學探討提問，帶您前往 AI 深入研讀。",
-                    "deep_dive_prompt": f"我正在研讀聖經《{ref_info['reference']}》（{ref_info['eng_reference']}）。請為我精簡說明這卷書的寫作背景、本段經文的古近東／歷史文化脈絡，以及大公教會正統信仰的核心神學重點。"
-                }
-            ]
-        },
-        "kids_content": {
-            "plain_explanation_ruby": to_zhuyin_ruby(f"今天我們一起來讀《{ref_info['reference']}》，看看上帝在聖經裡對我們說了什麼話！"),
-            "bible_story_title": f"{ref_info['reference']} · 每日經文",
-            "bible_story_title_ruby": to_zhuyin_ruby(ref_info["reference"]),
-            "bible_story_ruby": "",
-            "prayer_ruby": to_zhuyin_ruby("親愛的天父，謝謝你賜給我們寶貴的聖經。求你幫助我明白你的話語，每天喜樂地跟隨你。奉主耶穌的名禱告，阿們。")
-        }
+        "adult_content": adult_content,
+        "kids_content": kids_content
     }
 
     db.collection("devotionals").document(TODAY_STR).set(doc_data)

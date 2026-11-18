@@ -39,40 +39,40 @@ button{cursor:pointer}
 button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 a{color:var(--accent)}
 
-/* 左右滿版配置 */
+/* 左右滿版配置（保留舒適邊距） */
 .shell{width:100%;padding-inline:clamp(16px,3.2vw,48px)}
 
 header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(10px)}
 .bar,.brand,.date-nav,.modes{display:flex;align-items:center}
-.bar{min-height:60px;justify-content:space-between;gap:10px}
-.brand{gap:9px;font-family:var(--heading);font-weight:700;text-decoration:none;color:var(--ink);white-space:nowrap}
-.brand img{width:32px;height:32px;border-radius:8px;flex-shrink:0}
+.bar{min-height:62px;justify-content:space-between;gap:12px}
+.brand{gap:10px;font-family:var(--heading);font-weight:700;text-decoration:none;color:var(--ink)}
+.brand img{width:32px;height:32px;border-radius:8px}
 .brand span{font-size:14px}
-.modes{padding:3px;gap:3px;border:1px solid var(--line);border-radius:999px;background:var(--panel);flex-shrink:0}
-.modes button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700;white-space:nowrap}
+.modes{padding:3px;gap:4px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
+.modes button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:6px 15px;font-size:13px;font-weight:700}
 .modes [aria-pressed="true"]{color:var(--on-button);background:var(--button)}
 
 /* 精簡版 Hero Banner */
-.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px 16px;padding:16px 0 14px;border-bottom:1px solid var(--line);margin-bottom:18px}
-.title-row{grid-column:1;grid-row:2}
-.date-nav{gap:7px;color:var(--muted);font-size:13px;font-weight:600;flex-wrap:wrap;white-space:nowrap}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 0 16px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.hero-copy{min-width:0;flex:1}
+.date-nav{gap:8px;color:var(--muted);font-size:13px;font-weight:600}
 .date-nav button{
-  width:28px;height:28px;padding:0;border-radius:50%;border:1px solid var(--line);
+  width:30px;height:30px;padding:0;border-radius:50%;border:1px solid var(--line);
   background:var(--surface);color:var(--ink);
   display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .date-nav button svg{width:14px;height:14px;display:block}
-.title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
-.eyebrow{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.1em;margin:0;white-space:nowrap}
+.title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
+.eyebrow{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.14em;margin:0}
 h1,h2,h3{font-family:var(--heading);line-height:1.35;margin:0}
-h1{font-size:clamp(25px,3.6vw,40px);letter-spacing:.02em;font-weight:700}
+h1{font-size:clamp(26px,3.6vw,40px);letter-spacing:.02em;font-weight:700}
 h2{font-size:clamp(20px,2.5vw,26px)}
 h3{font-size:18px}
 .lead{font-family:var(--body);font-size:clamp(14px,1.6vw,17px);font-weight:600;color:var(--muted);margin:0}
 
 /* 右側精緻徽章化插畫 */
-.art{grid-column:2;grid-row:1 / span 2;width:clamp(96px,15vw,170px)}
-.art svg{display:block;width:100%;height:auto;max-height:120px}
+.art{flex-shrink:0;width:clamp(120px,16vw,175px)}
+.art svg{display:block;width:100%;height:auto;max-height:125px}
 .kids-art,[data-theme="kids-cute"] .adult-art{display:none}
 [data-theme="kids-cute"] .kids-art{display:block}
 
@@ -91,7 +91,7 @@ h3{font-size:18px}
 .eng-verse{font-family:var(--body);font-size:clamp(14px,1.7vw,16.5px);line-height:1.62;color:var(--muted);font-weight:400}
 .eng-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:6px;background:var(--panel);color:var(--accent);margin-right:6px;vertical-align:middle}
 
-p{line-height:1.85}
+p{line-height:1.85;white-space:pre-line}
 details{border-top:1px solid var(--line);padding-top:14px;color:var(--muted);margin-top:16px}
 summary{cursor:pointer;font-weight:600;width:fit-content;font-size:14px}
 details[open] .context{animation:appear .25s ease-out}
@@ -126,16 +126,12 @@ textarea{width:100%;min-height:110px;font:inherit;margin:12px 0}
 footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-size:13px}
 
 @media(max-width:670px){
-  .hero{padding:12px 0;gap:8px;align-items:flex-end}
-  .date-nav{grid-column:1 / -1;font-size:12px;gap:5px}
-  .art{grid-row:2}
-  .date-nav button{width:25px;height:25px}
-  .eyebrow{font-size:11px;letter-spacing:.05em}
-  .art{width:76px}
-  .art svg{max-height:74px}
+  .hero{padding:14px 0 12px;gap:12px}
+  .art{width:96px}
+  .art svg{max-height:92px}
   .split{grid-template-columns:1fr}
-  .bar{min-height:54px;gap:6px}
-  .modes button{padding:5px 11px;font-size:12.5px}
+  .bar{min-height:56px;gap:8px}
+  .modes button{padding:5px 11px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -150,15 +146,17 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 </div></header>
 <main class="shell">
   <div class="hero">
-    <div class="date-nav">
-      <button id="previous" aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <time id="date" aria-live="polite"></time>
-      <button id="next" aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-      <span class="eyebrow" id="hero-label">· 每日靈修</span>
-    </div>
-    <div class="title-row">
-      <h1 id="hero-title">每日靈修</h1>
-      <p class="lead" id="hero-lead" hidden></p>
+    <div class="hero-copy">
+      <div class="date-nav">
+        <button id="previous" aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <time id="date" aria-live="polite"></time>
+        <button id="next" aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+        <span class="eyebrow" id="hero-label">· 每日靈修</span>
+      </div>
+      <div class="title-row">
+        <h1 id="hero-title">每日靈修</h1>
+        <p class="lead" id="hero-lead" hidden></p>
+      </div>
     </div>
     <div class="art"><div class="adult-art"><svg viewBox="0 0 620 510" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
 <linearGradient id="sky" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#f9f6e9"/><stop offset="1" stop-color="#d5ded0"/></linearGradient>
@@ -259,6 +257,7 @@ function escapeText(value) {
 }
 
 function rubyMarkup(value) {
+  // 剝除舊資料裡的 <ruby> 標籤與殘留的 \uE01E 錯誤碼，並套用正確的 Unicode IVS 大括號變體碼
   const plain = String(value ?? '')
     .replace(/<ruby>([^<>]+)<rt>[^<>]*<\/rt><\/ruby>/g, '$1')
     .replace(/\uE01E[12]?/g, '')
@@ -293,8 +292,9 @@ function render(data) {
     </section>
     <div class="split">
       <section class="card"><h3>全書背景</h3><p>${escapeText(adult.book_background)}</p></section>
-      <section class="card"><h3>當日文化背景</h3><p>${escapeText(adult.daily_context)}</p></section>
+      <section class="card"><h3>當日文化背景與上下文處境</h3><p>${escapeText(adult.daily_context)}</p></section>
     </div>
+    ${adult.key_exegesis ? `<section class="card"><h3>重要解經</h3><p>${escapeText(adult.key_exegesis)}</p></section>` : ''}
     <section class="card"><h2>重要神學議題</h2>
       ${adult.theology_points.map((point,i) => `<div class="point"><h3>${escapeText(point.title)}</h3><p>${escapeText(point.summary)}</p>
         <div class="actions"><button class="action" data-point="${i}" data-ai="chatgpt">與 ChatGPT 深入探討 ↗</button>
@@ -316,6 +316,11 @@ function render(data) {
           </li>`).join('')}
         </ol>` : `<p class="zhuyin">${rubyMarkup(kids.plain_explanation_ruby)}</p>`}
     </section>
+    ${(hasKidsVerses && kids.plain_explanation_ruby) ? `
+    <section class="card">
+      <p class="eyebrow">白話經文大意</p>
+      <p class="zhuyin">${rubyMarkup(kids.plain_explanation_ruby)}</p>
+    </section>` : ''}
     ${(kids.bible_story_ruby || kids.prayer_ruby) ? `
     <section class="card story">
       ${kids.bible_story_ruby ? `
@@ -333,11 +338,14 @@ function setTheme(value) {
   const isKids = mode === 'kids-cute';
   const icon = isKids ? 'kids' : 'grownup';
   const iconSvg = `icons/${icon}.svg`;
-  const inlineIcon = 'data:image/svg+xml,' + encodeURIComponent(iconFallbacks[icon]);
   $('favicon').href = iconSvg;
-  const brandImg = $('brand-icon');
-  brandImg.onerror = () => { brandImg.onerror = null; brandImg.src = inlineIcon; };
-  brandImg.src = location.protocol === 'file:' ? inlineIcon : iconSvg;
+  if (location.protocol === 'file:') {
+    const inlineIcon = 'data:image/svg+xml,' + encodeURIComponent(iconFallbacks[icon]);
+    $('favicon').href = inlineIcon;
+    $('brand-icon').src = inlineIcon;
+  } else {
+    $('brand-icon').src = iconSvg;
+  }
   $('touch-icon').href = `icons/${icon}-touch.png`;
   document.querySelector('meta[name=theme-color]').content = isKids ? '#fff5f7' : '#f9f7f2';
   document.querySelectorAll('[data-mode]').forEach(button => {
@@ -481,6 +489,6 @@ try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; }
 setTheme(mode);
 selectDate(taipeiDate());
 </script>
-<script src="https://clc-dx04.pages.dev/lf-back.js?v=8" data-home="../"></script>
+<script src="../linfamily-home.js?v=drag4" data-home="../"></script>
 </body>
 </html>
