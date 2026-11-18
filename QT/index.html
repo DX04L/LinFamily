@@ -9,6 +9,18 @@
 <link id="touch-icon" rel="apple-touch-icon" sizes="180x180" href="icons/grownup-touch.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&display=swap">
 <style>
+@font-face{
+  font-family:"BpmfGenSenRounded";
+  src:url("../fonts/BpmfGenSenRounded-R.ttf") format("truetype");
+  font-weight:400;
+  font-display:swap;
+}
+@font-face{
+  font-family:"BpmfGenSenRounded";
+  src:url("../fonts/BpmfGenSenRounded-M.ttf") format("truetype");
+  font-weight:600 700;
+  font-display:swap;
+}
 :root{
   --bg:#f9f7f2;--ink:#2c2c2a;--muted:#5b7065;--accent:#9a5737;--line:#ded9cb;--surface:#fffdf7d9;
   --panel:#f1eee3;--button:#30483c;--on-button:#fffdf4;--annotation:#87684e;--radius:14px;
@@ -40,11 +52,16 @@ header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;back
 .modes button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:6px 15px;font-size:13px;font-weight:700}
 .modes [aria-pressed="true"]{color:var(--on-button);background:var(--button)}
 
-/* 精簡版 Hero Banner（像大型聖經 App 頂部橫幅，保留插畫但不佔高度，一進來直接看到經文） */
+/* 精簡版 Hero Banner */
 .hero{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 0 16px;border-bottom:1px solid var(--line);margin-bottom:20px}
 .hero-copy{min-width:0;flex:1}
 .date-nav{gap:8px;color:var(--muted);font-size:13px;font-weight:600}
-.date-nav button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.date-nav button{
+  width:30px;height:30px;padding:0;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.date-nav button svg{width:14px;height:14px;display:block}
 .title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
 .eyebrow{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.14em;margin:0}
 h1,h2,h3{font-family:var(--heading);line-height:1.35;margin:0}
@@ -53,7 +70,7 @@ h2{font-size:clamp(20px,2.5vw,26px)}
 h3{font-size:18px}
 .lead{font-family:var(--body);font-size:clamp(14px,1.6vw,17px);font-weight:600;color:var(--muted);margin:0}
 
-/* 右側精緻徽章化插畫（完整保留兩張插畫，高度縮減為 125px） */
+/* 右側精緻徽章化插畫 */
 .art{flex-shrink:0;width:clamp(120px,16vw,175px)}
 .art svg{display:block;width:100%;height:auto;max-height:125px}
 .kids-art,[data-theme="kids-cute"] .adult-art{display:none}
@@ -65,7 +82,7 @@ h3{font-size:18px}
 .card .eyebrow{margin-bottom:8px}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 
-/* 經文排版（無重複標題，直接進入經文） */
+/* 經文排版 */
 .verses{font:clamp(17px,2.2vw,21px)/1.9 var(--heading);list-style:none;padding:0;margin:6px 0 0}
 .verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:0 0 14px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
 .verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
@@ -87,39 +104,18 @@ button:hover,.action:hover{filter:brightness(.95)}
 [data-theme="kids-cute"] button:active{transform:scale(.94)}
 .story{background:linear-gradient(145deg,#fffbeb,#f3e8ff)}
 .prayer{padding:16px 18px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);margin-top:16px}
-.zhuyin{font-size:clamp(18px,3vw,24px);line-height:2.45}
+
+/* 源泉圓體注音版 */
+.zhuyin{
+  font-family:"BpmfGenSenRounded","Noto Sans TC",sans-serif;
+  font-size:clamp(24px,3.8vw,32px);
+  line-height:1.85;
+  letter-spacing:.04em;
+}
 .kids-verses{list-style:none;padding:0;margin:6px 0 0}
 .kids-verses li{display:grid;grid-template-columns:2.4ch 1fr;gap:12px;margin:0 0 16px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
 .kids-verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
 .kids-verses small{color:var(--accent);font:700 14px/2.7 var(--body)}
-
-/* 台灣標準直排注音排版（二、三、四聲標示在最後一個注音符號右上角，輕聲置於正上方） */
-ruby{ruby-position:inter-character;ruby-align:center}
-rt{
-  display:inline-flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  position:relative;
-  font-size:.46em;
-  line-height:1.05;
-  color:var(--annotation);
-  font-weight:600;
-  margin-left:.06em;
-  margin-right:.32em;
-}
-rt .tone{
-  position:absolute;
-  left:100%;
-  bottom:-.15em;
-  font-size:.95em;
-  line-height:1;
-}
-rt .tone-neutral{
-  position:static;
-  line-height:.85;
-  margin-bottom:.05em;
-}
 
 #warning-banner{margin:0 0 36px;padding:13px 18px;border-radius:var(--radius);background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-weight:700;font-size:14px;line-height:1.6}
 #status{margin:0 0 40px}
@@ -152,9 +148,9 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <div class="hero">
     <div class="hero-copy">
       <div class="date-nav">
-        <button id="previous" aria-label="前一天">‹</button>
+        <button id="previous" aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
         <time id="date" aria-live="polite"></time>
-        <button id="next" aria-label="後一天">›</button>
+        <button id="next" aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
         <span class="eyebrow" id="hero-label">· 每日靈修</span>
       </div>
       <div class="title-row">
@@ -261,21 +257,15 @@ function escapeText(value) {
 }
 
 function rubyMarkup(value) {
-  // 修正聖經常見破音字讀音（如「耶和華」的「和」讀 ㄏㄜˋ）
-  const fixed = escapeText(value).replace(
-    /(&lt;ruby&gt;耶&lt;rt&gt;ㄧㄝ&lt;\/rt&gt;&lt;\/ruby&gt;)&lt;ruby&gt;和&lt;rt&gt;ㄏㄜˊ&lt;\/rt&gt;&lt;\/ruby&gt;(&lt;ruby&gt;華&lt;rt&gt;ㄏㄨㄚˊ&lt;\/rt&gt;&lt;\/ruby&gt;)/g,
-    '$1<ruby>和<rt>ㄏㄜˋ</rt></ruby>$2'
-  );
-  return fixed.replace(
-    /&lt;ruby&gt;([^&<>]+)&lt;rt&gt;([ㄅ-ㄩˊˇˋ˙]+)&lt;\/rt&gt;&lt;\/ruby&gt;/g,
-    (_, char, bopo) => {
-      const neutral = bopo.startsWith('˙') ? '<span class="tone-neutral">˙</span>' : '';
-      const toneMatch = bopo.match(/[ˊˇˋ]$/);
-      const tone = toneMatch ? `<span class="tone">${toneMatch[0]}</span>` : '';
-      const letters = bopo.replace(/[˙ˊˇˋ]/g, '').split('').join('<br>');
-      return `<ruby>${char}<rt>${neutral}${letters}${tone}</rt></ruby>`;
-    }
-  );
+  // 剝除舊資料裡的 <ruby> 標籤與殘留的 \uE01E 錯誤碼，並套用正確的 Unicode IVS 大括號變體碼
+  const plain = String(value ?? '')
+    .replace(/<ruby>([^<>]+)<rt>[^<>]*<\/rt><\/ruby>/g, '$1')
+    .replace(/\uE01E[12]?/g, '')
+    .replace(/耶和華/g, '耶和\u{E01E2}華')
+    .replace(/阿們/g, '阿\u{E01E1}們')
+    .replace(/什麼/g, '什\u{E01E1}麼')
+    .replace(/為甚麼/g, '為什\u{E01E1}麼');
+  return escapeText(plain);
 }
 
 function render(data) {
@@ -310,7 +300,7 @@ function render(data) {
         <button class="action" data-point="${i}" data-ai="claude">Claude ↗</button></div></div>`).join('')}
     </section>`;
 
-  const hasKidsVerses = bible.verses && bible.verses.some(v => v.ruby);
+  const hasKidsVerses = bible.verses && bible.verses.some(v => v.ruby || v.text);
   $('kids').innerHTML = `
     <section class="card">
       <p class="eyebrow">今日經文 · 注音 &amp; NIrV</p>
@@ -319,7 +309,7 @@ function render(data) {
           <li>
             <small>${escapeText(v.verse)}</small>
             <div class="verse-pair">
-              <span class="zhuyin">${v.ruby ? rubyMarkup(v.ruby) : escapeText(v.text)}</span>
+              <span class="zhuyin">${rubyMarkup(v.ruby || v.text)}</span>
               ${v.nirv ? `<span class="eng-verse"><span class="eng-tag">NIrV</span>${escapeText(v.nirv)}</span>` : ''}
             </div>
           </li>`).join('')}
@@ -329,7 +319,7 @@ function render(data) {
     <section class="card story">
       ${kids.bible_story_ruby ? `
         <p class="eyebrow">今日聖經故事</p>
-        <h2 class="zhuyin">${kids.bible_story_title_ruby ? rubyMarkup(kids.bible_story_title_ruby) : escapeText(kids.bible_story_title)}</h2>
+        <h2 class="zhuyin">${rubyMarkup(kids.bible_story_title_ruby || kids.bible_story_title)}</h2>
         <p class="zhuyin">${rubyMarkup(kids.bible_story_ruby)}</p>
       ` : ''}
       ${kids.prayer_ruby ? `<div class="prayer"><h3>♡ 今日小禱告</h3><p class="zhuyin">${rubyMarkup(kids.prayer_ruby)}</p></div>` : ''}
