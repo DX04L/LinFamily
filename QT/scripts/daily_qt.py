@@ -476,11 +476,13 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
             raise RuntimeError("API Key 查詢不到任何支援 generateContent 的 Gemini 模型")
         print(f"🔍 自動偵測到可用模型清單（前 5 個）：{available_models[:5]}")
 
-        # Keep the Flash fallback pool diverse when several recent models are overloaded.
-        stable_models = [model for model in available_models if model in (
-            "models/gemini-2.5-flash", "models/gemini-2.5-flash-lite",
-        )]
-        candidates = list(dict.fromkeys(available_models[:2] + stable_models + available_models))[:5]
+        # Try Flash variants with different capacity before falling back to older versions.
+        flash = [model for model in available_models if "flash" in model and "gemini-2." not in model]
+        variants = [
+            next((model for model in flash if feature in model), None)
+            for feature in ("lite", "preview")
+        ]
+        candidates = list(dict.fromkeys(model for model in flash[:2] + variants + available_models if model))[:8]
         for model in candidates:
             try:
                 response = requests.post(
