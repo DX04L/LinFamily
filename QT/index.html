@@ -142,7 +142,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 </head>
 <body>
 <header><div class="bar shell">
-  <a id="home" class="brand" href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a>
+  <a id="home" class="brand" data-lf-menu-trigger href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a>
   <div class="modes" role="group" aria-label="閱讀模式">
     <button type="button" data-mode="literary" aria-pressed="true">大人</button>
     <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
@@ -489,5 +489,6 @@ setTheme(mode);
 selectDate(taipeiDate());
 </script>
 <script src="../linfamily-home.js?v=drag4" data-home="../"></script>
+  <script defer src="../js/lf-menu.js?v=2"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@
  */
 (function () {
   'use strict';
-  const OBJECT = 'a, button, input, textarea, select, label, img, svg, video, audio, iframe, canvas, dialog, summary, [contenteditable], [role="button"], [data-slot], [role="menu"], .slot-cell, .slot-empty, .lf-menu, .lf-ctx';
+  const OBJECT = 'a, button, input, textarea, select, label, img, svg, video, audio, iframe, canvas, dialog, summary, [contenteditable], [role="button"], [data-slot], [role="menu"], #lfHomeBtn, .slot-cell, .slot-empty, .lf-menu, .lf-ctx';
   const ua = navigator.userAgent || '';
   const isAndroid = /Android/i.test(ua);
   const isLine = /\bLine\//i.test(ua);
@@ -50,6 +50,7 @@
 
   const style = document.createElement('style');
   style.textContent = `
+    [data-lf-menu-trigger] { -webkit-touch-callout:none; }
     .lf-ctx { position:fixed; z-index:2147483600; width:280px; max-width:calc(100vw - 16px); padding:4px; border-radius:8px; background:#fff; color:#1a1a1a; border:1px solid rgba(0,0,0,.12); box-shadow:0 8px 24px rgba(0,0,0,.18); font:14px/20px "Segoe UI",Arial,sans-serif; }
     html.dark .lf-ctx { background:#2c2c2c; color:#fff; border-color:rgba(255,255,255,.1); box-shadow:0 8px 24px rgba(0,0,0,.5); }
     .lf-ctx button { display:block; width:100%; padding:6px 12px; border:0; border-radius:4px; background:transparent; color:inherit; font:inherit; text-align:left; cursor:default; }
@@ -80,7 +81,7 @@
   function close() { if (menu) { menu.remove(); menu = null; } }
   function show(x, y) {
     close();
-    const url = location.href.split('#')[0];
+    const url = location.href;
     menu = document.createElement('div');
     menu.className = 'lf-ctx'; menu.setAttribute('role', 'menu');
     menu.innerHTML = '<button type="button" role="menuitem" data-m="copy" class="lf-ctx-copy"><span>Copy link</span><span class="lf-ctx-url"></span></button><button type="button" role="menuitem" data-m="open">Open in new window</button>';
@@ -98,12 +99,15 @@
     openedAt = Date.now();
     menu.querySelector('button').focus({ preventScroll: true });
   }
-  const isBlank = t => t instanceof Element && !t.closest(OBJECT) && !document.querySelector('dialog[open]') && !String(getSelection() || '').trim();
+  const canOpen = target => target instanceof Element
+    && (!target.closest(OBJECT) || target.closest(OBJECT).hasAttribute('data-lf-menu-trigger'))
+    && !document.querySelector('dialog[open]')
+    && !String(getSelection() || '').trim();
 
   // 電腦右鍵（Android 長按也會觸發 contextmenu）
   document.addEventListener('contextmenu', e => {
     if (menu && menu.contains(e.target)) { e.preventDefault(); return; }
-    if (!isBlank(e.target)) return;
+    if (!canOpen(e.target)) return;
     e.preventDefault();
     if (Date.now() - openedAt < 800) return; // 長按計時器已經開過
     show(e.clientX, e.clientY);
@@ -112,12 +116,13 @@
   let lp = null;
   document.addEventListener('touchstart', e => {
     clearTimeout(lp && lp.timer); lp = null;
-    if (e.touches.length !== 1 || !isBlank(e.target)) return;
+    if (e.touches.length !== 1 || !canOpen(e.target)) return;
     const t = e.touches[0];
     lp = { x: t.clientX, y: t.clientY, timer: setTimeout(() => { if (lp) { show(lp.x, lp.y); try { getSelection().removeAllRanges(); } catch (_) {} } }, 550) };
   }, { passive: true });
   document.addEventListener('touchmove', e => {
     if (!lp) return; const t = e.touches[0];
+    if (e.touches.length !== 1) { clearTimeout(lp.timer); lp = null; return; }
     if (Math.hypot(t.clientX - lp.x, t.clientY - lp.y) > 10) { clearTimeout(lp.timer); lp = null; }
   }, { passive: true });
   document.addEventListener('touchend', e => { if (lp) { clearTimeout(lp.timer); lp = null; if (Date.now() - openedAt < 600) e.preventDefault(); } });
