@@ -303,9 +303,9 @@ function render(data) {
 
   const hasKidsVerses = bible.verses && bible.verses.some(v => v.ruby || v.text);
   $('kids').innerHTML = `
+    ${hasKidsVerses ? `
     <section class="card">
       <p class="eyebrow">今日經文 · 注音 &amp; NIrV</p>
-      ${hasKidsVerses ? `
         <ol class="kids-verses">${bible.verses.map(v => `
           <li>
             <small>${escapeText(v.verse)}</small>
@@ -314,17 +314,12 @@ function render(data) {
               ${v.nirv ? `<span class="eng-verse"><span class="eng-tag">NIrV</span>${escapeText(v.nirv)}</span>` : ''}
             </div>
           </li>`).join('')}
-        </ol>` : `<p class="zhuyin">${rubyMarkup(kids.plain_explanation_ruby)}</p>`}
-    </section>
-    ${(hasKidsVerses && kids.plain_explanation_ruby) ? `
-    <section class="card">
-      <p class="eyebrow">白話經文大意</p>
-      <p class="zhuyin">${rubyMarkup(kids.plain_explanation_ruby)}</p>
+        </ol>
     </section>` : ''}
     ${(kids.bible_story_ruby || kids.prayer_ruby) ? `
     <section class="card story">
       ${kids.bible_story_ruby ? `
-        <p class="eyebrow">今日聖經故事</p>
+        <p class="eyebrow">用聖經說故事</p>
         <h2 class="zhuyin">${rubyMarkup(kids.bible_story_title_ruby || kids.bible_story_title)}</h2>
         <p class="zhuyin">${rubyMarkup(kids.bible_story_ruby)}</p>
       ` : ''}
