@@ -108,20 +108,25 @@ def to_zhuyin_ruby(text: str) -> str:
             result.append(char)
     return "".join(result)
 
-# 4. 正規表示式自動解析經文出處 (免 AI)
+# 4. 正規表示式自動解析經文出處 (過濾網站固定標語並優先抓取完整範圍)
 def parse_reference_from_text(text: str):
-    # 依書卷名稱長度由長到短排序，避免「約翰福音」被「約」先誤抓
+    # 過濾掉 Duranno 網站頁首固定的標語金句（阿摩司書 8:11）
+    cleaned = re.sub(r"阿摩司書\s*8\s*[:：]\s*11", "", text)
+
     books_sorted = sorted(BOOK_MAP.keys(), key=len, reverse=True)
     books_pattern = "|".join(re.escape(b) for b in books_sorted)
     pattern = rf"({books_pattern})\s*(\d+)\s*[:：]\s*(\d+(?:\s*[-–~]\s*\d+)?)"
-    m = re.search(pattern, text)
-    if not m:
-        raise ValueError(f"無法從網頁文字解析出經文座標，前 200 字：{text[:200]}")
-    book_raw = m.group(1)
-    chap = int(m.group(2))
-    sec = re.sub(r"\s+", "", m.group(3)).replace("–", "-").replace("~", "-")
+    matches = list(re.finditer(pattern, cleaned))
+    if not matches:
+        raise ValueError(f"無法從網頁文字解析出經文座標，前 300 字：{cleaned[:300]}")
+
+    # 優先選擇「有節數範圍（包含 - ）」的匹配項，避免誤抓單節金句
+    chosen = next((m for m in matches if "-" in m.group(3) or "–" in m.group(3) or "~" in m.group(3)), matches[0])
+
+    book_raw = chosen.group(1)
+    chap = int(chosen.group(2))
+    sec = re.sub(r"\s+", "", chosen.group(3)).replace("–", "-").replace("~", "-")
     chineses, eng_book = BOOK_MAP[book_raw]
-    # 取得標準繁體全名
     full_book = next((k for k, v in BOOK_MAP.items() if v[0] == chineses and len(k) > len(chineses)), book_raw)
     return {
         "reference": f"{full_book} {chap}:{sec}",
@@ -133,7 +138,7 @@ def parse_reference_from_text(text: str):
 
 # 5. 抓取今日靈修進度（優先 Duranno，備用 CGN YouTube）
 def fetch_daily_source():
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"}
     try:
         resp = requests.get("https://www.duranno.tw/livinglife/index.php/daily", headers=headers, timeout=15)
         resp.raise_for_status()
@@ -161,44 +166,60 @@ def fetch_daily_source():
     ref_info = parse_reference_from_text(title)
     return {"source_name": "活潑的生命 (YouTube)", "video_url": link, "ref_info": ref_info}
 
-# 6. 從 BibleGateway 抓取英文經文 (NIV 或 NIrV)
+# 6. 從 BibleGateway 抓取英文經文 (NIV 或 NIrV)，若被擋則自動用免費 API 補上
 def fetch_english_verses(eng_reference: str, version: str) -> dict:
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
+    }
     url = "https://www.biblegateway.com/passage/"
     try:
         resp = requests.get(url, params={"search": eng_reference, "version": version}, headers=headers, timeout=15)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         passage = soup.select_one(".passage-text")
-        if not passage:
-            return {}
-        # 移除標題、註腳與交叉引用
-        for trash in passage.select("h1, h2, h3, h4, .footnotes, .crossrefs, .chapternum, .footnote, .crossreference"):
-            trash.decompose()
+        if passage:
+            for trash in passage.select("h1, h2, h3, h4, .footnotes, .crossrefs, .chapternum, .footnote, .crossreference"):
+                trash.decompose()
 
-        verse_map = {}
-        current_v = None
-        for span in passage.select("span.text"):
-            v_num_el = span.select_one("sup.versenum")
-            if v_num_el:
-                num_str = re.sub(r"\D", "", v_num_el.get_text())
-                if num_str:
-                    current_v = int(num_str)
-                v_num_el.decompose()
-            else:
-                # 第1節有時沒有 versenum 標籤，從 class 找 (例如 Gen-1-1)
-                for cls in span.get("class", []):
-                    m = re.match(r"^[A-Za-z0-9]+-\d+-(\d+)$", cls)
-                    if m:
-                        current_v = int(m.group(1))
-                        break
-            txt = " ".join(span.get_text(" ", strip=True).split())
-            if current_v and txt:
-                verse_map[current_v] = (verse_map.get(current_v, "") + " " + txt).strip()
-        return verse_map
+            verse_map = {}
+            current_v = None
+            for span in passage.select("span.text"):
+                v_num_el = span.select_one("sup.versenum")
+                if v_num_el:
+                    num_str = re.sub(r"\D", "", v_num_el.get_text())
+                    if num_str:
+                        current_v = int(num_str)
+                    v_num_el.decompose()
+                else:
+                    for cls in span.get("class", []):
+                        m = re.match(r"^[A-Za-z0-9]+-\d+-(\d+)$", cls)
+                        if m:
+                            current_v = int(m.group(1))
+                            break
+                txt = " ".join(span.get_text(" ", strip=True).split())
+                if current_v and txt:
+                    verse_map[current_v] = (verse_map.get(current_v, "") + " " + txt).strip()
+            if verse_map:
+                print(f"成功從 BibleGateway 抓取 {version} ({len(verse_map)} 節)")
+                return verse_map
     except Exception as e:
-        print(f"抓取英文 {version} 失敗 ({e})")
-        return {}
+        print(f"BibleGateway {version} 抓取失敗 ({e})")
+
+    # 備援：若 BibleGateway 阻擋雲端 IP，自動改用免費開放聖經 API (WEB 譯本) 補上英文經文
+    try:
+        api_url = f"https://bible-api.com/{requests.utils.quote(eng_reference)}"
+        r = requests.get(api_url, timeout=12).json()
+        fallback_map = {}
+        for v in r.get("verses", []):
+            fallback_map[int(v["verse"])] = " ".join(v["text"].split())
+        if fallback_map:
+            print(f"已使用備援 API 補上英文經文 ({len(fallback_map)} 節)")
+            return fallback_map
+    except Exception as e:
+        print(f"備援英文 API 失敗 ({e})")
+    return {}
 
 # 7. 組合中英文經文 (和合本 + 成人NIV + 兒童注音 + 兒童NIrV)
 def get_scripture_data(ref_info: dict):
