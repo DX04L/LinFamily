@@ -2,8 +2,19 @@ name: Daily QT
 
 on:
   schedule:
-    - cron: '0 21 * * *' # 台灣時間每天早上 05:00 自動執行
+    - cron: '0 17 * * *' # 台灣時間每天凌晨 01:00 自動執行
   workflow_dispatch:
+    inputs:
+      date:
+        description: '匯入日期（YYYY-MM-DD，預設台灣今天）'
+        type: string
+      youtube_only:
+        description: '只使用 YouTube 播放清單指定日期的影片'
+        type: boolean
+        default: false
+      recheck_date:
+        description: '可選，重新核對既有日期的 YouTube 影片'
+        type: string
 
 jobs:
   build:
@@ -23,5 +34,8 @@ jobs:
       - name: Run Daily QT Script
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          QT_DATE: ${{ inputs.date }}
+          QT_YOUTUBE_ONLY: ${{ inputs.youtube_only }}
+          QT_RECHECK_DATE: ${{ inputs.recheck_date }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python QT/scripts/daily_qt.py

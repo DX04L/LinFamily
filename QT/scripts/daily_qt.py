@@ -3,7 +3,7 @@ import re
 import json
 import unicodedata
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 import requests
 from bs4 import BeautifulSoup
 import firebase_admin
@@ -11,7 +11,9 @@ from firebase_admin import credentials, firestore
 
 # 1. 初始化台灣時間今日日期
 TW_TZ = timezone(timedelta(hours=8))
-TODAY_STR = datetime.now(TW_TZ).strftime("%Y-%m-%d")
+LOCAL_DATE = datetime.now(TW_TZ).date().isoformat()
+TODAY_STR = date.fromisoformat(os.environ.get("QT_DATE") or LOCAL_DATE).isoformat()
+YOUTUBE_ONLY = os.environ.get("QT_YOUTUBE_ONLY") == "true"
 
 # 2. 初始化 Firebase Admin
 cred_dict = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
@@ -155,7 +157,19 @@ def fetch_duranno():
     except requests.RequestException as e:
         return None, "", f"Duranno 連線失敗 ({e})"
 
-def fetch_youtube():
+def title_matches_date(title, target_date):
+    target = date.fromisoformat(target_date)
+    title = unicodedata.normalize("NFKC", title)
+    # Exclude verse ranges like 9:7-15 from the date match.
+    pattern = r"(?<![\d:])(?:(20\d{2})[./年-]?)?(\d{1,2})[./月-](\d{1,2})(?:日)?(?![\d:])"
+    for year, month, day in re.findall(pattern, title):
+        if (not year or int(year) == target.year) and (int(month), int(day)) == (target.month, target.day):
+            return True
+    compact = rf"(?<!\d)(?:{target.year})?{target:%m%d}(?!\d)"
+    return bool(re.search(compact, title))
+
+
+def fetch_youtube(target_date=TODAY_STR):
     playlist_id = "PLUkEOfQnxIpEMVHWNpAh5LWxQJB1vZcOh"
     try:
         response = requests.get("https://www.youtube.com/feeds/videos.xml",
@@ -167,21 +181,16 @@ def fetch_youtube():
         if not entries:
             return None, "", "", "YouTube 播放清單沒有影片紀錄"
 
-        month = int(TODAY_STR[5:7])
-        day = int(TODAY_STR[8:10])
-        date_hints = [f"{month}/{day}", f"{month:02d}/{day:02d}", f"{month}月{day}日", f"{month:02d}{day:02d}"]
-
         evidence = ""
-        for entry in entries[:6]:
+        for entry in entries:
             title = entry.findtext("atom:title", default="", namespaces=ns)
-            published = entry.findtext("atom:published", default="", namespaces=ns)
-            published_today = datetime.fromisoformat(published.replace("Z", "+00:00")).astimezone(TW_TZ).strftime("%Y-%m-%d") == TODAY_STR if published else False
-            if not any(h in title for h in date_hints) and not published_today:
+            if not title_matches_date(title, target_date):
                 continue
             evidence = evidence or title[:400]
             ref = parse_reference_from_text(title)
             link = entry.find("atom:link", ns)
             if ref:
+                print(f"[YouTube {target_date}] {title}")
                 return ref, link.get("href", "") if link is not None else "", title[:400], None
 
         return None, "", evidence, "YouTube 無法解析當日影片的經文範圍"
@@ -231,6 +240,16 @@ def resolve_reference_with_ai(*sources):
     return None
 
 def fetch_and_verify_sources():
+    if YOUTUBE_ONLY:
+        yt_ref, yt_link, yt_text, yt_err = fetch_youtube()
+        ref = yt_ref or resolve_reference_with_ai(yt_text)
+        if not ref:
+            raise RuntimeError(f"YouTube 無法確認 {TODAY_STR} 進度：{yt_err}")
+        return {"source_name": "活潑的生命（YouTube 預先匯入）", "video_url": yt_link,
+                "ref_info": ref, "mismatch_warning": ""}
+
+    if TODAY_STR != LOCAL_DATE:
+        raise ValueError("指定非今日日期時，請使用 YouTube 匯入，避免誤讀官網的當日進度。")
     dur_ref, dur_text, dur_err = fetch_duranno()
     yt_ref, yt_link, yt_text, yt_err = fetch_youtube()
 
@@ -269,7 +288,7 @@ def fetch_and_verify_sources():
 
     return {
         "source_name": source_name,
-        "video_url": yt_link,
+        "video_url": yt_link if not dur_ref or (yt_ref and dur_ref["reference"] == yt_ref["reference"]) else "",
         "ref_info": chosen_ref,
         "mismatch_warning": warning_msg
     }
@@ -551,6 +570,19 @@ def store_recent_devotional(database, data):
 
     update(database.transaction())
 
+def recheck_video(target_date):
+    target_date = date.fromisoformat(target_date).isoformat()
+    ref, link, _, err = fetch_youtube(target_date)
+    entry = db.collection("devotionals").document(target_date)
+    previous = entry.get().to_dict() or {}
+    if (not ref or previous.get("scripture", {}).get("reference") != ref["reference"]
+            or "來源存在差異" not in previous.get("source_channel", "")):
+        print(f"[重新核對 {target_date}] 未確認與既有官網經文一致，保留原紀錄。{err or ''}")
+        return
+    entry.update({"source_channel": "活潑的生命（官網 & YouTube 驗證一致）",
+                  "video_url": link, "mismatch_warning": ""})
+    print(f"[重新核對 {target_date}] 一致，已清除舊提示。")
+
 def main():
     print(f"開始執行 {TODAY_STR} 每日 QT 雙來源比對與經文排版...")
     source = fetch_and_verify_sources()
@@ -571,6 +603,8 @@ def main():
 
     store_recent_devotional(db, doc_data)
     print(f"成功寫入 Firestore: devotionals/{TODAY_STR} ({scripture['reference']})")
+    if recheck_date := os.environ.get("QT_RECHECK_DATE"):
+        recheck_video(recheck_date)
 
 if __name__ == "__main__":
     main()
