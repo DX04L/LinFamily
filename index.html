@@ -710,7 +710,13 @@
     // 不允許被放進框內的網站（Google 等）：直接開，接受瀏覽器那一列。
     const OWN_HOSTS = ['clc-dx04.pages.dev', 'clc-ya-portal.pages.dev', 'clc-sr-portal.pages.dev'];
     const NO_FRAME = /(^|\.)(google\.[a-z.]+|youtube\.com|youtu\.be|gmail\.com|facebook\.com|instagram\.com|messenger\.com|threads\.net|line\.me|apple\.com|icloud\.com|github\.com|x\.com|twitter\.com|microsoft\.com|live\.com|office\.com|notion\.so|amazon\.[a-z.]+|linkedin\.com|paypal\.com)$/i;
-    function isOwnSite(app) { try { if (!/^https?:/i.test(safeUrl(app.url))) return false; const u = new URL(safeUrl(app.url), location.href); return OWN_HOSTS.includes(u.hostname) || (u.origin === location.origin && !/^\/lf(\/|$)/.test(u.pathname)); } catch (_) { return false; } }
+    function isOwnSite(app) {
+      const url = safeUrl(app.url);
+      if (!/^https?:/i.test(url)) return false;
+      const u = new URL(url);
+      if ((u.hostname === 'clc-dx04.pages.dev' || u.origin === location.origin) && /^\/lf(\/|$)/.test(u.pathname)) return false;
+      return OWN_HOSTS.includes(u.hostname) || u.origin === location.origin;
+    }
     apps = apps.filter(a => !isOwnSite(a)); // 權限確認前先不放 DX、YA、SR（確認是 Superuser 才出現），避免打開時先閃出來
     function tileHref(app) {
       const url = safeUrl(app.url); if (!url) return '#';
