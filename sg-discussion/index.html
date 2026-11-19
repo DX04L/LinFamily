@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -10,12 +10,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="江子翠教材">
-  <link rel="manifest" href="./manifest.json?v=4">
-  <link rel="icon" href="./favicon.ico?v=4" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=4">
-  <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=4">
-  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="./sg-reader.css?v=1">
+  <link rel="manifest" href="./manifest.json?v=5">
+  <link rel="icon" href="./favicon.ico?v=5" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=5">
+  <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=5">
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=5">
+  <link rel="stylesheet" href="./sg-reader.css?v=2">
 
   <style>
     :root {
@@ -26,23 +26,25 @@
       --brand-primary-tint-hover: rgba(0, 127, 133, 0.17);
       --brand-primary-border: rgba(0, 127, 133, 0.35);
 
-      /* 互動填空專用淡黃色系（與經文備註標籤區隔） */
+      /* 互動填空專用淡黃色系（淺色模式） */
       --blank-bg: #FEF6DC;
       --blank-bg-hover: #FDECB8;
       --blank-border: #D9A736;
       --blank-text: #7A5408;
 
-      /* Apple 官網與 iOS 介面中性色階 */
+      /* 淺色模式中性色階 */
       --bg-page: #F5F5F7;
       --bg-card: #FFFFFF;
-      --bg-glass: rgba(255, 255, 255, 0.84);
+      --bg-glass: rgba(255, 255, 255, 0.86);
+      --bg-segmented: rgba(118, 118, 128, 0.12);
+      --bg-seg-active: #FFFFFF;
       --text-primary: #1D1D1F;
       --text-secondary: #6E6E73;
       --text-tertiary: #86868B;
       --border-hairline: rgba(0, 0, 0, 0.08);
 
       --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.04);
-      --shadow-float: 0 20px 48px rgba(0, 0, 0, 0.14);
+      --shadow-float: 0 20px 48px rgba(0, 0, 0, 0.16);
       --radius-lg: 20px;
       --radius-md: 14px;
       --radius-pill: 980px;
@@ -50,6 +52,33 @@
       /* Apple 官網繁體中文與系統字型堆疊 */
       --font-apple: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang TC", "Hiragino Sans GB", "Heiti TC", "Microsoft JhengHei", sans-serif;
       --font-apple-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    }
+
+    /* 深色模式變數覆寫 */
+    [data-theme="dark"] {
+      --brand-primary: #19A8AF;
+      --brand-primary-hover: #24BFC7;
+      --brand-primary-tint: rgba(25, 168, 175, 0.16);
+      --brand-primary-tint-hover: rgba(25, 168, 175, 0.25);
+      --brand-primary-border: rgba(25, 168, 175, 0.40);
+
+      --blank-bg: rgba(217, 167, 54, 0.16);
+      --blank-bg-hover: rgba(217, 167, 54, 0.25);
+      --blank-border: #D9A736;
+      --blank-text: #FCD34D;
+
+      --bg-page: #111214;
+      --bg-card: #1C1D21;
+      --bg-glass: rgba(28, 29, 33, 0.86);
+      --bg-segmented: rgba(255, 255, 255, 0.08);
+      --bg-seg-active: #2C2E35;
+      --text-primary: #F5F5F7;
+      --text-secondary: #A1A1A6;
+      --text-tertiary: #7C7C82;
+      --border-hairline: rgba(255, 255, 255, 0.10);
+
+      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.28);
+      --shadow-float: 0 20px 48px rgba(0, 0, 0, 0.55);
     }
 
     * {
@@ -72,6 +101,15 @@
       line-height: 1.75;
       letter-spacing: -0.01em;
       padding-bottom: calc(64px + env(safe-area-inset-bottom));
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* 全螢幕滿版寬度配置（保留舒適左右邊距） */
+    .navbar-inner,
+    .container {
+      width: 100%;
+      max-width: 100%;
+      padding-inline: clamp(16px, 3.2vw, 48px);
     }
 
     /* 頂部毛玻璃導覽列 */
@@ -84,12 +122,12 @@
       -webkit-backdrop-filter: saturate(180%) blur(20px);
       border-bottom: 1px solid var(--border-hairline);
       padding-top: env(safe-area-inset-top);
+      transition: background-color 0.25s ease;
     }
 
     .navbar-inner {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 12px 20px;
+      padding-top: 12px;
+      padding-bottom: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -101,12 +139,14 @@
       align-items: center;
       gap: 12px;
       cursor: pointer;
+      min-width: 0;
     }
 
     .nav-right-actions {
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-shrink: 0;
     }
 
     /* 書本外框剪影 Logo */
@@ -139,6 +179,7 @@
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.01em;
+      white-space: nowrap;
     }
 
     .brand-sub {
@@ -146,6 +187,7 @@
       font-weight: 500;
       color: var(--text-secondary);
       letter-spacing: 0.02em;
+      white-space: nowrap;
     }
 
     /* 安裝成 App 按鈕 */
@@ -181,16 +223,11 @@
 
     /* Apple 簡潔課程主視覺區 */
     .hero {
-      background-color: #FFFFFF;
+      background-color: var(--bg-card);
       border-bottom: 1px solid var(--border-hairline);
-      padding: 32px 20px 26px;
+      padding: 28px 0 24px;
       text-align: center;
-    }
-
-    .container {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 0 20px;
+      transition: background-color 0.25s ease;
     }
 
     .eyebrow-row {
@@ -199,6 +236,7 @@
       justify-content: center;
       flex-wrap: wrap;
       gap: 8px;
+      margin-bottom: 12px;
     }
 
     .pill-tag {
@@ -226,7 +264,7 @@
 
     h1.hero-title {
       font-family: var(--font-apple-display);
-      font-size: 2.2rem;
+      font-size: clamp(1.75rem, 3.2vw, 2.35rem);
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.025em;
@@ -251,7 +289,7 @@
       position: relative;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      background-color: rgba(118, 118, 128, 0.12);
+      background-color: var(--bg-segmented);
       padding: 4px;
       border-radius: 14px;
       gap: 4px;
@@ -277,7 +315,7 @@
     }
 
     .seg-btn.active {
-      background-color: #FFFFFF;
+      background-color: var(--bg-seg-active);
       color: var(--brand-primary);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
     }
@@ -302,9 +340,10 @@
     .card {
       background-color: var(--bg-card);
       border-radius: var(--radius-lg);
-      padding: 32px;
+      padding: clamp(22px, 3vw, 36px);
       box-shadow: var(--shadow-card);
       margin-bottom: 20px;
+      transition: background-color 0.25s ease;
     }
 
     .card-header {
@@ -380,7 +419,7 @@
       margin-bottom: 0;
     }
 
-    /* 互動填空膠囊（淡黃色底，與湖水藍綠備註區分） */
+    /* 互動填空膠囊 */
     .blank-slot {
       display: inline-flex;
       align-items: center;
@@ -431,7 +470,7 @@
       display: none;
     }
 
-    /* 互動經文與神學泡泡觸發詞（企業主色淺底） */
+    /* 互動經文與神學泡泡觸發詞 */
     .pop-trigger {
       color: var(--brand-primary);
       font-weight: 600;
@@ -575,7 +614,7 @@
     .guide-btn {
       margin-top: 14px;
       margin-left: 42px;
-      background-color: #FFFFFF;
+      background-color: var(--bg-card);
       border: 1px solid var(--border-hairline);
       color: var(--brand-primary);
       padding: 6px 14px;
@@ -600,7 +639,7 @@
       margin-top: 12px;
       margin-left: 42px;
       padding: 16px 18px;
-      background-color: #FFFFFF;
+      background-color: var(--bg-card);
       border-radius: 12px;
       font-size: 0.92rem;
       color: var(--text-secondary);
@@ -639,7 +678,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background-color: rgba(0, 0, 0, 0.42);
+      background-color: rgba(0, 0, 0, 0.48);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       z-index: 999;
@@ -653,7 +692,7 @@
     }
 
     .apple-sheet {
-      background-color: #FFFFFF;
+      background-color: var(--bg-card);
       max-width: 480px;
       width: 100%;
       border-radius: 24px;
@@ -686,7 +725,7 @@
     }
 
     .sheet-close:hover {
-      background-color: #E5E5EA;
+      opacity: 0.8;
       color: var(--text-primary);
     }
 
@@ -756,8 +795,6 @@
     }
 
     @media (max-width: 640px) {
-      h1.hero-title { font-size: 1.75rem; }
-      .card { padding: 22px 18px; }
       .seg-btn { font-size: 0.84rem; padding: 9px 6px; }
       .guide-btn, .guide-content { margin-left: 0; }
     }
@@ -765,7 +802,7 @@
 </head>
 <body>
 
-  <!-- 頂部毛玻璃導覽列（江子翠行道會 Logo + 登入歡迎語 + 一鍵安裝 App 按鈕） -->
+  <!-- 頂部毛玻璃導覽列（左側：Logo；右側：登入歡迎 + 週次切換與下拉選單 + 深淺色切換 + 安裝 App） -->
   <nav class="navbar">
     <div class="navbar-inner">
       <div class="brand-group" id="brandHome" data-lf-menu-trigger title="回到最新一週教材">
@@ -784,6 +821,41 @@
 
       <div class="nav-right-actions">
         <span class="sg-welcome-badge" id="sgWelcome" hidden></span>
+
+        <!-- 右上角週次左右切換與保存日期選單 -->
+        <div class="sg-nav-controls">
+          <button class="sg-nav-btn" id="sg-prev" disabled aria-label="上一週教材" title="上一週">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+
+          <details class="sg-date-picker" id="sg-date-picker">
+            <summary aria-label="選擇保存的教材日期">
+              <span class="sg-date-pill">
+                <span id="heroDateRange">2026/11/10 — 11/15</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </summary>
+            <div id="sg-date-list" aria-label="目前保存的小組教材"></div>
+          </details>
+
+          <button class="sg-nav-btn" id="sg-next" disabled aria-label="下一週教材" title="下一週">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <!-- 深色 / 淺色模式切換按鈕 -->
+        <button class="sg-theme-btn" id="themeToggleBtn" aria-label="切換深色或淺色模式" title="切換深色／淺色模式">
+          <!-- 月亮圖示（淺色模式下顯示，點擊切換為深色） -->
+          <svg id="iconMoon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+          <!-- 太陽圖示（深色模式下顯示，點擊切換為淺色） -->
+          <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden>
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+          </svg>
+        </button>
+
         <!-- 安裝成 App 按鈕 -->
         <button class="install-btn" id="installAppBtn" aria-label="安裝成 App">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -799,31 +871,12 @@
 
   <!-- 可左右滑動切換週次的閱讀主區域 -->
   <div id="sg-reading-sheet">
-    <!-- 課程簡約主標題（加入左右箭頭與保存週次下拉選單） -->
+    <!-- 課程簡約主標題（保留原本乾淨標籤與標題） -->
     <header class="hero">
       <div class="container">
-        <div class="sg-date-nav">
-          <button class="sg-nav-btn" id="sg-prev" disabled aria-label="上一週教材" title="上一週">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-
-          <div class="eyebrow-row">
-            <span class="pill-tag pill-primary" id="heroWeekBadge">WEEK 2</span>
-            <details class="sg-date-picker" id="sg-date-picker">
-              <summary aria-label="選擇保存的教材日期">
-                <span class="pill-tag pill-neutral">
-                  <span id="heroDateRange">2026/11/10 — 11/15</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                </span>
-              </summary>
-              <div id="sg-date-list" aria-label="目前保存的小組教材"></div>
-            </details>
-            <span class="pill-tag pill-tint" id="heroSeriesTag">信心 ④</span>
-          </div>
-
-          <button class="sg-nav-btn" id="sg-next" disabled aria-label="下一週教材" title="下一週">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
+        <div class="eyebrow-row">
+          <span class="pill-tag pill-primary" id="heroWeekBadge">WEEK 2</span>
+          <span class="pill-tag pill-tint" id="heroSeriesTag">信心 ④</span>
         </div>
 
         <h1 class="hero-title" id="heroTitle">亞伯拉罕的信心（下）</h1>
@@ -863,11 +916,7 @@
             </div>
           </div>
 
-          <div class="article-body" id="articleBody">
-            <p>
-              今天要來分享亞伯拉罕的信心。我們先複習一下，什麼是亞伯拉罕的信心？第一個是<span class="pop-trigger" data-pop="call_faith">對呼召的信心</span>，去哪裡不是重要的，重要的是你的呼召。第二個是<span class="pop-trigger" data-pop="promise_faith">對應許的信心</span>，在毫無指望的時候，因信仍有指望，神蹟就發生了。第三個是<span class="pop-trigger" data-pop="death_faith">超越死亡的信心</span>，即使神的應許沒有在今生完全實現，但有一個信心是存著信心死，在將來的日子神必定會成就。今天要看的是，亞伯拉罕的信心是<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">勝過試驗</span></span>的信心。
-            </p>
-          </div>
+          <div class="article-body" id="articleBody"></div>
 
           <div class="next-page-bar">
             <button class="next-page-btn" onclick="switchToTab('tab-bg')">
@@ -956,8 +1005,44 @@
     </div>
   </div>
 
-  <script src="./sg-reader.js?v=1"></script>
+  <script src="./sg-reader.js?v=2"></script>
   <script>
+    // =================================================================
+    // 0. 深色 / 淺色主題切換與記憶
+    // =================================================================
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const iconMoon = document.getElementById('iconMoon');
+    const iconSun = document.getElementById('iconSun');
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+
+    function applyTheme(theme) {
+      const isDark = theme === 'dark';
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      iconMoon.hidden = isDark;
+      iconSun.hidden = !isDark;
+      if (metaThemeColor) {
+        metaThemeColor.content = isDark ? '#111214' : '#007F85';
+      }
+      try { localStorage.setItem('sg-theme', isDark ? 'dark' : 'light'); } catch {}
+    }
+
+    (() => {
+      let saved = null;
+      try { saved = localStorage.getItem('sg-theme'); } catch {}
+      if (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        saved = 'dark';
+      }
+      applyTheme(saved || 'light');
+    })();
+
+    themeToggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    // =================================================================
+    // 1. Firebase 設定與教材資料渲染
+    // =================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
       authDomain: "linfamily-31cb6.firebaseapp.com",
@@ -1039,8 +1124,10 @@
 
     function renderDocument(doc, rootNode = document) {
       const q = sel => rootNode.querySelector(sel);
+      if (rootNode === document) {
+        document.getElementById('heroDateRange').textContent = doc.date_range || doc.date;
+      }
       q('#heroWeekBadge').textContent = doc.week_badge || '小組教材';
-      q('#heroDateRange').textContent = doc.date_range || doc.date;
       q('#heroSeriesTag').textContent = doc.series_tag || '主日信息';
       q('#heroTitle').textContent = doc.title || '小組牧養教材';
 
@@ -1253,7 +1340,6 @@
 
     function previewWeek(data) {
       const clone = document.getElementById('sg-reading-sheet').cloneNode(true);
-      clone.querySelector('#sg-date-picker').open = false;
       renderDocument(data, clone);
       return clone;
     }

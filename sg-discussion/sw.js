@@ -1,10 +1,10 @@
-const CACHE_NAME = 'sg-discussion-v4';
+const CACHE_NAME = 'sg-discussion-v5';
 const ASSETS = [
   './',
   './index.html',
-  './sg-reader.css?v=1',
-  './sg-reader.js?v=1',
-  './manifest.json?v=4'
+  './sg-reader.css?v=2',
+  './sg-reader.js?v=2',
+  './manifest.json?v=5'
 ];
 
 self.addEventListener('install', (event) => {

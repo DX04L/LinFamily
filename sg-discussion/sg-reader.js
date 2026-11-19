@@ -250,7 +250,8 @@ const SGReader = (() => {
       if (end > start && quote.trim()) parts.push({ index, start, end, quote });
     });
     if (!parts.length) return clear();
-    active = { key, item: { id: crypto.randomUUID(), parts, quote: parts.map(part => part.quote).join('\n') }, existing: false };
+    active = { key, item: { id: crypto.randomUUID(), parts, quote: parts.map(part => part.quote).join('
+') }, existing: false };
     showTools(range.getBoundingClientRect());
   }
 
