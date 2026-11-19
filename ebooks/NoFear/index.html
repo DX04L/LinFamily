@@ -61,40 +61,30 @@
       cursor: grabbing;
     }
 
-    /* 右上角貼合書緣的折疊絲帶書籤：上方僅微凸 2px 折痕，點擊後從折縫往下滑出 */
+    /* 右上角折疊式燕尾緞帶書籤：上方僅微凸 2px 圓弧折痕，未掛時直接露出一小截燕尾尖端 */
     #bookmark-ribbon {
       position: absolute;
       top: -2px;
       right: 22px;
-      width: 40px;
-      height: 82px;
+      width: 42px;
+      height: 84px;
       cursor: pointer;
       z-index: 15;
       transform-origin: top center;
-      transition:
-        clip-path 0.36s cubic-bezier(0.22, 1.25, 0.36, 1),
-        transform 0.36s cubic-bezier(0.22, 1.25, 0.36, 1),
-        opacity 0.25s ease;
-      filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.36));
+      transition: opacity 0.25s ease, transform 0.28s ease;
     }
 
-    /* 未掛書籤時：只從書本上緣折下來露出一小截（約 16px），像折在書頁後方 */
+    /* 未掛書籤時：半透明提示，燕尾直接露出一點點在書頁上緣 */
     #bookmark-ribbon.inactive {
-      clip-path: inset(0 0 64px 0 round 2px 2px 3px 3px);
-      transform: translateY(0);
-      opacity: 0.72;
-      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+      opacity: 0.76;
     }
 
     #bookmark-ribbon.inactive:hover {
-      clip-path: inset(0 0 54px 0 round 2px 2px 3px 3px);
-      opacity: 0.96;
+      opacity: 0.98;
     }
 
-    /* 已掛書籤時：上方折痕依然緊貼書緣，緞帶順勢往下滑展開 */
+    /* 已掛書籤時 */
     #bookmark-ribbon.active {
-      clip-path: inset(0 0 0 0);
-      transform: translateY(0);
       opacity: 1;
     }
 
@@ -106,13 +96,14 @@
       width: 100%;
       height: 100%;
       display: block;
+      overflow: visible;
     }
 
-    /* 翻頁動畫進行時暫時淡化書籤，避免懸空感 */
+    /* 翻頁動畫進行時暫時淡化書籤 */
     #book-shell.is-flipping #bookmark-ribbon {
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.12s ease;
+      transition: opacity 0.14s ease;
     }
 
     /* 書籤提示氣泡 */
@@ -249,42 +240,49 @@
   <div id="reader-stage">
     <div id="book-shell">
       <canvas id="book-canvas"></canvas>
-      <!-- 右上角折疊式絲帶書籤：緊貼書緣，點擊後向下滑出 -->
+      <!-- 右上角燕尾緞帶書籤：未掛時僅露出一截燕尾，點擊後從折痕處順滑向下延伸 -->
       <div id="bookmark-ribbon" class="inactive" title="點擊在此頁掛上書籤（全書僅保留一個書籤）">
-        <svg viewBox="0 0 40 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 42 84" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="ribbonBody" x1="0" y1="0" x2="40" y2="0" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#9B1B24" />
-              <stop offset="22%" stop-color="#D62839" />
-              <stop offset="50%" stop-color="#BA1E2D" />
-              <stop offset="82%" stop-color="#E03546" />
-              <stop offset="100%" stop-color="#87141D" />
+            <linearGradient id="ribbonBody" x1="0" y1="0" x2="42" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#8F1720" />
+              <stop offset="22%" stop-color="#D42838" />
+              <stop offset="50%" stop-color="#B81D2B" />
+              <stop offset="80%" stop-color="#DE3344" />
+              <stop offset="100%" stop-color="#7E121A" />
             </linearGradient>
-            <!-- 上緣折彎立體明暗：模擬從書頁後方折過來的圓弧高光與夾縫陰影 -->
-            <linearGradient id="foldOverShadow" x1="20" y1="0" x2="20" y2="82" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="rgba(45, 5, 8, 0.55)" />
-              <stop offset="3.5%" stop-color="rgba(255, 235, 235, 0.34)" />
-              <stop offset="8%" stop-color="rgba(0, 0, 0, 0.24)" />
-              <stop offset="14%" stop-color="rgba(255, 255, 255, 0.06)" />
-              <stop offset="70%" stop-color="rgba(255, 255, 255, 0)" />
-              <stop offset="100%" stop-color="rgba(0, 0, 0, 0.22)" />
+            <!-- 模擬從書頁上緣後方折過來的高光與折縫陰影 -->
+            <linearGradient id="foldOverShadow" x1="21" y1="0" x2="21" y2="84" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="rgba(40, 4, 8, 0.55)" />
+              <stop offset="3.5%" stop-color="rgba(255, 232, 232, 0.42)" />
+              <stop offset="7.5%" stop-color="rgba(0, 0, 0, 0.26)" />
+              <stop offset="14%" stop-color="rgba(255, 255, 255, 0.05)" />
+              <stop offset="75%" stop-color="rgba(255, 255, 255, 0)" />
+              <stop offset="100%" stop-color="rgba(0, 0, 0, 0.24)" />
             </linearGradient>
-            <linearGradient id="goldTrim" x1="0" y1="0" x2="40" y2="82" gradientUnits="userSpaceOnUse">
+            <linearGradient id="goldTrim" x1="0" y1="0" x2="42" y2="84" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#F7D78B" />
               <stop offset="50%" stop-color="#D99B38" />
               <stop offset="100%" stop-color="#F5CE76" />
             </linearGradient>
+            <filter id="ribbonDropShadow" x="-20%" y="-10%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3.5" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.34"/>
+            </filter>
           </defs>
-          <!-- 主緞帶燕尾造型（頂部帶極微圓弧模擬從書背折過來的厚度） -->
-          <path d="M2 2.5C2 1.11929 3.11929 0 4.5 0H35.5C36.8807 0 38 1.11929 38 2.5V79L20 65.5L2 79V2.5Z" fill="url(#ribbonBody)"/>
-          <path d="M2 2.5C2 1.11929 3.11929 0 4.5 0H35.5C36.8807 0 38 1.11929 38 2.5V79L20 65.5L2 79V2.5Z" fill="url(#foldOverShadow)"/>
-          <!-- 書緣折縫壓線 -->
-          <line x1="2" y1="3" x2="38" y2="3" stroke="rgba(255, 220, 220, 0.35)" stroke-width="0.8"/>
-          <!-- 雙側精緻金邊車縫線 -->
-          <path d="M6.5 3V72M33.5 3V72" stroke="url(#goldTrim)" stroke-width="1.2" stroke-dasharray="2.4 2"/>
-          <!-- 中央書籤星芒徽章 -->
-          <circle cx="20" cy="43" r="8" fill="rgba(94, 13, 19, 0.35)" stroke="url(#goldTrim)" stroke-width="1.15"/>
-          <path d="M20 37.5L21.4 41.3L25.4 41.5L22.2 44L23.3 47.9L20 45.6L16.7 47.9L17.8 44L14.6 41.5L18.6 41.3L20 37.5Z" fill="#F9DF9B"/>
+          <g filter="url(#ribbonDropShadow)">
+            <!-- 動態變形的燕尾主體（JS 會柔順控制其下拉長度，讓燕尾形狀始終完整） -->
+            <path id="ribbon-main-path" d="M2 2.5C2 1.12 3.12 0 4.5 0H37.5C38.88 0 40 1.12 40 2.5V26L21 18L2 26V2.5Z" fill="url(#ribbonBody)"/>
+            <path id="ribbon-sheen-path" d="M2 2.5C2 1.12 3.12 0 4.5 0H37.5C38.88 0 40 1.12 40 2.5V26L21 18L2 26V2.5Z" fill="url(#foldOverShadow)"/>
+            <!-- 書緣折彎高光壓線 -->
+            <line x1="2.5" y1="2.8" x2="39.5" y2="2.8" stroke="rgba(255, 228, 228, 0.38)" stroke-width="0.9"/>
+            <!-- 雙側精緻金邊車縫線（隨長度動態延伸） -->
+            <path id="ribbon-stitch-path" d="M6.8 3.5V21M35.2 3.5V21" stroke="url(#goldTrim)" stroke-width="1.35" stroke-dasharray="2.4 2"/>
+            <!-- 中央書籤星芒徽章（下拉展開後浮現） -->
+            <g id="ribbon-emblem" opacity="0">
+              <circle cx="21" cy="45" r="8.2" fill="rgba(94, 13, 19, 0.38)" stroke="url(#goldTrim)" stroke-width="1.2"/>
+              <path d="M21 39.3L22.4 43.2L26.5 43.4L23.3 46L24.4 50L21 47.6L17.6 50L18.7 46L15.5 43.4L19.6 43.2L21 39.3Z" fill="#F9DF9B"/>
+            </g>
+          </g>
         </svg>
       </div>
     </div>
@@ -328,6 +326,11 @@
       const bookmarkRibbon = document.getElementById("bookmark-ribbon");
       const bookmarkToast = document.getElementById("bookmark-toast");
 
+      const ribbonMainPath = document.getElementById("ribbon-main-path");
+      const ribbonSheenPath = document.getElementById("ribbon-sheen-path");
+      const ribbonStitchPath = document.getElementById("ribbon-stitch-path");
+      const ribbonEmblem = document.getElementById("ribbon-emblem");
+
       const images = [];
       const pageCache = [];
       let cachedPageW = 0;
@@ -340,6 +343,66 @@
       let currentStep = 0;
       let logicalW = 0;
       let logicalH = 0;
+
+      // ===== 緞帶書籤幾何動畫（0 = 收起僅露燕尾折頭；1 = 完整垂下） =====
+      let ribbonOpenFactor = 0;
+      let ribbonAnimFrame = null;
+
+      function applyRibbonGeometry(t) {
+        // t: 0 (收起露出一截燕尾) -> 1 (完整滑下)
+        const sideY = 25 + t * 55;     // 25 -> 80
+        const notchY = 17.5 + t * 49;  // 17.5 -> 66.5
+        const stitchEndY = 20.5 + t * 52.5; // 20.5 -> 73
+
+        const d = `M2 2.5C2 1.12 3.12 0 4.5 0H37.5C38.88 0 40 1.12 40 2.5V${sideY.toFixed(1)}L21 ${notchY.toFixed(1)}L2 ${sideY.toFixed(1)}V2.5Z`;
+        ribbonMainPath.setAttribute("d", d);
+        ribbonSheenPath.setAttribute("d", d);
+        ribbonStitchPath.setAttribute("d", `M6.8 3.5V${stitchEndY.toFixed(1)}M35.2 3.5V${stitchEndY.toFixed(1)}`);
+
+        const emblemAlpha = Math.max(0, Math.min(1, (t - 0.45) / 0.45));
+        ribbonEmblem.setAttribute("opacity", emblemAlpha.toFixed(2));
+        ribbonEmblem.setAttribute("transform", `translate(0, ${((t - 1) * 14).toFixed(1)})`);
+      }
+
+      function animateRibbonTo(targetT, immediate = false) {
+        if (ribbonAnimFrame) {
+          cancelAnimationFrame(ribbonAnimFrame);
+          ribbonAnimFrame = null;
+        }
+        if (immediate) {
+          ribbonOpenFactor = targetT;
+          applyRibbonGeometry(ribbonOpenFactor);
+          return;
+        }
+
+        let pos = ribbonOpenFactor;
+        let vel = 0;
+        let lastTs = performance.now();
+        const stiffness = 135;
+        const damping = 18;
+
+        function tick(now) {
+          const dt = Math.min(0.032, (now - lastTs) / 1000);
+          lastTs = now;
+
+          const force = -stiffness * (pos - targetT) - damping * vel;
+          vel += force * dt;
+          pos += vel * dt;
+
+          ribbonOpenFactor = Math.max(0, Math.min(1.06, pos));
+          applyRibbonGeometry(ribbonOpenFactor);
+
+          if (Math.abs(pos - targetT) < 0.003 && Math.abs(vel) < 0.02) {
+            ribbonOpenFactor = targetT;
+            applyRibbonGeometry(targetT);
+            ribbonAnimFrame = null;
+            return;
+          }
+          ribbonAnimFrame = requestAnimationFrame(tick);
+        }
+
+        ribbonAnimFrame = requestAnimationFrame(tick);
+      }
 
       // ===== 單一全局書籤狀態 =====
       let bookmarkedPageIndex = loadSavedBookmark();
@@ -403,18 +466,20 @@
         }, 2000);
       }
 
-      function updateBookmarkUI() {
+      function updateBookmarkUI(immediate = false) {
         const isHere = isCurrentViewBookmarked();
         if (isHere) {
           bookmarkRibbon.classList.remove("inactive");
           bookmarkRibbon.classList.add("active");
           bookmarkRibbon.title = "此頁已掛上書籤（再次點擊可收起）";
+          animateRibbonTo(1, immediate);
         } else {
           bookmarkRibbon.classList.remove("active");
           bookmarkRibbon.classList.add("inactive");
           bookmarkRibbon.title = bookmarkedPageIndex !== null
             ? "點擊將書籤從原本頁面移到此頁"
             : "點擊下拉書籤標記此頁";
+          animateRibbonTo(0, immediate);
         }
 
         if (bookmarkedPageIndex !== null && !isHere) {
@@ -426,18 +491,30 @@
         }
       }
 
+      // 滑鼠懸停在未掛書籤上時，微微探出多一點點提示可點擊
+      bookmarkRibbon.addEventListener("mouseenter", () => {
+        if (!isCurrentViewBookmarked()) {
+          animateRibbonTo(0.14, false);
+        }
+      });
+      bookmarkRibbon.addEventListener("mouseleave", () => {
+        if (!isCurrentViewBookmarked()) {
+          animateRibbonTo(0, false);
+        }
+      });
+
       function toggleOrMoveBookmark() {
         if (isCurrentViewBookmarked()) {
           bookmarkedPageIndex = null;
           saveBookmarkToStorage(null);
-          updateBookmarkUI();
+          updateBookmarkUI(false);
           showBookmarkToast("已收起書籤");
         } else {
           const hadOldBookmark = bookmarkedPageIndex !== null;
           const targetIdx = getCurrentRepresentativePageIndex();
           bookmarkedPageIndex = targetIdx;
           saveBookmarkToStorage(targetIdx);
-          updateBookmarkUI();
+          updateBookmarkUI(false);
           const label = targetIdx === 0 ? "封面" : `第 ${targetIdx} 頁`;
           showBookmarkToast(hadOldBookmark ? `書籤已移至${label}（下次開啟將自動回到此頁）` : `已在${label}掛上書籤`);
         }
@@ -454,13 +531,13 @@
         flip.direction = dir;
         flip.fromStep = currentStep;
         flip.toStep = targetStep;
-        flip.progress = 0.02;
+        flip.progress = 0.015;
         flip.tiltAngle = 0;
         bookShell.classList.add("is-flipping");
         if (isSpreadCapable && (currentStep === 0 || targetStep === 0)) {
           updateLayout(false);
         }
-        animateSpringTo(1, 1.6, () => {
+        animateSpringTo(1, 0.95, () => {
           currentStep = targetStep;
         });
       }
@@ -556,7 +633,7 @@
         const startTx = view.tx;
         const startTy = view.ty;
         const startTime = performance.now();
-        const duration = 240;
+        const duration = 260;
 
         function step(now) {
           const t = Math.min(1, (now - startTime) / duration);
@@ -712,7 +789,7 @@
         applyViewTransform();
         updateCanvasResolution();
         updateHudText();
-        updateBookmarkUI();
+        updateBookmarkUI(forceReset);
         render();
       }
 
@@ -1041,6 +1118,7 @@
         drawSinglePageCurl(lowerIdx, upperIdx, peelP, flip.tiltAngle, w, h);
       }
 
+      // 調慢且更溫潤的臨界阻尼彈簧物理（紙張翻過與回彈節奏更自然優雅）
       function animateSpringTo(targetP, initialVelocity, onComplete) {
         if (flip.animFrame) cancelAnimationFrame(flip.animFrame);
         bookShell.classList.add("is-flipping");
@@ -1049,8 +1127,9 @@
         let vel = initialVelocity || 0;
         let lastTs = performance.now();
 
-        const stiffness = 190;
-        const damping = 26;
+        // 放慢動畫節奏：stiffness 95 + damping 19.5（接近臨界阻尼，柔順舒展不急促）
+        const stiffness = 95;
+        const damping = 19.5;
 
         function tick(now) {
           const dt = Math.min(0.032, (now - lastTs) / 1000);
@@ -1064,7 +1143,7 @@
           vel += accel * dt;
           pos += vel * dt;
 
-          flip.tiltAngle *= 0.92;
+          flip.tiltAngle *= 0.94;
 
           if (pos < 0) {
             pos = 0;
@@ -1077,7 +1156,7 @@
           flip.progress = pos;
           render();
 
-          if (Math.abs(pos - targetP) < 0.002 && Math.abs(vel) < 0.02) {
+          if (Math.abs(pos - targetP) < 0.002 && Math.abs(vel) < 0.015) {
             flip.progress = targetP;
             flip.tiltAngle = 0;
             render();
@@ -1118,7 +1197,8 @@
           updateLayout(false);
         }
 
-        animateSpringTo(1, 1.4, () => {
+        // 點擊翻頁初速度調柔（0.85），呈現從容掀起的自然感
+        animateSpringTo(1, 0.85, () => {
           currentStep = nextStep;
         });
       }
@@ -1169,7 +1249,7 @@
 
           if (flip.active && flip.dragging) {
             const orig = flip.fromStep;
-            animateSpringTo(0, -0.5, () => {
+            animateSpringTo(0, -0.35, () => {
               currentStep = orig;
             });
           }
@@ -1479,12 +1559,12 @@
 
           if (shouldComplete) {
             const dest = flip.toStep;
-            animateSpringTo(1, Math.max(0.5, flip.velocity), () => {
+            animateSpringTo(1, Math.max(0.35, flip.velocity * 0.7), () => {
               currentStep = dest;
             });
           } else {
             const orig = flip.fromStep;
-            animateSpringTo(0, Math.min(-0.3, flip.velocity), () => {
+            animateSpringTo(0, Math.min(-0.2, flip.velocity * 0.7), () => {
               currentStep = orig;
             });
           }
