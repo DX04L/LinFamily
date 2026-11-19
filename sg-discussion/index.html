@@ -1160,17 +1160,22 @@
           articleBody.append(paragraph);
         };
         (doc.scripture_paragraphs || []).forEach(text => appendParagraph(text));
+        const verse = SGSourceTools.references(doc.main_scripture_ref || '')[0];
+        const headline = normalized(doc.title);
+        const duplicatesHeader = line => {
+          const title = normalized(line);
+          if (title && headline.endsWith(title)) return true;
+          if (!verse || !/^經文[：:]/.test(line)) return false;
+          const source = SGSourceTools.references(line)[0];
+          return source && source.end === line.length &&
+            ['book', 'chapter', 'verse', 'endChapter', 'lastVerse'].every(key => source[key] === verse[key]);
+        };
         (doc.paragraphs || []).forEach((text, index) => {
-          const headline = normalized(doc.title), line = normalized(text);
-          let hidden = index === doc.summary_index || (index === 0 && line && headline.endsWith(line));
-          if (index < 2 && /^經文[：:]/.test(text)) {
-            const source = SGSourceTools.references(text)[0];
-            const hero = SGSourceTools.references(doc.main_scripture_ref || '')[0];
-            if (source && hero && ['book', 'chapter', 'verse', 'endChapter', 'lastVerse'].every(key => source[key] === hero[key])) hidden = true;
-          }
+          // Word can put the title and scripture on separate lines in one paragraph.
+          const hidden = index === doc.summary_index ||
+            (index < 2 && text.split(/\r?\n/).map(line => line.trim()).filter(Boolean).every(duplicatesHeader));
           appendParagraph(text, (doc.blank_ranges || []).filter(span => span.paragraph === index), hidden);
         });
-        const verse = SGSourceTools.references(doc.main_scripture_ref || '')[0];
         if (verse) mainTrigger.dataset.studyVerse = JSON.stringify(verse);
         else delete mainTrigger.dataset.studyVerse;
       } else {
