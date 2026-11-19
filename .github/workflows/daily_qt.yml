@@ -2,8 +2,8 @@ name: Daily QT
 
 on:
   schedule:
-    - cron: '0 17 * * *' # 台灣時間每天凌晨 01:00 自動執行
-    - cron: '0 18 * * *' # 台灣時間凌晨 02:00 如仍缺資料則補跑
+    - cron: '7 17-23,0-15 * * *' # 台灣時間 01:07 到 23:07，每小時確認一次
+    - cron: '37 17 * * *' # 台灣時間 01:37 提早補跑一次
   workflow_dispatch:
     inputs:
       date:
@@ -16,6 +16,10 @@ on:
       recheck_date:
         description: '可選，重新核對既有日期的 YouTube 影片'
         type: string
+
+concurrency:
+  group: daily-qt
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -35,7 +39,7 @@ jobs:
       - name: Run Daily QT Script
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          QT_RETRY_IF_MISSING: ${{ github.event.schedule == '0 18 * * *' }}
+          QT_RETRY_IF_MISSING: ${{ github.event_name == 'schedule' }}
           QT_DATE: ${{ inputs.date }}
           QT_YOUTUBE_ONLY: ${{ inputs.youtube_only }}
           QT_RECHECK_DATE: ${{ inputs.recheck_date }}

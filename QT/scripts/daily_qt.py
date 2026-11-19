@@ -583,18 +583,41 @@ def recheck_video(target_date):
                   "video_url": link, "mismatch_warning": ""})
     print(f"[重新核對 {target_date}] 一致，已清除舊提示。")
 
+def has_devotional_content(data):
+    background = data.get("adult_content", {}).get("book_background")
+    story = data.get("kids_content", {}).get("bible_story_ruby")
+    return bool(background and story)
+
+
+def is_complete_devotional(data):
+    verses = data.get("scripture", {}).get("verses") or []
+    return bool(has_devotional_content(data) and verses
+                and all(all(verse.get(field) for field in ("text", "niv", "nirv")) for verse in verses)
+                and "預先匯入" not in data.get("source_channel", ""))
+
+
 def main():
-    if os.environ.get("QT_RETRY_IF_MISSING") == "true":
-        existing = db.collection("devotionals").document(TODAY_STR).get().to_dict() or {}
-        if existing.get("kids_content", {}).get("bible_story_ruby"):
-            print(f"{TODAY_STR} 已有完整靈修，略過備援排程。")
-            return
+    check_missing = os.environ.get("QT_RETRY_IF_MISSING") == "true"
+    existing = (db.collection("devotionals").document(TODAY_STR).get().to_dict() or {}) if check_missing else {}
+    if check_missing and is_complete_devotional(existing):
+        print(f"{TODAY_STR} 已有完整靈修，略過本次排程。")
+        return
     print(f"開始執行 {TODAY_STR} 每日 QT 雙來源比對與經文排版...")
     source = fetch_and_verify_sources()
     ref_info = source["ref_info"]
 
     scripture = get_scripture_data(ref_info)
-    adult_content, kids_content = generate_ai_devotional(ref_info, scripture)
+    if has_devotional_content(existing) and existing.get("scripture", {}).get("reference") == scripture["reference"]:
+        adult_content, kids_content = existing["adult_content"], existing["kids_content"]
+        old_verses = {(v.get("chapter"), v["verse"]): v for v in existing["scripture"]["verses"]}
+        for verse in scripture["verses"]:
+            old = old_verses.get((verse.get("chapter"), verse["verse"]), {})
+            for translation in ("niv", "nirv"):
+                if not verse.get(translation) and old.get(translation):
+                    verse[translation] = old[translation]
+        print("沿用同一段經文已生成的導讀與故事，只補缺漏資料。")
+    else:
+        adult_content, kids_content = generate_ai_devotional(ref_info, scripture)
 
     doc_data = {
         "date": TODAY_STR,
@@ -608,6 +631,8 @@ def main():
 
     store_recent_devotional(db, doc_data)
     print(f"成功寫入 Firestore: devotionals/{TODAY_STR} ({scripture['reference']})")
+    if check_missing and not is_complete_devotional(doc_data):
+        raise RuntimeError("當日靈修仍有缺漏，下個排程會再補跑。")
     if recheck_date := os.environ.get("QT_RECHECK_DATE"):
         recheck_video(recheck_date)
 
