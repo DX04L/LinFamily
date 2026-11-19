@@ -13,6 +13,7 @@
   html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font:15px -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif; }
   body { display:flex; flex-direction:column; }
   header { display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 6px) 10px 6px; border-bottom:1px solid var(--line); }
+  header[hidden] { display:none; }
   header a { color:inherit; text-decoration:none; padding:6px 10px; border-radius:10px; white-space:nowrap; }
   header a:active { background:var(--line); }
   #t { flex:1; text-align:center; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -28,6 +29,10 @@
   let u = ''; try { const x = new URL(p.get('u') || ''); if (/^https?:$/.test(x.protocol)) u = x.href; } catch (_) {}
   if (!u) location.replace('./');
   else {
+    // LF sub-apps already provide their own header.
+    if (p.get('layout') === 'app' && new URL(u).origin === location.origin) {
+      document.querySelector('header').hidden = true;
+    }
     document.getElementById('t').textContent = document.title = (p.get('n') || new URL(u).hostname).slice(0, 30);
     document.getElementById('f').src = u;
     document.getElementById('ext').href = u; // 框內打不開時，按 ↗ 直接開啟

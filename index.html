@@ -781,8 +781,7 @@
       else monogram(span, app);
       return span;
     }
-    // 自家網站：直接開（網站本身用 DX04 的 lf-back.js 顯示淡淡的圓形 🏠 回首頁鈕）；外部網站：放進 open.html 框內（左下角同樣有圓形 🏠 鈕，右上角 ↗）；
-    // 不允許被放進框內的網站（Google 等）：直接開，接受瀏覽器那一列。
+    // LF 子 App 由 open.html 提供 Home overlay；DX、YA、SR 沿用跨站返回。
     const OWN_HOSTS = ['clc-dx04.pages.dev', 'clc-ya-portal.pages.dev', 'clc-sr-portal.pages.dev'];
     const NO_FRAME = /(^|\.)(google\.[a-z.]+|youtube\.com|youtu\.be|gmail\.com|facebook\.com|instagram\.com|messenger\.com|threads\.net|line\.me|apple\.com|icloud\.com|github\.com|x\.com|twitter\.com|microsoft\.com|live\.com|office\.com|notion\.so|amazon\.[a-z.]+|linkedin\.com|paypal\.com)$/i;
     function isOwnSite(app) {
@@ -795,9 +794,24 @@
     apps = apps.filter(a => !isOwnSite(a)); // 權限確認前先不放 DX、YA、SR（確認是 Superuser 才出現），避免打開時先閃出來
     function tileHref(app) {
       const url = safeUrl(app.url); if (!url) return '#';
-      let host = ''; try { host = new URL(url, location.href).hostname; } catch (_) {}
+      let destination;
+      try { destination = new URL(url, location.href); } catch (_) { return '#'; }
+      const host = destination.hostname;
+      const lf = new URL('./', location.href);
+      const appPath = host === 'clc-dx04.pages.dev' && destination.pathname.startsWith('/lf/')
+        ? destination.pathname.slice(4)
+        : destination.origin === lf.origin && destination.pathname.startsWith(lf.pathname)
+          ? destination.pathname.slice(lf.pathname.length)
+          : '';
+      if (appPath && appPath !== 'index.html' && appPath !== 'open.html') {
+        const appUrl = new URL(lf);
+        appUrl.pathname += appPath;
+        appUrl.search = destination.search;
+        appUrl.hash = destination.hash;
+        return 'open.html?' + new URLSearchParams({u:appUrl.href, n:app.name || '', layout:'app'});
+      }
       if (/^https?:/i.test(url) && OWN_HOSTS.includes(host)) { // 自家網站直接開，網站左下角會出現淡淡的圓形 🏠 鈕（DX04 的 lf-back.js）
-        const u = new URL(url, location.href), sub = host.match(/^clc-(ya|sr)-portal\.pages\.dev$/);
+        const u = destination, sub = host.match(/^clc-(ya|sr)-portal\.pages\.dev$/);
         const own = sub ? new URL('https://clc-dx04.pages.dev/' + sub[1] + u.pathname + u.search + u.hash) : u; // YA、SR 走 DX04 底下的 /ya、/sr
         own.searchParams.set('lfhome', location.href.split('#')[0]);
         return own.origin === location.origin ? own.pathname + own.search + own.hash : own.href; // 同網域（LinFamily 在 DX04 的 /lf/ 底下）不會出現瀏覽器那一列

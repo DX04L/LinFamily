@@ -24,13 +24,9 @@
 
 ## 新增 App 的共用 Home 按鈕
 
-新 App 要提供「回 LinFamily 主畫面」時，一律載入 DX04 維護的共用 `lf-back.js`。請勿複製、重寫或另做一套 Home 按鈕。共用按鈕貼邊時顯示半個房子，拉出時顯示完整圖示。
+從 LinFamily 開啟的自家 App 使用 `open.html` 外層的共用 Home overlay。QT、HannahProjects 等 LF 子 App 保留自己的頁首，由外層載入 DX04 維護的 `lf-back.js`。Home 貼邊時顯示半個房子，拉出時顯示完整圖示。
 
-```html
-<script src="https://clc-dx04.pages.dev/lf-back.js?v=8" data-home="../"></script>
-```
-
-`data-home` 以 App 頁面為基準。LF 的第一層子 App 用 `../`，獨立網域的 App 用 `https://clc-dx04.pages.dev/lf/`。嵌入 `open.html` 時由外層提供按鈕。已由 DX04 Worker 注入的 DX／YA／SR 入口沿用 `?lfhome=` 接法。LF 主畫面本身就是返回目的地。
+新增自家 App 時，把 App 的直接網址登錄到 App Drawer，本站入口會自動使用外層 overlay。分享時使用 App 的直接網址。App 頁面不需要載入 Home 程式或另外製作按鈕。DX／YA／SR 仍沿用 Worker 的 `?lfhome=` 接法。
 
 ## 新增 App 的共用網址選單
 

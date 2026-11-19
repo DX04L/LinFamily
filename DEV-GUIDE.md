@@ -40,7 +40,7 @@
 - 貼上網址後自動抓名稱、圖示、能否內嵌（DX04 的 `/api/site-info`，已開放跨站呼叫）。使用者改過的值不會被自動抓取覆蓋。
 - 圖示：自動抓取 → 抓不到或寬度 < 96px（會糊）→ **自動生成字母圖示**（彩色圓角方塊＋名稱第一個字）。**不使用 Google favicon 服務。**
 - 開啟方式：
-  - 同網域的站（DX、YA、SR、LF 子頁）：直接換頁（不會有那一列）。
+  - DX、YA、SR：直接換頁。LF 子 App：由 `open.html` 外層提供 Home overlay，使用 App 自己的頁首。
   - 外部網站可內嵌：在 `open.html` 框內開（右上角 ↗ 直接開啟）。
   - 外部網站不可內嵌（Google 等）：直接開，接受那一列。
 - 空白處按右鍵／手機長按：自訂選單「Copy link」「Open in new window」，外觀照 DX 的 Header 選單；Copy link 後面顯示網址，選單寬度固定，網址太長時跑馬灯流過去；複製的是各站**原本的網址**（DX 底下的 `/ya/`、`/sr/` 換回 YA、SR 自己的網域，`/lf/` 維持 DX 底下）（LF 的 `js/lf-menu.js`，DX、YA、SR 的 `header.js`）；新分頁盡量用預設瀏覽器開（Android 用 `intent://`、LINE 加 `openExternalBrowser=1`）。
