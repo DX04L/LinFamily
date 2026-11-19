@@ -25,4 +25,4 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python sg-discussion/scripts/weekly_sg.py
+        run: python -u sg-discussion/scripts/weekly_sg.py

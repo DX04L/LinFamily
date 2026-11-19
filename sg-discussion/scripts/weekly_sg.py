@@ -42,7 +42,7 @@ def discover_gemini_models(api_key: str) -> list:
         is_lite = 1 if "lite" in s else 0
         m = re.search(r"gemini-(\d+(?:\.\d+)?)", s)
         ver = float(m.group(1)) if m else 0.0
-        return (is_flash, is_lite, -ver, s)
+        return (s != "models/gemini-2.5-flash", is_flash, is_lite, -ver, s)
 
     candidates.sort(key=priority)
     return candidates
@@ -208,7 +208,7 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
     {{
       "question": "小組討論題目 1（優先採用原教材題目，若原教材題目不足則設計 3-4 題由淺入深的破冰、觀察、應用題）",
       "btn_label": "查看本文答案與觀察重點",
-      "answer_box": "從主日信息歸納的參考答案（若為開放式生命分享題，此欄位可留空字串 \"\"）",
+      "answer_box": "依據經文或信息的參考答案，開放題也必須提供參考方向",
       "guide": "給小組長的牧養帶領延伸與禱告引導（約 80-130 字，可用 <strong> 強調）"
     }}
   ]
@@ -236,6 +236,11 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
 
     last_err = None
     for model in models[:6]:
+        payload["generationConfig"].pop("thinkingConfig", None)
+        if "gemini-3" in model and "flash" in model:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
+        elif "gemini-2.5-flash" in model:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
         try:
             resp = requests.post(
                 f"{GEMINI_API_ROOT}/{model.lstrip('/')}:generateContent",
@@ -249,9 +254,13 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
             raw_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
             cleaned = re.sub(r"^```json\s*|\s*```$", "", raw_text)
             parsed = json.loads(cleaned)
-            if parsed.get("title") and parsed.get("paragraphs"):
+            questions = parsed.get("questions")
+            if (parsed.get("title") and parsed.get("paragraphs") and questions
+                and all(all(str(q.get(key) or "").strip() for key in
+                            ("question", "answer_box", "guide")) for q in questions)):
                 print(f"✅ [{item['date']}] Gemini 生成成功（模型：{model}）")
                 return parsed
+            last_err = f"{model} 生成結果缺少必要欄位"
         except Exception as e:
             last_err = str(e)
             continue
@@ -275,10 +284,6 @@ def sync_firestore(items):
         if (ref.get().to_dict() or {}).get("content_hash") == content_hash:
             continue
         generated = generate_sg_content_with_gemini(item)
-        questions = generated.get("questions")
-        if not questions or any(not all(str(q.get(key) or "").strip() for key in
-                                        ("question", "answer_box", "guide")) for q in questions):
-            raise ValueError(f"{item['date']} 生成結果缺少討論題、答案或引導")
         batch.set(ref, {
             **generated,
             "date": item["date"],
