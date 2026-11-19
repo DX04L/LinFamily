@@ -61,50 +61,54 @@
       cursor: grabbing;
     }
 
-    /* 右上角實體大緞帶書籤 */
+    /* 右上角貼合書緣的折疊絲帶書籤：上方僅微凸 2px 折痕，點擊後從折縫往下滑出 */
     #bookmark-ribbon {
       position: absolute;
-      top: -6px;
+      top: -2px;
       right: 22px;
-      width: 44px;
-      height: 86px;
+      width: 40px;
+      height: 82px;
       cursor: pointer;
       z-index: 15;
       transform-origin: top center;
-      transition: transform 0.34s cubic-bezier(0.22, 1.35, 0.36, 1), opacity 0.25s ease;
-      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.38));
+      transition:
+        clip-path 0.36s cubic-bezier(0.22, 1.25, 0.36, 1),
+        transform 0.36s cubic-bezier(0.22, 1.25, 0.36, 1),
+        opacity 0.25s ease;
+      filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.36));
     }
 
-    /* 未掛書籤時：僅露出上方一點點半透明掛耳，不遮擋繪本插畫 */
+    /* 未掛書籤時：只從書本上緣折下來露出一小截（約 16px），像折在書頁後方 */
     #bookmark-ribbon.inactive {
-      transform: translateY(-48px) scaleY(0.92);
-      opacity: 0.52;
-      filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.28));
+      clip-path: inset(0 0 64px 0 round 2px 2px 3px 3px);
+      transform: translateY(0);
+      opacity: 0.72;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
     }
 
     #bookmark-ribbon.inactive:hover {
-      transform: translateY(-38px) scaleY(0.96);
-      opacity: 0.88;
+      clip-path: inset(0 0 54px 0 round 2px 2px 3px 3px);
+      opacity: 0.96;
     }
 
-    /* 已掛書籤時：完整垂下 */
+    /* 已掛書籤時：上方折痕依然緊貼書緣，緞帶順勢往下滑展開 */
     #bookmark-ribbon.active {
-      transform: translateY(0) scaleY(1);
+      clip-path: inset(0 0 0 0);
+      transform: translateY(0);
       opacity: 1;
     }
 
     #bookmark-ribbon.active:active {
-      transform: translateY(5px) scaleY(1.04);
+      transform: translateY(3px) scaleY(1.03);
     }
 
     #bookmark-ribbon svg {
       width: 100%;
       height: 100%;
       display: block;
-      overflow: visible;
     }
 
-    /* 翻頁動畫進行時暫時淡化外部書籤 DOM，避免懸空感 */
+    /* 翻頁動畫進行時暫時淡化書籤，避免懸空感 */
     #book-shell.is-flipping #bookmark-ribbon {
       opacity: 0;
       pointer-events: none;
@@ -245,39 +249,42 @@
   <div id="reader-stage">
     <div id="book-shell">
       <canvas id="book-canvas"></canvas>
-      <!-- 右上角大緞帶書籤 -->
+      <!-- 右上角折疊式絲帶書籤：緊貼書緣，點擊後向下滑出 -->
       <div id="bookmark-ribbon" class="inactive" title="點擊在此頁掛上書籤（全書僅保留一個書籤）">
-        <svg viewBox="0 0 44 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 40 82" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="ribbonBody" x1="0" y1="0" x2="44" y2="0" gradientUnits="userSpaceOnUse">
+            <linearGradient id="ribbonBody" x1="0" y1="0" x2="40" y2="0" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#9B1B24" />
               <stop offset="22%" stop-color="#D62839" />
               <stop offset="50%" stop-color="#BA1E2D" />
               <stop offset="82%" stop-color="#E03546" />
               <stop offset="100%" stop-color="#87141D" />
             </linearGradient>
-            <linearGradient id="ribbonSheen" x1="22" y1="0" x2="22" y2="86" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="rgba(0,0,0,0.28)" />
-              <stop offset="14%" stop-color="rgba(255,255,255,0.18)" />
-              <stop offset="65%" stop-color="rgba(255,255,255,0)" />
-              <stop offset="100%" stop-color="rgba(0,0,0,0.22)" />
+            <!-- 上緣折彎立體明暗：模擬從書頁後方折過來的圓弧高光與夾縫陰影 -->
+            <linearGradient id="foldOverShadow" x1="20" y1="0" x2="20" y2="82" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="rgba(45, 5, 8, 0.55)" />
+              <stop offset="3.5%" stop-color="rgba(255, 235, 235, 0.34)" />
+              <stop offset="8%" stop-color="rgba(0, 0, 0, 0.24)" />
+              <stop offset="14%" stop-color="rgba(255, 255, 255, 0.06)" />
+              <stop offset="70%" stop-color="rgba(255, 255, 255, 0)" />
+              <stop offset="100%" stop-color="rgba(0, 0, 0, 0.22)" />
             </linearGradient>
-            <linearGradient id="goldTrim" x1="0" y1="0" x2="44" y2="86" gradientUnits="userSpaceOnUse">
+            <linearGradient id="goldTrim" x1="0" y1="0" x2="40" y2="82" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#F7D78B" />
               <stop offset="50%" stop-color="#D99B38" />
               <stop offset="100%" stop-color="#F5CE76" />
             </linearGradient>
           </defs>
-          <!-- 頂部書頁夾口暗影 -->
-          <path d="M2 6C2 2.68629 4.68629 0 8 0H36C39.3137 0 42 2.68629 42 6V10H2V6Z" fill="#5E0D13"/>
-          <!-- 主緞帶燕尾造型 -->
-          <path d="M3 4H41V82L22 68L3 82V4Z" fill="url(#ribbonBody)"/>
-          <path d="M3 4H41V82L22 68L3 82V4Z" fill="url(#ribbonSheen)"/>
+          <!-- 主緞帶燕尾造型（頂部帶極微圓弧模擬從書背折過來的厚度） -->
+          <path d="M2 2.5C2 1.11929 3.11929 0 4.5 0H35.5C36.8807 0 38 1.11929 38 2.5V79L20 65.5L2 79V2.5Z" fill="url(#ribbonBody)"/>
+          <path d="M2 2.5C2 1.11929 3.11929 0 4.5 0H35.5C36.8807 0 38 1.11929 38 2.5V79L20 65.5L2 79V2.5Z" fill="url(#foldOverShadow)"/>
+          <!-- 書緣折縫壓線 -->
+          <line x1="2" y1="3" x2="38" y2="3" stroke="rgba(255, 220, 220, 0.35)" stroke-width="0.8"/>
           <!-- 雙側精緻金邊車縫線 -->
-          <path d="M7.5 6V74.5M36.5 6V74.5" stroke="url(#goldTrim)" stroke-width="1.3" stroke-dasharray="2.5 2"/>
+          <path d="M6.5 3V72M33.5 3V72" stroke="url(#goldTrim)" stroke-width="1.2" stroke-dasharray="2.4 2"/>
           <!-- 中央書籤星芒徽章 -->
-          <circle cx="22" cy="44" r="8.5" fill="rgba(94, 13, 19, 0.35)" stroke="url(#goldTrim)" stroke-width="1.2"/>
-          <path d="M22 38.2L23.5 42.3L27.8 42.5L24.4 45.2L25.6 49.3L22 46.9L18.4 49.3L19.6 45.2L16.2 42.5L20.5 42.3L22 38.2Z" fill="#F9DF9B"/>
+          <circle cx="20" cy="43" r="8" fill="rgba(94, 13, 19, 0.35)" stroke="url(#goldTrim)" stroke-width="1.15"/>
+          <path d="M20 37.5L21.4 41.3L25.4 41.5L22.2 44L23.3 47.9L20 45.6L16.7 47.9L17.8 44L14.6 41.5L18.6 41.3L20 37.5Z" fill="#F9DF9B"/>
         </svg>
       </div>
     </div>
@@ -334,7 +341,7 @@
       let logicalW = 0;
       let logicalH = 0;
 
-      // ===== 單一全局書籤狀態（以實際圖片索引 0..28 儲存，跨單雙頁裝置皆精準對應） =====
+      // ===== 單一全局書籤狀態 =====
       let bookmarkedPageIndex = loadSavedBookmark();
 
       function loadSavedBookmark() {
@@ -359,7 +366,6 @@
         } catch (e) {}
       }
 
-      // 將實際圖片索引轉換為當前視圖（單頁或雙頁）的 step
       function pageIndexToStep(pageIdx) {
         if (pageIdx <= 0) return 0;
         if (isSpreadCapable) {
@@ -368,7 +374,6 @@
         return Math.min(getMaxStep(), pageIdx);
       }
 
-      // 取得當前畫面代表的基準圖片索引（雙頁時優先取右頁或左頁代表該跨頁）
       function getCurrentRepresentativePageIndex() {
         if (!isSpreadCapable || currentStep === 0) {
           return currentStep;
@@ -378,7 +383,6 @@
         return rightIdx < IMAGE_FILES.length ? rightIdx : leftIdx;
       }
 
-      // 判斷當前畫面是否包含唯一書籤
       function isCurrentViewBookmarked() {
         if (bookmarkedPageIndex === null) return false;
         if (!isSpreadCapable || currentStep === 0) {
@@ -404,16 +408,15 @@
         if (isHere) {
           bookmarkRibbon.classList.remove("inactive");
           bookmarkRibbon.classList.add("active");
-          bookmarkRibbon.title = "此頁已掛上書籤（再次點擊可取下）";
+          bookmarkRibbon.title = "此頁已掛上書籤（再次點擊可收起）";
         } else {
           bookmarkRibbon.classList.remove("active");
           bookmarkRibbon.classList.add("inactive");
           bookmarkRibbon.title = bookmarkedPageIndex !== null
             ? "點擊將書籤從原本頁面移到此頁"
-            : "點擊在此頁掛上書籤";
+            : "點擊下拉書籤標記此頁";
         }
 
-        // 若全書有書籤且目前不在書籤頁，底部 HUD 顯示「回到書籤」快捷按鈕
         if (bookmarkedPageIndex !== null && !isHere) {
           btnGotoBookmark.style.display = "inline-block";
           const targetName = bookmarkedPageIndex === 0 ? "封面" : `第 ${bookmarkedPageIndex} 頁`;
@@ -425,13 +428,11 @@
 
       function toggleOrMoveBookmark() {
         if (isCurrentViewBookmarked()) {
-          // 在同一頁再次點擊 -> 取下書籤
           bookmarkedPageIndex = null;
           saveBookmarkToStorage(null);
           updateBookmarkUI();
-          showBookmarkToast("已取下書籤");
+          showBookmarkToast("已收起書籤");
         } else {
-          // 在別的頁點擊 -> 舊書籤自動消失，唯一書籤轉移至此頁
           const hadOldBookmark = bookmarkedPageIndex !== null;
           const targetIdx = getCurrentRepresentativePageIndex();
           bookmarkedPageIndex = targetIdx;
@@ -1122,7 +1123,7 @@
         });
       }
 
-      // ===== 右上角書籤點擊事件（獨立攔截，不干擾下方畫布翻頁） =====
+      // ===== 右上角書籤點擊事件 =====
       bookmarkRibbon.addEventListener("mousedown", (e) => {
         e.stopPropagation();
       });
@@ -1549,7 +1550,6 @@
       function checkInitialReady() {
         if (!initialShown && readyCount >= Math.min(3, IMAGE_FILES.length)) {
           initialShown = true;
-          // 偵測螢幕尺寸並自動跳轉到上次儲存的書籤頁
           const stageRect = readerStage.getBoundingClientRect();
           isSpreadCapable = checkSpreadCapable(stageRect.width || window.innerWidth, stageRect.height || window.innerHeight);
           if (bookmarkedPageIndex !== null) {
