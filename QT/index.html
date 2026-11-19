@@ -141,11 +141,11 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
-<link rel="stylesheet" href="reader.css?v=6">
+<link rel="stylesheet" href="reader.css?v=7">
 </head>
 <body>
 <header><div class="bar shell">
-  <div class="qt-brand-group"><a id="home" class="brand" data-lf-menu-trigger href="/lf/QT/"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a><span id="qt-welcome" hidden></span></div>
+  <div class="qt-brand-group"><a id="home" class="brand" data-lf-menu-trigger href="./"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a><span id="qt-welcome" hidden><span id="qt-welcome-name"></span><span id="qt-welcome-extra" hidden></span></span></div>
   <div class="qt-header-actions">
     <button id="export-word" type="button" aria-label="匯出 Word" title="匯出 Word" hidden>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></svg>
@@ -418,6 +418,23 @@ function getDatabase() {
     .catch(error => { firestore = null; throw error; });
 }
 
+const welcome = $('qt-welcome');
+const welcomeName = $('qt-welcome-name');
+const welcomeExtra = $('qt-welcome-extra');
+const compactWelcome = matchMedia('(max-width: 640px), (pointer: coarse)');
+
+function fitWelcome() {
+  welcomeExtra.hidden = true;
+  if (welcome.hidden || compactWelcome.matches || !welcomeExtra.textContent) return;
+  welcomeExtra.hidden = false;
+  const group = welcome.parentElement;
+  welcomeExtra.hidden = group.scrollWidth > group.clientWidth ||
+    group.clientHeight > Math.max(32, parseFloat(getComputedStyle(group).lineHeight) + 1);
+}
+new ResizeObserver(fitWelcome).observe(welcome.parentElement);
+compactWelcome.addEventListener('change', fitWelcome);
+document.fonts.ready.then(fitWelcome);
+
 async function watchLinFamilyAuth() {
   const greetings = [
     '一起讀經吧。',
@@ -426,10 +443,10 @@ async function watchLinFamilyAuth() {
     '留一點時間聆聽神的話。',
     '一起慢下來，默想今天的經文。',
   ];
-  const welcome = $('qt-welcome');
   const authUnavailable = () => {
     welcome.hidden = true;
-    welcome.textContent = '';
+    welcomeName.textContent = '';
+    welcomeExtra.textContent = '';
     QTReader.setAccount(undefined, true);
   };
   try {
@@ -444,7 +461,9 @@ async function watchLinFamilyAuth() {
           timeZone:'Asia/Taipei',hour:'2-digit',hourCycle:'h23',
         }).format());
         const greeting = hour >= 5 && hour < 12 ? '早安' : '歡迎';
-        welcome.textContent = `｜${greeting}，${name}。${greetings[day % greetings.length]}`;
+        welcomeName.textContent = `｜${greeting}，${name}`;
+        welcomeExtra.textContent = `。${greetings[day % greetings.length]}`;
+        fitWelcome();
         QTReader.setAccount({
           subscribe: async (entry, next, error) => {
             const db = await getDatabase();
@@ -459,7 +478,8 @@ async function watchLinFamilyAuth() {
           },
         });
       } else {
-        welcome.textContent = '';
+        welcomeName.textContent = '';
+        welcomeExtra.textContent = '';
         QTReader.setAccount(null);
       }
     }, authUnavailable);
@@ -518,7 +538,7 @@ function previewDate(data) {
   return preview;
 }
 
-async function selectDate(date, animate = true) {
+async function selectDate(date, animate = true, fallbackToLatest = false) {
   const next = recent.find(entry => entry.date === date);
   if (animate && current && next && current.date !== date) {
     $('date-picker').open = false;
@@ -536,7 +556,7 @@ async function selectDate(date, animate = true) {
   try {
     if (!recent.length) recent = await readRecent();
     if (id !== request) return;
-    const data = recent.find(entry => entry.date === date) || (!previousDate ? recent[0] : null);
+    const data = recent.find(entry => entry.date === date) || (fallbackToLatest ? recent[0] : null);
     if (data && data.date !== date) {
       selectDate(data.date, false);
       return;
@@ -621,7 +641,8 @@ $('previous').addEventListener('click', () => shiftDate(-1));
 $('next').addEventListener('click', () => shiftDate(1));
 $('home').addEventListener('click', event => {
   event.preventDefault();
-  selectDate(taipeiDate());
+  selectDate(taipeiDate(), false, true);
+  window.scrollTo(0, 0);
 });
 QTReader.init({
   getCurrent: () => current,
@@ -633,9 +654,10 @@ QTReader.init({
 });
 try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; } catch {}
 setTheme(mode);
-selectDate(taipeiDate());
+selectDate(taipeiDate(), false, true);
 watchLinFamilyAuth();
 </script>
+  <script defer src="https://clc-dx04.pages.dev/lf-back.js?v=8" data-home="../" data-key="linfamily_homebtn_open"></script>
   <script defer src="../js/lf-menu.js?v=4"></script>
 </body>
 </html>

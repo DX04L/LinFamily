@@ -39,12 +39,13 @@ main{touch-action:pan-y pinch-zoom}
 .qt-paper-incoming,.qt-paper-outgoing{will-change:transform}
 .qt-paper-outgoing{inset:0}
 .qt-brand-group{
-  position:relative;min-width:0;min-height:32px;padding-inline-start:42px;
+  position:relative;flex:1;min-width:0;min-height:32px;padding-inline-start:42px;
   align-content:center;font:700 14px/1.45 var(--heading);overflow-wrap:anywhere
 }
 .qt-brand-group .brand{display:inline}
 .qt-brand-group .brand img{position:absolute;inset-inline-start:0;top:50%;transform:translateY(-50%)}
 #qt-welcome{color:var(--muted);font:inherit}
+#qt-welcome-extra{display:inline-block;white-space:nowrap;vertical-align:baseline}
 .qt-header-actions{display:flex;align-items:center;gap:7px;flex:none}
 #export-word{
   display:grid;place-items:center;width:36px;height:36px;padding:0;
