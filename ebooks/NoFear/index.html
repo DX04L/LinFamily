@@ -4,7 +4,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>不要怕！森林大霧</title>
   <style>
     * {
@@ -36,15 +36,16 @@
       justify-content: center;
       padding: 6px;
       overflow: hidden;
+      touch-action: none;
     }
 
-    /* 移除 width/height transition，避免視窗縮放時 Canvas 與容器不同步造成擠壓變形 */
     #book-shell {
       position: relative;
       box-shadow: 0 22px 60px rgba(0, 0, 0, 0.72), 0 4px 16px rgba(0, 0, 0, 0.5);
       border-radius: 4px;
       background: #fdfbf7;
       will-change: transform;
+      transform-origin: center center;
     }
 
     canvas#book-canvas {
@@ -159,6 +160,7 @@
     <button class="hud-btn" id="btn-prev" title="上一頁">‹</button>
     <span id="page-label">封面</span>
     <button class="hud-btn" id="btn-next" title="下一頁">›</button>
+    <button class="hud-btn" id="btn-reset-zoom" title="還原大小" style="display:none; font-size:12px;">100%</button>
   </div>
 
   <script>
@@ -184,9 +186,9 @@
       const btnFirst = document.getElementById("btn-first");
       const btnPrev = document.getElementById("btn-prev");
       const btnNext = document.getElementById("btn-next");
+      const btnResetZoom = document.getElementById("btn-reset-zoom");
 
       const images = [];
-      // 離屏快取畫布：避免每一幀重複縮放高解析度原圖造成卡頓
       const pageCache = [];
       let cachedPageW = 0;
       let cachedPageH = 0;
@@ -196,17 +198,42 @@
 
       let isSpreadCapable = false;
       let currentStep = 0;
-      // 直接記錄精確邏輯寬高，不依賴 DOM 延遲回報的 clientWidth
       let logicalW = 0;
       let logicalH = 0;
 
+      // 雙指縮放與平移狀態
+      const view = {
+        scale: 1,
+        tx: 0,
+        ty: 0,
+        minScale: 1,
+        maxScale: 3.5,
+        isPinching: false,
+        isPanning: false,
+        pinchStartDist: 0,
+        pinchStartScale: 1,
+        pinchStartTx: 0,
+        pinchStartTy: 0,
+        pinchMidX: 0,
+        pinchMidY: 0,
+        panStartX: 0,
+        panStartY: 0,
+        panStartTx: 0,
+        panStartTy: 0,
+        zoomAnim: null
+      };
+
+      // 翻頁狀態（新增斜向捲曲角度 tiltAngle 與起始高度 startYNorm）
       const flip = {
         active: false,
         direction: 0,      // 1 = 往下一頁翻, -1 = 往上一頁翻
         progress: 0,       // 0.0 -> 1.0
         velocity: 0,
+        tiltAngle: 0,      // 折痕傾斜弧度（負值=從右下往上斜掀，正值=從右上往下斜掀）
+        startYNorm: 0.5,   // 手指按下的垂直相對位置 (0.0 頂端 ~ 1.0 底端)
         dragging: false,
         startX: 0,
+        startY: 0,
         lastX: 0,
         lastTime: 0,
         fromStep: 0,
@@ -233,6 +260,77 @@
         }, 2400);
       }
 
+      function clampPan(tx, ty, scale) {
+        if (scale <= 1.001) return { tx: 0, ty: 0 };
+        const stageRect = readerStage.getBoundingClientRect();
+        const scaledW = logicalW * scale;
+        const scaledH = logicalH * scale;
+        const maxTx = Math.max(0, (scaledW - stageRect.width) / 2 + 24);
+        const maxTy = Math.max(0, (scaledH - stageRect.height) / 2 + 24);
+        return {
+          tx: Math.max(-maxTx, Math.min(maxTx, tx)),
+          ty: Math.max(-maxTy, Math.min(maxTy, ty))
+        };
+      }
+
+      function applyViewTransform() {
+        const clamped = clampPan(view.tx, view.ty, view.scale);
+        view.tx = clamped.tx;
+        view.ty = clamped.ty;
+        if (view.scale <= 1.001 && Math.abs(view.tx) < 0.5 && Math.abs(view.ty) < 0.5) {
+          bookShell.style.transform = "";
+          btnResetZoom.style.display = "none";
+        } else {
+          bookShell.style.transform = `translate3d(${view.tx.toFixed(2)}px, ${view.ty.toFixed(2)}px, 0) scale(${view.scale.toFixed(4)})`;
+          btnResetZoom.style.display = "inline-block";
+          btnResetZoom.textContent = `${Math.round(view.scale * 100)}%`;
+        }
+      }
+
+      function animateViewTo(targetScale, targetTx, targetTy, onDone) {
+        if (view.zoomAnim) cancelAnimationFrame(view.zoomAnim);
+        const startScale = view.scale;
+        const startTx = view.tx;
+        const startTy = view.ty;
+        const startTime = performance.now();
+        const duration = 240;
+
+        function step(now) {
+          const t = Math.min(1, (now - startTime) / duration);
+          const ease = 1 - Math.pow(1 - t, 3);
+          view.scale = startScale + (targetScale - startScale) * ease;
+          view.tx = startTx + (targetTx - startTx) * ease;
+          view.ty = startTy + (targetTy - startTy) * ease;
+          applyViewTransform();
+
+          if (t < 1) {
+            view.zoomAnim = requestAnimationFrame(step);
+          } else {
+            view.scale = targetScale;
+            view.tx = targetTx;
+            view.ty = targetTy;
+            view.zoomAnim = null;
+            applyViewTransform();
+            updateCanvasResolution();
+            if (onDone) onDone();
+          }
+        }
+        view.zoomAnim = requestAnimationFrame(step);
+      }
+
+      function resetZoom(animated = true) {
+        if (animated) {
+          animateViewTo(1, 0, 0);
+        } else {
+          if (view.zoomAnim) cancelAnimationFrame(view.zoomAnim);
+          view.scale = 1;
+          view.tx = 0;
+          view.ty = 0;
+          applyViewTransform();
+          updateCanvasResolution();
+        }
+      }
+
       function checkSpreadCapable(stageW, stageH) {
         return stageW >= 820 && stageW > stageH * 1.05;
       }
@@ -252,9 +350,14 @@
         }
       }
 
-      // 取得單頁預渲染快取（尺寸一致時直接回傳，零縮放開銷）
+      function getEffectiveDpr() {
+        const baseDpr = window.devicePixelRatio || 1;
+        const zoomBoost = Math.min(2.2, Math.max(1, view.scale));
+        return Math.min(3.5, baseDpr * zoomBoost);
+      }
+
       function getCachedPage(imgIndex, targetW, targetH) {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = getEffectiveDpr();
         const pxW = Math.max(1, Math.round(targetW * dpr));
         const pxH = Math.max(1, Math.round(targetH * dpr));
 
@@ -285,6 +388,19 @@
         return off;
       }
 
+      function updateCanvasResolution() {
+        if (!logicalW || !logicalH) return;
+        const dpr = getEffectiveDpr();
+        const targetCanvasW = Math.round(logicalW * dpr);
+        const targetCanvasH = Math.round(logicalH * dpr);
+        if (canvas.width !== targetCanvasW || canvas.height !== targetCanvasH) {
+          canvas.width = targetCanvasW;
+          canvas.height = targetCanvasH;
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        scheduleRender();
+      }
+
       function updateLayout(forceReset = false) {
         const stageRect = readerStage.getBoundingClientRect();
         const stageW = stageRect.width || window.innerWidth;
@@ -295,13 +411,13 @@
 
         if (!forceReset && wasSpread !== isSpreadCapable) {
           currentStep = convertStepOnResize(wasSpread, isSpreadCapable, currentStep);
-          // 若正在翻頁中遇到螢幕劇烈旋轉，安全結束當前動畫並對齊新模式
           if (flip.active) {
             if (flip.animFrame) cancelAnimationFrame(flip.animFrame);
             flip.active = false;
             flip.dragging = false;
             flip.animFrame = null;
           }
+          resetZoom(false);
         }
         currentStep = Math.max(0, Math.min(currentStep, getMaxStep()));
 
@@ -326,18 +442,11 @@
         logicalW = Math.round(bookW);
         logicalH = Math.round(bookH);
 
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
         bookShell.style.width = logicalW + "px";
         bookShell.style.height = logicalH + "px";
 
-        const targetCanvasW = Math.round(logicalW * dpr);
-        const targetCanvasH = Math.round(logicalH * dpr);
-        if (canvas.width !== targetCanvasW || canvas.height !== targetCanvasH) {
-          canvas.width = targetCanvasW;
-          canvas.height = targetCanvasH;
-        }
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
+        applyViewTransform();
+        updateCanvasResolution();
         updateHudText();
         render();
       }
@@ -415,87 +524,191 @@
         }
       }
 
-      // Google Play Books 風格：單頁圓柱捲曲折疊效果
-      function drawSinglePageCurl(lowerIdx, upperIdx, peelP, w, h) {
+      // 支援多角度斜向捲曲的單頁翻頁效果 (Angled Cylindrical Page Peel)
+      function drawSinglePageCurl(lowerIdx, upperIdx, peelP, tiltAngle, w, h) {
+        // 1. 底層即將露出的下一頁
         drawPageImage(upperIdx, 0, 0, w, h, w, h);
 
+        // 隨著翻頁接近完成 (peelP -> 1)，折痕角度自然收斂回垂直書脊，確保最終平貼書本
+        const activeAngle = tiltAngle * Math.sin(peelP * Math.PI);
         const curlCurve = Math.sin(peelP * Math.PI);
-        const foldX = w * (1 - peelP);
-        const flapWidth = Math.min(w - foldX, Math.max(24, w * 0.22 * curlCurve));
-        const flapRightX = foldX + flapWidth;
+        const foldCenterX = w * (1 - peelP);
+        const foldCenterY = h * 0.5;
+        const flapWidth = Math.min(w * 0.65, Math.max(22, w * 0.23 * curlCurve));
+        const diag = Math.hypot(w, h) * 1.5;
 
-        // 底層投射陰影
-        const shadowWidth = Math.min(w * 0.42, 40 + w * 0.28 * curlCurve);
+        // 切換到「以折痕為中心、旋轉 activeAngle」的局部座標系，讓斜向裁切、陰影、高光與鏡像背面精準對齊
+        ctx.save();
+        ctx.translate(foldCenterX, foldCenterY);
+        ctx.rotate(activeAngle);
+
+        // 2. 投射在底層頁面上的斜向柔和深陰影
+        const shadowWidth = Math.min(w * 0.45, 42 + w * 0.28 * curlCurve);
         const underShadow = ctx.createLinearGradient(
-          Math.max(0, flapRightX - 10), 0,
-          Math.min(w, flapRightX + shadowWidth), 0
+          flapWidth - 10, 0,
+          flapWidth + shadowWidth, 0
         );
-        underShadow.addColorStop(0, `rgba(0, 0, 0, ${0.38 * (1 - peelP * 0.45)})`);
-        underShadow.addColorStop(0.35, `rgba(0, 0, 0, ${0.16 * (1 - peelP * 0.5)})`);
+        underShadow.addColorStop(0, `rgba(0, 0, 0, ${0.40 * (1 - peelP * 0.42)})`);
+        underShadow.addColorStop(0.35, `rgba(0, 0, 0, ${0.16 * (1 - peelP * 0.48)})`);
         underShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
         ctx.fillStyle = underShadow;
-        ctx.fillRect(Math.max(0, flapRightX - 10), 0, shadowWidth + 10, h);
+        ctx.fillRect(flapWidth - 10, -diag, shadowWidth + 10, diag * 2);
 
-        // 左側尚未掀起的平貼頁面
-        if (foldX > 0.5) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(0, 0, foldX, h);
-          ctx.clip();
+        // 3. 左側尚未掀起的平貼頁面（沿斜向折痕裁切）
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-diag, -diag, diag, diag * 2);
+        ctx.clip();
 
-          drawPageImage(lowerIdx, 0, 0, w, h, w, h);
+        // 還原回書本原點繪製正面頁面
+        ctx.rotate(-activeAngle);
+        ctx.translate(-foldCenterX, -foldCenterY);
+        drawPageImage(lowerIdx, 0, 0, w, h, w, h);
 
-          const leftSpine = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
-          leftSpine.addColorStop(0, "rgba(0,0,0,0.16)");
-          leftSpine.addColorStop(1, "rgba(0,0,0,0)");
-          ctx.fillStyle = leftSpine;
-          ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
+        // 左側書脊陰影
+        const leftSpine = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
+        leftSpine.addColorStop(0, "rgba(0,0,0,0.16)");
+        leftSpine.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = leftSpine;
+        ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
 
-          const creaseAO = Math.min(foldX, Math.max(18, w * 0.06 * curlCurve));
-          const aoGrad = ctx.createLinearGradient(foldX - creaseAO, 0, foldX, 0);
-          aoGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
-          aoGrad.addColorStop(1, `rgba(0, 0, 0, ${0.22 * curlCurve})`);
-          ctx.fillStyle = aoGrad;
-          ctx.fillRect(foldX - creaseAO, 0, creaseAO, h);
+        // 回到折痕座標系繪製靠近折痕的內凹陰影 (Ambient Occlusion)
+        ctx.translate(foldCenterX, foldCenterY);
+        ctx.rotate(activeAngle);
+        const creaseAO = Math.max(18, w * 0.065 * curlCurve);
+        const aoGrad = ctx.createLinearGradient(-creaseAO, 0, 0, 0);
+        aoGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+        aoGrad.addColorStop(1, `rgba(0, 0, 0, ${0.24 * curlCurve})`);
+        ctx.fillStyle = aoGrad;
+        ctx.fillRect(-creaseAO, -diag, creaseAO, diag * 2);
+        ctx.restore();
 
-          ctx.restore();
-        }
-
-        // 被掀起的紙背圓柱體捲曲
+        // 4. 被斜向掀起的「紙張背面」圓柱體捲曲（嚴格限制在書本範圍內）
         if (flapWidth > 1 && peelP > 0.005 && peelP < 0.995) {
           ctx.save();
+          // 先限制在書本四邊形範圍內，避免斜角翻頁時紙背突出書本外框
+          ctx.rotate(-activeAngle);
+          ctx.translate(-foldCenterX, -foldCenterY);
           ctx.beginPath();
-          ctx.rect(foldX, 0, flapWidth, h);
+          ctx.rect(0, 0, w, h);
+          ctx.clip();
+          ctx.translate(foldCenterX, foldCenterY);
+          ctx.rotate(activeAngle);
+
+          // 再裁切出折痕右側的紙背捲曲區
+          ctx.beginPath();
+          ctx.rect(0, -diag, flapWidth, diag * 2);
           ctx.clip();
 
+          // 紙背暖白底色
           ctx.fillStyle = "#faf7f0";
-          ctx.fillRect(foldX, 0, flapWidth, h);
+          ctx.fillRect(0, -diag, flapWidth, diag * 2);
 
+          // 沿著斜向折痕對稱鏡像翻折正面內容（模擬真實紙張透光感）
           ctx.save();
-          ctx.globalAlpha = 0.14;
-          ctx.translate(foldX + flapWidth, 0);
+          ctx.globalAlpha = 0.15;
+          ctx.translate(flapWidth, 0);
           ctx.scale(-1, 1);
+          ctx.rotate(-activeAngle);
+          ctx.translate(-foldCenterX, -foldCenterY);
           drawPageImage(lowerIdx, 0, 0, w, h, w, h);
           ctx.restore();
 
-          const cylGrad = ctx.createLinearGradient(foldX, 0, flapRightX, 0);
+          // 圓柱體立體明暗漸層（折痕深 -> 弧頂高光 -> 紙緣立體陰影）
+          const cylGrad = ctx.createLinearGradient(0, 0, flapWidth, 0);
           cylGrad.addColorStop(0, `rgba(0, 0, 0, ${0.28 * curlCurve})`);
-          cylGrad.addColorStop(0.22, `rgba(255, 255, 255, ${0.55 * curlCurve})`);
-          cylGrad.addColorStop(0.55, `rgba(245, 240, 230, ${0.15 * curlCurve})`);
-          cylGrad.addColorStop(0.88, `rgba(0, 0, 0, ${0.12 * curlCurve})`);
-          cylGrad.addColorStop(1, `rgba(0, 0, 0, ${0.26 * curlCurve})`);
+          cylGrad.addColorStop(0.24, `rgba(255, 255, 255, ${0.58 * curlCurve})`);
+          cylGrad.addColorStop(0.58, `rgba(245, 240, 230, ${0.15 * curlCurve})`);
+          cylGrad.addColorStop(0.88, `rgba(0, 0, 0, ${0.14 * curlCurve})`);
+          cylGrad.addColorStop(1, `rgba(0, 0, 0, ${0.28 * curlCurve})`);
           ctx.fillStyle = cylGrad;
-          ctx.fillRect(foldX, 0, flapWidth, h);
+          ctx.fillRect(0, -diag, flapWidth, diag * 2);
 
-          ctx.restore();
-
+          // 紙張捲起邊緣細線
           ctx.strokeStyle = `rgba(0, 0, 0, ${0.18 * curlCurve})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(flapRightX, 0);
-          ctx.lineTo(flapRightX, h);
+          ctx.moveTo(flapWidth, -diag);
+          ctx.lineTo(flapWidth, diag);
           ctx.stroke();
+
+          ctx.restore();
         }
+
+        ctx.restore();
+      }
+
+      // 雙頁模式支援斜向透視微傾（讓大螢幕雙頁翻動也有上下角掀起的立體感）
+      function drawSpreadPageFlip(prevLeftIdx, prevRightIdx, nextLeftIdx, nextRightIdx, flipP, tiltAngle, w, h) {
+        const halfW = w / 2;
+        drawPageImage(prevLeftIdx, 0, 0, halfW, h, halfW, h);
+        if (nextRightIdx < images.length) {
+          drawPageImage(nextRightIdx, halfW, 0, halfW, h, halfW, h);
+        } else {
+          ctx.fillStyle = "#f7f3eb";
+          ctx.fillRect(halfW, 0, halfW, h);
+        }
+
+        const skewOffset = Math.sin(tiltAngle) * h * 0.14 * Math.sin(flipP * Math.PI);
+
+        if (flipP < 0.5) {
+          const t = flipP * 2;
+          const pageW = halfW * Math.cos(t * Math.PI * 0.5);
+
+          const dropShadowW = Math.min(halfW, pageW + 55);
+          const sGrad = ctx.createLinearGradient(halfW, 0, halfW + dropShadowW, 0);
+          sGrad.addColorStop(0, `rgba(0,0,0,${0.38 * (1 - t * 0.4)})`);
+          sGrad.addColorStop(0.75, `rgba(0,0,0,${0.14 * (1 - t)})`);
+          sGrad.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = sGrad;
+          ctx.fillRect(halfW, 0, dropShadowW, h);
+
+          ctx.save();
+          // 根據斜拉方向微幅傾斜正在翻起的書頁邊緣
+          ctx.transform(1, skewOffset / Math.max(1, pageW), 0, 1, 0, -skewOffset * 0.5);
+          if (prevRightIdx < images.length) {
+            drawPageImage(prevRightIdx, halfW, 0, pageW, h, halfW, h);
+          } else {
+            ctx.fillStyle = "#f7f3eb";
+            ctx.fillRect(halfW, 0, pageW, h);
+          }
+
+          const curlGrad = ctx.createLinearGradient(halfW, 0, halfW + pageW, 0);
+          curlGrad.addColorStop(0, "rgba(0,0,0,0.14)");
+          curlGrad.addColorStop(0.65, `rgba(255,255,255,${0.28 * t})`);
+          curlGrad.addColorStop(0.92, `rgba(0,0,0,${0.18 * t})`);
+          curlGrad.addColorStop(1, `rgba(0,0,0,${0.32 * t})`);
+          ctx.fillStyle = curlGrad;
+          ctx.fillRect(halfW, 0, pageW, h);
+          ctx.restore();
+        } else {
+          const t = (flipP - 0.5) * 2;
+          const pageW = halfW * Math.sin(t * Math.PI * 0.5);
+          const leftEdge = halfW - pageW;
+
+          const dropShadowW = Math.min(halfW, pageW + 55);
+          const sGrad = ctx.createLinearGradient(halfW - dropShadowW, 0, halfW, 0);
+          sGrad.addColorStop(0, "rgba(0,0,0,0)");
+          sGrad.addColorStop(0.25, `rgba(0,0,0,${0.14 * (1 - t)})`);
+          sGrad.addColorStop(1, `rgba(0,0,0,${0.38 * (1 - t * 0.4)})`);
+          ctx.fillStyle = sGrad;
+          ctx.fillRect(halfW - dropShadowW, 0, dropShadowW, h);
+
+          ctx.save();
+          ctx.transform(1, -skewOffset / Math.max(1, pageW), 0, 1, 0, skewOffset * 0.5);
+          drawPageImage(nextLeftIdx, leftEdge, 0, pageW, h, halfW, h);
+
+          const curlGrad = ctx.createLinearGradient(leftEdge, 0, halfW, 0);
+          curlGrad.addColorStop(0, `rgba(0,0,0,${0.32 * (1 - t)})`);
+          curlGrad.addColorStop(0.08, `rgba(0,0,0,${0.16 * (1 - t)})`);
+          curlGrad.addColorStop(0.35, `rgba(255,255,255,${0.28 * (1 - t)})`);
+          curlGrad.addColorStop(1, "rgba(0,0,0,0.14)");
+          ctx.fillStyle = curlGrad;
+          ctx.fillRect(leftEdge, 0, pageW, h);
+          ctx.restore();
+        }
+
+        drawSpineShadow(halfW, h);
       }
 
       function render() {
@@ -514,7 +727,6 @@
         const fromStep = flip.fromStep;
         const toStep = flip.toStep;
 
-        // 情況 A：大螢幕封面翻開 / 蓋回
         if (isSpreadCapable && ((fromStep === 0 && toStep === 1) || (fromStep === 1 && toStep === 0))) {
           const halfW = w / 2;
           drawStaticStep(1, w, h, true);
@@ -561,9 +773,7 @@
           return;
         }
 
-        // 情況 B：大螢幕雙頁內頁翻頁
         if (isSpreadCapable) {
-          const halfW = w / 2;
           const prevStep = dir === 1 ? fromStep : toStep;
           const nextStep = dir === 1 ? toStep : fromStep;
           const flipP = dir === 1 ? p : (1 - p);
@@ -573,77 +783,17 @@
           const nextLeftIdx = nextStep * 2 - 1;
           const nextRightIdx = nextStep * 2;
 
-          drawPageImage(prevLeftIdx, 0, 0, halfW, h, halfW, h);
-          if (nextRightIdx < images.length) {
-            drawPageImage(nextRightIdx, halfW, 0, halfW, h, halfW, h);
-          } else {
-            ctx.fillStyle = "#f7f3eb";
-            ctx.fillRect(halfW, 0, halfW, h);
-          }
-
-          if (flipP < 0.5) {
-            const t = flipP * 2;
-            const pageW = halfW * Math.cos(t * Math.PI * 0.5);
-
-            const dropShadowW = Math.min(halfW, pageW + 55);
-            const sGrad = ctx.createLinearGradient(halfW, 0, halfW + dropShadowW, 0);
-            sGrad.addColorStop(0, `rgba(0,0,0,${0.38 * (1 - t * 0.4)})`);
-            sGrad.addColorStop(0.75, `rgba(0,0,0,${0.14 * (1 - t)})`);
-            sGrad.addColorStop(1, "rgba(0,0,0,0)");
-            ctx.fillStyle = sGrad;
-            ctx.fillRect(halfW, 0, dropShadowW, h);
-
-            if (prevRightIdx < images.length) {
-              drawPageImage(prevRightIdx, halfW, 0, pageW, h, halfW, h);
-            } else {
-              ctx.fillStyle = "#f7f3eb";
-              ctx.fillRect(halfW, 0, pageW, h);
-            }
-
-            const curlGrad = ctx.createLinearGradient(halfW, 0, halfW + pageW, 0);
-            curlGrad.addColorStop(0, "rgba(0,0,0,0.14)");
-            curlGrad.addColorStop(0.65, `rgba(255,255,255,${0.28 * t})`);
-            curlGrad.addColorStop(0.92, `rgba(0,0,0,${0.18 * t})`);
-            curlGrad.addColorStop(1, `rgba(0,0,0,${0.32 * t})`);
-            ctx.fillStyle = curlGrad;
-            ctx.fillRect(halfW, 0, pageW, h);
-          } else {
-            const t = (flipP - 0.5) * 2;
-            const pageW = halfW * Math.sin(t * Math.PI * 0.5);
-            const leftEdge = halfW - pageW;
-
-            const dropShadowW = Math.min(halfW, pageW + 55);
-            const sGrad = ctx.createLinearGradient(halfW - dropShadowW, 0, halfW, 0);
-            sGrad.addColorStop(0, "rgba(0,0,0,0)");
-            sGrad.addColorStop(0.25, `rgba(0,0,0,${0.14 * (1 - t)})`);
-            sGrad.addColorStop(1, `rgba(0,0,0,${0.38 * (1 - t * 0.4)})`);
-            ctx.fillStyle = sGrad;
-            ctx.fillRect(halfW - dropShadowW, 0, dropShadowW, h);
-
-            drawPageImage(nextLeftIdx, leftEdge, 0, pageW, h, halfW, h);
-
-            const curlGrad = ctx.createLinearGradient(leftEdge, 0, halfW, 0);
-            curlGrad.addColorStop(0, `rgba(0,0,0,${0.32 * (1 - t)})`);
-            curlGrad.addColorStop(0.08, `rgba(0,0,0,${0.16 * (1 - t)})`);
-            curlGrad.addColorStop(0.35, `rgba(255,255,255,${0.28 * (1 - t)})`);
-            curlGrad.addColorStop(1, "rgba(0,0,0,0.14)");
-            ctx.fillStyle = curlGrad;
-            ctx.fillRect(leftEdge, 0, pageW, h);
-          }
-
-          drawSpineShadow(halfW, h);
+          drawSpreadPageFlip(prevLeftIdx, prevRightIdx, nextLeftIdx, nextRightIdx, flipP, flip.tiltAngle, w, h);
           return;
         }
 
-        // 情況 C：單頁圓柱捲曲翻頁
         const lowerIdx = dir === 1 ? fromStep : toStep;
         const upperIdx = dir === 1 ? toStep : fromStep;
         const peelP = dir === 1 ? p : (1 - p);
 
-        drawSinglePageCurl(lowerIdx, upperIdx, peelP, w, h);
+        drawSinglePageCurl(lowerIdx, upperIdx, peelP, flip.tiltAngle, w, h);
       }
 
-      // 阻尼彈簧物理回彈動畫
       function animateSpringTo(targetP, initialVelocity, onComplete) {
         if (flip.animFrame) cancelAnimationFrame(flip.animFrame);
 
@@ -666,6 +816,9 @@
           vel += accel * dt;
           pos += vel * dt;
 
+          // 動畫期間傾斜角度也平滑自然衰減回正
+          flip.tiltAngle *= 0.92;
+
           if (pos < 0) {
             pos = 0;
             vel = 0;
@@ -679,6 +832,7 @@
 
           if (Math.abs(pos - targetP) < 0.002 && Math.abs(vel) < 0.02) {
             flip.progress = targetP;
+            flip.tiltAngle = 0;
             render();
             flip.active = false;
             flip.dragging = false;
@@ -695,8 +849,10 @@
         flip.animFrame = requestAnimationFrame(tick);
       }
 
-      function turnPage(dir) {
+      function turnPage(dir, customTilt = 0) {
         if (flip.active) return;
+        if (view.scale > 1.02) resetZoom(true);
+
         const maxStep = getMaxStep();
         const nextStep = currentStep + dir;
         if (nextStep < 0 || nextStep > maxStep) return;
@@ -707,6 +863,7 @@
         flip.fromStep = currentStep;
         flip.toStep = nextStep;
         flip.progress = 0.01;
+        flip.tiltAngle = customTilt;
 
         if (isSpreadCapable && currentStep === 0 && nextStep === 1) {
           updateLayout(false);
@@ -717,16 +874,224 @@
         });
       }
 
+      // ===== 觸控與滑鼠手勢整合（雙指縮放完全開放、不干擾單指斜向翻頁） =====
       let pointerDown = false;
       let hasMoved = false;
+      let touchStartTime = 0;
+      let lastTapTime = 0;
+      let lastTapX = 0;
+      let lastTapY = 0;
 
-      function getClientX(e) {
-        return e.touches && e.touches.length ? e.touches[0].clientX : e.clientX;
+      function getTouchDistance(t1, t2) {
+        return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       }
 
-      function onPointerStart(e) {
-        if (e.button !== undefined && e.button !== 0) return;
+      function getTouchMidpoint(t1, t2) {
+        return {
+          x: (t1.clientX + t2.clientX) / 2,
+          y: (t1.clientY + t2.clientY) / 2
+        };
+      }
 
+      readerStage.addEventListener("touchstart", (e) => {
+        if (e.touches.length >= 2) {
+          pointerDown = false;
+          view.isPanning = false;
+
+          // 若單指剛拉起一點點就放上第二根手指，立刻柔順彈回原位並切換成雙指縮放
+          if (flip.active && flip.dragging) {
+            const orig = flip.fromStep;
+            animateSpringTo(0, -0.5, () => {
+              currentStep = orig;
+            });
+          }
+
+          if (view.zoomAnim) {
+            cancelAnimationFrame(view.zoomAnim);
+            view.zoomAnim = null;
+          }
+
+          view.isPinching = true;
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const mid = getTouchMidpoint(t1, t2);
+          const stageRect = readerStage.getBoundingClientRect();
+
+          view.pinchStartDist = Math.max(10, getTouchDistance(t1, t2));
+          view.pinchStartScale = view.scale;
+          view.pinchStartTx = view.tx;
+          view.pinchStartTy = view.ty;
+          view.pinchMidX = mid.x - (stageRect.left + stageRect.width / 2);
+          view.pinchMidY = mid.y - (stageRect.top + stageRect.height / 2);
+          return;
+        }
+
+        if (e.touches.length === 1 && !view.isPinching) {
+          const touch = e.touches[0];
+          touchStartTime = performance.now();
+          if (view.scale > 1.02) {
+            if (view.zoomAnim) {
+              cancelAnimationFrame(view.zoomAnim);
+              view.zoomAnim = null;
+            }
+            view.isPanning = true;
+            hasMoved = false;
+            view.panStartX = touch.clientX;
+            view.panStartY = touch.clientY;
+            view.panStartTx = view.tx;
+            view.panStartTy = view.ty;
+          } else {
+            onSingleStart(touch.clientX, touch.clientY);
+          }
+        }
+      }, { passive: true });
+
+      readerStage.addEventListener("touchmove", (e) => {
+        if (view.isPinching && e.touches.length >= 2) {
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const dist = getTouchDistance(t1, t2);
+          const mid = getTouchMidpoint(t1, t2);
+          const stageRect = readerStage.getBoundingClientRect();
+
+          const rawScale = view.pinchStartScale * (dist / view.pinchStartDist);
+          const nextScale = Math.max(0.85, Math.min(view.maxScale * 1.15, rawScale));
+          const scaleRatio = nextScale / view.pinchStartScale;
+
+          const curMidX = mid.x - (stageRect.left + stageRect.width / 2);
+          const curMidY = mid.y - (stageRect.top + stageRect.height / 2);
+
+          view.scale = nextScale;
+          view.tx = curMidX - (view.pinchMidX - view.pinchStartTx) * scaleRatio;
+          view.ty = curMidY - (view.pinchMidY - view.pinchStartTy) * scaleRatio;
+          applyViewTransform();
+          return;
+        }
+
+        if (view.isPanning && e.touches.length === 1) {
+          const touch = e.touches[0];
+          const dx = touch.clientX - view.panStartX;
+          const dy = touch.clientY - view.panStartY;
+          if (!hasMoved && Math.hypot(dx, dy) < 5) return;
+          hasMoved = true;
+
+          view.tx = view.panStartTx + dx;
+          view.ty = view.panStartTy + dy;
+          applyViewTransform();
+          return;
+        }
+
+        if (pointerDown && e.touches.length === 1) {
+          // 給第二根手指 40ms 落指緩衝，避免雙指同時放下時的瞬間時間差誤觸翻頁
+          if (!hasMoved && performance.now() - touchStartTime < 40) return;
+          onSingleMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: true });
+
+      readerStage.addEventListener("touchend", (e) => {
+        if (view.isPinching) {
+          if (e.touches.length < 2) {
+            view.isPinching = false;
+            if (view.scale <= 1.06) {
+              animateViewTo(1, 0, 0);
+            } else if (view.scale > view.maxScale) {
+              const clamped = clampPan(view.tx, view.ty, view.maxScale);
+              animateViewTo(view.maxScale, clamped.tx, clamped.ty);
+            } else {
+              const clamped = clampPan(view.tx, view.ty, view.scale);
+              animateViewTo(view.scale, clamped.tx, clamped.ty);
+            }
+          }
+          return;
+        }
+
+        if (view.isPanning) {
+          view.isPanning = false;
+          if (!hasMoved && e.changedTouches.length) {
+            handleTapOrDoubleTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+          }
+          return;
+        }
+
+        if (pointerDown) {
+          const endX = e.changedTouches.length ? e.changedTouches[0].clientX : flip.lastX;
+          const endY = e.changedTouches.length ? e.changedTouches[0].clientY : flip.startY;
+          onSingleEnd(endX, endY);
+        }
+      });
+
+      // 滑鼠支援
+      canvas.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return;
+        if (view.scale > 1.02) {
+          view.isPanning = true;
+          hasMoved = false;
+          view.panStartX = e.clientX;
+          view.panStartY = e.clientY;
+          view.panStartTx = view.tx;
+          view.panStartTy = view.ty;
+        } else {
+          onSingleStart(e.clientX, e.clientY);
+        }
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (view.isPanning) {
+          const dx = e.clientX - view.panStartX;
+          const dy = e.clientY - view.panStartY;
+          if (!hasMoved && Math.hypot(dx, dy) < 5) return;
+          hasMoved = true;
+          view.tx = view.panStartTx + dx;
+          view.ty = view.panStartTy + dy;
+          applyViewTransform();
+          return;
+        }
+        if (!pointerDown) {
+          showHud();
+          return;
+        }
+        onSingleMove(e.clientX, e.clientY);
+      });
+
+      window.addEventListener("mouseup", (e) => {
+        if (view.isPanning) {
+          view.isPanning = false;
+          if (!hasMoved) {
+            handleTapOrDoubleTap(e.clientX, e.clientY);
+          }
+          return;
+        }
+        if (!pointerDown) return;
+        onSingleEnd(e.clientX, e.clientY);
+      });
+
+      // 桌面端 Ctrl + 滾輪縮放 / 觸控板雙指捏合
+      readerStage.addEventListener("wheel", (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const stageRect = readerStage.getBoundingClientRect();
+          const midX = e.clientX - (stageRect.left + stageRect.width / 2);
+          const midY = e.clientY - (stageRect.top + stageRect.height / 2);
+
+          const factor = Math.exp(-e.deltaY * 0.008);
+          const nextScale = Math.max(1, Math.min(view.maxScale, view.scale * factor));
+          const ratio = nextScale / view.scale;
+
+          view.scale = nextScale;
+          if (nextScale <= 1.01) {
+            view.scale = 1;
+            view.tx = 0;
+            view.ty = 0;
+          } else {
+            view.tx = midX - (midX - view.tx) * ratio;
+            view.ty = midY - (midY - view.ty) * ratio;
+          }
+          applyViewTransform();
+          updateCanvasResolution();
+        }
+      }, { passive: false });
+
+      function onSingleStart(x, y) {
         if (flip.active && flip.animFrame) {
           cancelAnimationFrame(flip.animFrame);
           flip.animFrame = null;
@@ -735,26 +1100,24 @@
 
         pointerDown = true;
         hasMoved = false;
-        const x = getClientX(e);
         flip.startX = x;
+        flip.startY = y;
         flip.lastX = x;
         flip.lastTime = performance.now();
         flip.velocity = 0;
+
+        const rect = bookShell.getBoundingClientRect();
+        flip.startYNorm = Math.max(0, Math.min(1, (y - rect.top) / Math.max(1, rect.height)));
       }
 
-      function onPointerMove(e) {
-        if (!pointerDown) {
-          showHud();
-          return;
-        }
-
+      function onSingleMove(x, y) {
         const now = performance.now();
-        const x = getClientX(e);
         const dx = x - flip.startX;
+        const dy = y - flip.startY;
         const stepDx = x - flip.lastX;
         const dt = Math.max(1, now - flip.lastTime) / 1000;
 
-        if (!hasMoved && Math.abs(dx) < 6) return;
+        if (!hasMoved && Math.hypot(dx, dy) < 6) return;
         hasMoved = true;
 
         const maxStep = getMaxStep();
@@ -771,13 +1134,23 @@
           flip.fromStep = currentStep;
           flip.toStep = targetStep;
           flip.progress = 0;
+          flip.tiltAngle = 0;
 
           if (isSpreadCapable && currentStep === 0 && targetStep === 1) {
             updateLayout(false);
           }
         }
 
-        const dragSpan = Math.max(120, logicalW * 0.92);
+        // 結合「按下的垂直高度（上角/中段/下角）」與「手指垂直移動量 dy」計算自然斜向折痕角度
+        const cornerBias = (flip.startYNorm - 0.5) * 0.42; // 偏下按壓為正、偏上按壓為負
+        const dragBias = (dy / Math.max(180, logicalH)) * 0.55;
+        const rawTilt = (dragBias - cornerBias) * flip.direction;
+        // 限制最大斜角在 ±24 度（約 ±0.42 rad），既立體又不破圖
+        const targetTilt = Math.max(-0.42, Math.min(0.42, rawTilt));
+        flip.tiltAngle = flip.tiltAngle * 0.7 + targetTilt * 0.3;
+
+        // 支援斜向拉動距離計算（斜向滑動時也能順暢推進進度）
+        const dragSpan = Math.max(120, logicalW * 0.90);
         const deltaP = (flip.direction === 1 ? -stepDx : stepDx) / dragSpan;
         flip.progress = Math.max(0.002, Math.min(0.998, flip.progress + deltaP));
 
@@ -789,24 +1162,51 @@
         scheduleRender();
       }
 
-      function onPointerEnd(e) {
-        if (!pointerDown) return;
-        pointerDown = false;
+      function handleTapOrDoubleTap(clientX, clientY) {
+        const now = performance.now();
+        const isDoubleTap = (now - lastTapTime < 280) && (Math.hypot(clientX - lastTapX, clientY - lastTapY) < 36);
+        lastTapTime = now;
+        lastTapX = clientX;
+        lastTapY = clientY;
 
-        if (!hasMoved && !flip.dragging) {
+        if (isDoubleTap) {
+          lastTapTime = 0;
+          if (view.scale > 1.05) {
+            animateViewTo(1, 0, 0);
+          } else {
+            const stageRect = readerStage.getBoundingClientRect();
+            const targetScale = 2.0;
+            const tapOffsetX = clientX - (stageRect.left + stageRect.width / 2);
+            const tapOffsetY = clientY - (stageRect.top + stageRect.height / 2);
+            const clamped = clampPan(-tapOffsetX * (targetScale - 1), -tapOffsetY * (targetScale - 1), targetScale);
+            animateViewTo(targetScale, clamped.tx, clamped.ty);
+          }
+          return;
+        }
+
+        if (view.scale <= 1.02) {
           const rect = bookShell.getBoundingClientRect();
-          const clickX = (e.changedTouches && e.changedTouches.length
-            ? e.changedTouches[0].clientX
-            : e.clientX) - rect.left;
-          const ratio = clickX / rect.width;
-
+          const ratio = (clientX - rect.left) / rect.width;
+          const yNorm = (clientY - rect.top) / rect.height;
+          // 點擊偏上角或偏下角翻頁時，也自動帶出微微的掀角斜度動畫
+          const tapTilt = (0.5 - yNorm) * 0.28;
           if (ratio < 0.28) {
-            turnPage(-1);
+            turnPage(-1, -tapTilt);
           } else if (ratio > 0.72) {
-            turnPage(1);
+            turnPage(1, tapTilt);
           } else {
             showHud();
           }
+        } else {
+          showHud();
+        }
+      }
+
+      function onSingleEnd(endX, endY) {
+        pointerDown = false;
+
+        if (!hasMoved && !flip.dragging) {
+          handleTapOrDoubleTap(endX, endY);
           return;
         }
 
@@ -829,14 +1229,6 @@
         }
       }
 
-      canvas.addEventListener("mousedown", onPointerStart);
-      window.addEventListener("mousemove", onPointerMove);
-      window.addEventListener("mouseup", onPointerEnd);
-
-      canvas.addEventListener("touchstart", onPointerStart, { passive: true });
-      window.addEventListener("touchmove", onPointerMove, { passive: true });
-      window.addEventListener("touchend", onPointerEnd);
-
       window.addEventListener("keydown", (e) => {
         if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
           e.preventDefault();
@@ -847,16 +1239,20 @@
         } else if (e.key === "Home") {
           e.preventDefault();
           if (!flip.active && currentStep !== 0) {
+            resetZoom(false);
             currentStep = 0;
             updateLayout(false);
             showHud();
           }
+        } else if (e.key === "Escape" && view.scale > 1.02) {
+          resetZoom(true);
         }
       });
 
       btnFirst.addEventListener("click", (e) => {
         e.stopPropagation();
         if (flip.active || currentStep === 0) return;
+        resetZoom(false);
         currentStep = 0;
         updateLayout(false);
         showHud();
@@ -874,7 +1270,12 @@
         showHud();
       });
 
-      // 使用 ResizeObserver 即時監聽舞台尺寸變化（包含旋轉螢幕、拖拉視窗、手機網址列伸縮）
+      btnResetZoom.addEventListener("click", (e) => {
+        e.stopPropagation();
+        resetZoom(true);
+        showHud();
+      });
+
       if (typeof ResizeObserver !== "undefined") {
         const ro = new ResizeObserver(() => {
           updateLayout(false);
@@ -897,7 +1298,6 @@
         const img = new Image();
         img.onload = () => {
           readyCount++;
-          // 若該頁快取曾提早建立，清除讓它用載入完成的圖片重繪
           delete pageCache[i];
           checkInitialReady();
           if (initialShown) scheduleRender();
