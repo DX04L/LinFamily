@@ -1,0 +1,28 @@
+name: Weekly SG Discussion
+
+on:
+  schedule:
+    # 台灣時間每週一、三、六 早上 06:00 自動檢查官網更新（UTC 22:00）
+    - cron: '0 22 * * 0,2,5'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4 firebase-admin
+
+      - name: Run Weekly SG Script
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python sg-discussion/scripts/weekly_sg.py
