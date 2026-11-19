@@ -1,1466 +1,1306 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" data-theme="light">
+<html lang="zh-TW" class="dark lf-pending">
 <head>
   <meta charset="UTF-8">
+  <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
+  <script>
+    (function () {
+      var enabled = /iPhone/i.test(navigator.userAgent) &&
+        (navigator.standalone === true || matchMedia('(display-mode: standalone)').matches);
+      if (!enabled) return;
+      document.documentElement.classList.add('lf-iphone-probe');
+      var state = '等待啟動', touches = 0;
+      function render() {
+        var label = document.getElementById('lfBootStatus');
+        if (label) label.textContent = 'LF 檢查版 B1 · ' + state + ' · 觸控 ' + touches;
+      }
+      window.lfBootMark = function (message) { state = message; render(); };
+      document.addEventListener('pointerdown', function () { touches++; render(); }, { capture:true, passive:true });
+      window.addEventListener('error', function (event) {
+        var target = event.target;
+        state = target && target.tagName === 'SCRIPT' ? '元件載入失敗' : '程式錯誤';
+        render();
+      }, true);
+      window.addEventListener('unhandledrejection', function () { state = '服務回應失敗'; render(); });
+    })();
+  </script>
+  <style>
+    #lfBootProbe { display:none; }
+    html.lf-iphone-probe #lfBootProbe[hidden] { display:none; }
+    html.lf-iphone-probe #lfBootProbe:not([hidden]) { display:block; position:fixed; z-index:2147483647; left:12px; right:12px; bottom:calc(16px + env(safe-area-inset-bottom)); padding:12px; border-radius:10px; background:#111; color:#fff; font:13px/1.5 Arial,"Microsoft JhengHei",sans-serif; text-align:center; }
+    #lfBootProbe button { margin-top:8px; padding:6px 12px; border:1px solid #aaa; border-radius:6px; background:transparent; color:#fff; font:inherit; }
+  </style>
+  <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>江子翠行道會｜小組牧養教材</title>
-
-  <!-- PWA & 桌面捷徑圖示設定 -->
-  <meta name="theme-color" content="#007F85">
+  <title>LinFamily</title>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="favicon.png?v=3">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="江子翠教材">
-  <link rel="manifest" href="./manifest.json?v=5">
-  <link rel="icon" href="./favicon.ico?v=5" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=5">
-  <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=5">
-  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=5">
-  <link rel="stylesheet" href="./sg-reader.css?v=2">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LinFamily">
+  <meta name="theme-color" content="#161716" id="metaThemeColor">
+  <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__lfBIP=e;});</script><!-- 安裝事件可能很早就來，先接住 -->
+  <link rel="stylesheet" href="css/entrance.css?v=18">
+
+  <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
+  <script>
+    (function () {
+      var v = null; try { v = localStorage.getItem('linfamily_theme') || localStorage.getItem('linfamily_pixel_theme'); } catch (_) {}
+      var dark = v ? v === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', dark);
+      document.getElementById('metaThemeColor').setAttribute('content', dark ? '#161716' : '#E6E7E9');
+    })();
+  </script>
+
+  <script src="https://clc-dx04.pages.dev/verse-wait.js?v=1" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js" defer></script>
 
   <style>
+    /* 字型與 DX 相同：英文 Arial（粗體用 Arial Bold）、中文微軟正黑體 */
+    @font-face { font-family:"CLC Arial"; src:local("Arial"),local("ArialMT"); font-weight:100 549; }
+    @font-face { font-family:"CLC Arial"; src:local("Arial Bold"),local("Arial-BoldMT"); font-weight:550 1000; }
+
+    /* 色系：墨黑 #1C1C1C、松綠 #4E8B7E、鼠尾草綠 #8FBFB0、奶油米 #EADFC8、淺灰 #E6E7E9（底色） */
     :root {
-      /* 江子翠行道會企業色 */
-      --brand-primary: #007F85;
-      --brand-primary-hover: #00686D;
-      --brand-primary-tint: rgba(0, 127, 133, 0.10);
-      --brand-primary-tint-hover: rgba(0, 127, 133, 0.17);
-      --brand-primary-border: rgba(0, 127, 133, 0.35);
-
-      /* 互動填空專用淡黃色系（淺色模式） */
-      --blank-bg: #FEF6DC;
-      --blank-bg-hover: #FDECB8;
-      --blank-border: #D9A736;
-      --blank-text: #7A5408;
-
-      /* 淺色模式中性色階 */
-      --bg-page: #F5F5F7;
-      --bg-card: #FFFFFF;
-      --bg-glass: rgba(255, 255, 255, 0.86);
-      --bg-segmented: rgba(118, 118, 128, 0.12);
-      --bg-seg-active: #FFFFFF;
-      --text-primary: #1D1D1F;
-      --text-secondary: #6E6E73;
-      --text-tertiary: #86868B;
-      --border-hairline: rgba(0, 0, 0, 0.08);
-
-      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.04);
-      --shadow-float: 0 20px 48px rgba(0, 0, 0, 0.16);
-      --radius-lg: 20px;
-      --radius-md: 14px;
-      --radius-pill: 980px;
-
-      /* Apple 官網繁體中文與系統字型堆疊 */
-      --font-apple: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang TC", "Hiragino Sans GB", "Heiti TC", "Microsoft JhengHei", sans-serif;
-      --font-apple-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      --ink:#1C1C1C; --pine:#4E8B7E; --sage:#8FBFB0; --cream:#EADFC8; --cloud:#E6E7E9;
+      --teal:var(--pine);
+      --bg:var(--cloud); --surface:#FFFFFF; --text:var(--ink); --muted:#5E6B67;
+      --border:rgba(28,28,28,.12); --btn:rgba(28,28,28,.06); --btn-h:rgba(28,28,28,.11);
+      --shadow:0 18px 40px rgba(28,28,28,.16);
     }
-
-    /* 深色模式變數覆寫 */
-    [data-theme="dark"] {
-      --brand-primary: #19A8AF;
-      --brand-primary-hover: #24BFC7;
-      --brand-primary-tint: rgba(25, 168, 175, 0.16);
-      --brand-primary-tint-hover: rgba(25, 168, 175, 0.25);
-      --brand-primary-border: rgba(25, 168, 175, 0.40);
-
-      --blank-bg: rgba(217, 167, 54, 0.16);
-      --blank-bg-hover: rgba(217, 167, 54, 0.25);
-      --blank-border: #D9A736;
-      --blank-text: #FCD34D;
-
-      --bg-page: #111214;
-      --bg-card: #1C1D21;
-      --bg-glass: rgba(28, 29, 33, 0.86);
-      --bg-segmented: rgba(255, 255, 255, 0.08);
-      --bg-seg-active: #2C2E35;
-      --text-primary: #F5F5F7;
-      --text-secondary: #A1A1A6;
-      --text-tertiary: #7C7C82;
-      --border-hairline: rgba(255, 255, 255, 0.10);
-
-      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.28);
-      --shadow-float: 0 20px 48px rgba(0, 0, 0, 0.55);
+    html.dark {
+      --teal:var(--sage);
+      --bg:#161716; --surface:#161924; --text:#F1F1EF; --muted:#A8B5B0;
+      --border:rgba(255,255,255,.1); --btn:rgba(255,255,255,.05); --btn-h:rgba(255,255,255,.1);
+      --shadow:0 20px 45px rgba(0,0,0,.55);
+      color-scheme:dark;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    [hidden] {
-      display: none !important;
-    }
-
+    * { box-sizing:border-box; }
+    html, body { margin:0; }
     body {
-      font-family: var(--font-apple);
-      background-color: var(--bg-page);
-      color: var(--text-primary);
-      line-height: 1.75;
-      letter-spacing: -0.01em;
-      padding-bottom: calc(64px + env(safe-area-inset-bottom));
-      transition: background-color 0.25s ease, color 0.25s ease;
-    }
-
-    /* 全螢幕滿版寬度配置（保留舒適左右邊距） */
-    .navbar-inner,
-    .container {
-      width: 100%;
-      max-width: 100%;
-      padding-inline: clamp(16px, 3.2vw, 48px);
-    }
-
-    /* 頂部毛玻璃導覽列 */
-    .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background-color: var(--bg-glass);
-      backdrop-filter: saturate(180%) blur(20px);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
-      border-bottom: 1px solid var(--border-hairline);
-      padding-top: env(safe-area-inset-top);
-      transition: background-color 0.25s ease;
-    }
-
-    .navbar-inner {
-      padding-top: 12px;
-      padding-bottom: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      min-width: 0;
-    }
-
-    .nav-right-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    /* 書本外框剪影 Logo */
-    .church-logo {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background-color: var(--brand-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0, 127, 133, 0.24);
-    }
-
-    .church-logo svg {
-      width: 24px;
-      height: 24px;
-    }
-
-    .brand-text {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.25;
-    }
-
-    .brand-name {
-      font-family: var(--font-apple-display);
-      font-size: 1.02rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.01em;
-      white-space: nowrap;
-    }
-
-    .brand-sub {
-      font-size: 0.74rem;
-      font-weight: 500;
-      color: var(--text-secondary);
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-    }
-
-    /* 安裝成 App 按鈕 */
-    .install-btn {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      background-color: var(--brand-primary);
-      color: #FFFFFF;
-      border: none;
-      padding: 7px 14px;
-      border-radius: var(--radius-pill);
-      font-family: var(--font-apple);
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.18s ease, background-color 0.2s ease;
-      white-space: nowrap;
-    }
-
-    .install-btn.visible {
-      display: inline-flex;
-    }
-
-    .install-btn:hover {
-      background-color: var(--brand-primary-hover);
-      transform: scale(1.02);
-    }
-
-    .install-btn:active {
-      transform: scale(0.96);
-    }
-
-    /* Apple 簡潔課程主視覺區 */
-    .hero {
-      background-color: var(--bg-card);
-      border-bottom: 1px solid var(--border-hairline);
-      padding: 28px 0 24px;
-      text-align: center;
-      transition: background-color 0.25s ease;
-    }
-
-    .eyebrow-row {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .pill-tag {
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 4px 12px;
-      border-radius: var(--radius-pill);
-      letter-spacing: 0.02em;
-    }
-
-    .pill-primary {
-      background-color: var(--brand-primary);
-      color: #FFFFFF;
-    }
-
-    .pill-neutral {
-      background-color: var(--bg-page);
-      color: var(--text-secondary);
-    }
-
-    .pill-tint {
-      background-color: var(--brand-primary-tint);
-      color: var(--brand-primary);
-    }
-
-    h1.hero-title {
-      font-family: var(--font-apple-display);
-      font-size: clamp(1.75rem, 3.2vw, 2.35rem);
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.025em;
-      line-height: 1.22;
-      margin-bottom: 12px;
-    }
-
-    .hero-scripture {
-      font-size: 0.98rem;
-      color: var(--text-secondary);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* Apple iOS Segmented Control 三分頁切換器 */
-    .tabs-bar {
-      padding: 20px 0 6px;
-    }
-
-    .segmented-control {
-      position: relative;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      background-color: var(--bg-segmented);
-      padding: 4px;
-      border-radius: 14px;
-      gap: 4px;
-    }
-
-    .seg-btn {
-      border: none;
-      background: transparent;
-      color: var(--text-secondary);
-      font-family: var(--font-apple);
-      font-size: 0.9rem;
-      font-weight: 600;
-      padding: 10px 8px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.22s cubic-bezier(0.25, 0.1, 0.25, 1);
-      white-space: nowrap;
-      text-align: center;
-    }
-
-    .seg-btn:hover {
-      color: var(--text-primary);
-    }
-
-    .seg-btn.active {
-      background-color: var(--bg-seg-active);
-      color: var(--brand-primary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-    }
-
-    /* 分頁內容動畫 */
-    .tab-panel {
-      display: none;
-      padding-top: 16px;
-      animation: appleFade 0.26s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .tab-panel.active {
-      display: block;
-    }
-
-    @keyframes appleFade {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Apple 卡片樣式 */
-    .card {
-      background-color: var(--bg-card);
-      border-radius: var(--radius-lg);
-      padding: clamp(22px, 3vw, 36px);
-      box-shadow: var(--shadow-card);
-      margin-bottom: 20px;
-      transition: background-color 0.25s ease;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      gap: 14px;
-      margin-bottom: 24px;
-      padding-bottom: 18px;
-      border-bottom: 1px solid var(--border-hairline);
-    }
-
-    .card-title {
-      font-family: var(--font-apple-display);
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.015em;
-    }
-
-    .card-subtitle {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-
-    .toolbar-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .progress-pill {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--brand-primary);
-      background-color: var(--brand-primary-tint);
-      padding: 6px 12px;
-      border-radius: var(--radius-pill);
-    }
-
-    .pill-action-btn {
-      background-color: var(--brand-primary);
-      color: #FFFFFF;
-      border: none;
-      padding: 7px 15px;
-      border-radius: var(--radius-pill);
-      font-family: var(--font-apple);
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.15s;
-    }
-
-    .pill-action-btn:hover {
-      background-color: var(--brand-primary-hover);
-    }
-
-    .pill-action-btn:active {
-      transform: scale(0.96);
-    }
-
-    /* 信息文章段落 */
-    .article-body p {
-      margin-bottom: 1.5em;
-      font-size: 1.05rem;
-      color: var(--text-primary);
-      line-height: 1.88;
-    }
-
-    .article-body p:last-child {
-      margin-bottom: 0;
-    }
-
-    /* 互動填空膠囊 */
-    .blank-slot {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 94px;
-      padding: 2px 12px;
-      margin: 0 3px;
-      background-color: var(--blank-bg);
-      border: 1.5px dashed var(--blank-border);
-      border-radius: 9px;
-      cursor: pointer;
-      font-weight: 600;
-      color: var(--blank-text);
-      transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
-      user-select: none;
-      vertical-align: baseline;
-    }
-
-    .blank-slot:hover {
-      background-color: var(--blank-bg-hover);
-    }
-
-    .blank-slot:active {
-      transform: scale(0.96);
-    }
-
-    .blank-slot .answer-text {
-      display: none;
-    }
-
-    .blank-slot .placeholder-text {
-      font-size: 0.82rem;
-      letter-spacing: 0.02em;
-    }
-
-    .blank-slot.revealed {
-      background-color: var(--brand-primary);
-      border: 1.5px solid var(--brand-primary);
-      color: #FFFFFF;
-      box-shadow: 0 2px 8px rgba(0, 127, 133, 0.22);
-    }
-
-    .blank-slot.revealed .answer-text {
-      display: inline;
-    }
-
-    .blank-slot.revealed .placeholder-text {
-      display: none;
-    }
-
-    /* 互動經文與神學泡泡觸發詞 */
-    .pop-trigger {
-      color: var(--brand-primary);
-      font-weight: 600;
-      background-color: var(--brand-primary-tint);
-      padding: 2px 8px;
-      border-radius: 7px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      display: inline;
-    }
-
-    .pop-trigger:hover {
-      background-color: var(--brand-primary-tint-hover);
-    }
-
-    /* 底部頁面導引列 */
-    .next-page-bar {
-      margin-top: 28px;
-      padding-top: 20px;
-      border-top: 1px solid var(--border-hairline);
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .next-page-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background-color: var(--bg-page);
-      color: var(--brand-primary);
-      border: none;
-      padding: 11px 18px;
-      border-radius: var(--radius-pill);
-      font-family: var(--font-apple);
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.15s;
-    }
-
-    .next-page-btn:hover {
-      background-color: var(--brand-primary-tint);
-    }
-
-    .next-page-btn:active {
-      transform: scale(0.97);
-    }
-
-    /* 經文背景與難字解析列表 */
-    .clean-block {
-      padding: 20px 0;
-      border-bottom: 1px solid var(--border-hairline);
-    }
-
-    .clean-block:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-
-    .clean-block:first-child {
-      padding-top: 0;
-    }
-
-    .block-title {
-      font-size: 1.08rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .lang-badge {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--brand-primary);
-      background-color: var(--brand-primary-tint);
-      padding: 3px 10px;
-      border-radius: var(--radius-pill);
-    }
-
-    .block-desc {
-      font-size: 0.96rem;
-      color: var(--text-secondary);
-      line-height: 1.78;
-    }
-
-    .block-desc strong {
-      color: var(--text-primary);
-    }
-
-    .ref-note {
-      display: inline-block;
-      margin-top: 10px;
-      font-size: 0.8rem;
-      color: var(--text-tertiary);
-    }
-
-    /* 小組討論題目卡片 */
-    .q-item {
-      background-color: var(--bg-page);
-      border-radius: var(--radius-md);
-      padding: 22px;
-      margin-bottom: 16px;
-    }
-
-    .q-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .q-top {
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-    }
-
-    .q-badge {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background-color: var(--brand-primary);
-      color: #FFFFFF;
-      font-size: 0.85rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .q-title {
-      font-size: 1.03rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      line-height: 1.62;
-    }
-
-    .guide-btn {
-      margin-top: 14px;
-      margin-left: 42px;
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-hairline);
-      color: var(--brand-primary);
-      padding: 6px 14px;
-      border-radius: var(--radius-pill);
-      font-family: var(--font-apple);
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.15s;
-    }
-
-    .guide-btn:hover {
-      background-color: var(--brand-primary-tint);
-    }
-
-    .guide-btn:active {
-      transform: scale(0.97);
-    }
-
-    .guide-content {
-      display: none;
-      margin-top: 12px;
-      margin-left: 42px;
-      padding: 16px 18px;
-      background-color: var(--bg-card);
-      border-radius: 12px;
-      font-size: 0.92rem;
-      color: var(--text-secondary);
-      line-height: 1.75;
-    }
-
-    .guide-content.open {
-      display: block;
-      animation: appleFade 0.2s ease;
-    }
-
-    .guide-content strong {
-      color: var(--brand-primary);
-    }
-
-    .text-answer-box {
-      background-color: var(--blank-bg);
-      border-left: 3px solid var(--blank-border);
-      padding: 10px 14px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      color: var(--text-primary);
-      font-size: 0.91rem;
-    }
-
-    .text-answer-box .ans-label {
-      font-weight: 700;
-      color: var(--blank-text);
-      display: block;
-      margin-bottom: 3px;
-      font-size: 0.84rem;
-    }
-
-    /* Apple 風格彈出視窗 */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background-color: rgba(0, 0, 0, 0.48);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 999;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .modal-overlay.active {
-      display: flex;
-    }
-
-    .apple-sheet {
-      background-color: var(--bg-card);
-      max-width: 480px;
-      width: 100%;
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: var(--shadow-float);
-      position: relative;
-      animation: sheetPop 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes sheetPop {
-      from { opacity: 0; transform: scale(0.95) translateY(12px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    .sheet-close {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      border: none;
-      background-color: var(--bg-page);
-      color: var(--text-secondary);
-      font-size: 1.1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .sheet-close:hover {
-      opacity: 0.8;
-      color: var(--text-primary);
-    }
-
-    .sheet-tag {
-      display: inline-block;
-      font-size: 0.76rem;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: var(--radius-pill);
-      background-color: var(--brand-primary-tint);
-      color: var(--brand-primary);
-      margin-bottom: 10px;
-    }
-
-    .sheet-title {
-      font-family: var(--font-apple-display);
-      font-size: 1.28rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 12px;
-      padding-right: 28px;
-    }
-
-    .sheet-body {
-      font-size: 0.96rem;
-      color: var(--text-primary);
-      line-height: 1.75;
-      margin-bottom: 16px;
-    }
-
-    .sheet-footer {
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      padding-top: 12px;
-      border-top: 1px solid var(--border-hairline);
-    }
-
-    .ios-steps {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin: 14px 0;
-    }
-
-    .ios-steps li {
-      background-color: var(--bg-page);
-      padding: 12px 14px;
-      border-radius: 12px;
-      font-size: 0.92rem;
-      color: var(--text-primary);
-    }
-
-    .status-note {
-      text-align: center;
-      font-size: 0.86rem;
-      color: var(--text-secondary);
-      padding: 10px 16px;
-    }
-
-    footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-tertiary);
-      margin-top: 40px;
-      padding: 0 20px;
-    }
-
-    @media (max-width: 640px) {
-      .seg-btn { font-size: 0.84rem; padding: 9px 6px; }
-      .guide-btn, .guide-content { margin-left: 0; }
-    }
+      min-height:100vh; min-height:100dvh; display:flex; flex-direction:column;
+      background:var(--bg); color:var(--text);
+      font-family:"CLC Arial", Arial, "Microsoft JhengHei", "微軟正黑體", "PingFang TC", "Noto Sans TC", sans-serif;
+      -webkit-font-smoothing:antialiased; transition:background-color .3s, color .3s;
+    }
+    button, input, select { font:inherit; color:inherit; }
+    a { color:inherit; }
+
+    /* ---------- 頂部（沒有外框；左：日期＋標題，右：照 DX 的安裝與管理員按鈕） ---------- */
+    .lf-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding:calc(16px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+      width:100%; margin:0 auto; }
+    .lf-date { margin:0; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.02em; }
+    .lf-title { margin:2px 0 0; font-size:clamp(24px, 6.6vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
+    /* 右上角按鈕位置照 DX 的 Header：離上緣 6px（DX 的 Header 高 46／48px、按鈕 34／36px 置中），離右緣 14／20／24／32px，貼齊整個畫面右邊 */
+    .lf-right { display:flex; align-items:center; gap:6px; flex:none; position:fixed; z-index:40; top:calc(6px + env(safe-area-inset-top)); right:max(14px, env(safe-area-inset-right)); }
+    @media (min-width:640px) { .lf-right { right:max(20px, env(safe-area-inset-right)); gap:7.1px; } } /* DX 的 gap-1.5 在寬畫面量起來是 7.1px */
+    @media (min-width:1024px) { .lf-right { right:24px; } }
+    @media (min-width:1440px) { .lf-right { right:32px; } }
+    /* 以下尺寸、顏色與 DX 的 Header 按鈕／管理員下拉選單相同 */
+    .lf-btn { width:34px; min-width:34px; height:34px; border-radius:9px; font-size:15px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+      cursor:pointer; position:relative; background:rgba(226,232,240,.7); color:#334155; border:1px solid rgba(203,213,225,.6); transition:background .15s, transform .1s; }
+    /* 皇冠沿用 DX 的 Arial 字型與 1.5 行高，避免 LF 預設 normal 行高造成偏移。 */
+    #lfAuthBtn { font-family:"CLC Arial",Arial,"Microsoft JhengHei",sans-serif; font-weight:400; line-height:1.5; }
+    #lfAuthIcon { line-height:inherit; }
+    .lf-btn:hover { background:rgba(203,213,225,.7); }
+    .lf-btn:active { transform:scale(.95); }
+    html.dark .lf-btn { background:rgba(255,255,255,.05); color:#cbd5e1; border-color:rgba(255,255,255,.1); }
+    html.dark .lf-btn:hover { background:rgba(255,255,255,.1); }
+    .lf-install { width:auto; padding:0 10px; font-size:12px; font-weight:600; gap:4px; line-height:1; white-space:nowrap; } /* line-height:1：字在按鈕裡上下置中 */
+    .lf-install > span { display:block; }
+    .lf-install[hidden] { display:none; }
+    .lf-dot { position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:#fbbf24; animation:lfPulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+    .lf-dot[hidden] { display:none; }
+    @keyframes lfPulse { 50% { opacity:.5; } }
+    @media (min-width:640px) {
+      .lf-btn { width:36px; min-width:36px; height:36px; border-radius:10px; font-size:16px; }
+      .lf-install { width:auto; height:36px; font-size:13px; padding:0 12px; }
+    }
+    .lf-menu { position:absolute; right:0; top:100%; margin-top:7.5px; width:210px; padding:7.5px 0; border-radius:11.25px; z-index:50; text-align:left;
+      background:#fff; border:1px solid #e2e8f0; box-shadow:0 25px 50px -12px rgba(0,0,0,.25); }
+    html.dark .lf-menu { background:#161924; border-color:rgba(255,255,255,.1); }
+    .lf-menu[hidden] { display:none; }
+    .lf-menu .lf-menu-head { padding:7.5px 15px; font-size:11.25px; line-height:15px; font-weight:700; color:#94a3b8; border-bottom:1px solid #f1f5f9;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    html.dark .lf-menu .lf-menu-head { border-bottom-color:rgba(255,255,255,.05); }
+    .lf-menu button { display:block; width:100%; padding:9.375px 15px; border:0; background:none; text-align:left; font-size:13.125px; line-height:18.75px; font-weight:600;
+      color:#334155; cursor:pointer; transition:background .15s; }
+    html.dark .lf-menu button { color:#e2e8f0; }
+    .lf-menu button:hover { background:#f1f5f9; }
+    html.dark .lf-menu button:hover { background:rgba(255,255,255,.05); }
+    @media (min-width:640px) { .lf-menu button { font-size:15px; } }
+    .lf-menu button[hidden] { display:none; }
+    .lf-menu .lf-sep { border-top:1px solid #f1f5f9; margin:5.625px 0; }
+    html.dark .lf-menu .lf-sep { border-top-color:rgba(255,255,255,.05); }
+    .lf-menu .lf-danger { color:#e11d48; font-weight:700; }
+    html.dark .lf-menu .lf-danger { color:#fb7185; }
+    .lf-menu .lf-danger:hover { background:#fff1f2; }
+    html.dark .lf-menu .lf-danger:hover { background:rgba(244,63,94,.1); }
+    html.dark .lf-ic-moon, html:not(.dark) .lf-ic-sun { display:none; }
+
+    /* ---------- 主畫面 ---------- */
+    main { flex:1; width:100%; margin:0 auto; padding:18px max(20px, env(safe-area-inset-left)) 40px; }
+    @media (min-width:1024px) { .lf-top, main { padding-left:32px; padding-right:32px; } } /* 電腦版全寬，左右邊距跟右上角按鈕一樣 32px */
+    .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0 24px; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
+    .lf-tabs button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
+    .lf-tabs button[aria-selected="true"] { background:var(--pine); color:#fff; }
+    .lf-newdot { display:inline-block; width:8px; height:8px; margin-left:5px; vertical-align:top; border-radius:50%; background:#E5484D; }
+    .lf-newdot[hidden] { display:none; }
+    .lf-all button { border:0; border-radius:9999px; padding:6px 14px; font:inherit; font-size:13px; font-weight:700; background:var(--pine); color:#fff; cursor:pointer; }
+    .lf-all-note { font-size:13px; opacity:.7; margin:0 0 12px; }
+    .lf-all { display:grid; gap:8px; }
+    .lf-all-row { display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:14px; background:var(--btn); }
+    .lf-all-row a { flex:1; display:flex; align-items:center; gap:12px; color:inherit; text-decoration:none; min-width:0; font-weight:700; }
+    .lf-all-row .lf-icon { width:40px; height:40px; flex:none; }
+    .lf-all-row button:disabled { background:var(--btn-h); color:inherit; opacity:.7; cursor:default; }
+
+    /* App 格子：手機 4 欄、平板 6 欄、電腦 8 欄 */
+    /* 整個畫面都放 App：一行放得下幾個就放幾個，超過就換下一行 */
+    #lfApps { display:grid; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:22px 16px; }
+    @media (min-width:640px) { #lfApps { grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:26px 22px; } }
+    #lfApps .slot-cell { aspect-ratio:auto; }
+    .lf-app { display:flex; flex-direction:column; align-items:center; gap:7px; text-decoration:none; color:var(--text); -webkit-tap-highlight-color:transparent; }
+    .lf-icon { width:100%; aspect-ratio:1; border-radius:22%; display:grid; place-items:center; overflow:hidden; transition:transform .2s; }
+    .lf-app:hover .lf-icon { transform:scale(1.05); }
+    .lf-app:active .lf-icon { transform:scale(.95); }
+    .lf-icon.is-emoji { background:var(--pine); font-size:clamp(26px, 8vw, 38px); }
+    .lf-icon.is-mono { color:#fff; font-weight:800; font-size:clamp(18px, 5.4vw, 26px); letter-spacing:-.02em; }
+    .lf-iconrow { display:flex; gap:10px; align-items:center; }
+    .lf-iconrow input { flex:1; min-width:0; }
+    #lfAppPreview { width:44px; flex:none; }
+    #lfAppPreview .lf-icon.is-mono { font-size:16px; } #lfAppPreview .lf-icon.is-emoji { font-size:24px; }
+    .lf-icon.is-img img { width:100%; height:100%; object-fit:cover; }
+    .lf-icon img { display:block; pointer-events:none; }
+    .lf-name { font-size:12.5px; font-weight:700; line-height:1.25; text-align:center; max-width:100%; word-break:keep-all; overflow-wrap:anywhere; }
+    @media (min-width:640px) { .lf-name { font-size:13.5px; } }
+    .lf-slot { aspect-ratio:1; border-radius:22%; border:2px dashed var(--border); color:var(--muted); background:transparent; display:grid; place-content:center;
+      font-size:26px; font-weight:300; margin-bottom:25px; opacity:.75; }
+    html:not(.dark) .lf-slot { border-color:rgba(14,44,78,.22); }
+    .lf-slot.is-admin { cursor:pointer; }
+    .lf-slot.is-admin:hover { border-color:var(--teal); color:var(--teal); opacity:1; }
+    .lf-remove { position:absolute; top:-9px; left:-9px; width:34px; height:34px; display:grid; place-content:center; border:0; background:none; padding:0; cursor:pointer; z-index:2; }
+    .lf-remove span { width:22px; height:22px; border-radius:50%; background:#475569; box-shadow:0 1px 4px rgba(0,0,0,.35); display:grid; place-content:center; }
+    .lf-remove span::after { content:""; width:10px; height:2px; border-radius:2px; background:#fff; }
+    .lf-remove:hover span { background:#e11d48; }
+    .slot-floating .lf-name { visibility:hidden; }
+    .lf-hint { color:var(--muted); font-size:12.5px; margin-top:18px; }
+    .lf-hint[hidden] { display:none; }
+
+    /* ---------- 搜尋列（DX 輸入框樣式：圓角、細框、聚焦時松綠框） ---------- */
+    .lf-search { display:flex; align-items:center; gap:10px; height:48px; padding:0 8px 0 16px; margin-top:20px; max-width:520px; border-radius:16px;
+      background:var(--surface); border:1px solid var(--border); transition:border-color .15s; }
+    html.dark .lf-search { background:rgba(255,255,255,.04); }
+    .lf-search:focus-within { border-color:var(--pine); }
+    html.dark .lf-search:focus-within { border-color:var(--sage); }
+    .lf-search svg { width:18px; height:18px; flex:none; color:var(--muted); }
+    .lf-search input { flex:1; min-width:0; height:100%; border:0; outline:none; background:transparent; font-size:15px; color:var(--text); }
+    .lf-search input::placeholder { color:var(--muted); opacity:.75; }
+    .lf-search input::-webkit-search-cancel-button { display:none; }
+    .lf-search button { flex:none; width:32px; height:32px; border:0; border-radius:10px; background:none; color:var(--muted); cursor:pointer; font-size:16px; }
+    .lf-search button:hover { background:var(--btn); }
+    .lf-search button[hidden] { display:none; }
+    .lf-search[hidden] { display:none; }
+    .lf-tabbar { display:flex; align-items:center; gap:10px; margin:22px 0 24px; }
+    .lf-tabbar .lf-tabs { margin:0; }
+    .lf-tabs .lf-tab-icon { border:0; background:none; padding:8px 12px; border-radius:9999px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; }
+    .lf-tabs .lf-tab-icon svg { width:16px; height:16px; }
+    .lf-tabs .lf-tab-icon[aria-expanded="true"] { background:var(--pine); color:#fff; }
+    .lf-gear-wrap { margin-left:auto; position:relative; flex:none; }
+    @media (max-width:430px) { .lf-tabs button { padding:8px 12px; } .lf-tabs .lf-tab-icon { padding:8px 10px; } .lf-tabbar { gap:8px; } } /* 窄手機：一排放得下，不切到齒輪 */
+    @media (max-width:380px) { .lf-tabs button { padding:7px 10px; font-size:13px; } .lf-tabs .lf-tab-icon { padding:7px 8px; } .lf-tabbar { gap:6px; } .lf-tabbar .lf-search-btn { width:36px; height:36px; } }
+    /* 齒輪選單：間距、字級照管理員下拉選單（.lf-menu）；框線顏色跟著 LF 主題 */
+    .lf-gear-menu, html.dark .lf-gear-menu { border-color:var(--border); }
+    .lf-gear-menu .lf-menu-head, html.dark .lf-gear-menu .lf-menu-head { border-bottom-color:var(--border); }
+    /* 背景主題 */
+    .lf-wall { position:fixed; inset:0; z-index:-1; background:center / cover no-repeat; pointer-events:none; }
+    .lf-wall::after { content:''; position:absolute; inset:0; background:var(--bg); opacity:.62; } /* 遮罩：蓋一層底色，上面的東西才突出 */
+    /* 有桌布時：分頁框、按鈕改成霧面玻璃，App 名稱加淡淡的光暈，從桌布上浮出來 */
+    html.lf-has-wall .lf-tabs, html.lf-has-wall .lf-search-btn, html.lf-has-wall .lf-btn {
+      background:color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+    html.lf-has-wall .lf-icon { box-shadow:0 6px 16px rgba(0,0,0,.18); }
+    html.lf-has-wall .lf-name, html.lf-has-wall .lf-title, html.lf-has-wall .lf-date { text-shadow:0 0 6px var(--bg), 0 0 2px var(--bg); }
+    .lf-wall[hidden] { display:none; }
+    html.lf-has-wall body { background:transparent; }
+    html.lf-has-wall { background:var(--bg); }
+    .lf-look-sec { font-size:13px; font-weight:700; color:var(--muted); margin:4px 0 0; }
+    .lf-swatches { display:flex; flex-wrap:wrap; gap:10px; }
+    .lf-swatch { width:44px; height:44px; border-radius:50%; border:3px solid transparent; cursor:pointer; padding:0; box-shadow:0 0 0 1px var(--border) inset; }
+    .lf-swatch[aria-pressed="true"] { border-color:var(--text); }
+    .lf-walls { display:grid; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:8px; }
+    .lf-walls button { aspect-ratio:3/4; border-radius:10px; border:3px solid transparent; cursor:pointer; padding:0; background:center / cover no-repeat var(--btn); font-size:12px; font-weight:700; color:var(--muted); box-shadow:0 0 0 1px var(--border) inset; }
+    .lf-walls button[aria-pressed="true"] { border-color:var(--text); }
+    .lf-search-btn { flex:none; width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--btn); color:var(--muted); cursor:pointer; display:grid; place-items:center; }
+    .lf-search-btn svg { width:18px; height:18px; }
+    .lf-search-btn[hidden] { display:none; }
+    .lf-search-btn[aria-expanded="true"] { background:var(--pine); color:#fff; border-color:var(--pine); }
+    .lf-tabbar + .lf-search { margin:-12px 0 20px; }
+    @media (min-width:640px) { .lf-search { max-width:780px; } }
+    @media (min-width:1024px) { .lf-search { max-width:1040px; } }
+    #lfApps.is-searching > * { transition:opacity .15s; }
+    #lfApps.is-searching > .lf-dim { opacity:.15; pointer-events:none; }
+    .lf-noresult { color:var(--muted); font-size:13.5px; margin:-6px 0 14px; }
+    .lf-noresult[hidden] { display:none; }
+
+    /* ---------- 家庭空間配置 ---------- */
+    .lf-board { background:#fff; border-radius:18px; padding:10px; overflow-x:auto; border:1px solid var(--border); }
+    .lf-board svg { display:block; width:100%; min-width:620px; height:auto; }
+    .svg-hotspot { cursor:pointer; outline:none; }
+    .svg-hotspot .zone-box { transition:fill .2s, stroke .2s; }
+    .svg-hotspot:hover .zone-box, .svg-hotspot:focus-visible .zone-box { fill:#EEF5F2; }
+    .svg-hotspot.is-active .zone-box { fill:#E3EFEA; stroke:#4E8B7E; stroke-width:3; }
+    .svg-hotspot.is-active .zone-pin { fill:#4E8B7E; }
+    .lf-zone { margin-top:16px; padding:18px; border-radius:18px; background:var(--surface); border:1px solid var(--border); }
+    .lf-zone h3 { margin:0 0 10px; font-size:16px; }
+    .lf-zone ul { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+    .lf-zone li a { display:flex; gap:12px; align-items:flex-start; text-decoration:none; padding:10px; border-radius:12px; background:var(--btn); }
+    .lf-zone li a:hover { background:var(--btn-h); }
+    .lf-zone .lf-icon { width:44px; flex:none; font-size:22px; }
+    .lf-zone small { display:block; color:var(--muted); font-size:12.5px; line-height:1.5; margin-top:2px; }
+
+    /* ---------- 對話框 ---------- */
+    dialog.lf-dialog { width:min(92vw, 420px); padding:0; border:0; border-radius:20px; background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+    dialog.lf-dialog::backdrop { background:rgba(5,15,28,.6); }
+    .lf-dialog form, .lf-dialog .lf-dialog-body { padding:22px; display:flex; flex-direction:column; gap:12px; }
+    .lf-dialog h3 { margin:0; font-size:18px; font-weight:800; }
+    .lf-dialog label { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:700; color:var(--muted); }
+    .lf-dialog input, .lf-dialog select { height:44px; padding:0 14px; border-radius:12px; font-size:15px; background:var(--btn); border:1px solid var(--border); outline:none; }
+    .lf-dialog input:focus, .lf-dialog select:focus { border-color:var(--teal); }
+    .lf-dialog .lf-err { color:#E0525E; font-size:13px; margin:0; }
+    .lf-dialog .lf-err[hidden] { display:none; }
+    .lf-dialog .lf-note { color:var(--muted); font-size:13px; line-height:1.6; margin:0; }
+    .lf-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+    .lf-actions button { height:42px; padding:0 18px; border-radius:12px; font-weight:700; font-size:15px; border:0; cursor:pointer; background:var(--btn); }
+    .lf-actions .lf-primary { background:var(--pine); color:#fff; }
+    .lf-actions .lf-primary:disabled { opacity:.5; }
+    .lf-users { list-style:none; margin:0; padding:0; display:grid; gap:8px; max-height:45vh; overflow:auto; }
+    .lf-users li { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:12px; background:var(--btn); font-size:13.5px; }
+    .lf-users li span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .lf-users li button { border:0; background:none; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--teal); padding:4px 6px; }
+    .lf-users li button.lf-del { color:#E0525E; }
+    .lf-toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:100; padding:10px 18px; border-radius:12px;
+      background:#1C1C1C; color:#fff; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+    /* 上面（標題、分頁）固定，只有下面的 App 區捲動；App 沒滿就不能捲 */
+    html, body { height:100%; }
+    body { height:100dvh; min-height:0 !important; overflow:hidden; display:flex; flex-direction:column; }
+    main { display:flex; flex-direction:column; min-height:0; padding-bottom:0; }
+    main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px 10px calc(16px + env(safe-area-inset-bottom)); margin:-10px -10px 0; } /* 四周留 10px，App 滑鼠放大時不會被切到；負邊距讓位置不變 */
+    #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
+    #lfApps.is-editing .slot-empty { visibility:visible; }
+    @media (max-width:639px) { footer { display:none; } }
+    footer { text-align:center; font-size:11px; color:var(--muted); padding:14px 0 calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
   </style>
 </head>
 <body>
-
-  <!-- 頂部毛玻璃導覽列（左側：Logo；右側：登入歡迎 + 週次切換與下拉選單 + 深淺色切換 + 安裝 App） -->
-  <nav class="navbar">
-    <div class="navbar-inner">
-      <div class="brand-group" id="brandHome" data-lf-menu-trigger title="回到最新一週教材">
-        <div class="church-logo" aria-hidden="true">
-          <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M22 34 Q41 30 60 41 L60 89 Q41 78 22 82 Z" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M98 34 Q79 30 60 41 L60 89 Q79 78 98 82 Z" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="60" y1="41" x2="60" y2="89" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <span class="brand-name">江子翠行道會</span>
-          <span class="brand-sub">小組牧養教材</span>
-        </div>
-      </div>
-
-      <div class="nav-right-actions">
-        <span class="sg-welcome-badge" id="sgWelcome" hidden></span>
-
-        <!-- 右上角週次左右切換與保存日期選單 -->
-        <div class="sg-nav-controls">
-          <button class="sg-nav-btn" id="sg-prev" disabled aria-label="上一週教材" title="上一週">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-
-          <details class="sg-date-picker" id="sg-date-picker">
-            <summary aria-label="選擇保存的教材日期">
-              <span class="sg-date-pill">
-                <span id="heroDateRange">2026/11/10 — 11/15</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-              </span>
-            </summary>
-            <div id="sg-date-list" aria-label="目前保存的小組教材"></div>
-          </details>
-
-          <button class="sg-nav-btn" id="sg-next" disabled aria-label="下一週教材" title="下一週">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
-
-        <!-- 深色 / 淺色模式切換按鈕 -->
-        <button class="sg-theme-btn" id="themeToggleBtn" aria-label="切換深色或淺色模式" title="切換深色／淺色模式">
-          <!-- 月亮圖示（淺色模式下顯示，點擊切換為深色） -->
-          <svg id="iconMoon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-          </svg>
-          <!-- 太陽圖示（深色模式下顯示，點擊切換為淺色） -->
-          <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden>
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
-          </svg>
-        </button>
-
-        <!-- 安裝成 App 按鈕 -->
-        <button class="install-btn" id="installAppBtn" aria-label="安裝成 App">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3v12"/>
-            <path d="m7 10 5 5 5-5"/>
-            <path d="M5 21h14"/>
-          </svg>
-          <span>安裝 App</span>
-        </button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- 可左右滑動切換週次的閱讀主區域 -->
-  <div id="sg-reading-sheet">
-    <!-- 課程簡約主標題（保留原本乾淨標籤與標題） -->
-    <header class="hero">
-      <div class="container">
-        <div class="eyebrow-row">
-          <span class="pill-tag pill-primary" id="heroWeekBadge">WEEK 2</span>
-          <span class="pill-tag pill-tint" id="heroSeriesTag">信心 ④</span>
-        </div>
-
-        <h1 class="hero-title" id="heroTitle">亞伯拉罕的信心（下）</h1>
-        <div class="hero-scripture">
-          <span>主題經文：</span>
-          <span class="pop-trigger" id="heroScriptureTrigger" data-pop="heb11_17_19">希伯來書 11:17–19</span>
-        </div>
-      </div>
-    </header>
-
-    <p class="status-note" id="sgStatus" hidden></p>
-
-    <!-- Apple Segmented Control 三大功能分頁導覽 -->
-    <div class="tabs-bar">
-      <div class="container">
-        <div class="segmented-control" role="tablist">
-          <button class="seg-btn active" data-tab="tab-info">信息互動填空</button>
-          <button class="seg-btn" data-tab="tab-bg">背景與註釋</button>
-          <button class="seg-btn" data-tab="tab-discuss">小組討論</button>
-        </div>
-      </div>
-    </div>
-
-    <main class="container">
-
-      <!-- 第一頁（預設首頁）：信息內文與互動填空 -->
-      <section id="tab-info" class="tab-panel active">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">信息內文與互動填空</h2>
-              <p class="card-subtitle">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）</p>
-            </div>
-            <div class="toolbar-actions">
-              <span class="progress-pill" id="blankProgress">已解鎖 0 / 7</span>
-              <button class="pill-action-btn" id="toggleAllBtn">顯示全部</button>
-            </div>
-          </div>
-
-          <div class="article-body" id="articleBody"></div>
-
-          <div class="next-page-bar">
-            <button class="next-page-btn" onclick="switchToTab('tab-bg')">
-              <span>下一步：背景與註釋</span>
-              <span>→</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 第二頁：背景與註釋 -->
-      <section id="tab-bg" class="tab-panel">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">經文歷史與神學背景</h2>
-              <p class="card-subtitle">深入理解主題經文的救贖歷史脈絡</p>
-            </div>
-          </div>
-          <div id="bgBlocksContainer"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">原文難字與關鍵詞解析</h2>
-              <p class="card-subtitle">從希伯來文與希臘文原意掌握精準神學含義</p>
-            </div>
-          </div>
-          <div id="wordStudiesContainer"></div>
-          <div class="next-page-bar">
-            <button class="next-page-btn" onclick="switchToTab('tab-discuss')">
-              <span>下一步：小組討論</span>
-              <span>→</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 第三頁：小組討論 -->
-      <section id="tab-discuss" class="tab-panel">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">小組分享與討論</h2>
-              <p class="card-subtitle">透過真實敞開的對話，將神的話語落實在每天的生活中</p>
-            </div>
-          </div>
-          <div id="questionsContainer"></div>
-        </div>
-      </section>
-
-    </main>
-
-    <footer>
-      <p>江子翠行道會｜小組牧養教材互動版 · 資料自動同步自教會官網</p>
-    </footer>
-  </div>
-
-  <!-- 經文與神學解析視窗 -->
-  <div class="modal-overlay" id="bubbleModal">
-    <div class="apple-sheet" role="dialog" aria-modal="true">
-      <button class="sheet-close" id="closeBubbleBtn" aria-label="關閉">×</button>
-      <span class="sheet-tag" id="bubbleType">經文出處</span>
-      <h3 class="sheet-title" id="bubbleTitle">標題</h3>
-      <div class="sheet-body" id="bubbleContent">內容</div>
-      <div class="sheet-footer" id="bubbleSource">出處說明</div>
-    </div>
-  </div>
-
-  <!-- iOS Safari 加入主畫面指引視窗 -->
-  <div class="modal-overlay" id="iosInstallModal">
-    <div class="apple-sheet" role="dialog" aria-modal="true">
-      <button class="sheet-close" id="closeIosModalBtn" aria-label="關閉">×</button>
-      <span class="sheet-tag">建立桌面 App 捷徑</span>
-      <h3 class="sheet-title">將小組教材加入 iPhone / iPad 主畫面</h3>
-      <div class="sheet-body">
-        只需三個步驟，即可像原生 App 一樣從桌面一鍵開啟，且在桌面 App 中此安裝按鈕將自動隱藏：
-        <ul class="ios-steps">
-          <li><strong>1.</strong> 點擊 Safari 瀏覽器下方（或右上角）的 <strong>「分享」圖示</strong>（方框中有向上箭頭）。</li>
-          <li><strong>2.</strong> 向下滑動選單，點擊 <strong>「加入主畫面」</strong>（Add to Home Screen）。</li>
-          <li><strong>3.</strong> 點擊右上角 <strong>「新增」</strong>，桌面上就會出現江子翠行道會書本圖示 App！</li>
-        </ul>
-      </div>
-      <div class="sheet-footer">提示：若使用 Android 手機或電腦版 Chrome / Edge，點擊「安裝 App」即可直接一鍵安裝。</div>
-    </div>
-  </div>
-
-  <script src="./sg-reader.js?v=2"></script>
+  <div id="lfBootProbe" role="status"><span id="lfBootStatus">LF 檢查版 B1 · 等待啟動</span><br><button type="button" id="lfBootReload">重新載入新版</button></div>
   <script>
-    // =================================================================
-    // 0. 深色 / 淺色主題切換與記憶
-    // =================================================================
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const iconMoon = document.getElementById('iconMoon');
-    const iconSun = document.getElementById('iconSun');
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-
-    function applyTheme(theme) {
-      const isDark = theme === 'dark';
-      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-      iconMoon.hidden = isDark;
-      iconSun.hidden = !isDark;
-      if (metaThemeColor) {
-        metaThemeColor.content = isDark ? '#111214' : '#007F85';
-      }
-      try { localStorage.setItem('sg-theme', isDark ? 'dark' : 'light'); } catch {}
+    if (window.lfBootMark) {
+      window.lfBootMark('畫面已載入');
+      document.getElementById('lfBootReload').addEventListener('click', function () {
+        var url = new URL(location.href);
+        url.searchParams.set('lf_boot', String(Date.now()));
+        location.replace(url.href);
+      });
     }
-
-    (() => {
-      let saved = null;
-      try { saved = localStorage.getItem('sg-theme'); } catch {}
-      if (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        saved = 'dark';
+  </script>
+  <!-- 沒登入：停在 Welcome 畫面，點一下就跳出 Google 登入（參照 DX） -->
+  <div class="lf-welcome" id="lfWelcome" role="button" tabindex="0" aria-label="LinFamily：按一下以 Google 帳號登入">
+    <canvas class="lf-ent-canvas" aria-hidden="true"></canvas>
+    <div class="lf-ent-shade"></div>
+    <div class="lf-ent-logo"><img src="assets/lf-mark.v2.svg" alt="" width="644" height="594"></div>
+    <p class="lf-ent-note" hidden>請用 Safari 或 Chrome 開啟本頁再登入</p>
+  </div>
+  <script src="js/entrance.js?v=20261118-boot" async></script>
+  <!-- 暫停測試：改成 false 即恢復 iPhone 動畫；動畫檔案保留。 -->
+  <script>
+    (function () {
+      var pauseIPhoneIntro = true;
+      if (pauseIPhoneIntro && /iPhone/i.test(navigator.userAgent)) {
+        document.documentElement.classList.add('lf-iphone-static');
+        return;
       }
-      applyTheme(saved || 'light');
+      var script = document.createElement('script');
+      script.src = 'js/entrance-waves.js?v=20261118-ios-resume';
+      script.async = true;
+      document.head.appendChild(script);
     })();
+  </script>
+  <style>
+    html.lf-iphone-static .lf-ent-canvas { display:none; }
+    html.lf-iphone-static .lf-ent-logo { animation:none !important; opacity:1; }
+  </style>
+  <script>try{localStorage.removeItem('linfamily_signed_in');}catch(_){}</script>
+  <div class="lf-top">
+    <div>
+      <p class="lf-date" id="lfDate">&nbsp;</p>
+      <h1 class="lf-title" id="lfGreeting">Welcome home</h1>
+    </div>
+    <div class="lf-right">
+      <button type="button" id="lfInstallBtn" class="lf-btn lf-install" hidden><span>📲</span><span>安裝</span></button>
+      <button type="button" id="lfAuthBtn" class="lf-btn" title="管理員登入 / 狀態" aria-haspopup="menu" aria-expanded="false"><span id="lfAuthIcon">🔐</span><span id="lfAuthDot" class="lf-dot" hidden></span></button>
+      <div id="lfMenu" class="lf-menu" role="menu" hidden>
+        <div id="lfMenuHead" class="lf-menu-head">管理員已登入</div>
+        <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>⚙️ 全站設定</button>
+        <button type="button" role="menuitem" data-act="theme"><span class="lf-ic-sun">☀️ 切換淺色</span><span class="lf-ic-moon">🌙 切換深色</span></button>
+        <div class="lf-sep"></div>
+        <button type="button" role="menuitem" data-act="logout" class="lf-danger" id="lfLogoutBtn">🚪 登出帳號</button>
+      </div>
+    </div>
+  </div>
 
-    themeToggleBtn.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme');
-      applyTheme(current === 'dark' ? 'light' : 'dark');
-    });
+  <main>
 
-    // =================================================================
-    // 1. Firebase 設定與教材資料渲染
-    // =================================================================
+    <div class="lf-tabbar">
+    <div class="lf-tabs" role="tablist" aria-label="切換">
+      <button type="button" role="tab" aria-selected="true" data-tab="apps">Home</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-newdot" id="lfAppsDot" hidden></i></button>
+      <button type="button" class="lf-tab-icon" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
+    </div>
+    <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <div class="lf-gear-wrap">
+      <button type="button" class="lf-search-btn" id="lfGearBtn" aria-label="設定" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div id="lfGearMenu" class="lf-menu lf-gear-menu" role="menu" hidden>
+        <div class="lf-menu-head">設定</div>
+        <button type="button" role="menuitem" data-gear="theme">🎨 背景主題</button>
+      </div>
+    </div>
+    </div>
+    <label class="lf-search" for="lfSearch" id="lfSearchBox" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
+      <input type="search" id="lfSearch" placeholder="搜尋 App…" autocomplete="off" enterkeyhint="go" aria-label="搜尋 App">
+      <button type="button" id="lfSearchClear" aria-label="清除搜尋" hidden>✕</button>
+    </label>
+
+    <section id="panelApps" aria-label="App">
+      <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
+           登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到任何位置（空位編輯時才看得到）或和別的 App 互換、「−」移除、點 App 修改、＋ 圓鈕新增、按「完成」結束。 -->
+      <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
+      <nav id="lfApps" aria-label="App"></nav>
+    </section>
+
+    <section id="panelAll" aria-label="所有 App" hidden>
+      <p class="lf-all-note" id="lfAllNote"></p>
+      <div class="lf-all" id="lfAll"></div>
+    </section>
+
+    <section id="panelFamily" aria-label="家庭空間配置" hidden>
+      <div class="lf-board" id="floorplanBoard">
+        <svg viewBox="0 0 760 320" role="img" aria-label="LinFamily 家庭空間配置平面圖">
+          <defs>
+            <marker id="pixelArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#111111"/>
+            </marker>
+            <pattern id="pixelDots" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1" fill="#E4E4E7"/>
+            </pattern>
+          </defs>
+
+          <!-- 純白高對比底層 -->
+          <rect x="0" y="0" width="760" height="320" rx="16" fill="#FFFFFF"/>
+          <rect x="12" y="12" width="736" height="296" rx="12" fill="url(#pixelDots)" stroke="#111111" stroke-width="1.8"/>
+
+          <!-- 建築隔間牆線 -->
+          <line x1="260" y1="12" x2="260" y2="308" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <line x1="510" y1="12" x2="510" y2="308" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <line x1="260" y1="165" x2="748" y2="165" stroke="#71717A" stroke-width="1.6" stroke-dasharray="6 4"/>
+
+          <!-- 動線箭頭 -->
+          <path d="M 135 245 L 135 160 L 365 160 L 365 95" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
+          <path d="M 385 120 L 385 225 L 590 225" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
+          <path d="M 455 85 L 590 85" fill="none" stroke="#111111" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#pixelArrow)"/>
+
+          <!-- 熱區 1：玄關門禁 -->
+          <g class="svg-hotspot" data-zone-id="zone-entry" tabindex="0" role="button" aria-label="1 玄關門禁與影像">
+            <rect class="zone-box" x="32" y="34" width="206" height="252" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="62" cy="64" r="15" fill="#111111"/>
+            <text x="62" y="69" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">1</text>
+            <text x="88" y="69" fill="#111111" font-size="15" font-weight="700">玄關門禁與影像</text>
+            <text x="48" y="102" fill="#3F3F46" font-size="12.5">• 智慧門鎖狀態監控</text>
+            <text x="48" y="126" fill="#3F3F46" font-size="12.5">• 門口監視器即時串流</text>
+            <text x="48" y="150" fill="#3F3F46" font-size="12.5">• 家人回家推播通知</text>
+            <rect x="48" y="218" width="174" height="44" rx="12" fill="#F4F4F5" stroke="#111111" stroke-width="1.2"/>
+            <text x="135" y="245" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="700">主入口動線起點 →</text>
+          </g>
+
+          <!-- 熱區 2：客廳影音與相簿 -->
+          <g class="svg-hotspot" data-zone-id="zone-living" tabindex="0" role="button" aria-label="2 客廳影音與相簿">
+            <rect class="zone-box" x="278" y="34" width="214" height="114" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="306" cy="62" r="15" fill="#111111"/>
+            <text x="306" y="67" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">2</text>
+            <text x="330" y="67" fill="#111111" font-size="15" font-weight="700">客廳影音與相簿</text>
+            <text x="294" y="96" fill="#3F3F46" font-size="12.5">• LinFamily 共享相簿牆</text>
+            <text x="294" y="118" fill="#3F3F46" font-size="12.5">• 客廳電視與家庭劇院中控</text>
+          </g>
+
+          <!-- 熱區 3：書房 NAS 與雲端 -->
+          <g class="svg-hotspot" data-zone-id="zone-cloud" tabindex="0" role="button" aria-label="3 書房 NAS 雲端">
+            <rect class="zone-box" x="528" y="34" width="202" height="114" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="556" cy="62" r="15" fill="#111111"/>
+            <text x="556" y="67" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">3</text>
+            <text x="580" y="67" fill="#111111" font-size="15" font-weight="700">書房 NAS 雲端</text>
+            <text x="544" y="96" fill="#3F3F46" font-size="12.5">• 私有雲檔案與自動備份</text>
+            <text x="544" y="118" fill="#3F3F46" font-size="12.5">• 家庭網路與路由器監控</text>
+          </g>
+
+          <!-- 熱區 4：餐廚生活共享區 -->
+          <g class="svg-hotspot" data-zone-id="zone-life" tabindex="0" role="button" aria-label="4 家庭行事曆、帳本與採買清單">
+            <rect class="zone-box" x="278" y="182" width="452" height="104" rx="16" fill="#FAFAFA" stroke="#3F3F46" stroke-width="1.6"/>
+            <circle class="zone-pin" cx="306" cy="212" r="15" fill="#111111"/>
+            <text x="306" y="217" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">4</text>
+            <text x="330" y="217" fill="#111111" font-size="15" font-weight="700">家庭行事曆、帳本與採買清單</text>
+            <text x="294" y="246" fill="#3F3F46" font-size="12.5">• 全家人行程同步、紀念日提醒、家庭共同記帳與日常採買清單</text>
+            <text x="294" y="268" fill="#111111" font-size="12" font-weight="700">動線節點：客廳 → 餐廚生活共享區</text>
+          </g>
+        </svg>
+      </div>
+      <div class="lf-zone" id="lfZone">
+        <h3 id="lfZoneTitle">點平面圖上的區域，查看相關 App</h3>
+        <ul id="lfZoneList"></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>© 2026 LinFamily</footer>
+
+  <!-- 新增／修改 App -->
+  <dialog class="lf-dialog" id="lfAppDialog">
+    <form method="dialog" novalidate>
+      <h3 id="lfAppTitle">新增 App</h3>
+      <label>網址<input id="lfAppUrl" placeholder="例如 HannahProjects/ 或 https://…" autocomplete="off" inputmode="url"></label>
+      <label>名稱<input id="lfAppName" maxlength="20" placeholder="貼上網址後自動抓取，可修改" autocomplete="off"></label>
+      <label>圖示<span class="lf-iconrow"><span id="lfAppPreview"></span><input id="lfAppIcon" maxlength="300" placeholder="自動抓取；也可填 emoji 或圖片網址" autocomplete="off"></span></label>
+      <p class="lf-note" id="lfAppStatus" hidden></p>
+      <p class="lf-err" id="lfAppErr" hidden></p>
+      <div class="lf-actions">
+        <button type="button" id="lfAppCancel">取消</button>
+        <button type="submit" class="lf-primary" id="lfAppSave">儲存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 安裝說明 -->
+  <div class="lf-wall" id="lfWall" hidden></div>
+  <dialog class="lf-dialog" id="lfThemeDialog">
+    <div class="lf-dialog-body">
+      <h3>背景主題</h3>
+      <p class="lf-look-sec">主題顏色</p>
+      <div class="lf-swatches" id="lfSwatches"></div>
+      <p class="lf-look-sec">桌布</p>
+      <div class="lf-walls" id="lfWalls"></div>
+      <input type="file" id="lfWallFile" accept="image/*" hidden>
+      <p class="lf-note" id="lfLookMsg"></p>
+      <div class="lf-actions"><button type="button" class="lf-primary" id="lfThemeClose">完成</button></div>
+    </div>
+  </dialog>
+  <dialog class="lf-dialog" id="lfInstallDialog">
+    <div class="lf-dialog-body">
+      <h3>安裝 LinFamily</h3>
+      <p class="lf-note" id="lfInstallText"></p>
+      <div class="lf-actions"><button type="button" class="lf-primary" id="lfInstallClose">知道了</button></div>
+    </div>
+  </dialog>
+
+  <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script>
+  <script src="js/clc-icon-upload.js?v=20261116-menu2"></script>
+  <script src="js/lf-menu.js?v=3"></script>
+  <script>
+  window.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+    if (window.lfBootMark) window.lfBootMark('登入程式已啟動');
+    // ---------- Firebase（LinFamily 自己的專案） ----------
     const firebaseConfig = {
       apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
       authDomain: "linfamily-31cb6.firebaseapp.com",
       projectId: "linfamily-31cb6",
       storageBucket: "linfamily-31cb6.firebasestorage.app",
       messagingSenderId: "299667187224",
-      appId: "1:299667187224:web:8df32264698caad761c56d",
-      measurementId: "G-3SHGWYKKVZ"
+      appId: "1:299667187224:web:8df32264698caad761c56d"
     };
-    const collectionName = 'sg_discussions';
-    const firebaseSDK = 'https://www.gstatic.com/firebasejs/11.10.0/';
+    let auth = null, db = null;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth(); db = firebase.firestore();
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+    } catch (err) { console.warn('Firebase 無法啟動', err); }
 
-    let firebaseApp, firestore;
-    let recentList = [];
-    let currentDoc = null;
-    let activeTab = 'tab-info';
-    let allRevealed = false;
+    // Superuser 固定名單（沿用舊版）
+    const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
+    const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const $ = id => document.getElementById(id);
+    function toast(msg) {
+      document.querySelectorAll('.lf-toast').forEach(t => t.remove());
+      const t = document.createElement('div'); t.className = 'lf-toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+      document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
+    }
 
-    const fallbackDoc = {
-      date: '2026-11-10',
-      week_badge: 'WEEK 2',
-      date_range: '2026/11/10 — 11/15',
-      series_tag: '信心 ④',
-      title: '亞伯拉罕的信心（下）',
-      main_scripture_ref: '希伯來書 11:17–19',
-      main_scripture_key: 'heb11_17_19',
-      paragraphs: [
-        '今天要來分享亞伯拉罕的信心。我們先複習一下，什麼是亞伯拉罕的信心？第一個是[[pop:call_faith|對呼召的信心]]，去哪裡不是重要的，重要的是你的呼召。第二個是[[pop:promise_faith|對應許的信心]]，在毫無指望的時候，因信仍有指望，神蹟就發生了。第三個是[[pop:death_faith|超越死亡的信心]]，即使神的應許沒有在今生完全實現，但有一個信心是存著信心死，在將來的日子神必定會成就。今天要看的是，亞伯拉罕的信心是[[blank:勝過試驗]]的信心。',
-        '聖經很清楚地告訴我們，信心需要被[[pop:testing_vs_temptation|試驗]]，通過考試才能看見信心是真的還是假的。聖經最清楚的例證，就是亞伯拉罕獻上以撒（[[pop:gen22_1_2|創 22:1–2]]）。神向亞伯拉罕說，帶著你的兒子，你[[pop:only_son|獨生的兒子]]，你所愛的以撒。不過，試驗是按著[[blank:信心]]的程度，試驗的目的不是要摧毀，而是要使你對神更有信心。',
-        '在這當中有兩段經文很重要：第一段是[[pop:cor10_13|林前 10:13]]，夜最深的時候，往往就是神要給你[[blank:開一條出路]]的時候；第二段是[[pop:pet1_7|彼前 1:7]]，神要讓你的生命經過這些[[blank:試煉]]，使你比精金更寶貴。',
-        '亞伯拉罕清早起來就起身往神所指示他的地方去了（[[pop:gen22_3|創 22:3]]），願意用信心[[blank:接受]]神量給他生命的每一個處境。當他伸手拿刀的最後一刻，天使出現了（[[pop:gen22_11_12|創 22:11–12]]），這時候有個美麗的字叫做「[[blank:不料]]」，神預備代替獻祭的公羊就扣在樹上（[[pop:gen22_13_14|創 22:13–14]]）。',
-        '亞伯拉罕通過信心的畢業考，神重新肯定給他的祝福（[[pop:gen22_15_18|創 22:15–18]]）。當小組長[[blank:順服]]，萬國會因小組得福；神必照應許祝福他和他信心的後裔！'
-      ],
-      bubbles: {
-        heb11_17_19: { typeLabel: '主題經文｜和合本', title: '希伯來書 11:17–19', content: '「17 亞伯拉罕因著信，被試驗的時候，就把以撒獻上；這便是那歡喜領受應許的，將自己獨生的兒子獻上。18 論到這兒子，曾有話說：『從以撒生的才要稱為你的後裔。』19 他以為神還能叫人從死裡復活；他也彷彿從死中得回他的兒子來。」', source: '神學洞見：亞伯拉罕憑著對神全能與信實的認識，推論出神必叫以撒復活。' },
-        call_faith: { typeLabel: '神學概念｜對呼召的信心', title: '創世記 12:1–4 / 希伯來書 11:8', content: '「亞伯拉罕因著信，蒙召的時候就遵命出去，往將來要得為業的地方去；出去的時候，還不知往哪裡去。」', source: '回顧系列信息：《信心（一）》' },
-        promise_faith: { typeLabel: '神學概念｜對應許的信心', title: '羅馬書 4:18–21 / 希伯來書 11:11–12', content: '「他在無可指望的時候，因信仍有指望，就得以作多國的父……且滿心相信神所應許的必能做成。」', source: '回顧系列信息：《信心（二）》' },
-        death_faith: { typeLabel: '神學概念｜超越死亡的信心', title: '希伯來書 11:13–16', content: '「這些人都是存著信心死的，並沒有得著所應許的；卻從遠處望見，且歡喜迎接，又承認自己在世上是客旅，是寄居的。」', source: '回顧系列信息：《信心（三）》' },
-        testing_vs_temptation: { typeLabel: '聖經神學｜試驗（Testing）', title: '神為什麼要試驗人？', content: '神試驗亞伯拉罕是為了讓亞伯拉罕自己以及世世代代的信徒，透過實際行動「看見並確認」這份信心的真實與純度（申命記 8:2）。', source: '參考：丁道爾舊約聖經註釋《創世記》' },
-        gen22_1_2: { typeLabel: '相關經文｜和合本', title: '創世記 22:1–2', content: '「1 這些事以後，神要試驗亞伯拉罕……2 神說：『你帶著你的兒子，就是你獨生的兒子，你所愛的以撒，往摩利亞地去，在我所要指示你的山上，把他獻為燔祭。』」', source: '經文細節：原文連用三個遞進稱呼，層層觸動父親最深的情感。' },
-        only_son: { typeLabel: '救贖預表｜獨生的愛子', title: '以撒與基督的預表關係', content: '以撒背負燔祭的木柴走上摩利亞山（創 22:6），預表耶穌基督背負十字架走上各各他山坡（約 19:17）。', source: '參考：麥克阿瑟新約註釋《希伯來書》' },
-        cor10_13: { typeLabel: '相關經文｜和合本', title: '哥林多前書 10:13', content: '「你們所遇見的試探，無非是人所能受的。神是信實的，必不叫你們受試探過於所能受的；在受試探的時候，總要給你們開一條出路，叫你們能忍受得住。」', source: '神學應許：神為每一個試煉設定了上限，並同時預備了出路。' },
-        pet1_7: { typeLabel: '相關經文｜和合本', title: '彼得前書 1:7', content: '「叫你們的信心既被試驗，就比那被火試驗仍然能壞的金子更顯寶貴，可以在耶穌基督顯現的時候得著稱讚、榮耀、尊貴。」', source: '經文意象：經過苦難火煉的信心具有永恆的價值。' },
-        gen22_3: { typeLabel: '相關經文｜和合本', title: '創世記 22:3', content: '「亞伯拉罕清早起來，備上驢，帶著兩個僕人和他兒子以撒，也劈好了燔祭的柴，就起身往神所指示他的地方去了。」', source: '行動詮釋：「清早起來」顯示他沒有拖延，立刻以行動回應。' },
-        gen22_11_12: { typeLabel: '相關經文｜和合本', title: '創世記 22:11–12', content: '「天使說：『你不可在這童子身上下手。一點不可害他！現在我知道你是敬畏神的了；因為你沒有將你的兒子，就是你獨生的兒子，留下不給我。』」', source: '神學核心：「敬畏神」是把神放在一切所愛之上。' },
-        gen22_13_14: { typeLabel: '相關經文｜和合本', title: '創世記 22:13–14', content: '「亞伯拉罕舉目觀看，不料，有一只公羊，兩角扣在稠密的小樹中……亞伯拉罕給那地方起名叫『耶和華以勒』。」', source: '關鍵字詞：「代替」確立了舊約代贖祭祀的核心原則。' },
-        gen22_15_18: { typeLabel: '相關經文｜和合本', title: '創世記 22:15–18', content: '「論福，我必賜大福給你；論子孫，我必叫你的子孫多起來……並且地上萬國都必因你的後裔得福，因為你聽從了我的話。」', source: '聖約高峰：神唯一一次「指著自己起誓」堅立祝福。' }
-      },
-      background_blocks: [
-        { title: '一、《希伯來書》第十一章的寫作背景與目的', desc: '《希伯來書》寫作於主後 60 年代末期，收信人是一群面臨羅馬帝國逼迫的猶太裔基督徒。作者在第十一章列舉舊約「信心偉人榜」，證明真正的信心不是逃避苦難，而是在看不見結局時依然信靠神的應許與復活大能。', ref: '參考出處：布魯斯（F. F. Bruce），《丁道爾新約聖經註釋：希伯來書》' },
-        { title: '二、亞伯拉罕獻以撒（創世記 22 章）的神學張力', desc: '在應許之子以撒平安長大、生命進入最安穩的階段時，神卻命令他將獨生子獻為燔祭。這構成了舊約中最劇烈的神學張力：<strong>「神的命令」似乎與「神的應許」直接衝突</strong>。亞伯拉罕之所以能順服，是因為他深信神是使死人復活的神（來 11:19）。', ref: '參考出處：華爾頓（John H. Walton），《NIV 國際聖經背景註釋：創世記》' }
-      ],
-      word_studies: [
-        { title: '1. 「試驗」與「試探」的區別', lang: '希伯來文 נָסָה (nasah) / 希臘文 πειράζω (peirazō)', desc: '原文同一個字根具備雙重含義，取決於發出者的動機：<strong>撒但的「試探」</strong>目的是引誘人犯罪跌倒；<strong>神的「試驗」</strong>目的是檢驗信心的真偽、煉淨雜質，使人更加成熟剛強（雅 1:13–14）。' },
-        { title: '2. 「不料」與「耶和華以勒」', lang: '希伯來文 הִנֵּה (hinneh) / יְהוָה יִרְאֶה (YHWH Yireh)', desc: '創 22:13 的「不料」在希伯來敘事中用來表達<strong>戲劇性的神聖轉折</strong>——在人的盡頭，神早已預備好了替代的公羊。「耶和華以勒」原意為「在耶和華的山上必有預備」。' }
-      ],
-      questions: [
-        { question: '上帝是在亞伯拉罕人生的什麼時刻給予他這次試驗？上帝要求他獻上什麼？', btn_label: '查看本文答案與觀察重點', answer_box: '1. 試驗時刻：以撒生了、與外邦人爭論也解決，到了人生風平浪靜、最幸福的時刻之後。<br>2. 獻上對象：獨生的兒子、最愛的以撒。', guide: '上帝考試的題目往往是我們心中最在乎的，目的不是摧毀，而是使我們對神更有信心。' },
-        { question: '你現在的處境，什麼可能是你生命中最放不下、神卻要你獻上的以撒（工作、金錢、關係、未來的掌控）？我們可以如何為你禱告？', btn_label: '展開牧養與禱告帶領方向', answer_box: '', guide: '小組長可先以身作則真誠分享自己的「以撒」，營造安全、不批判的氛圍，分享後為彼此按手禱告。' }
-      ]
+    // ---------- 問候與日期 ----------
+    function clock() {
+      const now = new Date();
+      $('lfDate').textContent = now.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' }) + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+    }
+    clock(); setInterval(clock, 1000);
+
+    // ---------- 登入與權限 ----------
+    let user = null, role = '', roleUnsub = null, slots = null;
+    const finishAuthWait = auth && window.clcVerseWait?.();
+    const isSuper = () => role === 'superuser';
+    window.isSuperuser = false;
+    let entered = true; // 啟動時有權限就直接進首頁；休眠仍會設為 false
+    let waitT = null;
+    function goHome() { // 先顯示「沒有 App 圖示」的主畫面，等權限與個人桌面讀到再讓圖示出現
+      $('lfWelcome').hidden = true;
+      document.documentElement.classList.add('lf-apps-wait');
+      clearTimeout(waitT); waitT = setTimeout(appsReady, 3000); // 保險：最多等 3 秒
+    }
+    window.lfSleep = function () { // 全站設定的「休眠」時間到（clc-sso.js 呼叫）：回到 Welcome，點一下再進
+      entered = false; try { sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
+      document.querySelectorAll('dialog[open]').forEach(d => d.close());
+      $('lfWelcome').hidden = false;
     };
-
-    function escapeHtml(str) {
-      return String(str ?? '').replace(/[&<>"']/g, ch => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      })[ch]);
+    function appsReady() { clearTimeout(waitT); document.documentElement.classList.remove('lf-apps-wait'); }
+    // 從 DX、Hannah's Studio 等子 App 按 🏠 回來（同一個視窗）：已經進來過，就直接回主畫面，不再停在 Welcome
+    let authReady = false;
+    try { if (sessionStorage.getItem('linfamily_entered') === '1') { entered = true; } } catch (_) {}
+    function applyRole(r) {
+      finishAuthWait?.();
+      role = r || '';
+      if (window.lfBootMark && role && entered) { window.lfBootMark('已進入主頁'); document.getElementById('lfBootProbe').hidden = true; }
+      window.isSuperuser = role === 'superuser';
+      $('lfAuthIcon').textContent = role === 'superuser' ? '👑' : role ? '☰' : '🔐'; // 一般帳號用三條線選單
+      $('lfLogoutBtn').textContent = isSuper() ? '🚪 登出管理員' : '🚪 登出帳號';
+      $('lfAuthDot').hidden = true; // 不顯示已登入小黃點
+      $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
+      $('lfUsersItem').hidden = !isSuper();
+      // 啟動時已登入且有權限就進首頁；未登入或休眠時顯示 Welcome。
+      $('lfWelcome').hidden = !!(role && entered); document.documentElement.classList.remove('lf-pending');
+      if (window.lfGreetingRender) window.lfGreetingRender(false);
+      if (!role) { appsReady(); applyLook({}); } // 登入失敗或沒權限：回到 Welcome、主題回預設
+      try { if (role && entered) sessionStorage.setItem('linfamily_entered', '1'); else if (!role && authReady) sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
+      syncAddBtn();
+      if (role && role !== 'superuser' && window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // 只有 Superuser 的登入會帶到 DX、YA、SR
+      if (!role) setMenu(false);
+      watchDesk();
+      if (slots) { slots.render(); if (isSuper()) seedIfNeeded(); }
     }
-
-    function parseParagraphMarkup(raw) {
-      let escaped = escapeHtml(raw);
-      escaped = escaped.replace(/\[\[blank:([^\]]+)\]\]/g, (_, ans) =>
-        `<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">${ans}</span></span>`
-      );
-      escaped = escaped.replace(/\[\[pop:([^|\]]+)\|([^\]]+)\]\]/g, (_, key, label) =>
-        `<span class="pop-trigger" data-pop="${key}">${label}</span>`
-      );
-      return escaped;
-    }
-
-    function renderDocument(doc, rootNode = document) {
-      const q = sel => rootNode.querySelector(sel);
-      if (rootNode === document) {
-        document.getElementById('heroDateRange').textContent = doc.date_range || doc.date;
-      }
-      q('#heroWeekBadge').textContent = doc.week_badge || '小組教材';
-      q('#heroSeriesTag').textContent = doc.series_tag || '主日信息';
-      q('#heroTitle').textContent = doc.title || '小組牧養教材';
-
-      const mainTrigger = q('#heroScriptureTrigger');
-      mainTrigger.textContent = doc.main_scripture_ref || '';
-      mainTrigger.dataset.pop = doc.main_scripture_key || 'main_ref';
-
-      const articleBody = q('#articleBody');
-      articleBody.innerHTML = (doc.paragraphs || []).map(p => `<p>${parseParagraphMarkup(p)}</p>`).join('');
-
-      const bgContainer = q('#bgBlocksContainer');
-      bgContainer.innerHTML = (doc.background_blocks || []).map(b => `
-        <div class="clean-block">
-          <div class="block-title">${escapeHtml(b.title)}</div>
-          <p class="block-desc">${b.desc || ''}</p>
-          ${b.ref ? `<span class="ref-note">${escapeHtml(b.ref)}</span>` : ''}
-        </div>
-      `).join('');
-
-      const wordContainer = q('#wordStudiesContainer');
-      wordContainer.innerHTML = (doc.word_studies || []).map(w => `
-        <div class="clean-block">
-          <div class="block-title">
-            ${escapeHtml(w.title)}
-            ${w.lang ? `<span class="lang-badge">${escapeHtml(w.lang)}</span>` : ''}
-          </div>
-          <p class="block-desc">${w.desc || ''}</p>
-        </div>
-      `).join('');
-
-      const qContainer = q('#questionsContainer');
-      qContainer.innerHTML = (doc.questions || []).map((item, idx) => `
-        <div class="q-item">
-          <div class="q-top">
-            <div class="q-badge">${idx + 1}</div>
-            <div class="q-title">${escapeHtml(item.question)}</div>
-          </div>
-          <button class="guide-btn" onclick="toggleGuide(this)">${escapeHtml(item.btn_label || '查看本文答案與帶領重點')}</button>
-          <div class="guide-content">
-            ${item.answer_box ? `<div class="text-answer-box"><span class="ans-label">📖 信息本文答案</span>${item.answer_box}</div>` : ''}
-            <strong>帶領與牧養延伸：</strong>${item.guide || ''}
-          </div>
-        </div>
-      `).join('');
-
-      if (rootNode === document) {
-        document.title = `江子翠行道會｜小組教材：${doc.title}`;
-        allRevealed = false;
-        bindInteractiveElements();
-        updateBlankState();
-        SGReader.refresh(activeTab);
-      }
-    }
-
-    function bindInteractiveElements() {
-      document.querySelectorAll('.blank-slot').forEach(slot => {
-        const toggleSlot = () => {
-          slot.classList.toggle('revealed');
-          updateBlankState();
-        };
-        slot.addEventListener('click', toggleSlot);
-        slot.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggleSlot();
-          }
-        });
-      });
-
-      const bubbles = currentDoc?.bubbles || {};
-      document.querySelectorAll('.pop-trigger').forEach(trigger => {
-        trigger.addEventListener('click', () => {
-          const data = bubbles[trigger.dataset.pop];
-          if (!data) return;
-          document.getElementById('bubbleType').textContent = data.typeLabel || '經文出處';
-          document.getElementById('bubbleTitle').textContent = data.title || '';
-          document.getElementById('bubbleContent').textContent = data.content || '';
-          document.getElementById('bubbleSource').textContent = data.source || '';
-          document.getElementById('bubbleModal').classList.add('active');
-        });
-      });
-    }
-
-    function updateBlankState() {
-      const slots = document.querySelectorAll('.blank-slot');
-      const revealedCount = document.querySelectorAll('.blank-slot.revealed').length;
-      const progressPill = document.getElementById('blankProgress');
-      const toggleBtn = document.getElementById('toggleAllBtn');
-      progressPill.textContent = `已解鎖 ${revealedCount} / ${slots.length}`;
-      if (slots.length > 0 && revealedCount === slots.length) {
-        allRevealed = true;
-        toggleBtn.textContent = '隱藏全部';
-      } else if (revealedCount === 0) {
-        allRevealed = false;
-        toggleBtn.textContent = '顯示全部';
-      }
-    }
-
-    document.getElementById('toggleAllBtn').addEventListener('click', () => {
-      allRevealed = !allRevealed;
-      document.querySelectorAll('.blank-slot').forEach(slot => slot.classList.toggle('revealed', allRevealed));
-      updateBlankState();
-    });
-
-    const segBtns = document.querySelectorAll('.seg-btn');
-    const tabPanels = document.querySelectorAll('.tab-panel');
-
-    function switchToTab(targetId) {
-      activeTab = targetId;
-      SGReader.clear();
-      segBtns.forEach(b => {
-        b.classList.toggle('active', b.dataset.tab === targetId);
-      });
-      tabPanels.forEach(p => {
-        p.classList.toggle('active', p.id === targetId);
-      });
-      SGReader.refresh(targetId);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    segBtns.forEach(btn => {
-      btn.addEventListener('click', () => switchToTab(btn.dataset.tab));
-    });
-
-    function toggleGuide(btn) {
-      const box = btn.nextElementSibling;
-      const isOpen = box.classList.toggle('open');
-      if (!btn.dataset.defaultText) {
-        btn.dataset.defaultText = btn.textContent;
-      }
-      btn.textContent = isOpen ? '收合答案與重點' : btn.dataset.defaultText;
-    }
-
-    function getFirebaseApp() {
-      return firebaseApp ||= import(firebaseSDK + 'firebase-app.js')
-        .then(sdk => sdk.getApps().some(app => app.name === '[DEFAULT]') ? sdk.getApp() : sdk.initializeApp(firebaseConfig))
-        .catch(err => { firebaseApp = null; throw err; });
-    }
-
-    function getDatabase() {
-      return firestore ||= Promise.all([getFirebaseApp(), import(firebaseSDK + 'firebase-firestore.js')])
-        .then(([app, sdk]) => ({ ...sdk, instance: sdk.getFirestore(app) }))
-        .catch(err => { firestore = null; throw err; });
-    }
-
-    async function watchLinFamilyAuth() {
-      const welcomeBadge = document.getElementById('sgWelcome');
-      const authUnavailable = () => {
-        welcomeBadge.hidden = true;
-        SGReader.setAccount(undefined, true);
-      };
-      try {
-        const [app, sdk] = await Promise.all([getFirebaseApp(), import(firebaseSDK + 'firebase-auth.js')]);
-        sdk.onAuthStateChanged(sdk.getAuth(app), user => {
-          const signedIn = user && !user.isAnonymous;
-          welcomeBadge.hidden = !signedIn;
-          if (signedIn) {
-            const name = user.displayName?.trim() || '同工';
-            welcomeBadge.textContent = `歡迎，${name}`;
-            SGReader.setAccount({
-              subscribe: async (entry, next, error) => {
-                const db = await getDatabase();
-                const annotations = db.collection(db.instance, 'sg_readers', user.uid, 'annotations');
-                return db.onSnapshot(db.query(annotations, db.where('entry', '==', entry)), next, error);
-              },
-              save: async (entry, item) => {
-                const db = await getDatabase();
-                const { id, ...payload } = item;
-                await db.setDoc(db.doc(db.instance, 'sg_readers', user.uid, 'annotations', id),
-                  { entry, payload: JSON.stringify(payload) });
-              },
-              remove: async (id) => {
-                const db = await getDatabase();
-                await db.deleteDoc(db.doc(db.instance, 'sg_readers', user.uid, 'annotations', id));
-              }
-            });
-          } else {
-            SGReader.setAccount(null);
-          }
-        }, authUnavailable);
-      } catch {
-        authUnavailable();
-      }
-    }
-
-    function updateDateNav() {
-      const idx = recentList.findIndex(d => d.date === currentDoc?.date);
-      document.getElementById('sg-prev').disabled = idx < 0 || idx >= recentList.length - 1;
-      document.getElementById('sg-next').disabled = idx <= 0;
-
-      const listEl = document.getElementById('sg-date-list');
-      listEl.replaceChildren(...recentList.map(item => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = `${item.date_range || item.date}｜${item.title}`;
-        if (item.date === currentDoc?.date) btn.setAttribute('aria-current', 'date');
-        btn.addEventListener('click', () => {
-          document.getElementById('sg-date-picker').open = false;
-          selectWeek(item.date);
-        });
-        return btn;
-      }));
-    }
-
-    function adjacentWeek(direction) {
-      const idx = recentList.findIndex(d => d.date === currentDoc?.date);
-      if (idx < 0) return null;
-      return recentList[idx - direction] || null;
-    }
-
-    function previewWeek(data) {
-      const clone = document.getElementById('sg-reading-sheet').cloneNode(true);
-      renderDocument(data, clone);
-      return clone;
-    }
-
-    function selectWeek(dateStr, animate = true) {
-      const target = recentList.find(d => d.date === dateStr);
-      if (!target) return;
-      if (animate && currentDoc && currentDoc.date !== dateStr) {
-        document.getElementById('sg-date-picker').open = false;
-        SGReader.turn(target, dateStr > currentDoc.date, () => selectWeek(dateStr, false));
-        return;
-      }
-      SGReader.clear();
-      currentDoc = target;
-      renderDocument(target);
-      updateDateNav();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function shiftWeek(direction) {
-      const target = adjacentWeek(direction);
-      if (target) selectWeek(target.date, true);
-    }
-
-    async function loadDiscussions() {
-      const statusEl = document.getElementById('sgStatus');
-      try {
-        const { collection, query, orderBy, getDocs, instance } = await getDatabase();
-        const snap = await getDocs(query(collection(instance, collectionName), orderBy('date', 'desc')));
-        recentList = snap.docs.map(d => ({ ...d.data(), date: d.id }));
-        if (recentList.length > 0) {
-          statusEl.hidden = true;
-          selectWeek(recentList[0].date, false);
-        } else {
-          recentList = [fallbackDoc];
-          selectWeek(fallbackDoc.date, false);
+    if (!auth) document.documentElement.classList.remove('lf-pending');
+    if (auth) auth.onAuthStateChanged(u => {
+      authReady = true;
+      if (window.lfBootMark) window.lfBootMark(u ? '已讀取帳號，確認權限中' : '可點選登入');
+      if (roleUnsub) { roleUnsub(); roleUnsub = null; }
+      user = u && u.email && u.emailVerified ? u : null;
+      if (!user) return applyRole('');
+      const email = user.email.toLowerCase();
+      if (SUPERUSERS.includes(email)) return applyRole('superuser');
+      roleUnsub = db.collection('admin_users').doc(email).onSnapshot(snap => {
+        const d = snap.exists ? snap.data() : null;
+        // 強制登出（全站設定 → 權限管理）：記號時間比這台裝置登入的時間新 → 立刻登出
+        let loginAt = 0; try { loginAt = Number(localStorage.getItem('linfamily_login_at') || 0); if (!loginAt) { loginAt = Date.now(); localStorage.setItem('linfamily_login_at', String(loginAt)); } } catch (_) {}
+        if (d && d.forceLogoutAt && d.forceLogoutAt.toMillis && d.forceLogoutAt.toMillis() > loginAt) {
+          toast('管理員已將這個帳號登出'); (window.CLCSSO && window.CLCSSO.logoutAll ? window.CLCSSO.logoutAll() : Promise.resolve()).finally(() => auth.signOut()); return;
         }
-      } catch (e) {
-        console.warn('讀取 Firestore 失敗，改用內建教材：', e);
-        recentList = [fallbackDoc];
-        selectWeek(fallbackDoc.date, false);
+        applyRole(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role) ? d.role : '');
+      }, () => { applyRole(''); toast('無法確認帳號權限，請檢查網路後再試。'); });
+    }, err => {
+      authReady = true;
+      applyRole('');
+      toast('無法讀取登入狀態，請點選畫面重試。');
+      console.warn('Firebase 登入狀態讀取失敗', err);
+    });
+    // 掛在 DX04 底下（/lf/）時，LinFamily 是主站：登入後保存 Google 憑證，DX04、YA、SR 打開時自動登入（clc-sso.js）。
+    // 需要：DX04、YA、SR 各自的 Firebase「外部專案用戶端 ID 白名單」加上 LinFamily 的 Web client ID。
+    let loginBusy = false;
+    async function login() {
+      if (!auth) return toast('登入服務尚未載入，請重新整理。');
+      if (loginBusy) return toast('正在開啟 Google 登入，請稍候。');
+      loginBusy = true;
+      const loginTimer = setTimeout(() => toast('登入回應較慢，請檢查網路；若未出現登入視窗，請重新整理。'), 12000);
+      try {
+        if (window.lfBootMark) window.lfBootMark('開啟 Google 登入中');
+        const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        clearTimeout(loginTimer);
+        try { localStorage.setItem('linfamily_login_at', String(Date.now() + 1000)); } catch (_) {} // 登入時間（強制登出用；+1 秒避免和伺服器時間誤差）
+        const tok = res.credential && res.credential.idToken;
+        const share = () => { if (!window.CLCSSO || !tok) return; if (window.CLCSSO.shareLogin) window.CLCSSO.shareLogin(tok); else window.CLCSSO.saveGoogleIdToken(tok); }; // 同時把 DX、YA、SR 登入成同一個帳號
+        const email = res.user.email.toLowerCase();
+        if (SUPERUSERS.includes(email)) { share(); return toast('歡迎回來，' + (res.user.displayName || email)); }
+        const snap = await db.collection('admin_users').doc(email).get();
+        const d = snap.exists ? snap.data() : null;
+        if (window.CLCSSO && window.CLCSSO.blockShare) window.CLCSSO.blockShare(); // 跨站登入只給 Superuser：Admin、Viewer、User 都不帶到 DX、YA、SR
+        if (!(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role))) {
+          await auth.signOut(); toast('帳號【' + email + '】沒有權限。');
+        } else toast('歡迎，' + (res.user.displayName || email));
+      } catch (err) {
+        if (window.lfBootMark) window.lfBootMark('登入未完成 ' + (/^auth\/[a-z-]+$/.test(err && err.code) ? err.code : ''));
+        if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err && err.code)) toast('登入未完成，請確認瀏覽器允許彈出視窗。');
+      } finally {
+        clearTimeout(loginTimer);
+        loginBusy = false;
       }
     }
 
-    document.getElementById('sg-prev').addEventListener('click', () => shiftWeek(-1));
-    document.getElementById('sg-next').addEventListener('click', () => shiftWeek(1));
-    document.getElementById('brandHome').addEventListener('click', () => {
-      if (recentList.length > 0) selectWeek(recentList[0].date, false);
+    // ---------- 皇冠選單 ----------
+    const menu = $('lfMenu'), authBtn = $('lfAuthBtn');
+    function setMenu(open) { menu.hidden = !open; authBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    const enter = () => {
+      if (window.lfEntranceGuard && window.lfEntranceGuard()) return; // 內建瀏覽器先處理（js/entrance.js）
+      if (window.lfBootMark) window.lfBootMark('收到登入點擊');
+      entered = true;
+      if (role) return applyRole(role);        // 已登入：點一下直接進主畫面
+      if (auth && auth.currentUser) return toast('正在確認帳號權限，請稍候。');
+      // 直接在使用者點擊時開啟登入；不可因為狀態回呼延遲而吞掉點擊。
+      login();                                 // 確定沒登入：跳 Google 登入，成功後直接進主畫面
+    };
+    window.lfEnter = enter;
+    if (window.lfEntranceReady) window.lfEntranceReady();
+    $('lfWelcome').addEventListener('click', enter);
+    $('lfWelcome').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } });
+    authBtn.addEventListener('click', () => { if (!role) login(); else setMenu(menu.hidden); });
+    document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && !authBtn.contains(e.target)) setMenu(false); });
+    menu.addEventListener('click', async e => {
+      const b = e.target.closest('button[data-act]'); if (!b) return;
+      const act = b.dataset.act;
+      if (act !== 'theme') setMenu(false);
+      if (act === 'logout') { if (confirm(isSuper() ? '確定要登出管理員身分嗎？' : '確定要登出帳號嗎？')) { await auth.signOut(); toast('已登出'); } }
+      else if (act === 'theme') toggleTheme();
+      else if (act === 'users') location.href = 'admin-users.html';
     });
+    function toggleTheme() {
+      const dark = !document.documentElement.classList.contains('dark');
+      document.documentElement.classList.toggle('dark', dark);
+      $('metaThemeColor').setAttribute('content', dark ? '#161716' : '#E6E7E9');
+      try { localStorage.setItem('linfamily_theme', dark ? 'dark' : 'light'); } catch (_) {}
+    }
 
-    const installAppBtn = document.getElementById('installAppBtn');
-    const iosInstallModal = document.getElementById('iosInstallModal');
-    const closeIosModalBtn = document.getElementById('closeIosModalBtn');
-    let deferredPrompt = null;
+    // ---------- 安裝（PWA） ----------
+    let deferredPrompt = window.__lfBIP || null;
+    const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    // 安裝鈕：只要不是從已安裝的 App 開啟就顯示。層級規則（從上層站進來時不顯示）由 clc-sso.js 處理。
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; if (!standalone()) $('lfInstallBtn').hidden = false; });
+    window.addEventListener('appinstalled', () => { deferredPrompt = null; $('lfInstallBtn').hidden = true; toast('已安裝'); });
+    try { localStorage.removeItem('linfamily_installed'); } catch (_) {}
+    $('lfInstallBtn').hidden = standalone(); // 不是從已安裝的 App 開啟就顯示（Chrome 還沒準備好時，按了會顯示安裝說明）
+    $('lfInstallBtn').addEventListener('click', install);
+    async function install() {
+      deferredPrompt = deferredPrompt || window.__lfBIP || null;
+      if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; window.__lfBIP = null; return; }
+      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      $('lfInstallText').innerHTML = ios
+        ? '請用 Safari 或 Chrome 開啟這一頁，按瀏覽器的「分享」<b>⬆︎</b>，再選「<b>加入主畫面</b>」。'
+        : '這個瀏覽器沒有讓網頁直接跳出安裝（例如 Brave）。請按<b>網址列右邊的安裝圖示</b>（螢幕或圓圈加向下箭頭），或從瀏覽器選單（右上角 ⋮ 或 ≡）選「<b>安裝 LinFamily</b>／安裝應用程式」。如果網址列顯示的是「在應用程式中開啟」，代表已經裝過，從桌面或應用程式清單開啟即可。';
+      $('lfInstallDialog').showModal();
+    }
+    $('lfInstallClose').addEventListener('click', () => $('lfInstallDialog').close());
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    // ---------- App 清單 ----------
+    const CACHE_KEY = 'linfamily_apps_v2';
+    const HANNAH = { id: 'hannah', name: "Hannah's Studio", url: 'HannahProjects/', icon: 'HannahProjects/apple-touch-icon.png', pos: 0 };
+    const DX04 = { id: 'dx04', name: 'CLC DX04', url: 'https://clc-dx04.pages.dev/', icon: 'https://clc-dx04.pages.dev/apple-touch-icon.png' };
+    const PRESET_EMOJI = { photos:'📷', calendar:'📅', home:'🏠', cloud:'☁️', notes:'📝', finance:'💰', security:'📹', map:'📍', media:'🎬', link:'🔗' };
+    let apps = [HANNAH, Object.assign({}, DX04, { pos: 1 })], needsSeed = false, seeding = false, seededList = ['hannah', 'dx04'];
+    try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (Array.isArray(c) && c.length) apps = c; } catch (_) {}
+    // 個人桌面：linfamily_desktops/{email}（每人自己排列、新增、移除）。沒有個人桌面時顯示預設桌面（Superuser 編的全部 App）。
+    // Superuser 永遠看、編預設桌面＝全部 App。之後要做「哪些 App 給哪些人」時，在預設桌面的 App 上加權限欄位即可。
+    const DESK_COL = 'linfamily_desktops';
+    let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '', finishDeskWait;
+    const deskKey = () => 'linfamily_desk_' + deskEmail;
+    function showApps() {
+      apps = (myDesk || globalApps).filter(a => isSuper() || !isOwnSite(a)); // DX、YA、SR 只有 Superuser 看得到
+      if (slots) { slots.render(); renderZone(); renderNews(); if (!$('panelAll').hidden) renderAll(); }
+    }
+    function watchDesk() {
+      const email = role && user ? user.email.toLowerCase() : ''; // Superuser 也有自己的主畫面
+      if (email === deskEmail) return showApps();
+      finishDeskWait?.();
+      if (deskUnsub) { deskUnsub(); deskUnsub = null; }
+      deskEmail = email; myDesk = null;
+      if (email) try { const c = JSON.parse(localStorage.getItem('linfamily_look_' + email) || 'null'); if (c) applyLook(c); } catch (_) {} // 先用上次的主題，不閃預設色
+      if (email) {
+        try { const c = JSON.parse(localStorage.getItem(deskKey()) || 'null'); if (Array.isArray(c)) myDesk = c; } catch (_) {}
+        if (db) {
+          const finish = finishDeskWait = window.clcVerseWait?.();
+          deskUnsub = db.collection(DESK_COL).doc(email).onSnapshot(snap => {
+            finish?.();
+            const d = snap.exists ? snap.data() : null;
+            myDesk = d && Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : null;
+            mySeen = d && Array.isArray(d.seen) ? d.seen : [];
+            applyLook(d || {}, true);
+            try { if (myDesk) localStorage.setItem(deskKey(), JSON.stringify(myDesk)); else localStorage.removeItem(deskKey()); } catch (_) {}
+            showApps(); appsReady();
+          }, err => { finish?.(); console.warn('個人桌面讀取失敗', err); appsReady(); });
+        }
+      }
+      showApps();
+    }
+
+    function normalizeHannahUrl(value) {
+      if (!/HannahProjects\/home(?:\.html)?(?:[?#]|$)/.test(value)) return value;
+      try {
+        const url = new URL(value, location.href);
+        const home = new URL(HANNAH.url, location.href);
+        if (url.origin === home.origin &&
+            (url.pathname === home.pathname + 'home' || url.pathname === home.pathname + 'home.html')) {
+          return HANNAH.url + url.search + url.hash;
+        }
+      } catch (_) {}
+      return value;
+    }
+    function safeUrl(value) {
+      const v = normalizeHannahUrl(String(value || '').trim());
+      if (!v || v.startsWith('//')) return '';
+      if (/^[a-z][a-z0-9+.-]*:/i.test(v)) { try { const u = new URL(v); return /^https?:$/.test(u.protocol) ? u.href : ''; } catch (_) { return ''; } }
+      // 看起來像網域（example.com、www.xxx）就補 https://；其他當作站內路徑（例如 HannahProjects/）
+      if (/^www\./i.test(v) || (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/.*)?$/i.test(v) && !/\.html?($|[?#/])/i.test(v) && !/\/$/.test(v))) return safeUrl('https://' + v);
+      return v;
+    }
+    const isExternal = url => { try { return new URL(url, location.href).origin !== location.origin; } catch (_) { return false; } };
+    const isDataIcon = v => !!(window.clcIsDataIcon && window.clcIsDataIcon(v)); // 上傳後存成的 data:image（js/clc-icon-upload.js）
+    const isImageUrl = v => isDataIcon(v) || /^(https?:\/\/|\/|\.\/)/i.test(String(v || '')) || /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(String(v || ''));
+    const safeIcon = v => isDataIcon(v) ? String(v) : safeUrl(v);
+    const MONO_COLORS = ['#4E8B7E', '#B5835A', '#5F77A8', '#A8607A', '#4F8FA0', '#7E6FAE', '#6E8B4E'];
+    const isGoogleIcon = v => /google\.[a-z.]+\/s2\/favicons/i.test(String(v || ''));
+    function monogram(span, app) {
+      const n = String(app.name || '').trim() || (() => { try { return new URL(safeUrl(app.url), location.href).hostname.replace(/^www\./, ''); } catch (_) { return '?'; } })();
+      const cjk = /[\u3400-\u9fff]/.test(n[0] || '');
+      let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      span.className = 'lf-icon is-mono'; span.style.background = MONO_COLORS[h % MONO_COLORS.length];
+      span.textContent = cjk ? n[0] : (n.replace(/[^A-Za-z0-9]/g, '').slice(0, 2) || n[0] || '?').replace(/^./, c => c.toUpperCase());
+    }
+    function iconEl(app) {
+      const span = document.createElement('span');
+      span.className = 'lf-icon';
+      let icon = String(app.icon || app.iconUrl || '').trim();
+      if (isGoogleIcon(icon)) icon = '';
+      if (icon && isImageUrl(icon) && safeIcon(icon)) {
+        const src = safeIcon(icon), i = document.createElement('img');
+        i.alt = ''; i.loading = 'lazy'; i.src = src; span.classList.add('is-img'); span.append(i);
+        i.addEventListener('error', () => monogram(span, app), { once: true });
+        i.addEventListener('load', () => { if (i.naturalWidth && i.naturalWidth < 96 && !/\.svg(\?|$)/i.test(src)) monogram(span, app); }, { once: true });
+      }
+      else if (icon) { span.classList.add('is-emoji'); span.textContent = icon; }
+      else if (PRESET_EMOJI[app.preset]) { span.classList.add('is-emoji'); span.textContent = PRESET_EMOJI[app.preset]; }
+      else monogram(span, app);
+      return span;
+    }
+    // LF 子 App 由 open.html 提供 Home overlay；DX、YA、SR 沿用跨站返回。
+    const OWN_HOSTS = ['clc-dx04.pages.dev', 'clc-ya-portal.pages.dev', 'clc-sr-portal.pages.dev'];
+    const NO_FRAME = /(^|\.)(google\.[a-z.]+|youtube\.com|youtu\.be|gmail\.com|facebook\.com|instagram\.com|messenger\.com|threads\.net|line\.me|apple\.com|icloud\.com|github\.com|x\.com|twitter\.com|microsoft\.com|live\.com|office\.com|notion\.so|amazon\.[a-z.]+|linkedin\.com|paypal\.com)$/i;
+    function isOwnSite(app) {
+      const url = safeUrl(app.url);
+      if (!/^https?:/i.test(url)) return false;
+      const u = new URL(url);
+      if ((u.hostname === 'clc-dx04.pages.dev' || u.origin === location.origin) && /^\/lf(\/|$)/.test(u.pathname)) return false;
+      return OWN_HOSTS.includes(u.hostname) || u.origin === location.origin;
+    }
+    apps = apps.filter(a => !isOwnSite(a)); // 權限確認前先不放 DX、YA、SR（確認是 Superuser 才出現），避免打開時先閃出來
+    function tileHref(app) {
+      const url = safeUrl(app.url); if (!url) return '#';
+      let destination;
+      try { destination = new URL(url, location.href); } catch (_) { return '#'; }
+      const host = destination.hostname;
+      const lf = new URL('./', location.href);
+      const appPath = host === 'clc-dx04.pages.dev' && destination.pathname.startsWith('/lf/')
+        ? destination.pathname.slice(4)
+        : destination.origin === lf.origin && destination.pathname.startsWith(lf.pathname)
+          ? destination.pathname.slice(lf.pathname.length)
+          : '';
+      if (appPath && appPath !== 'index.html' && appPath !== 'open.html') {
+        const appUrl = new URL(lf);
+        appUrl.pathname += appPath;
+        appUrl.search = destination.search;
+        appUrl.hash = destination.hash;
+        return 'open.html?' + new URLSearchParams({u:appUrl.href, n:app.name || '', layout:'app'});
+      }
+      if (/^https?:/i.test(url) && OWN_HOSTS.includes(host)) { // 自家網站直接開，網站左下角會出現淡淡的圓形 🏠 鈕（DX04 的 lf-back.js）
+        const u = destination, sub = host.match(/^clc-(ya|sr)-portal\.pages\.dev$/);
+        const own = sub ? new URL('https://clc-dx04.pages.dev/' + sub[1] + u.pathname + u.search + u.hash) : u; // YA、SR 走 DX04 底下的 /ya、/sr
+        own.searchParams.set('lfhome', location.href.split('#')[0]);
+        return own.origin === location.origin ? own.pathname + own.search + own.hash : own.href; // 同網域（LinFamily 在 DX04 的 /lf/ 底下）不會出現瀏覽器那一列
+      }
+      if (!isExternal(url)) return url;
+      if (app.embeddable === false || (app.embeddable !== true && NO_FRAME.test(host))) return url;
+      return 'open.html?u=' + encodeURIComponent(url) + '&n=' + encodeURIComponent(app.name || '');
+    }
+    function renderTile(app, editing) {
+      const a = document.createElement('a');
+      a.className = 'lf-app';
+      a.href = tileHref(app); // 同一個視窗換頁（不開新分頁、不用左右滑）
+      a.setAttribute('aria-label', editing ? '編輯 ' + app.name : app.name);
+      const name = document.createElement('span'); name.className = 'lf-name'; name.textContent = app.name;
+      a.append(iconEl(app), name);
+      if (role === 'user' && !editing && isOwnSite(app)) { // User 不能開 DX、YA、SR
+        a.href = '#'; a.style.opacity = '.4'; a.title = '此帳號不能開啟 ' + app.name;
+        a.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + app.name + '。'); });
+      }
+      return a;
+    }
+    let addPos = null;
+    let curTab = 'apps', cabinetOnly = false; // cabinetOnly：Superuser 在 Apps 分頁按 ＋，只加到 App 櫃（不放自己的主畫面）
+    // ＋ 只在用得到的地方出現：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）；Family 等其他分頁收起來
+    function syncAddBtn() { $('lfAddBtn').hidden = !role || !(curTab === 'apps' || (curTab === 'all' && isSuper())); }
+    // 整個 App 區都可以放 App（含最底部）：格數＝畫面放得下的行數 × 每行個數；放滿才多一行（只有 App 區捲動）
+    function fitSlots() {
+      const p = $('panelApps'), gr = $('lfApps'), cs = getComputedStyle(gr);
+      const cols = cs.gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+      const c = gr.querySelector('.slot-cell') || gr.querySelector('.slot-empty');
+      const h = c ? c.offsetHeight : 96, gap = parseFloat(cs.rowGap) || 22;
+      const avail = p.clientHeight - 24 - ($('lfApps').nextElementSibling && !$('lfApps').nextElementSibling.hidden ? 50 : 0);
+      return Math.max(1, Math.floor((avail + gap) / (h + gap))) * cols;
+    }
+    let fitT = null;
+    window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(() => slots.render(), 150); });
+    slots = window.clcSlotGrid($('lfApps'), {
+      minSlots: fitSlots, cellClass: 'lf-cell', emptyClass: 'lf-slot', removeClass: 'lf-remove',
+      canEdit: () => !!role, // 登入者都能編自己的桌面
+      getItems: () => apps,
+      renderTile,
+      save: persist,
+      error: err => toast('排列儲存失敗：' + errText(err)),
+      onAdd: pos => { addPos = pos; openApp(null); },
+      onEdit: id => openApp(id),
+      onRemove: id => removeApp(id)
+    });
+    const withPos = () => window.clcSlotGridNormalize(apps);
+    function errText(err) { return err && err.code === 'permission-denied' ? '權限不足（請確認已登入，以及 Firestore 規則）。' : '請稍後再試。'; }
+    // 主畫面＝個人桌面（每人一份，含 Superuser）；App 櫃＝linfamily_settings/apps（全部 App，只有 Superuser 改）
+    async function persist(next, seenAdd) {
+      if (!db) throw new Error('資料庫尚未載入');
+      if (role) { // 個人桌面（seen：已通知過的 App，第一次建立時＝當時全部 App）
+        const seen = Array.from(new Set((myDesk ? mySeen : globalApps.map(a => a.id)).concat(seenAdd || [])));
+        await db.collection(DESK_COL).doc(user.email.toLowerCase()).set({ items: next, seen, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); // merge：不蓋掉背景主題
+        myDesk = next; mySeen = seen; try { localStorage.setItem(deskKey(), JSON.stringify(next)); } catch (_) {}
+        return showApps();
+      }
+      throw new Error('尚未登入');
+    }
+    async function saveGlobal(next) {
+      await db.collection('linfamily_settings').doc('apps').set({
+        items: next, seeded: seededList, hannahSeeded: true,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: user ? user.email : ''
       });
+      globalApps = next; needsSeed = false;
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(next)); } catch (_) {}
+      showApps();
     }
+    async function removeApp(id) {
+      const app = apps.find(a => a.id === id);
+      if (!app || !confirm('從主畫面移除「' + app.name + '」？')) return;
+      try { await persist(withPos().filter(a => a.id !== id)); } catch (err) { toast('移除失敗：' + errText(err)); }
+    }
+    // 預設 App 只自動加一次（記在雲端 seeded 清單；之後刪掉也不會再跑回來）：
+    // Hannah's Studio 放第一格（其餘往後），CLC DX04 放到第一個空格。由 Superuser 登入時寫回雲端。
+    function fromCloud(d) {
+      let items = Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : [];
+      const seeded = new Set(Array.isArray(d.seeded) ? d.seeded : []);
+      if (d.hannahSeeded) seeded.add('hannah');
+      let changed = false;
+      if (!seeded.has('hannah')) {
+        seeded.add('hannah');
+        if (!items.some(a => a.id === HANNAH.id)) {
+          items = [HANNAH].concat(window.clcSlotGridNormalize(items).sort((a, b) => a.pos - b.pos).map((a, i) => Object.assign({}, a, { pos: i + 1 })));
+          changed = true;
+        }
+      }
+      if (!seeded.has('dx04')) {
+        seeded.add('dx04');
+        if (!items.some(a => a.id === DX04.id || /clc-dx04\.pages\.dev\/?$/.test(String(a.url || '')))) {
+          items = window.clcSlotGridNormalize(items);
+          let pos = 0; while (items.some(a => a.pos === pos)) pos++;
+          items = items.concat(Object.assign({}, DX04, { pos }));
+          changed = true;
+        }
+      }
+      return { items, seed: changed || !Array.isArray(d.seeded) || d.seeded.length !== seeded.size, seeded: Array.from(seeded) };
+    }
+    function seedIfNeeded() {
+      if (!needsSeed || seeding || !isSuper()) return;
+      seeding = true; saveGlobal(globalApps).catch(err => console.warn('Hannah 預設寫入失敗', err)).finally(() => { seeding = false; });
+    }
+    const finishAppsWait = db && window.clcVerseWait?.();
+    if (db) db.collection('linfamily_settings').doc('apps').onSnapshot(snap => {
+      finishAppsWait?.();
+      const r = fromCloud(snap.exists ? snap.data() : {});
+      globalApps = r.items; needsSeed = r.seed; seededList = r.seeded;
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(globalApps)); } catch (_) {}
+      showApps(); seedIfNeeded();
+    }, err => { finishAppsWait?.(); console.warn('App 清單讀取失敗（沿用快取）', err); });
 
-    function isRunningStandalone() {
-      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    // ---------- 新增／修改對話框 ----------
+    const dlg = $('lfAppDialog'); let editingId = null, uploadedIcon = '';
+    const placeholderIcon = $('lfAppIcon').placeholder;
+    function setUploaded(icon) {
+      uploadedIcon = icon || '';
+      $('lfAppIcon').placeholder = uploadedIcon ? '已使用上傳的圖片（填網址可取代）' : placeholderIcon;
+      if (uploader) uploader.setUploaded(!!uploadedIcon);
     }
-    function isIosDevice() {
-      return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    function showErr(msg) { $('lfAppErr').textContent = msg; $('lfAppErr').hidden = !msg; }
+    function openApp(id) {
+      if (!role) return;
+      const app = id ? apps.find(a => a.id === id) : null;
+      editingId = app ? app.id : null; if (app) { addPos = null; cabinetOnly = false; }
+      $('lfAppTitle').textContent = app ? '修改 App' : '新增 App';
+      $('lfAppUrl').value = app ? normalizeHannahUrl(app.url || '') : '';
+      $('lfAppName').value = app ? app.name : '';
+      const curIcon = app && !isGoogleIcon(app.icon || app.iconUrl) ? (app.icon || app.iconUrl || '') : '';
+      $('lfAppIcon').value = isDataIcon(curIcon) ? '' : curIcon;
+      setUploaded(isDataIcon(curIcon) ? curIcon : '');
+      auto = { name: '', icon: '', embeddable: app ? app.embeddable : undefined, url: app ? safeUrl(app.url) : '' };
+      showErr(''); status(''); $('lfAppSave').disabled = false; preview();
+      dlg.showModal(); (app ? $('lfAppName') : $('lfAppUrl')).focus();
     }
-    if (!isRunningStandalone() && isIosDevice()) {
-      installAppBtn.classList.add('visible');
+    // 貼上網址 → 由 DX04 的 /api/site-info 抓名稱、圖示（和手機「加入主畫面」相同來源）、能否放進框內。
+    // 名稱、圖示只在空白或仍是上次自動抓的值時才覆蓋；抓不到圖就用自動生成的字母圖示。
+    const SITE_INFO = 'https://clc-dx04.pages.dev/api/site-info?url=';
+    let auto = {}, fetchSeq = 0, fetchTimer = 0;
+    function status(msg) { $('lfAppStatus').textContent = msg; $('lfAppStatus').hidden = !msg; }
+    function preview() { $('lfAppPreview').replaceChildren(iconEl({ name: $('lfAppName').value, icon: uploadedIcon || $('lfAppIcon').value, url: $('lfAppUrl').value })); }
+    // 圖示可上傳、拖放或貼上截圖
+    const uploader = window.clcIconUploader ? window.clcIconUploader({
+      dialog: dlg, row: dlg.querySelector('.lf-iconrow'),
+      onIcon: d => { $('lfAppIcon').value = ''; setUploaded(d); showErr(''); preview(); },
+      onClear: () => { setUploaded(''); preview(); },
+      onError: showErr
+    }) : null;
+    async function fetchInfo() {
+      const url = safeUrl($('lfAppUrl').value);
+      if (!url || url === auto.url) return;
+      auto.url = url; auto.embeddable = undefined;
+      if (!isExternal(url)) return;
+      const seq = ++fetchSeq; status('讀取網站名稱與圖示…');
+      let info = null;
+      try { const r = await fetch(SITE_INFO + encodeURIComponent(url)); info = await r.json(); } catch (_) {}
+      if (seq !== fetchSeq) return;
+      status(info && info.ok ? '' : '讀取不到網站資訊，請自行填寫（圖示可留空）。');
+      if (!info) return;
+      if (typeof info.embeddable === 'boolean') auto.embeddable = info.embeddable;
+      const name = String(info.name || '').trim().slice(0, 20), icon = info.ok && !isGoogleIcon(info.icon) ? safeUrl(info.icon) : '';
+      const nameEl = $('lfAppName'), iconElm = $('lfAppIcon');
+      if (name && (!nameEl.value.trim() || nameEl.value === auto.name)) { nameEl.value = name; auto.name = name; }
+      if (!uploadedIcon && (!iconElm.value.trim() || iconElm.value === auto.icon)) { iconElm.value = icon; auto.icon = icon; }
+      preview();
     }
-
-    window.addEventListener('beforeinstallprompt', (e) => {
+    $('lfAppUrl').addEventListener('input', () => { clearTimeout(fetchTimer); fetchTimer = setTimeout(fetchInfo, 600); });
+    $('lfAppUrl').addEventListener('change', fetchInfo);
+    $('lfAppName').addEventListener('input', preview);
+    $('lfAppIcon').addEventListener('input', () => { if ($('lfAppIcon').value.trim() && uploadedIcon) setUploaded(''); preview(); });
+    $('lfAppCancel').addEventListener('click', () => dlg.close());
+    // 按下和放開都在框外才關閉（拖曳選字滑出去不會關掉）
+    if (window.clcDialogBackdropClose) window.clcDialogBackdropClose(dlg);
+    else dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+    dlg.querySelector('form').addEventListener('submit', async e => {
       e.preventDefault();
-      deferredPrompt = e;
-      if (!isRunningStandalone()) installAppBtn.classList.add('visible');
-    });
-
-    installAppBtn.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          installAppBtn.classList.remove('visible');
-          deferredPrompt = null;
+      if (safeUrl($('lfAppUrl').value) !== auto.url) { clearTimeout(fetchTimer); await fetchInfo(); }
+      const url = safeUrl($('lfAppUrl').value);
+      const icon = uploadedIcon || $('lfAppIcon').value.trim();
+      let name = $('lfAppName').value.trim().slice(0, 20);
+      if (!url) return showErr('請輸入網址，例如 HannahProjects/ 或 https://example.com');
+      if (icon && isImageUrl(icon) && !safeIcon(icon)) return showErr('圖示網址格式不正確。');
+      if (!name) { try { name = isExternal(url) ? new URL(url).hostname.replace(/^www\./, '') : url.replace(/\/$/, ''); } catch (_) { name = url; } name = name.slice(0, 20); }
+      $('lfAppSave').disabled = true;
+      const base = withPos(), old = editingId && base.find(a => a.id === editingId);
+      const patch = { name, url, icon, iconUrl: '' };
+      if (typeof auto.embeddable === 'boolean') patch.embeddable = auto.embeddable; else if (old) patch.embeddable = null;
+      const next = old
+        ? base.map(a => a.id === old.id ? Object.assign({}, a, patch) : a)
+        : base.concat(Object.assign({ id: 'app_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, patch,
+            Number.isInteger(addPos) && !base.some(a => a.pos === addPos) ? { pos: addPos } : {}));
+      try {
+        if (cabinetOnly && !old && isSuper()) { // Apps 分頁新增：只放進 App 櫃，大家都能從 Apps 加；自己的主畫面不動
+          const g = window.clcSlotGridNormalize(globalApps); let p = 0; while (g.some(a => a.pos === p)) p++;
+          const added = Object.assign({ id: 'app_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, patch, { pos: p });
+          await saveGlobal(g.concat(added));
+          cabinetOnly = false; dlg.close(); renderAll(); clearNews(); toast('已加到 App 櫃：' + name); return; // clearNews：自己加的不用亮紅點
         }
-      } else if (isIosDevice()) {
-        iosInstallModal.classList.add('active');
+        if (isSuper()) { // Superuser 新增／修改 → 同步到 App 櫃，大家的 Apps 會看到
+          const saved = next.find(a => a.id === (old ? old.id : next[next.length - 1].id));
+          const g = window.clcSlotGridNormalize(globalApps), inG = g.some(a => a.id === saved.id);
+          if (old && inG) await saveGlobal(g.map(a => a.id === saved.id ? Object.assign({}, a, patch) : a));
+          else if (!old) { let p = 0; while (g.some(a => a.pos === p)) p++; await saveGlobal(g.concat(Object.assign({}, saved, { pos: p }))); }
+        }
+        await persist(next, old ? [] : [next[next.length - 1].id]); dlg.close();
+      }
+      catch (err) { showErr('儲存失敗：' + errText(err)); $('lfAppSave').disabled = false; }
+    });
+
+    // ---------- 權限管理 ----------
+    // ---------- 所有 App（預設桌面＝目前全部 App）／新 App 通知 ----------
+    const onDesk = a => apps.some(m => m.id === a.id);
+    const locked = a => !isSuper() && isOwnSite(a);
+    const newApps = () => role && myDesk ? globalApps.filter(a => !mySeen.includes(a.id) && !onDesk(a) && !locked(a)) : [];
+    async function addToDesk(a) {
+      const base = withPos(); let pos = 0; while (base.some(m => m.pos === pos)) pos++;
+      try { await persist(base.concat(Object.assign({}, a, { pos })), [a.id]); toast('已加到主畫面：' + a.name); }
+      catch (err) { toast('加入失敗：' + errText(err)); }
+    }
+    function renderAll() {
+      const list = role ? window.clcSlotGridNormalize(globalApps).filter(a => !onDesk(a) && !locked(a)).sort((a, b) => a.pos - b.pos) : [];
+      $('lfAllNote').textContent = !role ? '登入後，還沒加到主畫面的 App 會列在這裡。' : list.length ? '還沒加到主畫面的 App（從主畫面移除的也會回到這裡）。' : '全部 App 都在你的主畫面了。';
+      const box = $('lfAll'); box.textContent = '';
+      list.forEach(a => {
+        const row = document.createElement('div'); row.className = 'lf-all-row';
+        const link = document.createElement('a'); link.href = locked(a) ? '#' : tileHref(a);
+        const name = document.createElement('span'); name.textContent = a.name;
+        link.append(iconEl(a), name);
+        if (locked(a)) { link.style.opacity = '.4'; link.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + a.name + '。'); }); }
+        row.append(link);
+        if (role) {
+          const b = document.createElement('button'); b.type = 'button';
+          b.textContent = '＋ 加到主畫面'; b.addEventListener('click', () => { b.disabled = true; addToDesk(a); });
+          row.append(b);
+        }
+        if (isSuper()) { // Superuser：從 App 櫃刪除（所有人都不會再看到新增選項）
+          const d = document.createElement('button'); d.type = 'button'; d.textContent = '刪除'; d.style.background = '#B5483D';
+          d.addEventListener('click', async () => {
+            if (!confirm('從 App 櫃刪除「' + a.name + '」？（已加到別人主畫面的不受影響）')) return;
+            try { await saveGlobal(globalApps.filter(x => x.id !== a.id)); } catch (err) { toast('刪除失敗：' + errText(err)); }
+          });
+          row.append(d);
+        }
+        box.append(row);
+      });
+    }
+    function renderNews() { $('lfAppsDot').hidden = !newApps().length; } // 有新 App → Apps 分頁紅點
+    function clearNews() { const n = newApps(); if (n.length) persist(withPos(), n.map(a => a.id)).catch(() => {}); } // 打開 Apps 就算看過
+
+
+    // ---------- 背景主題（每個人自己的，存在 linfamily_desktops/{email} 的 theme、wall、wallImg） ----------
+    const THEMES = {
+      pine:     { name:'松綠',   pine:'#4E8B7E', sage:'#8FBFB0', cloud:'#E6E7E9' },
+      ocean:    { name:'海洋',   pine:'#0F8A92', sage:'#6FC7C9', cloud:'#E3EEF0' },
+      sun:      { name:'暖陽',   pine:'#C07A3E', sage:'#E6B98A', cloud:'#F2ECE3' },
+      lavender: { name:'薰衣草', pine:'#7A6BB0', sage:'#B6A9DD', cloud:'#ECEAF3' },
+      rose:     { name:'玫瑰',   pine:'#B5596B', sage:'#E2A3AE', cloud:'#F3E9EA' },
+      graphite: { name:'石墨',   pine:'#4B5563', sage:'#9CA3AF', cloud:'#E5E7EB' }
+    };
+    const WALLS = {
+      none:   { name:'無', css:'' },
+      coast:  { name:'海岸', css:'linear-gradient(100deg,#02878F,#02A8AB 58%,#F8C4B4 64%,#F5CCBD)' },
+      mist:   { name:'晨霧', css:'linear-gradient(160deg,#E8EEF0,#CFE3DD 50%,#F4EBDD)' },
+      forest: { name:'森林', css:'linear-gradient(135deg,#2F5D50,#4E8B7E 50%,#8FBFB0)' },
+      sunset: { name:'落日', css:'linear-gradient(160deg,#F6C28B,#E58C8A 55%,#7A6BB0)' },
+      night:  { name:'夜空', css:'radial-gradient(ellipse at 30% 20%,#2A3A5E,#0B1020 70%)' }
+    };
+    let look = { theme:'pine', wall:'none', wallImg:'' };
+    const lookKey = () => 'linfamily_look_' + (user ? user.email.toLowerCase() : '');
+    function paintLook() {
+      const t = THEMES[look.theme] || THEMES.pine, st = document.documentElement.style;
+      st.setProperty('--pine', t.pine); st.setProperty('--sage', t.sage); st.setProperty('--cloud', t.cloud);
+      const img = look.wall === 'img' && look.wallImg ? 'url("' + look.wallImg + '")' : (WALLS[look.wall] || WALLS.none).css;
+      $('lfWall').style.backgroundImage = img || 'none'; $('lfWall').hidden = !img;
+      document.documentElement.classList.toggle('lf-has-wall', !!img);
+      if ($('lfThemeDialog').open) renderLook();
+    }
+    function applyLook(d, fromServer) {
+      look = { theme: THEMES[d.theme] ? d.theme : 'pine', wall: d.wall === 'img' || WALLS[d.wall] ? d.wall : 'none', wallImg: d.wallImg || '' };
+      paintLook();
+      if (fromServer) try { localStorage.setItem(lookKey(), JSON.stringify(look)); } catch (_) {}
+    }
+    async function saveLook(patch) {
+      Object.assign(look, patch); paintLook();
+      try { localStorage.setItem(lookKey(), JSON.stringify(look)); } catch (_) {}
+      if (!db || !user) return;
+      try { await db.collection(DESK_COL).doc(user.email.toLowerCase()).set(Object.assign({}, patch, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() }), { merge: true }); $('lfLookMsg').textContent = ''; }
+      catch (err) { $('lfLookMsg').textContent = '儲存失敗：' + errText(err); }
+    }
+    function renderLook() {
+      const sw = $('lfSwatches'); sw.textContent = '';
+      Object.entries(THEMES).forEach(([k, t]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'lf-swatch'; b.title = t.name; b.setAttribute('aria-label', t.name);
+        b.style.background = `linear-gradient(135deg, ${t.pine} 50%, ${t.sage} 50%)`; b.setAttribute('aria-pressed', look.theme === k ? 'true' : 'false');
+        b.addEventListener('click', () => saveLook({ theme: k })); sw.append(b);
+      });
+      const wl = $('lfWalls'); wl.textContent = '';
+      const tile = (k, label, bg) => {
+        const b = document.createElement('button'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', '桌布：' + label);
+        if (bg) b.style.backgroundImage = bg; else b.textContent = label;
+        b.setAttribute('aria-pressed', look.wall === k ? 'true' : 'false'); wl.append(b); return b;
+      };
+      Object.entries(WALLS).forEach(([k, w]) => tile(k, w.name, w.css).addEventListener('click', () => saveLook({ wall: k })));
+      if (look.wallImg) tile('img', '我的照片', 'url("' + look.wallImg + '")').addEventListener('click', () => saveLook({ wall: 'img' }));
+      tile('upload', '＋ 上傳照片', '').addEventListener('click', () => $('lfWallFile').click());
+    }
+    // 上傳照片：先在手機上縮小、壓成 JPEG（約 200～500KB），存在自己的資料裡，不用另外的檔案空間
+    $('lfWallFile').addEventListener('change', async e => {
+      const file = e.target.files && e.target.files[0]; e.target.value = '';
+      if (!file) return;
+      $('lfLookMsg').textContent = '處理照片中…';
+      try {
+        const bmp = await createImageBitmap(file);
+        let max = 1600, q = 0.72, data = '';
+        for (let i = 0; i < 4; i++) {
+          const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+          const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+          c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+          data = c.toDataURL('image/jpeg', q);
+          if (data.length < 650000) break;
+          max = Math.round(max * 0.8); q = Math.max(0.5, q - 0.08);
+        }
+        $('lfLookMsg').textContent = '';
+        await saveLook({ wall: 'img', wallImg: data });
+      } catch (err) { $('lfLookMsg').textContent = '這張照片無法使用，請換一張。'; }
+    });
+    // 齒輪選單
+    const gearBtn = $('lfGearBtn'), gearMenu = $('lfGearMenu');
+    const setGear = open => { gearMenu.hidden = !open; gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+    gearBtn.addEventListener('click', () => setGear(gearMenu.hidden));
+    document.addEventListener('click', e => { if (!gearMenu.hidden && !gearMenu.contains(e.target) && !gearBtn.contains(e.target)) setGear(false); });
+    gearMenu.addEventListener('click', e => {
+      const b = e.target.closest('[data-gear]'); if (!b) return; setGear(false);
+      if (b.dataset.gear === 'theme') { renderLook(); $('lfLookMsg').textContent = role ? '' : '登入後設定會跟著你的帳號。'; $('lfThemeDialog').showModal(); }
+    });
+    $('lfThemeClose').addEventListener('click', () => $('lfThemeDialog').close());
+    if (window.clcDialogBackdropClose) window.clcDialogBackdropClose($('lfThemeDialog'));
+    else $('lfThemeDialog').addEventListener('click', e => { if (e.target === $('lfThemeDialog')) $('lfThemeDialog').close(); });
+
+
+    // ---------- 問候語（照 DX 的做法：依時段、星期隨機一句；LF 是家庭用，語氣生活化、親近） ----------
+    (function () {
+      const POOLS = {
+        early: [ // 05:00–07:59
+          "Morning, {n}! Up early today", "Rise and shine, {n} ☀️", "Early start, {n}? Breakfast first",
+          "Good morning, {n}. Sleep well?", "Hey {n}, the day's just waking up"
+        ],
+        morning: [ // 08:00–11:59
+          "Good morning, {n}", "Morning, {n}! Had breakfast?", "Hi {n}, have a lovely day",
+          "Welcome home, {n}", "Morning, {n}. Coffee or tea?", "Hello {n}, nice to see you"
+        ],
+        lunch: [ // 12:00–13:59
+          "Lunchtime, {n}! What's good today?", "Have you eaten yet, {n}?", "Hi {n}, enjoy your lunch",
+          "Time for a bite, {n}", "Hey {n}, don't skip lunch"
+        ],
+        afternoon: [ // 14:00–17:59
+          "Good afternoon, {n}", "Hey {n}, how's your day going?", "Snack time, {n}?",
+          "Welcome back, {n}", "Hi {n}, take a little break", "Afternoon, {n}. Time for some tea?"
+        ],
+        evening: [ // 18:00–21:59
+          "Good evening, {n}", "Welcome home, {n}", "What's for dinner, {n}?",
+          "Evening, {n}. How was your day?", "Hi {n}, time to relax", "Family time, {n} 🏡"
+        ],
+        late: [ // 22:00–00:59
+          "Still up, {n}?", "Time to get cozy, {n}", "Good night soon, {n}?",
+          "Hey {n}, rest well tonight", "Sweet dreams soon, {n} 🌙"
+        ],
+        night: [ // 01:00–04:59
+          "Can't sleep, {n}?", "It's late, {n}. Get some rest", "Hey night owl 🦉",
+          "Shh… everyone's asleep, {n}", "Off to bed soon, {n}?"
+        ]
+      };
+      const EXTRA = {
+        weekendMorning: ["Happy {d}, {n}!", "Lazy {d} morning, {n}?", "Enjoy your {d}, {n}"],
+        weekendAfternoon: ["Any plans this {d}, {n}?", "Enjoy the weekend, {n}"],
+        mondayMorning: ["New week, {n}! You've got this"],
+        fridayEvening: ["Weekend's here, {n}! 🎉", "Happy Friday night, {n}"],
+        sundayEvening: ["Cozy Sunday night, {n}?"]
+      };
+      const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const slotOf = h => h >= 5 && h < 8 ? 'early' : h < 12 && h >= 8 ? 'morning' : h >= 12 && h < 14 ? 'lunch' : h >= 14 && h < 18 ? 'afternoon' : h >= 18 && h < 22 ? 'evening' : (h >= 22 || h < 1) ? 'late' : 'night';
+      function poolFor(now) {
+        const slot = slotOf(now.getHours()), day = now.getDay(), wk = day === 0 || day === 6;
+        let list = POOLS[slot].slice();
+        if ((slot === 'early' || slot === 'morning') && wk) list = list.concat(EXTRA.weekendMorning);
+        if ((slot === 'lunch' || slot === 'afternoon') && wk) list = list.concat(EXTRA.weekendAfternoon);
+        if ((slot === 'early' || slot === 'morning') && day === 1) list = list.concat(EXTRA.mondayMorning);
+        if (slot === 'evening' && day === 5) list = list.concat(EXTRA.fridayEvening);
+        if (slot === 'evening' && day === 0) list = list.concat(EXTRA.sundayEvening);
+        return { key: slot + day, list, dayName: DAYS[day] };
+      }
+      const nameOf = () => { const n = user && (user.displayName || '').trim().split(/\s+/)[0]; return n || 'there'; };
+      const el = $('lfGreeting'); let curKey = '', curLine = '';
+      function render(force) {
+        const p = poolFor(new Date());
+        if (force || p.key !== curKey) { curKey = p.key; curLine = p.list[Math.floor(Math.random() * p.list.length)].replace('{d}', p.dayName); } // 換時段才重抽
+        const text = curLine.replace('{n}', nameOf()).replace('Hey there night owl', 'Hey night owl');
+        if (el.textContent !== text) el.textContent = text;
+      }
+      window.lfGreetingRender = render;
+      render(true);
+      setInterval(() => render(false), 60000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) render(false); });
+    })();
+
+    // ---------- 分頁：主畫面／家庭空間配置 ----------
+    document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
+      const tab = b.dataset.tab;
+      curTab = tab; syncAddBtn();
+      document.querySelectorAll('.lf-tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
+      $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family'; $('panelAll').hidden = tab !== 'all';
+      if (tab === 'all') { renderAll(); clearNews(); }
+      if (tab === 'apps') slots.render();
+      if (tab !== 'apps') slots.setEditing(false);
+    }));
+    // 平面圖：點區域 → 列出這個區域的 App（App 的 zoneId 沿用舊資料）
+    let activeZone = '';
+    function renderZone() {
+      const list = $('lfZoneList');
+      document.querySelectorAll('.svg-hotspot').forEach(g => g.classList.toggle('is-active', g.dataset.zoneId === activeZone));
+      if (!activeZone) { list.replaceChildren(); $('lfZoneTitle').textContent = '點平面圖上的區域，查看相關 App'; return; }
+      const g = document.querySelector('.svg-hotspot[data-zone-id="' + CSS.escape(activeZone) + '"]');
+      $('lfZoneTitle').textContent = (g && g.getAttribute('aria-label')) || '';
+      const items = apps.filter(a => a.zoneId === activeZone);
+      list.replaceChildren(...(items.length ? items.map(a => {
+        const li = document.createElement('li'), link = document.createElement('a');
+        link.href = safeUrl(a.url) || '#';
+        const text = document.createElement('div');
+        text.innerHTML = `<strong>${esc(a.name)}</strong>${a.rolePrimary ? `<small>${esc(a.rolePrimary)}</small>` : ''}${a.roleSecondary ? `<small>${esc(a.roleSecondary)}</small>` : ''}`;
+        link.append(iconEl(a), text); li.append(link); return li;
+      }) : [Object.assign(document.createElement('li'), { textContent: '這個區域還沒有 App。' })]));
+    }
+    document.querySelectorAll('.svg-hotspot').forEach(g => {
+      const pick = () => { activeZone = activeZone === g.dataset.zoneId ? '' : g.dataset.zoneId; renderZone(); };
+      g.addEventListener('click', pick);
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    });
+
+    // ---------- 搜尋：符合的 App 保持清楚，其他變淡；Enter 開第一個符合的 App ----------
+    const search = $('lfSearch');
+    function applySearch() {
+      const q = search.value.trim().toLowerCase();
+      const grid = $('lfApps');
+      $('lfSearchClear').hidden = !q;
+      grid.classList.toggle('is-searching', !!q);
+      let hits = 0;
+      grid.querySelectorAll(':scope > [data-slot]').forEach(el => {
+        const app = el.dataset.id && apps.find(a => a.id === el.dataset.id);
+        const match = !q || (app && (String(app.name).toLowerCase().includes(q) || String(app.url || '').toLowerCase().includes(q)));
+        el.classList.toggle('lf-dim', !!q && !match);
+        if (q && match && app) hits++;
+      });
+      $('lfNoResult').hidden = !q || hits > 0;
+      if (q) { document.querySelector('.lf-tabs [data-tab="apps"]').click(); slots.setEditing(false); }
+    }
+    search.addEventListener('input', applySearch);
+    search.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { search.value = ''; applySearch(); showSearch(false); }
+      if (e.key === 'Enter') {
+        const first = $('lfApps').querySelector(':scope > .slot-cell:not(.lf-dim) a');
+        if (search.value.trim() && first) location.href = first.href;
       }
     });
-
-    closeIosModalBtn.addEventListener('click', () => iosInstallModal.classList.remove('active'));
-    iosInstallModal.addEventListener('click', (e) => {
-      if (e.target === iosInstallModal) iosInstallModal.classList.remove('active');
+    // 放大鏡：點了才出現搜尋列；清空或離開（沒有字）就收起來，不占版面
+    $('lfAddBtn').addEventListener('click', () => {
+      addPos = null; cabinetOnly = curTab === 'all' && isSuper();
+      openApp(null);
+      if (cabinetOnly) $('lfAppTitle').textContent = '新增 App 到 App 櫃';
     });
+    const sBox = $('lfSearchBox'), sBtn = $('lfSearchBtn');
+    function showSearch(on) { sBox.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) search.focus(); }
+    sBtn.addEventListener('click', () => { if (sBox.hidden) showSearch(true); else { search.value = ''; applySearch(); showSearch(false); } });
+    search.addEventListener('blur', () => setTimeout(() => { if (!search.value.trim() && document.activeElement !== search) showSearch(false); }, 150));
+    $('lfSearchClear').addEventListener('mousedown', e => e.preventDefault());
+    $('lfSearchClear').addEventListener('click', () => { search.value = ''; applySearch(); showSearch(false); });
+    new MutationObserver(() => { if (search.value.trim()) applySearch(); }).observe($('lfApps'), { childList: true });
 
-    const modal = document.getElementById('bubbleModal');
-    document.getElementById('closeBubbleBtn').addEventListener('click', () => modal.classList.remove('active'));
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        modal.classList.remove('active');
-        iosInstallModal.classList.remove('active');
-      }
-    });
-
-    SGReader.init({
-      getCurrent: () => currentDoc,
-      getTab: () => activeTab,
-      copy: async (text) => {
-        try { await navigator.clipboard.writeText(text); return true; }
-        catch { return false; }
-      },
-      turn: shiftWeek,
-      adjacent: adjacentWeek,
-      preview: previewWeek
-    });
-
-    loadDiscussions();
-    watchLinFamilyAuth();
+    slots.render(); requestAnimationFrame(() => slots.render()); // 第二次依實際格子高度補滿畫面
+  });
   </script>
-  <script defer src="https://clc-dx04.pages.dev/lf-back.js?v=8" data-home="../" data-key="linfamily_homebtn_open"></script>
-  <script defer src="../js/lf-menu.js?v=4"></script>
+  <script src="js/lf-pull-refresh.js?v=confirm-drag-1" defer></script>
 </body>
 </html>
