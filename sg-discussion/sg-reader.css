@@ -1,0 +1,374 @@
+/* 日期切換與下拉選單（融入原本 hero 區塊風格） */
+.sg-date-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sg-nav-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border-hairline);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.15s;
+}
+
+.sg-nav-btn:hover:not(:disabled) {
+  background-color: var(--brand-primary-tint);
+  color: var(--brand-primary);
+}
+
+.sg-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.sg-date-picker {
+  position: relative;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.sg-date-picker summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sg-date-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+.sg-date-picker summary .pill-neutral {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-hairline);
+  transition: background-color 0.2s;
+}
+
+.sg-date-picker summary:hover .pill-neutral {
+  background-color: var(--brand-primary-tint);
+  color: var(--brand-primary);
+}
+
+#sg-date-list {
+  position: absolute;
+  z-index: 60;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(100% + 8px);
+  min-width: 15rem;
+  max-width: min(85vw, 22rem);
+  padding: 6px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 14px;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-float);
+  text-align: left;
+}
+
+#sg-date-list:empty {
+  display: none;
+}
+
+#sg-date-list button {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-apple);
+  font-size: 0.86rem;
+  font-weight: 500;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#sg-date-list button:hover {
+  background-color: var(--bg-page);
+}
+
+#sg-date-list button[aria-current="date"] {
+  background-color: var(--brand-primary);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+/* 允許垂直捲動同時偵測水平滑動翻頁 */
+main {
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Highlight 螢光筆反白與註記底線 */
+.sg-mark {
+  color: inherit;
+  background: var(--mark);
+  border-radius: 3px;
+  padding: 1px 0;
+  cursor: pointer;
+}
+
+.sg-mark[data-note] {
+  text-decoration: underline dotted;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+/* 浮動閱讀標記工具列 */
+.sg-tools {
+  position: fixed;
+  z-index: 200;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 14px;
+  background: #FFFFFF;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+}
+
+.sg-tools[aria-label] {
+  position: fixed;
+  inset: auto;
+  transform: none;
+  display: grid;
+  min-width: 188px;
+  gap: 3px;
+  padding: 7px;
+}
+
+.sg-swatches {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.sg-tools button {
+  min-width: 38px;
+  min-height: 38px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-apple);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sg-tools button[data-color] {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.sg-tools button[data-color]::after {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--mark);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.sg-tools[aria-label] button[data-action] {
+  text-align: start;
+  padding-inline: 11px;
+}
+
+.sg-tools[aria-label] button[data-action]:hover {
+  background: var(--bg-page);
+}
+
+/* 行動裝置自訂長按選取游標與遮罩 */
+.sg-selection {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 190;
+}
+
+.sg-selection span {
+  position: absolute;
+  background: rgba(0, 127, 133, 0.25);
+  border-radius: 2px;
+}
+
+.sg-selection-handle {
+  position: fixed;
+  z-index: 192;
+  width: 28px;
+  height: 26px;
+  transform: translateX(-50%);
+  touch-action: none;
+}
+
+.sg-selection-handle::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+}
+
+@media (any-pointer: coarse) {
+  main [data-sg-selectable],
+  .sg-selection-handle {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* 擬真左右滑動翻頁舞台 */
+.sg-paper-turn {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 90;
+  overflow: hidden;
+  background: var(--bg-page);
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.sg-paper-incoming,
+.sg-paper-outgoing {
+  position: absolute;
+  inset: 0 0 auto;
+  background: var(--bg-page);
+  min-height: 100%;
+  will-change: transform;
+}
+
+.sg-paper-outgoing {
+  inset: 0;
+}
+
+/* 註記彈窗樣式 */
+dialog#sg-note {
+  width: min(480px, calc(100% - 32px));
+  margin: auto;
+  border: 1px solid var(--border-hairline);
+  border-radius: 22px;
+  background: #FFFFFF;
+  color: var(--text-primary);
+  padding: 24px;
+  box-shadow: var(--shadow-float);
+}
+
+dialog#sg-note::backdrop {
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px);
+}
+
+dialog#sg-note h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.sg-note-text {
+  background: var(--bg-page);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  max-height: 22vh;
+  overflow: auto;
+}
+
+dialog#sg-note textarea {
+  width: 100%;
+  min-height: 110px;
+  margin: 12px 0 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-hairline);
+  font-family: var(--font-apple);
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+dialog#sg-note textarea:focus {
+  outline: 2px solid var(--brand-primary);
+  border-color: transparent;
+}
+
+.sg-note-help {
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+  margin-bottom: 14px;
+}
+
+.sg-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.sg-note-actions button {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: none;
+  font-family: var(--font-apple);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sg-note-actions button[value="save"] {
+  background: var(--brand-primary);
+  color: #FFFFFF;
+}
+
+.sg-note-actions button[value="delete"] {
+  background: #FEE2E2;
+  color: #B91C1C;
+  margin-right: auto;
+}
+
+.sg-note-actions button[value="cancel"] {
+  background: var(--bg-page);
+  color: var(--text-secondary);
+}
+
+.sg-welcome-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--brand-primary);
+  background: var(--brand-primary-tint);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}

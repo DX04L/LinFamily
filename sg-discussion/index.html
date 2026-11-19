@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>江子翠行道會｜小組教材：亞伯拉罕的信心（下）</title>
+  <title>江子翠行道會｜小組牧養教材</title>
 
   <!-- PWA & 桌面捷徑圖示設定 -->
   <meta name="theme-color" content="#007F85">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="江子翠教材">
-  <link rel="manifest" href="./manifest.json?v=3">
-  <link rel="icon" href="./favicon.ico?v=3" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=3">
-  <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=3">
-  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=3">
+  <link rel="manifest" href="./manifest.json?v=4">
+  <link rel="icon" href="./favicon.ico?v=4" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=4">
+  <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=4">
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=4">
+  <link rel="stylesheet" href="./sg-reader.css?v=1">
 
   <style>
     :root {
@@ -60,6 +61,10 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    [hidden] {
+      display: none !important;
+    }
+
     body {
       font-family: var(--font-apple);
       background-color: var(--bg-page);
@@ -95,6 +100,13 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      cursor: pointer;
+    }
+
+    .nav-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     /* 書本外框剪影 Logo */
@@ -171,7 +183,7 @@
     .hero {
       background-color: #FFFFFF;
       border-bottom: 1px solid var(--border-hairline);
-      padding: 36px 20px 28px;
+      padding: 32px 20px 26px;
       text-align: center;
     }
 
@@ -187,7 +199,6 @@
       justify-content: center;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 14px;
     }
 
     .pill-tag {
@@ -729,6 +740,13 @@
       color: var(--text-primary);
     }
 
+    .status-note {
+      text-align: center;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+      padding: 10px 16px;
+    }
+
     footer {
       text-align: center;
       font-size: 0.8rem;
@@ -747,12 +765,11 @@
 </head>
 <body>
 
-  <!-- 頂部毛玻璃導覽列（江子翠行道會 Logo + 一鍵安裝 App 按鈕） -->
+  <!-- 頂部毛玻璃導覽列（江子翠行道會 Logo + 登入歡迎語 + 一鍵安裝 App 按鈕） -->
   <nav class="navbar">
     <div class="navbar-inner">
-      <div class="brand-group">
+      <div class="brand-group" id="brandHome" data-lf-menu-trigger title="回到最新一週教材">
         <div class="church-logo" aria-hidden="true">
-          <!-- 書本外框剪影圖案 -->
           <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M22 34 Q41 30 60 41 L60 89 Q41 78 22 82 Z" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M98 34 Q79 30 60 41 L60 89 Q79 78 98 82 Z" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -765,257 +782,150 @@
         </div>
       </div>
 
-      <!-- 安裝成 App 按鈕 -->
-      <button class="install-btn" id="installAppBtn" aria-label="安裝成 App">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3v12"/>
-          <path d="m7 10 5 5 5-5"/>
-          <path d="M5 21h14"/>
-        </svg>
-        <span>安裝 App</span>
-      </button>
+      <div class="nav-right-actions">
+        <span class="sg-welcome-badge" id="sgWelcome" hidden></span>
+        <!-- 安裝成 App 按鈕 -->
+        <button class="install-btn" id="installAppBtn" aria-label="安裝成 App">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12"/>
+            <path d="m7 10 5 5 5-5"/>
+            <path d="M5 21h14"/>
+          </svg>
+          <span>安裝 App</span>
+        </button>
+      </div>
     </div>
   </nav>
 
-  <!-- 課程簡約主標題 -->
-  <header class="hero">
-    <div class="container">
-      <div class="eyebrow-row">
-        <span class="pill-tag pill-primary">WEEK 2</span>
-        <span class="pill-tag pill-neutral">2026/11/10 — 11/15</span>
-        <span class="pill-tag pill-tint">信心 ④</span>
-      </div>
-      <h1 class="hero-title">亞伯拉罕的信心（下）</h1>
-      <div class="hero-scripture">
-        <span>主題經文：</span>
-        <span class="pop-trigger" data-pop="heb11_17_19">希伯來書 11:17–19</span>
-      </div>
-    </div>
-  </header>
+  <!-- 可左右滑動切換週次的閱讀主區域 -->
+  <div id="sg-reading-sheet">
+    <!-- 課程簡約主標題（加入左右箭頭與保存週次下拉選單） -->
+    <header class="hero">
+      <div class="container">
+        <div class="sg-date-nav">
+          <button class="sg-nav-btn" id="sg-prev" disabled aria-label="上一週教材" title="上一週">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
 
-  <!-- Apple Segmented Control 三大功能分頁導覽 -->
-  <div class="tabs-bar">
-    <div class="container">
-      <div class="segmented-control" role="tablist">
-        <button class="seg-btn active" data-tab="tab-info">信息互動填空</button>
-        <button class="seg-btn" data-tab="tab-bg">背景與註釋</button>
-        <button class="seg-btn" data-tab="tab-discuss">小組討論</button>
+          <div class="eyebrow-row">
+            <span class="pill-tag pill-primary" id="heroWeekBadge">WEEK 2</span>
+            <details class="sg-date-picker" id="sg-date-picker">
+              <summary aria-label="選擇保存的教材日期">
+                <span class="pill-tag pill-neutral">
+                  <span id="heroDateRange">2026/11/10 — 11/15</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </span>
+              </summary>
+              <div id="sg-date-list" aria-label="目前保存的小組教材"></div>
+            </details>
+            <span class="pill-tag pill-tint" id="heroSeriesTag">信心 ④</span>
+          </div>
+
+          <button class="sg-nav-btn" id="sg-next" disabled aria-label="下一週教材" title="下一週">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <h1 class="hero-title" id="heroTitle">亞伯拉罕的信心（下）</h1>
+        <div class="hero-scripture">
+          <span>主題經文：</span>
+          <span class="pop-trigger" id="heroScriptureTrigger" data-pop="heb11_17_19">希伯來書 11:17–19</span>
+        </div>
+      </div>
+    </header>
+
+    <p class="status-note" id="sgStatus" hidden></p>
+
+    <!-- Apple Segmented Control 三大功能分頁導覽 -->
+    <div class="tabs-bar">
+      <div class="container">
+        <div class="segmented-control" role="tablist">
+          <button class="seg-btn active" data-tab="tab-info">信息互動填空</button>
+          <button class="seg-btn" data-tab="tab-bg">背景與註釋</button>
+          <button class="seg-btn" data-tab="tab-discuss">小組討論</button>
+        </div>
       </div>
     </div>
+
+    <main class="container">
+
+      <!-- 第一頁（預設首頁）：信息內文與互動填空 -->
+      <section id="tab-info" class="tab-panel active">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">信息內文與互動填空</h2>
+              <p class="card-subtitle">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）</p>
+            </div>
+            <div class="toolbar-actions">
+              <span class="progress-pill" id="blankProgress">已解鎖 0 / 7</span>
+              <button class="pill-action-btn" id="toggleAllBtn">顯示全部</button>
+            </div>
+          </div>
+
+          <div class="article-body" id="articleBody">
+            <p>
+              今天要來分享亞伯拉罕的信心。我們先複習一下，什麼是亞伯拉罕的信心？第一個是<span class="pop-trigger" data-pop="call_faith">對呼召的信心</span>，去哪裡不是重要的，重要的是你的呼召。第二個是<span class="pop-trigger" data-pop="promise_faith">對應許的信心</span>，在毫無指望的時候，因信仍有指望，神蹟就發生了。第三個是<span class="pop-trigger" data-pop="death_faith">超越死亡的信心</span>，即使神的應許沒有在今生完全實現，但有一個信心是存著信心死，在將來的日子神必定會成就。今天要看的是，亞伯拉罕的信心是<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">勝過試驗</span></span>的信心。
+            </p>
+          </div>
+
+          <div class="next-page-bar">
+            <button class="next-page-btn" onclick="switchToTab('tab-bg')">
+              <span>下一步：背景與註釋</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 第二頁：背景與註釋 -->
+      <section id="tab-bg" class="tab-panel">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">經文歷史與神學背景</h2>
+              <p class="card-subtitle">深入理解主題經文的救贖歷史脈絡</p>
+            </div>
+          </div>
+          <div id="bgBlocksContainer"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">原文難字與關鍵詞解析</h2>
+              <p class="card-subtitle">從希伯來文與希臘文原意掌握精準神學含義</p>
+            </div>
+          </div>
+          <div id="wordStudiesContainer"></div>
+          <div class="next-page-bar">
+            <button class="next-page-btn" onclick="switchToTab('tab-discuss')">
+              <span>下一步：小組討論</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 第三頁：小組討論 -->
+      <section id="tab-discuss" class="tab-panel">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">小組分享與討論</h2>
+              <p class="card-subtitle">透過真實敞開的對話，將神的話語落實在每天的生活中</p>
+            </div>
+          </div>
+          <div id="questionsContainer"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>
+      <p>江子翠行道會｜小組牧養教材互動版 · 資料自動同步自教會官網</p>
+    </footer>
   </div>
-
-  <main class="container">
-
-    <!-- 第一頁（預設首頁）：信息內文與互動填空 -->
-    <section id="tab-info" class="tab-panel active">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">信息內文與互動填空</h2>
-            <p class="card-subtitle">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析</p>
-          </div>
-          <div class="toolbar-actions">
-            <span class="progress-pill" id="blankProgress">已解鎖 0 / 7</span>
-            <button class="pill-action-btn" id="toggleAllBtn">顯示全部</button>
-          </div>
-        </div>
-
-        <div class="article-body">
-          <p>
-            今天要來分享亞伯拉罕的信心。我們先複習一下，什麼是亞伯拉罕的信心？第一個是<span class="pop-trigger" data-pop="call_faith">對呼召的信心</span>，去哪裡不是重要的，重要的是你的呼召。第二個是<span class="pop-trigger" data-pop="promise_faith">對應許的信心</span>，在毫無指望的時候，因信仍有指望，神蹟就發生了。第三個是<span class="pop-trigger" data-pop="death_faith">超越死亡的信心</span>，即使神的應許沒有在今生完全實現，但有一個信心是存著信心死，在將來的日子神必定會成就。今天要看的是，亞伯拉罕的信心是<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">勝過試驗</span></span>的信心。
-          </p>
-
-          <p>
-            聖經很清楚地告訴我們，信心需要被<span class="pop-trigger" data-pop="testing_vs_temptation">試驗</span>，通過考試才能看見信心是真的還是假的。聖經最清楚的例證，就是亞伯拉罕獻上以撒（<span class="pop-trigger" data-pop="gen22_1_2">創 22:1–2</span>）。經文提到「這些事以後」，也就是以撒生了，並且夏甲、非利士人的爭論也解決，到了亞伯拉罕人生風平浪靜、最幸福的時刻之後，神的試驗就來了。很多時候試驗會在一切非常美好的時候臨到，上帝要看看你還信不信靠神。神向亞伯拉罕說，帶著你的兒子，你<span class="pop-trigger" data-pop="only_son">獨生的兒子</span>，你所愛的以撒，強調了三次最愛的以撒，因為祂知道亞伯拉罕唯一放不下的就是以撒。既然是試驗，必定感到痛苦和掙扎，上帝考試的題目可能是你心中最在乎的，包括妻子、錢或工作。不過，試驗是按著<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">信心</span></span>的程度，試驗的目的不是要摧毀，而是要使你對神更有信心。隨著信心的成長，神對你的試驗強度也會更大。
-          </p>
-
-          <p>
-            在這當中有兩段經文很重要。第一段經文是「你們所遇見的試探，無非是人所能受的。神是信實的，必不叫你們受試探過於所能受的；在受試探的時候，總要給你們開一條出路，叫你們能忍受得住。」（<span class="pop-trigger" data-pop="cor10_13">林前 10:13</span>）上帝給的試驗一定是你信心可以承受的，當你快承受不住的時候，神一定會給你開一條出路。遇見挫折壓力時，要挺住，因為夜最深的時候，往往就是神要給你<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">開一條出路</span></span>的時候。第二段經文是「叫你們的信心既被試驗，就比那被火試驗仍然能壞的金子更顯寶貴，可以在耶穌基督顯現的時候得著稱讚、榮耀、尊貴。」（<span class="pop-trigger" data-pop="pet1_7">彼前 1:7</span>）開採出來的金礦要用火煉淨雜質，就變成純金。上帝把我們放在火爐裡，把自私、爭競、比較、嫉妒和虛假都燒光，剩下對神非常單純的信心。如果你遭遇一些別人遇不見的苦難，不要稀奇，因為神選中你了，祂要讓你的生命經過這些<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">試煉</span></span>，使你比精金更寶貴，綻放出從神來的光輝與價值。
-          </p>
-
-          <p>
-            亞伯拉罕清早起來，備上驢，帶著兩個僕人和他兒子以撒，也劈好了燔祭的柴，就起身往神所指示他的地方去了（<span class="pop-trigger" data-pop="gen22_3">創 22:3</span>）。亞伯拉罕沒有猶豫，他清早起來就起身走了。亞伯拉罕正面積極，憑著信心獻上以撒，因為他相信神的應許，既然是神向他說話，他就歡喜領受。亞伯拉罕不明白為什麼神現在要收回以撒，但他願意用信心<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">接受</span></span>神量給他生命的每一個處境，用信心順服，相信神必有祂美好的旨意。在亞伯拉罕伸手拿刀要殺他兒子的最後一刻，天使出現了，要亞伯拉罕停手。現在神知道亞伯拉罕是敬畏神的，他沒有留下獨生兒子不給神（<span class="pop-trigger" data-pop="gen22_11_12">創 22:11–12</span>）。這時候有個美麗的字叫做「<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">不料</span></span>」，神預備代替獻祭的公羊就扣在樹上。當我們順服到底，就在神的祭壇遇見沒想到的人，看見神的預備（<span class="pop-trigger" data-pop="gen22_13_14">創 22:13–14</span>）。信心的行動就是順服，不要因為挫折打擊就放棄異象，當我們堅持到底，就看見神奇妙的預備。
-          </p>
-
-          <p>
-            亞伯拉罕通過信心的畢業考，神重新肯定給他的祝福，而且擴大範圍。「你子孫必得著仇敵的城門；並且地上萬國都必因你的後裔得福」（<span class="pop-trigger" data-pop="gen22_15_18">創 22:15–18</span>），因為他聽從神的話！這裡的子孫更是指你的屬靈子孫、信心的後裔。當小組長<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">順服</span></span>，萬國會因小組得福；當主任牧師順服，教會就會蒙福，成為祝福萬國的教會。試驗是為了讓你的信心更純淨、強度更大，以至於可以承擔更大重量的祝福。信心通過試驗，得到神信任的人，神必定照著應許祝福他和他的後裔。
-          </p>
-
-          <p>
-            不論你現在處境如何，或許你正面臨信心的試驗，神要你獻上你生命中的以撒，可能是工作、金錢，或者是交往很久不信主的弟兄，讓我們憑著信心聽神的話，或許不能理解，但我們願意接受神的安排，歡喜領受。快要承受不住的時候，神必定給我們開出一條路來；當我們順服到底，就會看到生命中想像不到的美好。讓我們即使痛苦掙扎，也願意把生命獻上，沒有什麼能夠攔阻我們走向神。神必照應許祝福他和他信心的後裔！
-          </p>
-        </div>
-
-        <div class="next-page-bar">
-          <button class="next-page-btn" onclick="switchToTab('tab-bg')">
-            <span>下一步：背景與註釋</span>
-            <span>→</span>
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 第二頁：背景與註釋 -->
-    <section id="tab-bg" class="tab-panel">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">經文歷史與神學背景</h2>
-            <p class="card-subtitle">深入理解《希伯來書》與《創世記》第 22 章的救贖脈絡</p>
-          </div>
-        </div>
-
-        <div class="clean-block">
-          <div class="block-title">一、《希伯來書》第十一章的寫作背景與目的</div>
-          <p class="block-desc">《希伯來書》寫作於主後 60 年代末期（約主後 64–68 年，耶路撒冷聖殿尚未被毀前），收信人是一群面臨羅馬帝國逼迫與猶太教親友排擠的猶太裔基督徒。部分信徒因苦難而動搖，甚至考慮退回傳統猶太教禮儀以求自保。作者在第十一章列舉舊約「信心偉人榜」，核心目的在於證明：真正的信心不是逃避苦難，而是在看不見結局時，依然信靠神的應許與復活大能。</p>
-          <span class="ref-note">參考出處：布魯斯（F. F. Bruce），《丁道爾新約聖經註釋：希伯來書》</span>
-        </div>
-
-        <div class="clean-block">
-          <div class="block-title">二、亞伯拉罕獻以撒（創世記 22 章）的神學張力</div>
-          <p class="block-desc">在《創世記》12 至 21 章中，神多次向亞伯拉罕起誓，應許他的後裔必「從以撒生的才要稱為你的後裔」（創 21:12）。然而，就在應許之子以撒平安長大、亞伯拉罕與外邦王亞比米勒立約、生命進入最安穩的階段時，神卻命令他將獨生子獻為燔祭。這構成了舊約中最劇烈的神學張力：<strong>「神的命令」似乎與「神的應許」直接衝突</strong>。亞伯拉罕之所以能順服，是因為他深信神是使死人復活的神（來 11:19）。</p>
-          <span class="ref-note">參考出處：華爾頓（John H. Walton），《NIV 國際聖經背景註釋：創世記》</span>
-        </div>
-
-        <div class="clean-block">
-          <div class="block-title">三、摩利亞山與救贖歷史的預表</div>
-          <p class="block-desc">亞伯拉罕獻以撒的地點「摩利亞地」，在舊約歷史中具有極深遠的救贖意義。《歷代志下》3:1 明確指出，所羅門王建造耶路撒冷聖殿的地點正是「耶和華向他父大衛顯現的摩利亞山上」。神當年為亞伯拉罕預備公羊代替以撒，預表了兩千年後，天父在同一個山嶺地區（各各他）沒有愛惜自己的獨生愛子耶穌基督，為世人作了挽回祭（羅 8:32）。</p>
-          <span class="ref-note">參考出處：高銘謙，《天道聖經註釋：創世記（卷下）》；麥克阿瑟（John MacArthur），《麥克阿瑟新約註釋：希伯來書》</span>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">原文難字與關鍵詞解析</h2>
-            <p class="card-subtitle">從希伯來文與希臘文原意掌握精準神學含義</p>
-          </div>
-        </div>
-
-        <div class="clean-block">
-          <div class="block-title">
-            1. 「試驗」與「試探」的區別
-            <span class="lang-badge">希伯來文 נָסָה (nasah) / 希臘文 πειράζω (peirazō)</span>
-          </div>
-          <p class="block-desc">中文和合本在《創世記》22:1 譯作「神要<strong>試驗</strong>亞伯拉罕」，在《哥林多前書》10:13 則譯作「<strong>試探</strong>」。原文同一個字根具備雙重含義，取決於發出者的動機：<strong>撒但的「試探」</strong>目的是引誘人犯罪、使人跌倒毀滅；<strong>神的「試驗」</strong>（如冶煉金銀）目的是檢驗信心的真偽、煉淨雜質，使人更加成熟剛強（雅 1:13–14）。</p>
-        </div>
-
-        <div class="clean-block">
-          <div class="block-title">
-            2. 「獨生的兒子」
-            <span class="lang-badge">希伯來文 יָחִיד (yachid) / 希臘文 μονογενής (monogenēs)</span>
-          </div>
-          <p class="block-desc">亞伯拉罕其實還有長子以實瑪利，但聖經在創 22:2 與來 11:17 都稱以撒為「獨生子」。這個詞在聖經神學中不僅指數量上的唯一，更強調<strong>「無可取代的摯愛與唯一合法的應許繼承人」</strong>。新約《約翰福音》3:16 也用同一個希臘字 <em>monogenēs</em> 形容耶穌是天父的「獨生子」。</p>
-        </div>
-
-        <div class="clean-block">
-          <div class="block-title">
-            3. 「燔祭」
-            <span class="lang-badge">希伯來文 עֹלָה (olah)</span>
-          </div>
-          <p class="block-desc">字面意思是「上升之物」。與平安祭或贖罪祭不同，燔祭要求祭牲必須<strong>全部在祭壇上焚燒</strong>，化為馨香之氣上升歸給神，獻祭者不能保留任何一塊肉自己享用。這象徵「完全的委身、毫無保留的獻上」。</p>
-        </div>
-
-        <div class="clean-block">
-          <div class="block-title">
-            4. 「不料」與「耶和華以勒」
-            <span class="lang-badge">希伯來文 הִנֵּה (hinneh) / יְהוָה יִרְאֶה (YHWH Yireh)</span>
-          </div>
-          <p class="block-desc">創 22:13 的「不料」（原文 <em>hinneh</em>，意為「看哪！」）在希伯來敘事中用來表達<strong>戲劇性的神聖轉折</strong>——在人的盡頭，神早已預備好了替代的公羊。隨後亞伯拉罕給那地方起名叫「耶和華以勒」，原意是「耶和華必看見」，引申為「在耶和華的山上必有預備」。</p>
-        </div>
-
-        <div class="clean-block">
-          <div class="block-title">
-            5. 「得著仇敵的城門」
-            <span class="lang-badge">創世記 22:17</span>
-          </div>
-          <p class="block-desc">在古代近東城市結構中，「城門」是全城防禦最堅固的軍事要塞，也是長老審判、商業交易與政權運作的行政中心。「得著仇敵的城門」意味著<strong>徹底攻克敵人的權勢、掌握主導權與得勝的地位</strong>（參太 16:18）。</p>
-        </div>
-
-        <div class="next-page-bar">
-          <button class="next-page-btn" onclick="switchToTab('tab-discuss')">
-            <span>下一步：小組討論</span>
-            <span>→</span>
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 第三頁：小組討論 -->
-    <section id="tab-discuss" class="tab-panel">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">小組分享與討論</h2>
-            <p class="card-subtitle">透過真實敞開的對話，將神的話語落實在每天的生活中</p>
-          </div>
-        </div>
-
-        <div class="q-item">
-          <div class="q-top">
-            <div class="q-badge">1</div>
-            <div class="q-title">上帝是在亞伯拉罕人生的什麼時刻給予他這次試驗？上帝要求他獻上什麼？</div>
-          </div>
-          <button class="guide-btn" onclick="toggleGuide(this)">查看本文答案與觀察重點</button>
-          <div class="guide-content">
-            <div class="text-answer-box">
-              <span class="ans-label">📖 信息本文答案</span>
-              <strong>1. 試驗的時刻：</strong>「這些事以後」，也就是以撒生了，並且夏甲、非利士人的爭論也解決，到了亞伯拉罕<strong>人生風平浪靜、最幸福的時刻</strong>之後（很多時候試驗會在一切非常美好的時候臨到）。<br>
-              <strong>2. 獻上的對象：</strong>「帶著你的兒子，你<strong>獨生的兒子</strong>，你<strong>所愛的以撒</strong>」，強調了三次最愛的以撒（亞伯拉罕唯一放不下的心頭肉）。
-            </div>
-            <strong>帶領延伸：</strong>上帝考試的題目往往是我們心中最在乎的（包括家人、金錢或工作），試驗是按著信心的程度，目的不是要摧毀，而是要使我們對神更有信心。
-          </div>
-        </div>
-
-        <div class="q-item">
-          <div class="q-top">
-            <div class="q-badge">2</div>
-            <div class="q-title">「火煉金子」說明神試驗我們信心的最終目的是什麼？能留下什麼？你個人曾經經歷哪些試驗？</div>
-          </div>
-          <button class="guide-btn" onclick="toggleGuide(this)">查看本文答案與觀察重點</button>
-          <div class="guide-content">
-            <div class="text-answer-box">
-              <span class="ans-label">📖 信息本文答案</span>
-              <strong>1. 最終目的：</strong>把<strong>自私、爭競、比較、嫉妒和虛假</strong>都燒光（煉淨雜質），使你的生命經過試煉後「比精金更寶貴」，綻放出從神來的光輝與價值，在耶穌基督顯現的時候得著稱讚、榮耀、尊貴。<br>
-              <strong>2. 留下的事物：</strong>留下「<strong>對神非常單純的信心</strong>」。
-            </div>
-            <strong>分享引導：</strong>鼓勵組員分享過去在環境壓力或低谷中，生命裡的雜質（如自我倚靠、比較心態）如何被神煉淨的真實經歷。
-          </div>
-        </div>
-
-        <div class="q-item">
-          <div class="q-top">
-            <div class="q-badge">3</div>
-            <div class="q-title">亞伯拉罕清早毫不猶豫出發，這種不明白卻願意順服的態度，對你的學習是什麼？過去的經歷中，是否曾遇過當你堅持到底，發現神的恩典已經為你預備了一條出路？請試著分享。</div>
-          </div>
-          <button class="guide-btn" onclick="toggleGuide(this)">查看本文答案與帶領方向</button>
-          <div class="guide-content">
-            <div class="text-answer-box">
-              <span class="ans-label">📖 信息本文重點</span>
-              亞伯拉罕沒有猶豫，清早起來就起身走了。他不明白為什麼神現在要收回以撒，但他願意<strong>用信心接受神量給他生命的每一個處境，用信心順服</strong>，相信神必有美好的旨意。當他順服到底、快承受不住時，出現了「<strong>不料</strong>」——神預備代替獻祭的公羊就扣在樹上（夜最深的時候，往往就是神要給你開一條出路的時候）。
-            </div>
-            <strong>分享引導：</strong>真正的順服不是「完全想通了才行動」，而是「雖然不明白，但因為認識神信實美善而選擇立刻順服」。邀請組員分享生命中經歷「不料」轉機的見證。
-          </div>
-        </div>
-
-        <div class="q-item">
-          <div class="q-top">
-            <div class="q-badge">4</div>
-            <div class="q-title">亞伯拉罕的順服讓祝福範圍擴大到別人身上。你現在的處境，什麼可能是你生命中最放不下、神卻要你獻上的以撒（例如：工作、時間、金錢、關係、未來的掌控）？請分享，我們可以如何為你禱告？</div>
-          </div>
-          <button class="guide-btn" onclick="toggleGuide(this)">展開牧養與禱告帶領方向</button>
-          <div class="guide-content">
-            <strong>牧養與禱告提醒：</strong>這一題是整課的核心應用。小組長可先以身作則真誠分享自己的「以撒」，營造安全、不批判的氛圍。提醒組員：神要我們獻上以撒，不是為了剝奪我們的幸福，而是要我們不再把「祝福」當成偶像，好讓神能把更大的祝福（成為萬國的祝福）託付給我們。分享後請小組兩兩或圍圈為彼此按手禱告。
-          </div>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <footer>
-    <p>江子翠行道會｜小組牧養教材互動版</p>
-  </footer>
 
   <!-- 經文與神學解析視窗 -->
   <div class="modal-overlay" id="bubbleModal">
@@ -1046,20 +956,208 @@
     </div>
   </div>
 
+  <script src="./sg-reader.js?v=1"></script>
   <script>
-    // =================================================================
-    // 1. 分頁切換功能
-    // =================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
+      authDomain: "linfamily-31cb6.firebaseapp.com",
+      projectId: "linfamily-31cb6",
+      storageBucket: "linfamily-31cb6.firebasestorage.app",
+      messagingSenderId: "299667187224",
+      appId: "1:299667187224:web:8df32264698caad761c56d",
+      measurementId: "G-3SHGWYKKVZ"
+    };
+    const collectionName = 'sg_discussions';
+    const firebaseSDK = 'https://www.gstatic.com/firebasejs/11.10.0/';
+
+    let firebaseApp, firestore;
+    let recentList = [];
+    let currentDoc = null;
+    let activeTab = 'tab-info';
+    let allRevealed = false;
+
+    const fallbackDoc = {
+      date: '2026-11-10',
+      week_badge: 'WEEK 2',
+      date_range: '2026/11/10 — 11/15',
+      series_tag: '信心 ④',
+      title: '亞伯拉罕的信心（下）',
+      main_scripture_ref: '希伯來書 11:17–19',
+      main_scripture_key: 'heb11_17_19',
+      paragraphs: [
+        '今天要來分享亞伯拉罕的信心。我們先複習一下，什麼是亞伯拉罕的信心？第一個是[[pop:call_faith|對呼召的信心]]，去哪裡不是重要的，重要的是你的呼召。第二個是[[pop:promise_faith|對應許的信心]]，在毫無指望的時候，因信仍有指望，神蹟就發生了。第三個是[[pop:death_faith|超越死亡的信心]]，即使神的應許沒有在今生完全實現，但有一個信心是存著信心死，在將來的日子神必定會成就。今天要看的是，亞伯拉罕的信心是[[blank:勝過試驗]]的信心。',
+        '聖經很清楚地告訴我們，信心需要被[[pop:testing_vs_temptation|試驗]]，通過考試才能看見信心是真的還是假的。聖經最清楚的例證，就是亞伯拉罕獻上以撒（[[pop:gen22_1_2|創 22:1–2]]）。神向亞伯拉罕說，帶著你的兒子，你[[pop:only_son|獨生的兒子]]，你所愛的以撒。不過，試驗是按著[[blank:信心]]的程度，試驗的目的不是要摧毀，而是要使你對神更有信心。',
+        '在這當中有兩段經文很重要：第一段是[[pop:cor10_13|林前 10:13]]，夜最深的時候，往往就是神要給你[[blank:開一條出路]]的時候；第二段是[[pop:pet1_7|彼前 1:7]]，神要讓你的生命經過這些[[blank:試煉]]，使你比精金更寶貴。',
+        '亞伯拉罕清早起來就起身往神所指示他的地方去了（[[pop:gen22_3|創 22:3]]），願意用信心[[blank:接受]]神量給他生命的每一個處境。當他伸手拿刀的最後一刻，天使出現了（[[pop:gen22_11_12|創 22:11–12]]），這時候有個美麗的字叫做「[[blank:不料]]」，神預備代替獻祭的公羊就扣在樹上（[[pop:gen22_13_14|創 22:13–14]]）。',
+        '亞伯拉罕通過信心的畢業考，神重新肯定給他的祝福（[[pop:gen22_15_18|創 22:15–18]]）。當小組長[[blank:順服]]，萬國會因小組得福；神必照應許祝福他和他信心的後裔！'
+      ],
+      bubbles: {
+        heb11_17_19: { typeLabel: '主題經文｜和合本', title: '希伯來書 11:17–19', content: '「17 亞伯拉罕因著信，被試驗的時候，就把以撒獻上；這便是那歡喜領受應許的，將自己獨生的兒子獻上。18 論到這兒子，曾有話說：『從以撒生的才要稱為你的後裔。』19 他以為神還能叫人從死裡復活；他也彷彿從死中得回他的兒子來。」', source: '神學洞見：亞伯拉罕憑著對神全能與信實的認識，推論出神必叫以撒復活。' },
+        call_faith: { typeLabel: '神學概念｜對呼召的信心', title: '創世記 12:1–4 / 希伯來書 11:8', content: '「亞伯拉罕因著信，蒙召的時候就遵命出去，往將來要得為業的地方去；出去的時候，還不知往哪裡去。」', source: '回顧系列信息：《信心（一）》' },
+        promise_faith: { typeLabel: '神學概念｜對應許的信心', title: '羅馬書 4:18–21 / 希伯來書 11:11–12', content: '「他在無可指望的時候，因信仍有指望，就得以作多國的父……且滿心相信神所應許的必能做成。」', source: '回顧系列信息：《信心（二）》' },
+        death_faith: { typeLabel: '神學概念｜超越死亡的信心', title: '希伯來書 11:13–16', content: '「這些人都是存著信心死的，並沒有得著所應許的；卻從遠處望見，且歡喜迎接，又承認自己在世上是客旅，是寄居的。」', source: '回顧系列信息：《信心（三）》' },
+        testing_vs_temptation: { typeLabel: '聖經神學｜試驗（Testing）', title: '神為什麼要試驗人？', content: '神試驗亞伯拉罕是為了讓亞伯拉罕自己以及世世代代的信徒，透過實際行動「看見並確認」這份信心的真實與純度（申命記 8:2）。', source: '參考：丁道爾舊約聖經註釋《創世記》' },
+        gen22_1_2: { typeLabel: '相關經文｜和合本', title: '創世記 22:1–2', content: '「1 這些事以後，神要試驗亞伯拉罕……2 神說：『你帶著你的兒子，就是你獨生的兒子，你所愛的以撒，往摩利亞地去，在我所要指示你的山上，把他獻為燔祭。』」', source: '經文細節：原文連用三個遞進稱呼，層層觸動父親最深的情感。' },
+        only_son: { typeLabel: '救贖預表｜獨生的愛子', title: '以撒與基督的預表關係', content: '以撒背負燔祭的木柴走上摩利亞山（創 22:6），預表耶穌基督背負十字架走上各各他山坡（約 19:17）。', source: '參考：麥克阿瑟新約註釋《希伯來書》' },
+        cor10_13: { typeLabel: '相關經文｜和合本', title: '哥林多前書 10:13', content: '「你們所遇見的試探，無非是人所能受的。神是信實的，必不叫你們受試探過於所能受的；在受試探的時候，總要給你們開一條出路，叫你們能忍受得住。」', source: '神學應許：神為每一個試煉設定了上限，並同時預備了出路。' },
+        pet1_7: { typeLabel: '相關經文｜和合本', title: '彼得前書 1:7', content: '「叫你們的信心既被試驗，就比那被火試驗仍然能壞的金子更顯寶貴，可以在耶穌基督顯現的時候得著稱讚、榮耀、尊貴。」', source: '經文意象：經過苦難火煉的信心具有永恆的價值。' },
+        gen22_3: { typeLabel: '相關經文｜和合本', title: '創世記 22:3', content: '「亞伯拉罕清早起來，備上驢，帶著兩個僕人和他兒子以撒，也劈好了燔祭的柴，就起身往神所指示他的地方去了。」', source: '行動詮釋：「清早起來」顯示他沒有拖延，立刻以行動回應。' },
+        gen22_11_12: { typeLabel: '相關經文｜和合本', title: '創世記 22:11–12', content: '「天使說：『你不可在這童子身上下手。一點不可害他！現在我知道你是敬畏神的了；因為你沒有將你的兒子，就是你獨生的兒子，留下不給我。』」', source: '神學核心：「敬畏神」是把神放在一切所愛之上。' },
+        gen22_13_14: { typeLabel: '相關經文｜和合本', title: '創世記 22:13–14', content: '「亞伯拉罕舉目觀看，不料，有一只公羊，兩角扣在稠密的小樹中……亞伯拉罕給那地方起名叫『耶和華以勒』。」', source: '關鍵字詞：「代替」確立了舊約代贖祭祀的核心原則。' },
+        gen22_15_18: { typeLabel: '相關經文｜和合本', title: '創世記 22:15–18', content: '「論福，我必賜大福給你；論子孫，我必叫你的子孫多起來……並且地上萬國都必因你的後裔得福，因為你聽從了我的話。」', source: '聖約高峰：神唯一一次「指著自己起誓」堅立祝福。' }
+      },
+      background_blocks: [
+        { title: '一、《希伯來書》第十一章的寫作背景與目的', desc: '《希伯來書》寫作於主後 60 年代末期，收信人是一群面臨羅馬帝國逼迫的猶太裔基督徒。作者在第十一章列舉舊約「信心偉人榜」，證明真正的信心不是逃避苦難，而是在看不見結局時依然信靠神的應許與復活大能。', ref: '參考出處：布魯斯（F. F. Bruce），《丁道爾新約聖經註釋：希伯來書》' },
+        { title: '二、亞伯拉罕獻以撒（創世記 22 章）的神學張力', desc: '在應許之子以撒平安長大、生命進入最安穩的階段時，神卻命令他將獨生子獻為燔祭。這構成了舊約中最劇烈的神學張力：<strong>「神的命令」似乎與「神的應許」直接衝突</strong>。亞伯拉罕之所以能順服，是因為他深信神是使死人復活的神（來 11:19）。', ref: '參考出處：華爾頓（John H. Walton），《NIV 國際聖經背景註釋：創世記》' }
+      ],
+      word_studies: [
+        { title: '1. 「試驗」與「試探」的區別', lang: '希伯來文 נָסָה (nasah) / 希臘文 πειράζω (peirazō)', desc: '原文同一個字根具備雙重含義，取決於發出者的動機：<strong>撒但的「試探」</strong>目的是引誘人犯罪跌倒；<strong>神的「試驗」</strong>目的是檢驗信心的真偽、煉淨雜質，使人更加成熟剛強（雅 1:13–14）。' },
+        { title: '2. 「不料」與「耶和華以勒」', lang: '希伯來文 הִנֵּה (hinneh) / יְהוָה יִרְאֶה (YHWH Yireh)', desc: '創 22:13 的「不料」在希伯來敘事中用來表達<strong>戲劇性的神聖轉折</strong>——在人的盡頭，神早已預備好了替代的公羊。「耶和華以勒」原意為「在耶和華的山上必有預備」。' }
+      ],
+      questions: [
+        { question: '上帝是在亞伯拉罕人生的什麼時刻給予他這次試驗？上帝要求他獻上什麼？', btn_label: '查看本文答案與觀察重點', answer_box: '1. 試驗時刻：以撒生了、與外邦人爭論也解決，到了人生風平浪靜、最幸福的時刻之後。<br>2. 獻上對象：獨生的兒子、最愛的以撒。', guide: '上帝考試的題目往往是我們心中最在乎的，目的不是摧毀，而是使我們對神更有信心。' },
+        { question: '你現在的處境，什麼可能是你生命中最放不下、神卻要你獻上的以撒（工作、金錢、關係、未來的掌控）？我們可以如何為你禱告？', btn_label: '展開牧養與禱告帶領方向', answer_box: '', guide: '小組長可先以身作則真誠分享自己的「以撒」，營造安全、不批判的氛圍，分享後為彼此按手禱告。' }
+      ]
+    };
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[ch]);
+    }
+
+    function parseParagraphMarkup(raw) {
+      let escaped = escapeHtml(raw);
+      escaped = escaped.replace(/\[\[blank:([^\]]+)\]\]/g, (_, ans) =>
+        `<span class="blank-slot" role="button" tabindex="0"><span class="placeholder-text">點擊看解答</span><span class="answer-text">${ans}</span></span>`
+      );
+      escaped = escaped.replace(/\[\[pop:([^|\]]+)\|([^\]]+)\]\]/g, (_, key, label) =>
+        `<span class="pop-trigger" data-pop="${key}">${label}</span>`
+      );
+      return escaped;
+    }
+
+    function renderDocument(doc, rootNode = document) {
+      const q = sel => rootNode.querySelector(sel);
+      q('#heroWeekBadge').textContent = doc.week_badge || '小組教材';
+      q('#heroDateRange').textContent = doc.date_range || doc.date;
+      q('#heroSeriesTag').textContent = doc.series_tag || '主日信息';
+      q('#heroTitle').textContent = doc.title || '小組牧養教材';
+
+      const mainTrigger = q('#heroScriptureTrigger');
+      mainTrigger.textContent = doc.main_scripture_ref || '';
+      mainTrigger.dataset.pop = doc.main_scripture_key || 'main_ref';
+
+      const articleBody = q('#articleBody');
+      articleBody.innerHTML = (doc.paragraphs || []).map(p => `<p>${parseParagraphMarkup(p)}</p>`).join('');
+
+      const bgContainer = q('#bgBlocksContainer');
+      bgContainer.innerHTML = (doc.background_blocks || []).map(b => `
+        <div class="clean-block">
+          <div class="block-title">${escapeHtml(b.title)}</div>
+          <p class="block-desc">${b.desc || ''}</p>
+          ${b.ref ? `<span class="ref-note">${escapeHtml(b.ref)}</span>` : ''}
+        </div>
+      `).join('');
+
+      const wordContainer = q('#wordStudiesContainer');
+      wordContainer.innerHTML = (doc.word_studies || []).map(w => `
+        <div class="clean-block">
+          <div class="block-title">
+            ${escapeHtml(w.title)}
+            ${w.lang ? `<span class="lang-badge">${escapeHtml(w.lang)}</span>` : ''}
+          </div>
+          <p class="block-desc">${w.desc || ''}</p>
+        </div>
+      `).join('');
+
+      const qContainer = q('#questionsContainer');
+      qContainer.innerHTML = (doc.questions || []).map((item, idx) => `
+        <div class="q-item">
+          <div class="q-top">
+            <div class="q-badge">${idx + 1}</div>
+            <div class="q-title">${escapeHtml(item.question)}</div>
+          </div>
+          <button class="guide-btn" onclick="toggleGuide(this)">${escapeHtml(item.btn_label || '查看本文答案與帶領重點')}</button>
+          <div class="guide-content">
+            ${item.answer_box ? `<div class="text-answer-box"><span class="ans-label">📖 信息本文答案</span>${item.answer_box}</div>` : ''}
+            <strong>帶領與牧養延伸：</strong>${item.guide || ''}
+          </div>
+        </div>
+      `).join('');
+
+      if (rootNode === document) {
+        document.title = `江子翠行道會｜小組教材：${doc.title}`;
+        allRevealed = false;
+        bindInteractiveElements();
+        updateBlankState();
+        SGReader.refresh(activeTab);
+      }
+    }
+
+    function bindInteractiveElements() {
+      document.querySelectorAll('.blank-slot').forEach(slot => {
+        const toggleSlot = () => {
+          slot.classList.toggle('revealed');
+          updateBlankState();
+        };
+        slot.addEventListener('click', toggleSlot);
+        slot.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleSlot();
+          }
+        });
+      });
+
+      const bubbles = currentDoc?.bubbles || {};
+      document.querySelectorAll('.pop-trigger').forEach(trigger => {
+        trigger.addEventListener('click', () => {
+          const data = bubbles[trigger.dataset.pop];
+          if (!data) return;
+          document.getElementById('bubbleType').textContent = data.typeLabel || '經文出處';
+          document.getElementById('bubbleTitle').textContent = data.title || '';
+          document.getElementById('bubbleContent').textContent = data.content || '';
+          document.getElementById('bubbleSource').textContent = data.source || '';
+          document.getElementById('bubbleModal').classList.add('active');
+        });
+      });
+    }
+
+    function updateBlankState() {
+      const slots = document.querySelectorAll('.blank-slot');
+      const revealedCount = document.querySelectorAll('.blank-slot.revealed').length;
+      const progressPill = document.getElementById('blankProgress');
+      const toggleBtn = document.getElementById('toggleAllBtn');
+      progressPill.textContent = `已解鎖 ${revealedCount} / ${slots.length}`;
+      if (slots.length > 0 && revealedCount === slots.length) {
+        allRevealed = true;
+        toggleBtn.textContent = '隱藏全部';
+      } else if (revealedCount === 0) {
+        allRevealed = false;
+        toggleBtn.textContent = '顯示全部';
+      }
+    }
+
+    document.getElementById('toggleAllBtn').addEventListener('click', () => {
+      allRevealed = !allRevealed;
+      document.querySelectorAll('.blank-slot').forEach(slot => slot.classList.toggle('revealed', allRevealed));
+      updateBlankState();
+    });
+
     const segBtns = document.querySelectorAll('.seg-btn');
     const tabPanels = document.querySelectorAll('.tab-panel');
 
     function switchToTab(targetId) {
+      activeTab = targetId;
+      SGReader.clear();
       segBtns.forEach(b => {
         b.classList.toggle('active', b.dataset.tab === targetId);
       });
       tabPanels.forEach(p => {
         p.classList.toggle('active', p.id === targetId);
       });
+      SGReader.refresh(targetId);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -1067,9 +1165,145 @@
       btn.addEventListener('click', () => switchToTab(btn.dataset.tab));
     });
 
-    // =================================================================
-    // 2. PWA 安裝成 App 偵測與一鍵安裝邏輯
-    // =================================================================
+    function toggleGuide(btn) {
+      const box = btn.nextElementSibling;
+      const isOpen = box.classList.toggle('open');
+      if (!btn.dataset.defaultText) {
+        btn.dataset.defaultText = btn.textContent;
+      }
+      btn.textContent = isOpen ? '收合答案與重點' : btn.dataset.defaultText;
+    }
+
+    function getFirebaseApp() {
+      return firebaseApp ||= import(firebaseSDK + 'firebase-app.js')
+        .then(sdk => sdk.getApps().some(app => app.name === '[DEFAULT]') ? sdk.getApp() : sdk.initializeApp(firebaseConfig))
+        .catch(err => { firebaseApp = null; throw err; });
+    }
+
+    function getDatabase() {
+      return firestore ||= Promise.all([getFirebaseApp(), import(firebaseSDK + 'firebase-firestore.js')])
+        .then(([app, sdk]) => ({ ...sdk, instance: sdk.getFirestore(app) }))
+        .catch(err => { firestore = null; throw err; });
+    }
+
+    async function watchLinFamilyAuth() {
+      const welcomeBadge = document.getElementById('sgWelcome');
+      const authUnavailable = () => {
+        welcomeBadge.hidden = true;
+        SGReader.setAccount(undefined, true);
+      };
+      try {
+        const [app, sdk] = await Promise.all([getFirebaseApp(), import(firebaseSDK + 'firebase-auth.js')]);
+        sdk.onAuthStateChanged(sdk.getAuth(app), user => {
+          const signedIn = user && !user.isAnonymous;
+          welcomeBadge.hidden = !signedIn;
+          if (signedIn) {
+            const name = user.displayName?.trim() || '同工';
+            welcomeBadge.textContent = `歡迎，${name}`;
+            SGReader.setAccount({
+              subscribe: async (entry, next, error) => {
+                const db = await getDatabase();
+                const annotations = db.collection(db.instance, 'sg_readers', user.uid, 'annotations');
+                return db.onSnapshot(db.query(annotations, db.where('entry', '==', entry)), next, error);
+              },
+              save: async (entry, item) => {
+                const db = await getDatabase();
+                const { id, ...payload } = item;
+                await db.setDoc(db.doc(db.instance, 'sg_readers', user.uid, 'annotations', id),
+                  { entry, payload: JSON.stringify(payload) });
+              },
+              remove: async (id) => {
+                const db = await getDatabase();
+                await db.deleteDoc(db.doc(db.instance, 'sg_readers', user.uid, 'annotations', id));
+              }
+            });
+          } else {
+            SGReader.setAccount(null);
+          }
+        }, authUnavailable);
+      } catch {
+        authUnavailable();
+      }
+    }
+
+    function updateDateNav() {
+      const idx = recentList.findIndex(d => d.date === currentDoc?.date);
+      document.getElementById('sg-prev').disabled = idx < 0 || idx >= recentList.length - 1;
+      document.getElementById('sg-next').disabled = idx <= 0;
+
+      const listEl = document.getElementById('sg-date-list');
+      listEl.replaceChildren(...recentList.map(item => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = `${item.date_range || item.date}｜${item.title}`;
+        if (item.date === currentDoc?.date) btn.setAttribute('aria-current', 'date');
+        btn.addEventListener('click', () => {
+          document.getElementById('sg-date-picker').open = false;
+          selectWeek(item.date);
+        });
+        return btn;
+      }));
+    }
+
+    function adjacentWeek(direction) {
+      const idx = recentList.findIndex(d => d.date === currentDoc?.date);
+      if (idx < 0) return null;
+      return recentList[idx - direction] || null;
+    }
+
+    function previewWeek(data) {
+      const clone = document.getElementById('sg-reading-sheet').cloneNode(true);
+      clone.querySelector('#sg-date-picker').open = false;
+      renderDocument(data, clone);
+      return clone;
+    }
+
+    function selectWeek(dateStr, animate = true) {
+      const target = recentList.find(d => d.date === dateStr);
+      if (!target) return;
+      if (animate && currentDoc && currentDoc.date !== dateStr) {
+        document.getElementById('sg-date-picker').open = false;
+        SGReader.turn(target, dateStr > currentDoc.date, () => selectWeek(dateStr, false));
+        return;
+      }
+      SGReader.clear();
+      currentDoc = target;
+      renderDocument(target);
+      updateDateNav();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function shiftWeek(direction) {
+      const target = adjacentWeek(direction);
+      if (target) selectWeek(target.date, true);
+    }
+
+    async function loadDiscussions() {
+      const statusEl = document.getElementById('sgStatus');
+      try {
+        const { collection, query, orderBy, getDocs, instance } = await getDatabase();
+        const snap = await getDocs(query(collection(instance, collectionName), orderBy('date', 'desc')));
+        recentList = snap.docs.map(d => ({ ...d.data(), date: d.id }));
+        if (recentList.length > 0) {
+          statusEl.hidden = true;
+          selectWeek(recentList[0].date, false);
+        } else {
+          recentList = [fallbackDoc];
+          selectWeek(fallbackDoc.date, false);
+        }
+      } catch (e) {
+        console.warn('讀取 Firestore 失敗，改用內建教材：', e);
+        recentList = [fallbackDoc];
+        selectWeek(fallbackDoc.date, false);
+      }
+    }
+
+    document.getElementById('sg-prev').addEventListener('click', () => shiftWeek(-1));
+    document.getElementById('sg-next').addEventListener('click', () => shiftWeek(1));
+    document.getElementById('brandHome').addEventListener('click', () => {
+      if (recentList.length > 0) selectWeek(recentList[0].date, false);
+    });
+
     const installAppBtn = document.getElementById('installAppBtn');
     const iosInstallModal = document.getElementById('iosInstallModal');
     const closeIosModalBtn = document.getElementById('closeIosModalBtn');
@@ -1082,45 +1316,19 @@
     }
 
     function isRunningStandalone() {
-      return (
-        window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true
-      );
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     }
-
     function isIosDevice() {
       return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
     }
-
-    async function checkInstallAvailability() {
-      if (isRunningStandalone()) {
-        installAppBtn.classList.remove('visible');
-        return;
-      }
-
-      if ('getInstalledRelatedApps' in navigator) {
-        try {
-          const relatedApps = await navigator.getInstalledRelatedApps();
-          if (relatedApps.length > 0) {
-            installAppBtn.classList.remove('visible');
-            return;
-          }
-        } catch (err) {}
-      }
-
-      if (isIosDevice()) {
-        installAppBtn.classList.add('visible');
-      }
+    if (!isRunningStandalone() && isIosDevice()) {
+      installAppBtn.classList.add('visible');
     }
-
-    checkInstallAvailability();
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      if (!isRunningStandalone()) {
-        installAppBtn.classList.add('visible');
-      }
+      if (!isRunningStandalone()) installAppBtn.classList.add('visible');
     });
 
     installAppBtn.addEventListener('click', async () => {
@@ -1130,198 +1338,43 @@
         if (outcome === 'accepted') {
           installAppBtn.classList.remove('visible');
           deferredPrompt = null;
-        } else {
-          installAppBtn.classList.add('visible');
         }
       } else if (isIosDevice()) {
         iosInstallModal.classList.add('active');
       }
     });
 
-    window.addEventListener('appinstalled', () => {
-      installAppBtn.classList.remove('visible');
-      deferredPrompt = null;
-    });
-
-    window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
-      if (e.matches) {
-        installAppBtn.classList.remove('visible');
-      }
-    });
-
-    closeIosModalBtn.addEventListener('click', () => {
-      iosInstallModal.classList.remove('active');
-    });
+    closeIosModalBtn.addEventListener('click', () => iosInstallModal.classList.remove('active'));
     iosInstallModal.addEventListener('click', (e) => {
       if (e.target === iosInstallModal) iosInstallModal.classList.remove('active');
     });
 
-    // =================================================================
-    // 3. 互動填空點擊顯示／隱藏 + 即時進度計數
-    // =================================================================
-    const blankSlots = document.querySelectorAll('.blank-slot');
-    const toggleAllBtn = document.getElementById('toggleAllBtn');
-    const blankProgress = document.getElementById('blankProgress');
-    let allRevealed = false;
-
-    function updateBlankState() {
-      const revealedCount = document.querySelectorAll('.blank-slot.revealed').length;
-      blankProgress.textContent = `已解鎖 ${revealedCount} / ${blankSlots.length}`;
-      if (revealedCount === blankSlots.length) {
-        allRevealed = true;
-        toggleAllBtn.textContent = '隱藏全部';
-      } else if (revealedCount === 0) {
-        allRevealed = false;
-        toggleAllBtn.textContent = '顯示全部';
-      }
-    }
-
-    blankSlots.forEach(slot => {
-      const toggleSlot = () => {
-        slot.classList.toggle('revealed');
-        updateBlankState();
-      };
-      slot.addEventListener('click', toggleSlot);
-      slot.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleSlot();
-        }
-      });
-    });
-
-    toggleAllBtn.addEventListener('click', () => {
-      allRevealed = !allRevealed;
-      blankSlots.forEach(slot => slot.classList.toggle('revealed', allRevealed));
-      updateBlankState();
-    });
-
-    // =================================================================
-    // 4. 小組討論本文答案與帶領方向展開/收合
-    // =================================================================
-    function toggleGuide(btn) {
-      const box = btn.nextElementSibling;
-      const isOpen = box.classList.toggle('open');
-      if (!btn.dataset.defaultText) {
-        btn.dataset.defaultText = btn.textContent;
-      }
-      btn.textContent = isOpen ? '收合答案與重點' : btn.dataset.defaultText;
-    }
-
-    // =================================================================
-    // 5. 經文與神學解析泡泡資料庫
-    // =================================================================
-    const bubbleData = {
-      heb11_17_19: {
-        typeLabel: '主題經文｜和合本',
-        title: '希伯來書 11:17–19',
-        content: '「17 亞伯拉罕因著信，被試驗的時候，就把以撒獻上；這便是那歡喜領受應許的，將自己獨生的兒子獻上。18 論到這兒子，曾有話說：『從以撒生的才要稱為你的後裔。』19 他以為神還能叫人從死裡復活；他也彷彿從死中得回他的兒子來。」',
-        source: '神學洞見：在亞伯拉罕之前，聖經從未記載過死人復活的先例；亞伯拉罕是憑著對神全能與信實的認識，推論出神必叫以撒復活。'
-      },
-      call_faith: {
-        typeLabel: '神學概念｜對呼召的信心',
-        title: '創世記 12:1–4 / 希伯來書 11:8',
-        content: '「亞伯拉罕因著信，蒙召的時候就遵命出去，往將來要得為業的地方去；出去的時候，還不知往哪裡去。」真正的信心不是先看清地圖才出發，而是因為信任帶領者，便勇敢踏出舒適圈。',
-        source: '回顧系列信息：《信心（一）》'
-      },
-      promise_faith: {
-        typeLabel: '神學概念｜對應許的信心',
-        title: '羅馬書 4:18–21 / 希伯來書 11:11–12',
-        content: '「他在無可指望的時候，因信仍有指望，就得以作多國的父……且滿心相信神所應許的必能做成。」當身體如同已死、環境完全不可能時，信心單單抓緊神的話語。',
-        source: '回顧系列信息：《信心（二）》'
-      },
-      death_faith: {
-        typeLabel: '神學概念｜超越死亡的信心',
-        title: '希伯來書 11:13–16',
-        content: '「這些人都是存著信心死的，並沒有得著所應許的；卻從遠處望見，且歡喜迎接，又承認自己在世上是客旅，是寄居的。」信心超越今生短暫的得失，望見神在永恆中預備更美的家鄉。',
-        source: '回顧系列信息：《信心（三）》'
-      },
-      testing_vs_temptation: {
-        typeLabel: '聖經神學｜試驗（Testing）',
-        title: '神為什麼要試驗人？',
-        content: '神是全知的，祂試驗亞伯拉罕不是因為神不知道亞伯拉罕的內心，而是為了讓亞伯拉罕自己以及世世代代的信徒，透過實際行動「看見並確認」這份信心的真實與純度（申命記 8:2）。',
-        source: '參考：丁道爾舊約聖經註釋《創世記》'
-      },
-      gen22_1_2: {
-        typeLabel: '相關經文｜和合本',
-        title: '創世記 22:1–2',
-        content: '「1 這些事以後，神要試驗亞伯拉罕，就呼叫他說：『亞伯拉罕！』他說：『我在這裡。』2 神說：『你帶著你的兒子，就是你獨生的兒子，你所愛的以撒，往摩利亞地去，在我所要指示你的山上，把他獻為燔祭。』」',
-        source: '經文細節：原文連用三個遞進稱呼「你的兒子 → 獨生的兒子 → 你所愛的以撒」，層層觸動父親最深的情感。'
-      },
-      only_son: {
-        typeLabel: '救贖預表｜獨生的愛子',
-        title: '以撒與基督的預表關係',
-        content: '以撒背負燔祭的木柴走上摩利亞山（創 22:6），順服年邁父親的捆綁；這正是耶穌基督背負十字架走上各各他山坡（約 19:17）、順服天父旨意直至受死的鮮明預表。',
-        source: '參考：麥克阿瑟新約註釋《希伯來書》'
-      },
-      cor10_13: {
-        typeLabel: '相關經文｜和合本',
-        title: '哥林多前書 10:13',
-        content: '「你們所遇見的試探，無非是人所能受的。神是信實的，必不叫你們受試探過於所能受的；在受試探的時候，總要給你們開一條出路，叫你們能忍受得住。」',
-        source: '神學應許：神是環境的掌管者，祂為每一個試煉設定了上限，並同時預備了「承受的力量」與「出路」。'
-      },
-      pet1_7: {
-        typeLabel: '相關經文｜和合本',
-        title: '彼得前書 1:7',
-        content: '「叫你們的信心既被試驗，就比那被火試驗仍然能壞的金子更顯寶貴，可以在耶穌基督顯現的時候得著稱讚、榮耀、尊貴。」',
-        source: '經文意象：連世人最看重的純金在末日都會毀壞，但經過苦難火煉的信心卻具有永恆的價值。'
-      },
-      gen22_3: {
-        typeLabel: '相關經文｜和合本',
-        title: '創世記 22:3',
-        content: '「亞伯拉罕清早起來，備上驢，帶著兩個僕人和他兒子以撒，也劈好了燔祭的柴，就起身往神所指示他的地方去了。」',
-        source: '行動詮釋：「清早起來」顯示他沒有拖延、沒有與人商量妥協，而是立刻以行動回應神的命令。'
-      },
-      gen22_11_12: {
-        typeLabel: '相關經文｜和合本',
-        title: '創世記 22:11–12',
-        content: '「11 耶和華的使者從天上呼叫他說：『亞伯拉罕！亞伯拉罕！』他說：『我在這裡。』12 天使說：『你不可在這童子身上下手。一點不可害他！現在我知道你是敬畏神的了；因為你沒有將你的兒子，就是你獨生的兒子，留下不給我。』」',
-        source: '神學核心：「敬畏神」在聖經中不是恐懼退縮，而是把神放在一切所愛之上。'
-      },
-      gen22_13_14: {
-        typeLabel: '相關經文｜和合本',
-        title: '創世記 22:13–14',
-        content: '「13 亞伯拉罕舉目觀看，不料，有一只公羊，兩角扣在稠密的小樹中，亞伯拉罕就取了那只公羊來，獻為燔祭，代替他的兒子。14 亞伯拉罕給那地方起名叫『耶和華以勒』（就是耶和華必預備的意思），直到今日人還說：『在耶和華的山上必有預備。』」',
-        source: '關鍵字詞：「代替」一詞確立了舊約代贖祭祀的核心原則——無辜的祭牲代替應許之子受死。'
-      },
-      gen22_15_18: {
-        typeLabel: '相關經文｜和合本',
-        title: '創世記 22:15–18',
-        content: '「15 耶和華的使者第二次從天上呼叫亞伯拉罕說：16『耶和華說：你既行了這事，不留下你的兒子，就是你獨生的兒子，我便指著自己起誓說：17 論福，我必賜大福給你；論子孫，我必叫你的子孫多起來，如同天上的星，海邊的沙。你子孫必得著仇敵的城門，18 並且地上萬國都必因你的後裔得福，因為你聽從了我的話。』」',
-        source: '聖約高峰：這是神在創世記中唯一一次「指著自己起誓」堅立對亞伯拉罕的祝福（參希伯來書 6:13–14）。'
-      }
-    };
-
     const modal = document.getElementById('bubbleModal');
-    const closeBtn = document.getElementById('closeBubbleBtn');
-    const bubbleType = document.getElementById('bubbleType');
-    const bubbleTitle = document.getElementById('bubbleTitle');
-    const bubbleContent = document.getElementById('bubbleContent');
-    const bubbleSource = document.getElementById('bubbleSource');
-
-    document.querySelectorAll('.pop-trigger').forEach(trigger => {
-      trigger.addEventListener('click', () => {
-        const data = bubbleData[trigger.dataset.pop];
-        if (!data) return;
-
-        bubbleType.textContent = data.typeLabel;
-        bubbleTitle.textContent = data.title;
-        bubbleContent.textContent = data.content;
-        bubbleSource.textContent = data.source;
-        modal.classList.add('active');
-      });
-    });
-
-    closeBtn.addEventListener('click', () => modal.classList.remove('active'));
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.classList.remove('active');
-    });
+    document.getElementById('closeBubbleBtn').addEventListener('click', () => modal.classList.remove('active'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         modal.classList.remove('active');
         iosInstallModal.classList.remove('active');
       }
     });
+
+    SGReader.init({
+      getCurrent: () => currentDoc,
+      getTab: () => activeTab,
+      copy: async (text) => {
+        try { await navigator.clipboard.writeText(text); return true; }
+        catch { return false; }
+      },
+      turn: shiftWeek,
+      adjacent: adjacentWeek,
+      preview: previewWeek
+    });
+
+    loadDiscussions();
+    watchLinFamilyAuth();
   </script>
+  <script defer src="https://clc-dx04.pages.dev/lf-back.js?v=8" data-home="../" data-key="linfamily_homebtn_open"></script>
+  <script defer src="../js/lf-menu.js?v=4"></script>
 </body>
 </html>

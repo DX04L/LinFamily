@@ -1,37 +1,34 @@
-const CACHE_NAME = 'jiangzicui-group-v3';
+const CACHE_NAME = 'sg-discussion-v4';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json?v=3',
-  './favicon.ico?v=3',
-  './icons/apple-touch-icon.png?v=3',
-  './icons/icon-192.png?v=3',
-  './icons/icon-512.png?v=3',
-  './icons/logo-book.svg?v=3'
+  './sg-reader.css?v=1',
+  './sg-reader.js?v=1',
+  './manifest.json?v=4'
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).catch(() => {})
+  );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
     fetch(event.request)
       .then((res) => {
-        const resClone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
         return res;
       })
       .catch(() => caches.match(event.request))
