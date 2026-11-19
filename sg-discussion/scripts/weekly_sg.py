@@ -1,21 +1,16 @@
 import os
+import sys
 import re
 import json
 import hashlib
-import base64
+import io
+import unicodedata
+import zipfile
+from xml.etree import ElementTree
 from datetime import datetime, timezone, timedelta
-from urllib.parse import urljoin
+from urllib.parse import unquote, urljoin, urlsplit
 import requests
 from bs4 import BeautifulSoup
-import firebase_admin
-from firebase_admin import credentials, firestore
-
-# 1. 初始化 Firebase Admin
-cred_dict = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
-if not firebase_admin._apps:
-    cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred)
-db = firestore.client()
 
 SOURCE_URL = "https://www.changelife.org.tw/serviceCellGroup.php"
 GEMINI_API_ROOT = "https://generativelanguage.googleapis.com/v1beta"
@@ -26,7 +21,7 @@ HEADERS = {
 
 
 def discover_gemini_models(api_key: str) -> list:
-    resp = requests.get(f"{GEMINI_API_ROOT}/models?key={api_key}", timeout=20)
+    resp = requests.get(f"{GEMINI_API_ROOT}/models", headers={"x-goog-api-key": api_key}, timeout=20)
     resp.raise_for_status()
     models = resp.json().get("models", [])
     skip_keywords = ["embedding", "imagen", "image", "veo", "tts", "aqa", "bisect", "robotics", "computer-use", "audio", "vision"]
@@ -53,100 +48,87 @@ def discover_gemini_models(api_key: str) -> list:
     return candidates
 
 
-def extract_date_id(text: str) -> str:
-    """從文字中萃取標準日期 ID (YYYY-MM-DD)，作為 Firestore 文件主鍵與排序依據"""
-    m = re.search(r"(20\d{2})\s*[./年-]\s*(\d{1,2})\s*[./月-]\s*(\d{1,2})", text)
-    if m:
-        y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
-        return f"{y:04d}-{mo:02d}-{d:02d}"
-    m2 = re.search(r"(\d{1,2})\s*[./月-]\s*(\d{1,2})\s*(?:日|[-–—~～])", text)
-    if m2:
-        now = datetime.now(timezone(timedelta(hours=8)))
-        mo, d = int(m2.group(1)), int(m2.group(2))
-        return f"{now.year:04d}-{mo:02d}-{d:02d}"
-    return ""
+def normalize_title(value):
+    value = unicodedata.normalize("NFKC", value)
+    return "".join(re.findall(r"[^\W_]+", value)).casefold()
 
 
-def fetch_cell_group_items() -> list:
-    """抓取江子翠行道會小組教材網頁，解析目前架上的所有週次教材"""
-    resp = requests.get(SOURCE_URL, headers=HEADERS, timeout=20)
-    resp.encoding = resp.apparent_encoding or "utf-8"
+def read_docx(content):
+    namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        root = ElementTree.fromstring(archive.read("word/document.xml"))
+    paragraphs = [
+        "".join(node.text or "" for node in para.iter(namespace + "t")).strip()
+        for para in root.iter(namespace + "p")
+    ]
+    return "\n".join(para for para in paragraphs if para)
+
+
+def fetch_cell_group_items(now=None):
+    now = now or datetime.now(timezone(timedelta(hours=8)))
+    resp = requests.get(SOURCE_URL, headers=HEADERS, timeout=25)
     resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
+    soup = BeautifulSoup(resp.content, "html.parser", from_encoding="utf-8")
 
-    for tag in soup(["script", "style", "nav", "footer", "header"]):
-        tag.decompose()
+    downloads = []
+    for table in soup.select("table.download"):
+        heading = table.parent.select_one(".title")
+        if not heading:
+            continue
+        cells = table.select("tr td")
+        if len(cells) < 4:
+            continue
+        # 下載表最後一列依序為家庭／社青原版、解答版、學青原版、解答版。
+        original, answer = (cell.find("a", href=True) for cell in cells[-4:-2])
+        downloads.append((normalize_title(heading.get_text(strip=True)), original, answer))
 
     items = []
-    seen_ids = set()
-
-    # 策略 A：尋找網頁中的教材連結（如 PDF 檔或內頁連結）
-    links = []
-    for a in soup.find_all("a", href=True):
-        href = urljoin(SOURCE_URL, a["href"].strip())
-        label = " ".join(a.get_text(" ", strip=True).split())
-        parent_text = " ".join(a.parent.get_text(" ", strip=True).split()) if a.parent else label
-        combined = f"{label} {parent_text}"
-        if any(k in combined for k in ["小組", "教材", "WEEK", "Week", "週", "信息", ".pdf", "cell", "Cell"]) or extract_date_id(combined):
-            if href not in [x["href"] for x in links] and "serviceCellGroup.php" not in href:
-                links.append({"href": href, "label": label, "context": combined[:500]})
-
-    for link in links:
-        date_id = extract_date_id(link["context"])
-        if not date_id or date_id in seen_ids:
+    for row in soup.select("table[data-sheets-root] tr"):
+        cells = row.find_all("td", recursive=False)
+        if len(cells) != 4:
             continue
-
-        raw_content = link["context"]
-        pdf_bytes = None
-        if link["href"].lower().endswith(".pdf"):
-            try:
-                pdf_resp = requests.get(link["href"], headers=HEADERS, timeout=25)
-                if pdf_resp.ok and len(pdf_resp.content) < 8_000_000:
-                    pdf_bytes = pdf_resp.content
-            except Exception as e:
-                print(f"⚠️ PDF 下載失敗 ({link['href']}): {e}")
+        start, separator, end, title = (cell.get_text(" ", strip=True) for cell in cells)
+        if separator not in {"-", "–", "—", "~", "～"} or not re.fullmatch(r"\d{1,2}/\d{1,2}", start):
+            continue
+        month, day = map(int, start.split("/"))
+        if month != now.month or "小組暫停" in title:
+            continue
+        if not re.fullmatch(r"\d{1,2}/\d{1,2}", end):
+            raise ValueError(f"{start} 教材的結束日期無法辨識")
+        start_date = datetime(now.year, month, day).date()
+        em, ed = map(int, end.split("/"))
+        end_date = datetime(now.year + (em < month), em, ed).date()
+        is_inductive = "歸納法查經" in title
+        title_key = normalize_title(title)
+        if is_inductive:
+            topic = re.sub(r"^歸納法查經\s*【[^】]+】\s*", "", title)
+            matches = [original for key, original, _ in downloads
+                       if key.startswith(f"{month}月") and key.endswith(normalize_title(topic))]
         else:
-            try:
-                sub_resp = requests.get(link["href"], headers=HEADERS, timeout=20)
-                sub_resp.encoding = sub_resp.apparent_encoding or "utf-8"
-                if sub_resp.ok:
-                    sub_soup = BeautifulSoup(sub_resp.text, "html.parser")
-                    for t in sub_soup(["script", "style", "nav", "footer"]):
-                        t.decompose()
-                    body_text = "\n".join(line.strip() for line in sub_soup.get_text("\n").splitlines() if line.strip())
-                    if len(body_text) > 100:
-                        raw_content = body_text[:12000]
-            except Exception as e:
-                print(f"⚠️ 內頁讀取失敗 ({link['href']}): {e}")
-
-        seen_ids.add(date_id)
+            matches = [answer for key, _, answer in downloads if key == title_key]
+        if len(matches) != 1 or not matches[0]:
+            print(f"⚠️ {start_date} 找不到唯一的{'原版' if is_inductive else '解答版'}：{title}")
+            continue
+        source_url = urljoin(SOURCE_URL, matches[0]["href"])
+        parsed = urlsplit(source_url)
+        filename = unquote(parsed.path.rsplit("/", 1)[-1])
+        if parsed.scheme != "https" or parsed.hostname != urlsplit(SOURCE_URL).hostname:
+            raise ValueError(f"{start_date} 教材連結不在官網")
+        if not is_inductive and not filename.startswith(f"{start_date:%y%m%d}-{end_date:%m%d}"):
+            raise ValueError(f"{start_date} 與解答版檔名日期不符：{filename}")
+        response = requests.get(source_url, headers=HEADERS, timeout=25)
+        response.raise_for_status()
+        raw_text = read_docx(response.content)
+        if not raw_text:
+            raise ValueError(f"{start_date} 教材內容為空")
         items.append({
-            "date": date_id,
-            "source_url": link["href"],
-            "raw_text": raw_content,
-            "pdf_bytes": pdf_bytes
+            "date": start_date.isoformat(),
+            "date_range": f"{start_date:%Y/%m/%d} — {end_date:%m/%d}",
+            "title": title,
+            "source_url": source_url,
+            "raw_text": raw_text,
+            "inductive": is_inductive,
         })
-
-    # 策略 B：若教材內容直接刊登在主頁面段落/區塊中
-    if not items:
-        full_text = "\n".join(line.strip() for line in soup.get_text("\n").splitlines() if line.strip())
-        date_matches = list(re.finditer(r"(20\d{2}\s*[./年-]\s*\d{1,2}\s*[./月-]\s*\d{1,2}[^\n]*)", full_text))
-        if date_matches:
-            for idx, m in enumerate(date_matches):
-                start = m.start()
-                end = date_matches[idx + 1].start() if idx + 1 < len(date_matches) else len(full_text)
-                chunk = full_text[start:end].strip()
-                date_id = extract_date_id(m.group(1))
-                if date_id and date_id not in seen_ids and len(chunk) > 80:
-                    seen_ids.add(date_id)
-                    items.append({
-                        "date": date_id,
-                        "source_url": SOURCE_URL,
-                        "raw_text": chunk[:12000],
-                        "pdf_bytes": None
-                    })
-
-    print(f"📋 從官網共偵測到 {len(items)} 份架上小組教材：{[i['date'] for i in items]}")
     return items
 
 
@@ -156,6 +138,14 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
     if not api_key:
         raise RuntimeError("缺少 GEMINI_API_KEY 環境變數")
 
+    instructions = (
+        "這是歸納法查經：paragraphs 只放原版所列經文，逐節忠實保留原文，勿加填空。"
+        "原版討論題逐題保留在 questions，維持原順序。所有題目都要填寫 answer_box 與 guide。"
+        "觀察與解釋務必引用本週經文中的節號，不超出本週經文範圍，採福音派普遍接受的讀法。"
+        "經文未明說之處不得當作定論。應用題只提供參考方向，不設定唯一答案。"
+        if item["inductive"] else
+        "以官網家庭／社青解答版為準，忠實保留信息與討論題，所有題目提供參考答案或應用方向與帶領引導。"
+    )
     prompt = f"""你是「江子翠行道會」的資深牧養同工兼保守福音派聖經學者。
 請根據下方抓取到的本週小組牧養教材原始內容，整理並深化為繁體中文（台灣教會慣用語）的互動教材 JSON。
 
@@ -224,19 +214,14 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
   ]
 }}
 
+【本週特別規則（優先於範例描述）】
+{instructions}
+
 【原始小組教材文字】
 {item['raw_text']}
 """
 
     parts = [{"text": prompt}]
-    if item.get("pdf_bytes"):
-        parts.append({
-            "inlineData": {
-                "mimeType": "application/pdf",
-                "data": base64.b64encode(item["pdf_bytes"]).decode("ascii")
-            }
-        })
-
     payload = {
         "contents": [{"parts": parts}],
         "generationConfig": {
@@ -274,48 +259,47 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
     raise RuntimeError(f"Gemini 生成失敗：{last_err}")
 
 
-def sync_firestore(active_items: list):
-    """寫入新教材並自動刪除官網已下架的過期教材"""
-    if not active_items:
-        print("⚠️ 本次未抓到任何有效教材，為避免誤刪資料庫，略過同步。")
-        return
+def sync_firestore(items):
+    from firebase_admin import credentials, firestore, initialize_app
 
+    if not items:
+        raise RuntimeError("本月未抓到可匯入的教材")
+    initialize_app(credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])))
+    db = firestore.client()
     collection = db.collection("sg_discussions")
-    existing_docs = {doc.id: doc.to_dict() for doc in collection.stream()}
-    active_dates = {item["date"] for item in active_items}
-
-    for item in active_items:
-        date_id = item["date"]
-        content_hash = hashlib.sha256((item["raw_text"] + str(len(item.get("pdf_bytes") or b""))).encode("utf-8")).hexdigest()[:16]
-        old_doc = existing_docs.get(date_id)
-
-        if old_doc and old_doc.get("content_hash") == content_hash and old_doc.get("title"):
-            print(f"⏭️ [{date_id}] 內容無變動，保留現有資料：{old_doc.get('title')}")
+    batch = db.batch()
+    count = 0
+    for item in items:
+        ref = collection.document(item["date"])
+        content_hash = hashlib.sha256(json.dumps(item, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
+        if (ref.get().to_dict() or {}).get("content_hash") == content_hash:
             continue
-
         generated = generate_sg_content_with_gemini(item)
-        doc_payload = {
-            "date": date_id,
+        questions = generated.get("questions")
+        if not questions or any(not all(str(q.get(key) or "").strip() for key in
+                                        ("question", "answer_box", "guide")) for q in questions):
+            raise ValueError(f"{item['date']} 生成結果缺少討論題、答案或引導")
+        batch.set(ref, {
+            **generated,
+            "date": item["date"],
+            "date_range": item["date_range"],
+            "title": item["title"],
             "content_hash": content_hash,
             "source_url": item["source_url"],
             "updated_at": firestore.SERVER_TIMESTAMP,
-            **generated
-        }
-        collection.document(date_id).set(doc_payload)
-        print(f"💾 已寫入 Firestore: sg_discussions/{date_id} ({generated.get('title')})")
-
-    # 刪除官網已不存在的過期日期
-    expired_dates = set(existing_docs.keys()) - active_dates
-    for exp_date in sorted(expired_dates):
-        collection.document(exp_date).delete()
-        print(f"🗑️ 已刪除過期教材: sg_discussions/{exp_date}")
+        })
+        count += 1
+    if count:
+        batch.commit()
+    print(f"核對 {len(items)} 週，寫入 {count} 週。")
 
 
 def main():
-    print("🚀 開始執行江子翠行道會小組教材自動抓取與同步...")
     items = fetch_cell_group_items()
-    sync_firestore(items)
-    print("🎉 小組教材同步作業完成！")
+    for item in items:
+        print(f"{item['date_range']} {item['title']} {'原版' if item['inductive'] else '解答版'}")
+    if "--check-sources" not in sys.argv:
+        sync_firestore(items)
 
 
 if __name__ == "__main__":
