@@ -1,9 +1,10 @@
-const CACHE_NAME = 'sg-discussion-v8';
+const CACHE_NAME = 'sg-discussion-v9';
 const ASSETS = [
   './',
   './index.html',
   './sg-reader.css?v=5',
-  './sg-reader.js?v=2',
+  './sg-reader.js?v=3',
+  './sg-source-tools.js?v=1',
   './manifest.json?v=5'
 ];
 

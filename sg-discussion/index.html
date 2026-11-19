@@ -600,7 +600,11 @@
       margin-top: 2px;
     }
 
-    .official-text p, .official-text .q-title { white-space: pre-wrap; }
+    .official-text p, .official-text .q-title, #bubbleContent { white-space: pre-wrap; }
+    .official-text .blank-slot .placeholder-text::before { content: "點擊看解答"; }
+    .official-conclusion { margin-top: 1.5rem; }
+    .official-conclusion h3 { margin-bottom: .5rem; }
+    .official-conclusion p { white-space: pre-wrap; }
     #blankActions[hidden] { display: none; }
 
     .q-title {
@@ -1004,7 +1008,8 @@
     </div>
   </div>
 
-  <script src="./sg-reader.js?v=2"></script>
+  <script src="./sg-reader.js?v=3"></script>
+  <script src="./sg-source-tools.js?v=1"></script>
   <script>
     // =================================================================
     // 0. 深色 / 淺色主題切換與記憶
@@ -1139,13 +1144,39 @@
 
       const articleBody = q('#articleBody');
       const officialText = doc.official_text === true;
-      q('#legacyReadingHint').hidden = officialText;
-      q('#blankActions').hidden = officialText;
+      q('#blankActions').hidden = officialText && !doc.blank_ranges?.length;
+      q('#legacyReadingHint').textContent = officialText && !doc.blank_ranges?.length
+        ? '點擊經文查看和合本，反白文字可劃記與寫筆記。'
+        : '點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）';
       articleBody.classList.toggle('official-text', officialText);
-      const paragraphs = [...(doc.scripture_paragraphs || []), ...(doc.paragraphs || [])];
-      articleBody.innerHTML = paragraphs.map(p =>
-        `<p>${officialText ? escapeHtml(p) : parseParagraphMarkup(p)}</p>`
-      ).join('');
+      if (officialText) {
+        const normalized = text => String(text || '').normalize('NFKC').replace(/[^\p{L}\p{N}]/gu, '');
+        articleBody.replaceChildren();
+        const appendParagraph = (text, blanks = [], hidden = false) => {
+          const paragraph = document.createElement('p');
+          paragraph.textContent = text;
+          paragraph.hidden = hidden;
+          SGSourceTools.decorate(paragraph, doc.main_scripture_ref, blanks);
+          articleBody.append(paragraph);
+        };
+        (doc.scripture_paragraphs || []).forEach(text => appendParagraph(text));
+        (doc.paragraphs || []).forEach((text, index) => {
+          const headline = normalized(doc.title), line = normalized(text);
+          let hidden = index === doc.summary_index || (index === 0 && line && headline.endsWith(line));
+          if (index < 2 && /^經文[：:]/.test(text)) {
+            const source = SGSourceTools.references(text)[0];
+            const hero = SGSourceTools.references(doc.main_scripture_ref || '')[0];
+            if (source && hero && ['book', 'chapter', 'verse', 'endChapter', 'lastVerse'].every(key => source[key] === hero[key])) hidden = true;
+          }
+          appendParagraph(text, (doc.blank_ranges || []).filter(span => span.paragraph === index), hidden);
+        });
+        const verse = SGSourceTools.references(doc.main_scripture_ref || '')[0];
+        if (verse) mainTrigger.dataset.studyVerse = JSON.stringify(verse);
+        else delete mainTrigger.dataset.studyVerse;
+      } else {
+        delete mainTrigger.dataset.studyVerse;
+        articleBody.innerHTML = (doc.paragraphs || []).map(p => `<p>${parseParagraphMarkup(p)}</p>`).join('');
+      }
 
       const bgContainer = q('#bgBlocksContainer');
       bgContainer.innerHTML = (doc.background_blocks || []).map(b => `
@@ -1183,6 +1214,37 @@
         </div>
       `).join('');
 
+      if (officialText) {
+        qContainer.querySelectorAll('.q-title').forEach(title => SGSourceTools.decorate(title, doc.main_scripture_ref));
+        if (Number.isInteger(doc.summary_index) && doc.paragraphs?.[doc.summary_index]) {
+          const summary = document.createElement('section');
+          summary.className = 'official-conclusion';
+          const heading = document.createElement('h3');
+          heading.textContent = '查經總結';
+          const paragraph = document.createElement('p');
+          paragraph.textContent = doc.paragraphs[doc.summary_index];
+          SGSourceTools.decorate(paragraph, doc.main_scripture_ref);
+          summary.append(heading, paragraph);
+          qContainer.append(summary);
+        }
+        [bgContainer, wordContainer, qContainer].forEach(container => {
+          const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+            acceptNode: node => node.parentElement.closest('.pop-trigger, .q-title, .official-conclusion, button')
+              ? NodeFilter.FILTER_REJECT
+              : NodeFilter.FILTER_ACCEPT
+          });
+          const nodes = [];
+          while (walker.nextNode()) nodes.push(walker.currentNode);
+          for (const node of nodes) {
+            if (!SGSourceTools.references(node.textContent).length) continue;
+            const span = document.createElement('span');
+            span.textContent = node.textContent;
+            SGSourceTools.decorate(span);
+            node.replaceWith(span);
+          }
+        });
+      }
+
       if (rootNode === document) {
         document.title = `江子翠行道會｜小組教材：${doc.title}`;
         allRevealed = false;
@@ -1192,6 +1254,7 @@
       }
     }
 
+    let bubbleRequest = 0;
     function bindInteractiveElements() {
       document.querySelectorAll('.blank-slot').forEach(slot => {
         const toggleSlot = () => {
@@ -1209,21 +1272,45 @@
 
       const bubbles = currentDoc?.bubbles || {};
       document.querySelectorAll('.pop-trigger').forEach(trigger => {
-        trigger.addEventListener('click', () => {
+        const open = async () => {
+          const verse = trigger.dataset.studyVerse && JSON.parse(trigger.dataset.studyVerse);
+          const note = trigger.dataset.studyNote;
           const data = bubbles[trigger.dataset.pop];
-          if (!data) return;
-          document.getElementById('bubbleType').textContent = data.typeLabel || '經文出處';
-          document.getElementById('bubbleTitle').textContent = data.title || '';
-          document.getElementById('bubbleContent').textContent = data.content || '';
-          document.getElementById('bubbleSource').textContent = data.source || '';
+          if (!verse && !note && !data) return;
+          const request = ++bubbleRequest;
+          const content = document.getElementById('bubbleContent');
+          document.getElementById('bubbleType').textContent = verse ? '和合本經文' : note ? '神學簡註' : data.typeLabel || '經文出處';
+          document.getElementById('bubbleTitle').textContent = verse || note ? trigger.textContent : data.title || '';
+          document.getElementById('bubbleSource').textContent = verse ? '和合本 · 信望愛聖經資源' : note ? '' : data.source || '';
+          content.textContent = verse ? '正在讀取經文…' : note || data?.content || '';
           document.getElementById('bubbleModal').classList.add('active');
-        });
+          if (verse) {
+            try {
+              const text = await SGSourceTools.getVerses(verse);
+              if (request === bubbleRequest) content.textContent = text;
+            } catch {
+              if (request === bubbleRequest) content.textContent = '暫時無法讀取完整經文，請稍後再試。';
+            }
+          }
+        };
+        trigger.onclick = open;
+        trigger.tabIndex = 0;
+        trigger.setAttribute('role', 'button');
+        trigger.onkeydown = event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            open();
+          }
+        };
       });
     }
 
     function updateBlankState() {
       const slots = document.querySelectorAll('.blank-slot');
       const revealedCount = document.querySelectorAll('.blank-slot.revealed').length;
+      slots.forEach(slot => {
+        if (slot.hasAttribute('aria-label')) slot.setAttribute('aria-label', slot.classList.contains('revealed') ? slot.textContent : '點擊看解答');
+      });
       const progressPill = document.getElementById('blankProgress');
       const toggleBtn = document.getElementById('toggleAllBtn');
       progressPill.textContent = `已解鎖 ${revealedCount} / ${slots.length}`;

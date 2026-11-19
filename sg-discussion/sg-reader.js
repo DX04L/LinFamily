@@ -9,7 +9,7 @@ const SGReader = (() => {
   function blocks(tabId) {
     const container = $(tabId);
     if (!container) return [];
-    const elements = [...container.querySelectorAll('.article-body p, .block-title, .block-desc, .q-title, .guide-content')];
+    const elements = [...container.querySelectorAll('.article-body p, .block-title, .block-desc, .q-title, .guide-content, .official-conclusion p')];
     elements.forEach(el => el.setAttribute('data-sg-selectable', ''));
     return elements;
   }

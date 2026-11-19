@@ -59,15 +59,40 @@ def read_docx(content):
     with zipfile.ZipFile(io.BytesIO(content)) as archive:
         root = ElementTree.fromstring(archive.read("word/document.xml"))
     text_nodes = {namespace + "br": "\n", namespace + "cr": "\n", namespace + "tab": "\t"}
-    paragraphs = []
+    paragraphs, blanks = [], []
     for para in root.iter(namespace + "p"):
-        text = "".join(
-            (node.text or "") if node.tag == namespace + "t" else text_nodes.get(node.tag, "")
-            for node in para.iter()
-        ).strip()
-        if text:
-            paragraphs.append(text)
-    return paragraphs
+        pieces = []
+        for run in para.iter(namespace + "r"):
+            underline = run.find(f"{namespace}rPr/{namespace}u")
+            marked = underline is not None and underline.get(namespace + "val") != "none"
+            pieces.append(("".join(
+                (node.text or "") if node.tag == namespace + "t" else text_nodes.get(node.tag, "")
+                for node in run.iter()
+            ), marked))
+        raw = "".join(text for text, _ in pieces)
+        text = raw.strip()
+        if not text:
+            continue
+        left = len(raw) - len(raw.lstrip())
+        cursor = -left
+        ranges = []
+        for piece, marked in pieces:
+            start, end = max(cursor, 0), min(cursor + len(piece), len(text))
+            if marked and start < end:
+                if ranges and ranges[-1][1] == start:
+                    ranges[-1][1] = end
+                else:
+                    ranges.append([start, end])
+            cursor += len(piece)
+        for start, end in ranges:
+            if text[start:end].strip():
+                blanks.append({
+                    "paragraph": len(paragraphs),
+                    "start": len(text[:start].encode("utf-16-le")) // 2,
+                    "end": len(text[:end].encode("utf-16-le")) // 2,
+                })
+        paragraphs.append(text)
+    return paragraphs, blanks
 
 
 def split_official_text(paragraphs, inductive):
@@ -143,7 +168,7 @@ def fetch_cell_group_items(now=None):
             raise ValueError(f"{start_date} 與解答版檔名日期不符：{filename}")
         response = requests.get(source_url, headers=HEADERS, timeout=25)
         response.raise_for_status()
-        paragraphs = read_docx(response.content)
+        paragraphs, blanks = read_docx(response.content)
         if not paragraphs:
             raise ValueError(f"{start_date} 教材內容為空")
         official_info, official_questions = split_official_text(paragraphs, is_inductive)
@@ -157,6 +182,8 @@ def fetch_cell_group_items(now=None):
             "raw_text": "\n".join(paragraphs),
             "official_info": official_info,
             "official_questions": official_questions,
+            "blank_ranges": [span for span in blanks if not is_inductive and span["paragraph"] < len(official_info)],
+            "summary_index": len(official_info) - 1 if is_inductive and len(official_info) > 3 else None,
             "inductive": is_inductive,
         })
     return items
@@ -319,6 +346,17 @@ def sync_firestore(items):
         existing = ref.get().to_dict() or {}
         if existing.get("content_hash") == content_hash and existing.get("official_text") is True:
             continue
+        if (existing.get("official_text") is True
+            and existing.get("source_url") == item["source_url"]
+            and existing.get("paragraphs") == item["official_info"]
+            and [q.get("question") for q in existing.get("questions", [])] == item["official_questions"]):
+            ref.update({
+                "blank_ranges": item["blank_ranges"],
+                "summary_index": item["summary_index"],
+                "content_hash": content_hash,
+            })
+            count += 1
+            continue
         try:
             # The four November records were checked against the Word question order.
             # Reuse their matching notes once so restoring the source text requires no AI call.
@@ -343,6 +381,8 @@ def sync_firestore(items):
             "official_text": True,
             "paragraphs": item["official_info"],
             "scripture_paragraphs": scripture,
+            "blank_ranges": item["blank_ranges"],
+            "summary_index": item["summary_index"],
             "questions": questions,
             "date": item["date"],
             "date_range": item["date_range"],
