@@ -550,7 +550,7 @@
     let user = null, role = '', roleUnsub = null, slots = null;
     const isSuper = () => role === 'superuser';
     window.isSuperuser = false;
-    let entered = false; // 這次打開有沒有在 Welcome 點過
+    let entered = true; // 啟動時有權限就直接進首頁；休眠仍會設為 false
     let waitT = null;
     function goHome() { // 先顯示「沒有 App 圖示」的主畫面，等權限與個人桌面讀到再讓圖示出現
       $('lfWelcome').hidden = true;
@@ -575,7 +575,7 @@
       $('lfAuthDot').hidden = true; // 不顯示已登入小黃點
       $('lfMenuHead').textContent = role ? `${user.email} · ${role === 'superuser' ? 'Superuser' : role === 'admin' ? 'Admin' : role === 'user' ? 'User（不含 DX、YA、SR）' : 'Viewer（唯讀）'}` : '管理員已登入';
       $('lfUsersItem').hidden = !isSuper();
-      // 每次打開都先停在 Welcome；點過（entered）而且已登入才進主畫面。登入中不會先進去又閃回來。
+      // 啟動時已登入且有權限就進首頁；未登入或休眠時顯示 Welcome。
       $('lfWelcome').hidden = !!(role && entered); document.documentElement.classList.remove('lf-pending');
       if (window.lfGreetingRender) window.lfGreetingRender(false);
       if (!role) { appsReady(); applyLook({}); } // 登入失敗或沒權限：回到 Welcome、主題回預設
