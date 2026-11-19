@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=5">
   <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=5">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=5">
-  <link rel="stylesheet" href="./sg-reader.css?v=2">
+  <link rel="stylesheet" href="./sg-reader.css?v=3">
 
   <style>
     :root {
@@ -802,7 +802,7 @@
 </head>
 <body>
 
-  <!-- 頂部毛玻璃導覽列（左側：Logo；右側：登入歡迎 + 週次切換與下拉選單 + 深淺色切換 + 安裝 App） -->
+  <!-- 頂部毛玻璃導覽列（左側：Logo；右側：登入歡迎 + 安裝 App） -->
   <nav class="navbar">
     <div class="navbar-inner">
       <div class="brand-group" id="brandHome" data-lf-menu-trigger title="回到最新一週教材">
@@ -822,40 +822,6 @@
       <div class="nav-right-actions">
         <span class="sg-welcome-badge" id="sgWelcome" hidden></span>
 
-        <!-- 右上角週次左右切換與保存日期選單 -->
-        <div class="sg-nav-controls">
-          <button class="sg-nav-btn" id="sg-prev" disabled aria-label="上一週教材" title="上一週">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-
-          <details class="sg-date-picker" id="sg-date-picker">
-            <summary aria-label="選擇保存的教材日期">
-              <span class="sg-date-pill">
-                <span id="heroDateRange">2026/11/10 — 11/15</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-              </span>
-            </summary>
-            <div id="sg-date-list" aria-label="目前保存的小組教材"></div>
-          </details>
-
-          <button class="sg-nav-btn" id="sg-next" disabled aria-label="下一週教材" title="下一週">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
-
-        <!-- 深色 / 淺色模式切換按鈕 -->
-        <button class="sg-theme-btn" id="themeToggleBtn" aria-label="切換深色或淺色模式" title="切換深色／淺色模式">
-          <!-- 月亮圖示（淺色模式下顯示，點擊切換為深色） -->
-          <svg id="iconMoon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-          </svg>
-          <!-- 太陽圖示（深色模式下顯示，點擊切換為淺色） -->
-          <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden>
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
-          </svg>
-        </button>
-
         <!-- 安裝成 App 按鈕 -->
         <button class="install-btn" id="installAppBtn" aria-label="安裝成 App">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -868,6 +834,40 @@
       </div>
     </div>
   </nav>
+
+  <div class="container sg-reading-controls">
+    <div class="sg-date-nav">
+      <button class="sg-nav-btn" id="sg-prev" disabled aria-label="上一週教材" title="上一週">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+
+      <details class="sg-date-picker" id="sg-date-picker">
+        <summary aria-label="選擇教材日期">
+          <span class="sg-date-pill">
+            <span id="heroDateRange">選擇教材日期</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </span>
+        </summary>
+        <div id="sg-date-list" aria-label="目前保存的小組教材"></div>
+      </details>
+
+      <button class="sg-nav-btn" id="sg-next" disabled aria-label="下一週教材" title="下一週">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <button class="sg-theme-btn" id="themeToggleBtn" type="button" aria-label="切換為深色模式" title="切換為深色模式">
+      <!-- 月亮圖示（淺色模式下顯示，點擊切換為深色） -->
+      <svg aria-hidden="true" id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.99 12.74A9 9 0 0 1 11.26 3a9 9 0 1 0 9.73 9.74Z"/>
+      </svg>
+      <!-- 太陽圖示（深色模式下顯示，點擊切換為淺色） -->
+      <svg aria-hidden="true" id="iconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden>
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+      </svg>
+    </button>
+  </div>
 
   <!-- 可左右滑動切換週次的閱讀主區域 -->
   <div id="sg-reading-sheet">
@@ -1018,8 +1018,11 @@
     function applyTheme(theme) {
       const isDark = theme === 'dark';
       document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-      iconMoon.hidden = isDark;
-      iconSun.hidden = !isDark;
+      iconMoon.toggleAttribute('hidden', isDark);
+      iconSun.toggleAttribute('hidden', !isDark);
+      const themeLabel = isDark ? '切換為淺色模式' : '切換為深色模式';
+      themeToggleBtn.setAttribute('aria-label', themeLabel);
+      themeToggleBtn.title = themeLabel;
       if (metaThemeColor) {
         metaThemeColor.content = isDark ? '#111214' : '#007F85';
       }

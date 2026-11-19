@@ -1,15 +1,46 @@
-/* 日期切換與下拉選單（融入原本 hero 區塊風格） */
+/* 頁首下的教材控制列 */
+.sg-reading-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-block: 12px 0;
+}
+
+.sg-theme-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--border-hairline);
+  border-radius: 50%;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.sg-theme-btn:hover {
+  background: var(--brand-primary-tint);
+}
+
+.sg-theme-btn svg[hidden] {
+  display: none;
+}
+
 .sg-date-nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 14px;
+  min-width: 0;
 }
 
 .sg-nav-btn {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
+  flex: none;
   padding: 0;
   border-radius: 50%;
   border: 1px solid var(--border-hairline);
@@ -34,6 +65,7 @@
 
 .sg-date-picker {
   position: relative;
+  min-width: 0;
   border: 0;
   padding: 0;
   margin: 0;
@@ -42,24 +74,35 @@
 .sg-date-picker summary {
   list-style: none;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: block;
 }
 
 .sg-date-picker summary::-webkit-details-marker {
   display: none;
 }
 
-.sg-date-picker summary .pill-neutral {
-  display: inline-flex;
+.sg-date-picker summary .sg-date-pill {
+  display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-size: 0.875rem;
   border: 1px solid var(--border-hairline);
   transition: background-color 0.2s;
 }
 
-.sg-date-picker summary:hover .pill-neutral {
+#heroDateRange {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sg-date-pill svg {
+  flex: none;
+}
+
+.sg-date-picker summary:hover .sg-date-pill {
   background-color: var(--brand-primary-tint);
   color: var(--brand-primary);
 }
@@ -67,15 +110,15 @@
 #sg-date-list {
   position: absolute;
   z-index: 60;
-  left: 50%;
-  transform: translateX(-50%);
+  inset-inline-start: 0;
   top: calc(100% + 8px);
   min-width: 15rem;
-  max-width: min(85vw, 22rem);
+  width: max-content;
+  max-width: min(calc(100vw - 76px), 22rem);
   padding: 6px;
   border: 1px solid var(--border-hairline);
   border-radius: 14px;
-  background: #FFFFFF;
+  background: var(--bg-page);
   box-shadow: var(--shadow-float);
   text-align: left;
 }
