@@ -142,7 +142,6 @@
     html.dark .lf-menu .lf-danger { color:#fb7185; }
     .lf-menu .lf-danger:hover { background:#fff1f2; }
     html.dark .lf-menu .lf-danger:hover { background:rgba(244,63,94,.1); }
-    html.dark .lf-ic-moon, html:not(.dark) .lf-ic-sun { display:none; }
 
     /* ---------- 主畫面 ---------- */
     main { flex:1; width:100%; margin:0 auto; padding:18px max(20px, env(safe-area-inset-left)) 40px; }
@@ -211,12 +210,8 @@
     .lf-tabs .lf-tab-icon { border:0; background:none; padding:8px 12px; border-radius:9999px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; }
     .lf-tabs .lf-tab-icon svg { width:16px; height:16px; }
     .lf-tabs .lf-tab-icon[aria-expanded="true"] { background:var(--pine); color:#fff; }
-    .lf-gear-wrap { position:relative; display:flex; flex:none; }
-    @media (max-width:430px) { .lf-tabs > button { padding:8px 12px; } .lf-tabs .lf-tab-icon { padding:8px 10px; } .lf-tabbar { gap:8px; } } /* 窄手機：一排放得下，不切到齒輪 */
+    @media (max-width:430px) { .lf-tabs > button { padding:8px 12px; } .lf-tabs .lf-tab-icon { padding:8px 10px; } .lf-tabbar { gap:8px; } } /* 窄手機：縮小分頁間距 */
     @media (max-width:380px) { .lf-tabs > button { padding:7px 10px; font-size:13px; } .lf-tabs .lf-tab-icon { padding:7px 8px; } .lf-tabbar { gap:6px; } .lf-tabbar .lf-search-btn { width:36px; height:36px; } }
-    /* 齒輪選單：間距、字級照管理員下拉選單（.lf-menu）；框線顏色跟著 LF 主題 */
-    .lf-gear-menu, html.dark .lf-gear-menu { border-color:var(--border); }
-    .lf-gear-menu .lf-menu-head, html.dark .lf-gear-menu .lf-menu-head { border-bottom-color:var(--border); }
     /* 背景主題 */
     .lf-wall { position:fixed; inset:0; z-index:-1; background:center / cover no-repeat; pointer-events:none; }
     .lf-wall::after { content:''; position:absolute; inset:0; background:var(--bg); opacity:.62; } /* 遮罩：蓋一層底色，上面的東西才突出 */
@@ -228,6 +223,9 @@
     .lf-wall[hidden] { display:none; }
     html.lf-has-wall body { background:transparent; }
     html.lf-has-wall { background:var(--bg); }
+    .lf-color-mode { display:flex; gap:8px; }
+    .lf-color-mode .lf-btn { width:auto; padding:0 14px; }
+    .lf-color-mode button[aria-pressed="true"] { background:var(--pine); color:#fff; border-color:var(--pine); }
     .lf-look-sec { font-size:13px; font-weight:700; color:var(--muted); margin:4px 0 0; }
     .lf-swatches { display:flex; flex-wrap:wrap; gap:10px; }
     .lf-swatch { width:44px; height:44px; border-radius:50%; border:3px solid transparent; cursor:pointer; padding:0; box-shadow:0 0 0 1px var(--border) inset; }
@@ -238,7 +236,6 @@
     .lf-search-btn { flex:none; width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--btn); color:var(--muted); cursor:pointer; display:grid; place-items:center; }
     .lf-search-btn svg { width:18px; height:18px; }
     .lf-search-btn[hidden] { display:none; }
-    .lf-search-btn[aria-expanded="true"] { background:var(--pine); color:#fff; border-color:var(--pine); }
     .lf-tabbar + .lf-search { margin:-12px 0 20px; }
     @media (min-width:640px) { .lf-search { max-width:780px; } }
     @media (min-width:1024px) { .lf-search { max-width:1040px; } }
@@ -346,7 +343,7 @@
       <div id="lfMenu" class="lf-menu" role="menu" hidden>
         <div id="lfMenuHead" class="lf-menu-head">管理員已登入</div>
         <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>⚙️ 全站設定</button>
-        <button type="button" role="menuitem" data-act="theme"><span class="lf-ic-sun">☀️ 切換淺色</span><span class="lf-ic-moon">🌙 切換深色</span></button>
+        <button type="button" role="menuitem" data-act="theme">🎨 背景主題</button>
         <div class="lf-sep"></div>
         <button type="button" role="menuitem" data-act="logout" class="lf-danger" id="lfLogoutBtn">🚪 登出帳號</button>
       </div>
@@ -361,13 +358,6 @@
       <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
       <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-newdot" id="lfAppsDot" hidden></i></button>
       <button type="button" class="lf-tab-icon" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
-      <div class="lf-gear-wrap">
-        <button type="button" class="lf-tab-icon" id="lfGearBtn" aria-label="設定" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-        <div id="lfGearMenu" class="lf-menu lf-gear-menu" role="menu" hidden>
-          <div class="lf-menu-head">設定</div>
-          <button type="button" role="menuitem" data-gear="theme">🎨 背景主題</button>
-        </div>
-      </div>
     </div>
     <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
     </div>
@@ -489,6 +479,11 @@
   <dialog class="lf-dialog" id="lfThemeDialog">
     <div class="lf-dialog-body">
       <h3>背景主題</h3>
+      <p class="lf-look-sec" id="lfColorModeLabel">深淺色</p>
+      <div class="lf-color-mode" id="lfColorMode" role="group" aria-labelledby="lfColorModeLabel">
+        <button type="button" class="lf-btn" data-mode="light" aria-pressed="false">淺色</button>
+        <button type="button" class="lf-btn" data-mode="dark" aria-pressed="false">深色</button>
+      </div>
       <p class="lf-look-sec">主題顏色</p>
       <div class="lf-swatches" id="lfSwatches"></div>
       <p class="lf-look-sec">桌布</p>
@@ -666,16 +661,21 @@
     menu.addEventListener('click', async e => {
       const b = e.target.closest('button[data-act]'); if (!b) return;
       const act = b.dataset.act;
-      if (act !== 'theme') setMenu(false);
+      setMenu(false);
       if (act === 'logout') { if (confirm(isSuper() ? '確定要登出管理員身分嗎？' : '確定要登出帳號嗎？')) { await auth.signOut(); toast('已登出'); } }
-      else if (act === 'theme') toggleTheme();
+      else if (act === 'theme') {
+        renderLook();
+        renderColorMode();
+        $('lfLookMsg').textContent = '';
+        $('lfThemeDialog').showModal();
+      }
       else if (act === 'users') location.href = 'admin-users.html';
     });
-    function toggleTheme() {
-      const dark = !document.documentElement.classList.contains('dark');
+    function setColorMode(dark) {
       document.documentElement.classList.toggle('dark', dark);
       $('metaThemeColor').setAttribute('content', dark ? '#161716' : '#E6E7E9');
       try { localStorage.setItem('linfamily_theme', dark ? 'dark' : 'light'); } catch (_) {}
+      renderColorMode();
     }
 
     // ---------- 安裝（PWA） ----------
@@ -1147,14 +1147,16 @@
         await saveLook({ wall: 'img', wallImg: data });
       } catch (err) { $('lfLookMsg').textContent = '這張照片無法使用，請換一張。'; }
     });
-    // 齒輪選單
-    const gearBtn = $('lfGearBtn'), gearMenu = $('lfGearMenu');
-    const setGear = open => { gearMenu.hidden = !open; gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
-    gearBtn.addEventListener('click', () => setGear(gearMenu.hidden));
-    document.addEventListener('click', e => { if (!gearMenu.hidden && !gearMenu.contains(e.target) && !gearBtn.contains(e.target)) setGear(false); });
-    gearMenu.addEventListener('click', e => {
-      const b = e.target.closest('[data-gear]'); if (!b) return; setGear(false);
-      if (b.dataset.gear === 'theme') { renderLook(); $('lfLookMsg').textContent = role ? '' : '登入後設定會跟著你的帳號。'; $('lfThemeDialog').showModal(); }
+    const colorMode = $('lfColorMode');
+    function renderColorMode() {
+      const mode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      colorMode.querySelectorAll('[data-mode]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+      });
+    }
+    colorMode.addEventListener('click', e => {
+      const button = e.target.closest('button[data-mode]');
+      if (button) setColorMode(button.dataset.mode === 'dark');
     });
     $('lfThemeClose').addEventListener('click', () => $('lfThemeDialog').close());
     if (window.clcDialogBackdropClose) window.clcDialogBackdropClose($('lfThemeDialog'));
