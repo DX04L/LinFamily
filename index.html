@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW" class="dark lf-pending">
 <head>
   <meta charset="UTF-8">
   <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
@@ -43,7 +43,7 @@
   <meta name="apple-mobile-web-app-title" content="LinFamily">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__lfBIP=e;});</script><!-- 安裝事件可能很早就來，先接住 -->
-  <link rel="stylesheet" href="css/entrance.css?v=17">
+  <link rel="stylesheet" href="css/entrance.css?v=18">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
   <script>
@@ -55,6 +55,7 @@
     })();
   </script>
 
+  <script src="https://clc-dx04.pages.dev/verse-wait.js?v=1" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js" defer></script>
@@ -333,7 +334,7 @@
     html.lf-iphone-static .lf-ent-canvas { display:none; }
     html.lf-iphone-static .lf-ent-logo { animation:none !important; opacity:1; }
   </style>
-  <script>try{localStorage.removeItem('linfamily_signed_in');}catch(_){}document.documentElement.classList.add('lf-pending');setTimeout(function(){document.documentElement.classList.remove('lf-pending');},4000);</script>
+  <script>try{localStorage.removeItem('linfamily_signed_in');}catch(_){}</script>
   <div class="lf-top">
     <div>
       <p class="lf-date" id="lfDate">&nbsp;</p>
@@ -548,6 +549,7 @@
 
     // ---------- 登入與權限 ----------
     let user = null, role = '', roleUnsub = null, slots = null;
+    const finishAuthWait = auth && window.clcVerseWait?.();
     const isSuper = () => role === 'superuser';
     window.isSuperuser = false;
     let entered = true; // 啟動時有權限就直接進首頁；休眠仍會設為 false
@@ -567,6 +569,7 @@
     let authReady = false;
     try { if (sessionStorage.getItem('linfamily_entered') === '1') { entered = true; } } catch (_) {}
     function applyRole(r) {
+      finishAuthWait?.();
       role = r || '';
       if (window.lfBootMark && role && entered) { window.lfBootMark('已進入主頁'); document.getElementById('lfBootProbe').hidden = true; }
       window.isSuperuser = role === 'superuser';
@@ -586,6 +589,7 @@
       watchDesk();
       if (slots) { slots.render(); if (isSuper()) seedIfNeeded(); }
     }
+    if (!auth) document.documentElement.classList.remove('lf-pending');
     if (auth) auth.onAuthStateChanged(u => {
       authReady = true;
       if (window.lfBootMark) window.lfBootMark(u ? '已讀取帳號，確認權限中' : '可點選登入');
@@ -706,7 +710,7 @@
     // 個人桌面：linfamily_desktops/{email}（每人自己排列、新增、移除）。沒有個人桌面時顯示預設桌面（Superuser 編的全部 App）。
     // Superuser 永遠看、編預設桌面＝全部 App。之後要做「哪些 App 給哪些人」時，在預設桌面的 App 上加權限欄位即可。
     const DESK_COL = 'linfamily_desktops';
-    let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '';
+    let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '', finishDeskWait;
     const deskKey = () => 'linfamily_desk_' + deskEmail;
     function showApps() {
       apps = (myDesk || globalApps).filter(a => isSuper() || !isOwnSite(a)); // DX、YA、SR 只有 Superuser 看得到
@@ -715,19 +719,24 @@
     function watchDesk() {
       const email = role && user ? user.email.toLowerCase() : ''; // Superuser 也有自己的主畫面
       if (email === deskEmail) return showApps();
+      finishDeskWait?.();
       if (deskUnsub) { deskUnsub(); deskUnsub = null; }
       deskEmail = email; myDesk = null;
       if (email) try { const c = JSON.parse(localStorage.getItem('linfamily_look_' + email) || 'null'); if (c) applyLook(c); } catch (_) {} // 先用上次的主題，不閃預設色
       if (email) {
         try { const c = JSON.parse(localStorage.getItem(deskKey()) || 'null'); if (Array.isArray(c)) myDesk = c; } catch (_) {}
-        if (db) deskUnsub = db.collection(DESK_COL).doc(email).onSnapshot(snap => {
-          const d = snap.exists ? snap.data() : null;
-          myDesk = d && Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : null;
-          mySeen = d && Array.isArray(d.seen) ? d.seen : [];
-          applyLook(d || {}, true);
-          try { if (myDesk) localStorage.setItem(deskKey(), JSON.stringify(myDesk)); else localStorage.removeItem(deskKey()); } catch (_) {}
-          showApps(); appsReady();
-        }, err => { console.warn('個人桌面讀取失敗', err); appsReady(); });
+        if (db) {
+          const finish = finishDeskWait = window.clcVerseWait?.();
+          deskUnsub = db.collection(DESK_COL).doc(email).onSnapshot(snap => {
+            finish?.();
+            const d = snap.exists ? snap.data() : null;
+            myDesk = d && Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : null;
+            mySeen = d && Array.isArray(d.seen) ? d.seen : [];
+            applyLook(d || {}, true);
+            try { if (myDesk) localStorage.setItem(deskKey(), JSON.stringify(myDesk)); else localStorage.removeItem(deskKey()); } catch (_) {}
+            showApps(); appsReady();
+          }, err => { finish?.(); console.warn('個人桌面讀取失敗', err); appsReady(); });
+        }
       }
       showApps();
     }
@@ -915,12 +924,14 @@
       if (!needsSeed || seeding || !isSuper()) return;
       seeding = true; saveGlobal(globalApps).catch(err => console.warn('Hannah 預設寫入失敗', err)).finally(() => { seeding = false; });
     }
+    const finishAppsWait = db && window.clcVerseWait?.();
     if (db) db.collection('linfamily_settings').doc('apps').onSnapshot(snap => {
+      finishAppsWait?.();
       const r = fromCloud(snap.exists ? snap.data() : {});
       globalApps = r.items; needsSeed = r.seed; seededList = r.seeded;
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(globalApps)); } catch (_) {}
       showApps(); seedIfNeeded();
-    }, err => console.warn('App 清單讀取失敗（沿用快取）', err));
+    }, err => { finishAppsWait?.(); console.warn('App 清單讀取失敗（沿用快取）', err); });
 
     // ---------- 新增／修改對話框 ----------
     const dlg = $('lfAppDialog'); let editingId = null, uploadedIcon = '';
