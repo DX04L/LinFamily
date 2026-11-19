@@ -58,11 +58,35 @@ def read_docx(content):
     namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     with zipfile.ZipFile(io.BytesIO(content)) as archive:
         root = ElementTree.fromstring(archive.read("word/document.xml"))
-    paragraphs = [
-        "".join(node.text or "" for node in para.iter(namespace + "t")).strip()
-        for para in root.iter(namespace + "p")
-    ]
-    return "\n".join(para for para in paragraphs if para)
+    text_nodes = {namespace + "br": "\n", namespace + "cr": "\n", namespace + "tab": "\t"}
+    paragraphs = []
+    for para in root.iter(namespace + "p"):
+        text = "".join(
+            (node.text or "") if node.tag == namespace + "t" else text_nodes.get(node.tag, "")
+            for node in para.iter()
+        ).strip()
+        if text:
+            paragraphs.append(text)
+    return paragraphs
+
+
+def split_official_text(paragraphs, inductive):
+    if not inductive:
+        for index, text in enumerate(paragraphs):
+            if re.fullmatch(r"小組(?:分享|討論)[：:]?", text):
+                return paragraphs[:index], paragraphs[index + 1:]
+        raise ValueError("官網解答版找不到小組分享分段")
+
+    groups = []
+    info = []
+    for index, text in enumerate(paragraphs):
+        if re.match(r"^[一二三四五六七八九十]+[、．.]", text):
+            groups.append(text)
+        elif not groups or (index == len(paragraphs) - 1 and not re.search(r"[？?]", text)):
+            info.append(text)
+        else:
+            groups[-1] += "\n" + text
+    return info, groups
 
 
 def fetch_cell_group_items(now=None):
@@ -119,15 +143,20 @@ def fetch_cell_group_items(now=None):
             raise ValueError(f"{start_date} 與解答版檔名日期不符：{filename}")
         response = requests.get(source_url, headers=HEADERS, timeout=25)
         response.raise_for_status()
-        raw_text = read_docx(response.content)
-        if not raw_text:
+        paragraphs = read_docx(response.content)
+        if not paragraphs:
             raise ValueError(f"{start_date} 教材內容為空")
+        official_info, official_questions = split_official_text(paragraphs, is_inductive)
+        if not official_info or not official_questions:
+            raise ValueError(f"{start_date} 官網教材缺少信息或討論題")
         items.append({
             "date": start_date.isoformat(),
             "date_range": f"{start_date:%Y/%m/%d} — {end_date:%m/%d}",
             "title": title,
             "source_url": source_url,
-            "raw_text": raw_text,
+            "raw_text": "\n".join(paragraphs),
+            "official_info": official_info,
+            "official_questions": official_questions,
             "inductive": is_inductive,
         })
     return items
@@ -147,6 +176,7 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
         if item["inductive"] else
         "以官網家庭／社青解答版為準，忠實保留信息與討論題，所有題目提供參考答案或應用方向與帶領引導。"
     )
+    original_questions = json.dumps(item["official_questions"], ensure_ascii=False)
     prompt = f"""你是「江子翠行道會」的資深牧養同工兼保守福音派聖經學者。
 請根據下方抓取到的本週小組牧養教材原始內容，整理並深化為繁體中文（台灣教會慣用語）的互動教材 JSON。
 
@@ -158,10 +188,7 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
   "title": "本週主日信息標題（例如：亞伯拉罕的信心（下））",
   "main_scripture_ref": "主題經文出處（例如：希伯來書 11:17–19）",
   "main_scripture_key": "主題經文對應下方 bubbles 的 key（例如：main_ref）",
-  "paragraphs": [
-    "信息內文第 1 段。請忠實保留原信息脈絡並修飾通順。在每段挑選 1~2 個核心神學關鍵詞用 [[blank:答案詞]] 標記（全篇共 5~8 個填空）；在重要經文引用或神學專有名詞處用 [[pop:泡泡key|顯示文字]] 標記，對應下方 bubbles 字典。",
-    "信息內文第 2 段..."
-  ],
+  "paragraphs": ["僅歸納法查經需填：依原文標明的經文範圍完整列出和合本經文；一般信息留空陣列"],
   "bubbles": {{
     "main_ref": {{
       "typeLabel": "主題經文｜和合本",
@@ -207,7 +234,7 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
   ],
   "questions": [
     {{
-      "question": "小組討論題目 1（優先採用原教材題目，若原教材題目不足則設計 3-4 題由淺入深的破冰、觀察、應用題）",
+      "question": "逐字照錄同順序的原題",
       "btn_label": "查看本文答案與觀察重點",
       "answer_box": "依據經文或信息的參考答案，開放題也必須提供參考方向",
       "guide": "給小組長的牧養帶領延伸與禱告引導（約 80-130 字，可用 <strong> 強調）"
@@ -217,6 +244,9 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
 
 【本週特別規則（優先於範例描述）】
 {instructions}
+
+請按原題清單順序逐題給補充，questions 數量必須相同。頁面直接顯示 Word 原文，請勿濃縮、合併或新增題目。
+原題清單：{original_questions}
 
 【原始小組教材文字】
 {item['raw_text']}
@@ -259,7 +289,8 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
             cleaned = re.sub(r"^```json\s*|\s*```$", "", raw_text)
             parsed = json.loads(cleaned)
             questions = parsed.get("questions")
-            if (parsed.get("title") and parsed.get("paragraphs") and questions
+            if (parsed.get("title") and (not item["inductive"] or parsed.get("paragraphs")) and questions
+                and len(questions) == len(item["official_questions"])
                 and all(all(str(q.get(key) or "").strip() for key in
                             ("question", "answer_box", "guide")) for q in questions)):
                 print(f"✅ [{item['date']}] Gemini 生成成功（模型：{model}）")
@@ -285,16 +316,34 @@ def sync_firestore(items):
     for item in items:
         ref = collection.document(item["date"])
         content_hash = hashlib.sha256(json.dumps(item, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
-        if (ref.get().to_dict() or {}).get("content_hash") == content_hash:
+        existing = ref.get().to_dict() or {}
+        if existing.get("content_hash") == content_hash and existing.get("official_text") is True:
             continue
         try:
-            generated = generate_sg_content_with_gemini(item)
+            # The four November records were checked against the Word question order.
+            # Reuse their matching notes once so restoring the source text requires no AI call.
+            if (item["date"] in {"2026-11-03", "2026-11-10", "2026-11-17", "2026-11-24"}
+                and not existing.get("official_text")
+                and existing.get("source_url") == item["source_url"]
+                and len(existing.get("questions", [])) == len(item["official_questions"])):
+                generated = existing
+            else:
+                generated = generate_sg_content_with_gemini(item)
         except RuntimeError as exc:
             failed.append(item["date"])
             print(f"⚠️ {item['date']}：{exc}")
             continue
+        questions = [
+            {**notes, "question": original}
+            for original, notes in zip(item["official_questions"], generated["questions"], strict=True)
+        ]
+        scripture = generated.get("paragraphs", []) if item["inductive"] else []
         ref.set({
             **generated,
+            "official_text": True,
+            "paragraphs": item["official_info"],
+            "scripture_paragraphs": scripture,
+            "questions": questions,
             "date": item["date"],
             "date_range": item["date_range"],
             "title": item["title"],

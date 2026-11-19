@@ -600,6 +600,9 @@
       margin-top: 2px;
     }
 
+    .official-text p, .official-text .q-title { white-space: pre-wrap; }
+    #blankActions[hidden] { display: none; }
+
     .q-title {
       font-size: 1.03rem;
       font-weight: 600;
@@ -903,9 +906,9 @@
             <div class="card-header">
               <div>
                 <h2 class="card-title">小組信息</h2>
-                <p class="card-subtitle">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）</p>
+                <p class="card-subtitle" id="legacyReadingHint">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）</p>
               </div>
-              <div class="toolbar-actions">
+              <div class="toolbar-actions" id="blankActions">
                 <span class="progress-pill" id="blankProgress">已解鎖 0 / 7</span>
                 <button class="pill-action-btn" id="toggleAllBtn">顯示全部</button>
               </div>
@@ -1135,7 +1138,14 @@
       mainTrigger.dataset.pop = doc.main_scripture_key || 'main_ref';
 
       const articleBody = q('#articleBody');
-      articleBody.innerHTML = (doc.paragraphs || []).map(p => `<p>${parseParagraphMarkup(p)}</p>`).join('');
+      const officialText = doc.official_text === true;
+      q('#legacyReadingHint').hidden = officialText;
+      q('#blankActions').hidden = officialText;
+      articleBody.classList.toggle('official-text', officialText);
+      const paragraphs = [...(doc.scripture_paragraphs || []), ...(doc.paragraphs || [])];
+      articleBody.innerHTML = paragraphs.map(p =>
+        `<p>${officialText ? escapeHtml(p) : parseParagraphMarkup(p)}</p>`
+      ).join('');
 
       const bgContainer = q('#bgBlocksContainer');
       bgContainer.innerHTML = (doc.background_blocks || []).map(b => `
@@ -1158,6 +1168,7 @@
       `).join('');
 
       const qContainer = q('#questionsContainer');
+      qContainer.classList.toggle('official-text', officialText);
       qContainer.innerHTML = (doc.questions || []).map((item, idx) => `
         <div class="q-item">
           <div class="q-top">
@@ -1166,7 +1177,7 @@
           </div>
           <button class="guide-btn" onclick="toggleGuide(this)">${escapeHtml(item.btn_label || '查看本文答案與帶領重點')}</button>
           <div class="guide-content">
-            ${item.answer_box ? `<div class="text-answer-box"><span class="ans-label">📖 信息本文答案</span>${item.answer_box}</div>` : ''}
+            ${item.answer_box ? `<div class="text-answer-box"><span class="ans-label">📖 參考答案</span>${item.answer_box}</div>` : ''}
             <strong>帶領與牧養延伸：</strong>${item.guide || ''}
           </div>
         </div>
