@@ -2,8 +2,7 @@
 .sg-reading-controls {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-end;
   padding-block: 12px 0;
 }
 
@@ -110,7 +109,7 @@
 #sg-date-list {
   position: absolute;
   z-index: 60;
-  inset-inline-start: 0;
+  inset-inline-end: 0;
   top: calc(100% + 8px);
   min-width: 15rem;
   width: max-content;
@@ -406,12 +405,12 @@ dialog#sg-note textarea:focus {
   color: var(--text-secondary);
 }
 
-.sg-welcome-badge {
+.sg-welcome {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--brand-primary);
-  background: var(--brand-primary-tint);
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  max-width: min(28vw, 14rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }

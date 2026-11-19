@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=5">
   <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=5">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=5">
-  <link rel="stylesheet" href="./sg-reader.css?v=3">
+  <link rel="stylesheet" href="./sg-reader.css?v=4">
 
   <style>
     :root {
@@ -35,7 +35,6 @@
       /* 淺色模式中性色階 */
       --bg-page: #F5F5F7;
       --bg-card: #FFFFFF;
-      --bg-glass: rgba(255, 255, 255, 0.86);
       --bg-segmented: rgba(118, 118, 128, 0.12);
       --bg-seg-active: #FFFFFF;
       --text-primary: #1D1D1F;
@@ -69,7 +68,6 @@
 
       --bg-page: #111214;
       --bg-card: #1C1D21;
-      --bg-glass: rgba(28, 29, 33, 0.86);
       --bg-segmented: rgba(255, 255, 255, 0.08);
       --bg-seg-active: #2C2E35;
       --text-primary: #F5F5F7;
@@ -112,14 +110,12 @@
       padding-inline: clamp(16px, 3.2vw, 48px);
     }
 
-    /* 頂部毛玻璃導覽列 */
+    /* 頂部導覽列 */
     .navbar {
       position: sticky;
       top: 0;
       z-index: 100;
-      background-color: var(--bg-glass);
-      backdrop-filter: saturate(180%) blur(20px);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background-color: var(--bg-page);
       border-bottom: 1px solid var(--border-hairline);
       padding-top: env(safe-area-inset-top);
       transition: background-color 0.25s ease;
@@ -802,7 +798,7 @@
 </head>
 <body>
 
-  <!-- 頂部毛玻璃導覽列（左側：Logo；右側：登入歡迎 + 安裝 App） -->
+  <!-- 頂部導覽列 -->
   <nav class="navbar">
     <div class="navbar-inner">
       <div class="brand-group" id="brandHome" data-lf-menu-trigger title="回到最新一週教材">
@@ -820,8 +816,6 @@
       </div>
 
       <div class="nav-right-actions">
-        <span class="sg-welcome-badge" id="sgWelcome" hidden></span>
-
         <!-- 安裝成 App 按鈕 -->
         <button class="install-btn" id="installAppBtn" aria-label="安裝成 App">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -830,6 +824,18 @@
             <path d="M5 21h14"/>
           </svg>
           <span>安裝 App</span>
+        </button>
+        <span class="sg-welcome" id="sgWelcome" hidden></span>
+        <button class="sg-theme-btn" id="themeToggleBtn" type="button" aria-label="切換為深色模式" title="切換為深色模式">
+          <!-- 月亮圖示（淺色模式下顯示，點擊切換為深色） -->
+          <svg aria-hidden="true" id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.99 12.74A9 9 0 0 1 11.26 3a9 9 0 1 0 9.73 9.74Z"/>
+          </svg>
+          <!-- 太陽圖示（深色模式下顯示，點擊切換為淺色） -->
+          <svg aria-hidden="true" id="iconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden>
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+          </svg>
         </button>
       </div>
     </div>
@@ -855,18 +861,6 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
       </button>
     </div>
-
-    <button class="sg-theme-btn" id="themeToggleBtn" type="button" aria-label="切換為深色模式" title="切換為深色模式">
-      <!-- 月亮圖示（淺色模式下顯示，點擊切換為深色） -->
-      <svg aria-hidden="true" id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20.99 12.74A9 9 0 0 1 11.26 3a9 9 0 1 0 9.73 9.74Z"/>
-      </svg>
-      <!-- 太陽圖示（深色模式下顯示，點擊切換為淺色） -->
-      <svg aria-hidden="true" id="iconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden>
-        <circle cx="12" cy="12" r="4"/>
-        <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
-      </svg>
-    </button>
   </div>
 
   <!-- 可左右滑動切換週次的閱讀主區域 -->
