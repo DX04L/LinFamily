@@ -148,8 +148,8 @@
     main { flex:1; width:100%; margin:0 auto; padding:18px max(20px, env(safe-area-inset-left)) 40px; }
     @media (min-width:1024px) { .lf-top, main { padding-left:32px; padding-right:32px; } } /* 電腦版全寬，左右邊距跟右上角按鈕一樣 32px */
     .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0 24px; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
-    .lf-tabs button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
-    .lf-tabs button[aria-selected="true"] { background:var(--pine); color:#fff; }
+    .lf-tabs > button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
+    .lf-tabs > button[aria-selected="true"] { background:var(--pine); color:#fff; }
     .lf-newdot { display:inline-block; width:8px; height:8px; margin-left:5px; vertical-align:top; border-radius:50%; background:#E5484D; }
     .lf-newdot[hidden] { display:none; }
     .lf-all button { border:0; border-radius:9999px; padding:6px 14px; font:inherit; font-size:13px; font-weight:700; background:var(--pine); color:#fff; cursor:pointer; }
@@ -206,14 +206,14 @@
     .lf-search button:hover { background:var(--btn); }
     .lf-search button[hidden] { display:none; }
     .lf-search[hidden] { display:none; }
-    .lf-tabbar { display:flex; align-items:center; gap:10px; margin:22px 0 24px; }
+    .lf-tabbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:22px 0 24px; }
     .lf-tabbar .lf-tabs { margin:0; }
     .lf-tabs .lf-tab-icon { border:0; background:none; padding:8px 12px; border-radius:9999px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; }
     .lf-tabs .lf-tab-icon svg { width:16px; height:16px; }
     .lf-tabs .lf-tab-icon[aria-expanded="true"] { background:var(--pine); color:#fff; }
-    .lf-gear-wrap { margin-left:auto; position:relative; flex:none; }
-    @media (max-width:430px) { .lf-tabs button { padding:8px 12px; } .lf-tabs .lf-tab-icon { padding:8px 10px; } .lf-tabbar { gap:8px; } } /* 窄手機：一排放得下，不切到齒輪 */
-    @media (max-width:380px) { .lf-tabs button { padding:7px 10px; font-size:13px; } .lf-tabs .lf-tab-icon { padding:7px 8px; } .lf-tabbar { gap:6px; } .lf-tabbar .lf-search-btn { width:36px; height:36px; } }
+    .lf-gear-wrap { position:relative; display:flex; flex:none; }
+    @media (max-width:430px) { .lf-tabs > button { padding:8px 12px; } .lf-tabs .lf-tab-icon { padding:8px 10px; } .lf-tabbar { gap:8px; } } /* 窄手機：一排放得下，不切到齒輪 */
+    @media (max-width:380px) { .lf-tabs > button { padding:7px 10px; font-size:13px; } .lf-tabs .lf-tab-icon { padding:7px 8px; } .lf-tabbar { gap:6px; } .lf-tabbar .lf-search-btn { width:36px; height:36px; } }
     /* 齒輪選單：間距、字級照管理員下拉選單（.lf-menu）；框線顏色跟著 LF 主題 */
     .lf-gear-menu, html.dark .lf-gear-menu { border-color:var(--border); }
     .lf-gear-menu .lf-menu-head, html.dark .lf-gear-menu .lf-menu-head { border-bottom-color:var(--border); }
@@ -361,15 +361,15 @@
       <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
       <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-newdot" id="lfAppsDot" hidden></i></button>
       <button type="button" class="lf-tab-icon" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
-    </div>
-    <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-    <div class="lf-gear-wrap">
-      <button type="button" class="lf-search-btn" id="lfGearBtn" aria-label="設定" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-      <div id="lfGearMenu" class="lf-menu lf-gear-menu" role="menu" hidden>
-        <div class="lf-menu-head">設定</div>
-        <button type="button" role="menuitem" data-gear="theme">🎨 背景主題</button>
+      <div class="lf-gear-wrap">
+        <button type="button" class="lf-tab-icon" id="lfGearBtn" aria-label="設定" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+        <div id="lfGearMenu" class="lf-menu lf-gear-menu" role="menu" hidden>
+          <div class="lf-menu-head">設定</div>
+          <button type="button" role="menuitem" data-gear="theme">🎨 背景主題</button>
+        </div>
       </div>
     </div>
+    <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
     </div>
     <label class="lf-search" for="lfSearch" id="lfSearchBox" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
