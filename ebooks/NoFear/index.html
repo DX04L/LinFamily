@@ -61,6 +61,83 @@
       cursor: grabbing;
     }
 
+    /* 右上角實體大緞帶書籤 */
+    #bookmark-ribbon {
+      position: absolute;
+      top: -6px;
+      right: 22px;
+      width: 44px;
+      height: 86px;
+      cursor: pointer;
+      z-index: 15;
+      transform-origin: top center;
+      transition: transform 0.34s cubic-bezier(0.22, 1.35, 0.36, 1), opacity 0.25s ease;
+      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.38));
+    }
+
+    /* 未掛書籤時：僅露出上方一點點半透明掛耳，不遮擋繪本插畫 */
+    #bookmark-ribbon.inactive {
+      transform: translateY(-48px) scaleY(0.92);
+      opacity: 0.52;
+      filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.28));
+    }
+
+    #bookmark-ribbon.inactive:hover {
+      transform: translateY(-38px) scaleY(0.96);
+      opacity: 0.88;
+    }
+
+    /* 已掛書籤時：完整垂下 */
+    #bookmark-ribbon.active {
+      transform: translateY(0) scaleY(1);
+      opacity: 1;
+    }
+
+    #bookmark-ribbon.active:active {
+      transform: translateY(5px) scaleY(1.04);
+    }
+
+    #bookmark-ribbon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    /* 翻頁動畫進行時暫時淡化外部書籤 DOM，避免懸空感 */
+    #book-shell.is-flipping #bookmark-ribbon {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.12s ease;
+    }
+
+    /* 書籤提示氣泡 */
+    #bookmark-toast {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-16px);
+      background: rgba(24, 20, 17, 0.84);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #f7e6c4;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      border: 1px solid rgba(243, 198, 105, 0.35);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 30;
+    }
+
+    #bookmark-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     #hud-pill {
       position: fixed;
       bottom: 14px;
@@ -76,7 +153,7 @@
       letter-spacing: 0.04em;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.28s ease, transform 0.28s ease;
@@ -99,6 +176,7 @@
       padding: 2px 6px;
       border-radius: 4px;
       line-height: 1;
+      white-space: nowrap;
     }
 
     .hud-btn:hover:not(:disabled) {
@@ -108,6 +186,19 @@
     .hud-btn:disabled {
       opacity: 0.3;
       cursor: default;
+    }
+
+    #btn-goto-bookmark {
+      color: #f3c669;
+      font-size: 12px;
+      padding: 3px 8px;
+      background: rgba(243, 198, 105, 0.14);
+      border: 1px solid rgba(243, 198, 105, 0.3);
+      border-radius: 999px;
+    }
+
+    #btn-goto-bookmark:hover {
+      background: rgba(243, 198, 105, 0.26);
     }
 
     #loader {
@@ -149,9 +240,46 @@
     <div style="font-size: 14px; letter-spacing: 0.08em;">正在載入《不要怕！森林大霧》…</div>
   </div>
 
+  <div id="bookmark-toast">已將書籤移至此頁</div>
+
   <div id="reader-stage">
     <div id="book-shell">
       <canvas id="book-canvas"></canvas>
+      <!-- 右上角大緞帶書籤 -->
+      <div id="bookmark-ribbon" class="inactive" title="點擊在此頁掛上書籤（全書僅保留一個書籤）">
+        <svg viewBox="0 0 44 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ribbonBody" x1="0" y1="0" x2="44" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#9B1B24" />
+              <stop offset="22%" stop-color="#D62839" />
+              <stop offset="50%" stop-color="#BA1E2D" />
+              <stop offset="82%" stop-color="#E03546" />
+              <stop offset="100%" stop-color="#87141D" />
+            </linearGradient>
+            <linearGradient id="ribbonSheen" x1="22" y1="0" x2="22" y2="86" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="rgba(0,0,0,0.28)" />
+              <stop offset="14%" stop-color="rgba(255,255,255,0.18)" />
+              <stop offset="65%" stop-color="rgba(255,255,255,0)" />
+              <stop offset="100%" stop-color="rgba(0,0,0,0.22)" />
+            </linearGradient>
+            <linearGradient id="goldTrim" x1="0" y1="0" x2="44" y2="86" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#F7D78B" />
+              <stop offset="50%" stop-color="#D99B38" />
+              <stop offset="100%" stop-color="#F5CE76" />
+            </linearGradient>
+          </defs>
+          <!-- 頂部書頁夾口暗影 -->
+          <path d="M2 6C2 2.68629 4.68629 0 8 0H36C39.3137 0 42 2.68629 42 6V10H2V6Z" fill="#5E0D13"/>
+          <!-- 主緞帶燕尾造型 -->
+          <path d="M3 4H41V82L22 68L3 82V4Z" fill="url(#ribbonBody)"/>
+          <path d="M3 4H41V82L22 68L3 82V4Z" fill="url(#ribbonSheen)"/>
+          <!-- 雙側精緻金邊車縫線 -->
+          <path d="M7.5 6V74.5M36.5 6V74.5" stroke="url(#goldTrim)" stroke-width="1.3" stroke-dasharray="2.5 2"/>
+          <!-- 中央書籤星芒徽章 -->
+          <circle cx="22" cy="44" r="8.5" fill="rgba(94, 13, 19, 0.35)" stroke="url(#goldTrim)" stroke-width="1.2"/>
+          <path d="M22 38.2L23.5 42.3L27.8 42.5L24.4 45.2L25.6 49.3L22 46.9L18.4 49.3L19.6 45.2L16.2 42.5L20.5 42.3L22 38.2Z" fill="#F9DF9B"/>
+        </svg>
+      </div>
     </div>
   </div>
 
@@ -160,11 +288,13 @@
     <button class="hud-btn" id="btn-prev" title="上一頁">‹</button>
     <span id="page-label">封面</span>
     <button class="hud-btn" id="btn-next" title="下一頁">›</button>
+    <button class="hud-btn" id="btn-goto-bookmark" title="回到上次書籤頁" style="display:none;">🔖 回到書籤</button>
     <button class="hud-btn" id="btn-reset-zoom" title="還原大小" style="display:none; font-size:12px;">100%</button>
   </div>
 
   <script>
     (function () {
+      const STORAGE_KEY = "nofear_forest_fog_single_bookmark_v1";
       const INNER_PAGE_COUNT = 28;
       const IMAGE_FILES = ["images/NoFear.png"];
       const PAGE_TITLES = ["封面"];
@@ -186,7 +316,10 @@
       const btnFirst = document.getElementById("btn-first");
       const btnPrev = document.getElementById("btn-prev");
       const btnNext = document.getElementById("btn-next");
+      const btnGotoBookmark = document.getElementById("btn-goto-bookmark");
       const btnResetZoom = document.getElementById("btn-reset-zoom");
+      const bookmarkRibbon = document.getElementById("bookmark-ribbon");
+      const bookmarkToast = document.getElementById("bookmark-toast");
 
       const images = [];
       const pageCache = [];
@@ -201,7 +334,137 @@
       let logicalW = 0;
       let logicalH = 0;
 
-      // 雙指縮放與平移狀態
+      // ===== 單一全局書籤狀態（以實際圖片索引 0..28 儲存，跨單雙頁裝置皆精準對應） =====
+      let bookmarkedPageIndex = loadSavedBookmark();
+
+      function loadSavedBookmark() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw === null) return null;
+          const idx = parseInt(raw, 10);
+          if (!Number.isNaN(idx) && idx >= 0 && idx < IMAGE_FILES.length) {
+            return idx;
+          }
+        } catch (e) {}
+        return null;
+      }
+
+      function saveBookmarkToStorage(pageIdx) {
+        try {
+          if (pageIdx === null || pageIdx === undefined) {
+            localStorage.removeItem(STORAGE_KEY);
+          } else {
+            localStorage.setItem(STORAGE_KEY, String(pageIdx));
+          }
+        } catch (e) {}
+      }
+
+      // 將實際圖片索引轉換為當前視圖（單頁或雙頁）的 step
+      function pageIndexToStep(pageIdx) {
+        if (pageIdx <= 0) return 0;
+        if (isSpreadCapable) {
+          return Math.min(getMaxStep(), Math.ceil(pageIdx / 2));
+        }
+        return Math.min(getMaxStep(), pageIdx);
+      }
+
+      // 取得當前畫面代表的基準圖片索引（雙頁時優先取右頁或左頁代表該跨頁）
+      function getCurrentRepresentativePageIndex() {
+        if (!isSpreadCapable || currentStep === 0) {
+          return currentStep;
+        }
+        const leftIdx = currentStep * 2 - 1;
+        const rightIdx = currentStep * 2;
+        return rightIdx < IMAGE_FILES.length ? rightIdx : leftIdx;
+      }
+
+      // 判斷當前畫面是否包含唯一書籤
+      function isCurrentViewBookmarked() {
+        if (bookmarkedPageIndex === null) return false;
+        if (!isSpreadCapable || currentStep === 0) {
+          return bookmarkedPageIndex === currentStep;
+        }
+        const leftIdx = currentStep * 2 - 1;
+        const rightIdx = currentStep * 2;
+        return bookmarkedPageIndex === leftIdx || bookmarkedPageIndex === rightIdx;
+      }
+
+      let toastTimer = null;
+      function showBookmarkToast(text) {
+        bookmarkToast.textContent = text;
+        bookmarkToast.classList.add("visible");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          bookmarkToast.classList.remove("visible");
+        }, 2000);
+      }
+
+      function updateBookmarkUI() {
+        const isHere = isCurrentViewBookmarked();
+        if (isHere) {
+          bookmarkRibbon.classList.remove("inactive");
+          bookmarkRibbon.classList.add("active");
+          bookmarkRibbon.title = "此頁已掛上書籤（再次點擊可取下）";
+        } else {
+          bookmarkRibbon.classList.remove("active");
+          bookmarkRibbon.classList.add("inactive");
+          bookmarkRibbon.title = bookmarkedPageIndex !== null
+            ? "點擊將書籤從原本頁面移到此頁"
+            : "點擊在此頁掛上書籤";
+        }
+
+        // 若全書有書籤且目前不在書籤頁，底部 HUD 顯示「回到書籤」快捷按鈕
+        if (bookmarkedPageIndex !== null && !isHere) {
+          btnGotoBookmark.style.display = "inline-block";
+          const targetName = bookmarkedPageIndex === 0 ? "封面" : `第 ${bookmarkedPageIndex} 頁`;
+          btnGotoBookmark.textContent = `🔖 回到${targetName}`;
+        } else {
+          btnGotoBookmark.style.display = "none";
+        }
+      }
+
+      function toggleOrMoveBookmark() {
+        if (isCurrentViewBookmarked()) {
+          // 在同一頁再次點擊 -> 取下書籤
+          bookmarkedPageIndex = null;
+          saveBookmarkToStorage(null);
+          updateBookmarkUI();
+          showBookmarkToast("已取下書籤");
+        } else {
+          // 在別的頁點擊 -> 舊書籤自動消失，唯一書籤轉移至此頁
+          const hadOldBookmark = bookmarkedPageIndex !== null;
+          const targetIdx = getCurrentRepresentativePageIndex();
+          bookmarkedPageIndex = targetIdx;
+          saveBookmarkToStorage(targetIdx);
+          updateBookmarkUI();
+          const label = targetIdx === 0 ? "封面" : `第 ${targetIdx} 頁`;
+          showBookmarkToast(hadOldBookmark ? `書籤已移至${label}（下次開啟將自動回到此頁）` : `已在${label}掛上書籤`);
+        }
+      }
+
+      function jumpToBookmark() {
+        if (bookmarkedPageIndex === null || flip.active) return;
+        const targetStep = pageIndexToStep(bookmarkedPageIndex);
+        if (targetStep === currentStep) return;
+        resetZoom(false);
+        const dir = targetStep > currentStep ? 1 : -1;
+        flip.active = true;
+        flip.dragging = false;
+        flip.direction = dir;
+        flip.fromStep = currentStep;
+        flip.toStep = targetStep;
+        flip.progress = 0.02;
+        flip.tiltAngle = 0;
+        bookShell.classList.add("is-flipping");
+        if (isSpreadCapable && (currentStep === 0 || targetStep === 0)) {
+          updateLayout(false);
+        }
+        animateSpringTo(1, 1.6, () => {
+          currentStep = targetStep;
+        });
+      }
+
+      // ===== 雙指縮放與平移狀態 =====
       const view = {
         scale: 1,
         tx: 0,
@@ -223,14 +486,13 @@
         zoomAnim: null
       };
 
-      // 翻頁狀態（新增斜向捲曲角度 tiltAngle 與起始高度 startYNorm）
       const flip = {
         active: false,
-        direction: 0,      // 1 = 往下一頁翻, -1 = 往上一頁翻
-        progress: 0,       // 0.0 -> 1.0
+        direction: 0,
+        progress: 0,
         velocity: 0,
-        tiltAngle: 0,      // 折痕傾斜弧度（負值=從右下往上斜掀，正值=從右上往下斜掀）
-        startYNorm: 0.5,   // 手指按下的垂直相對位置 (0.0 頂端 ~ 1.0 底端)
+        tiltAngle: 0,
+        startYNorm: 0.5,
         dragging: false,
         startX: 0,
         startY: 0,
@@ -257,7 +519,7 @@
         clearTimeout(hudTimer);
         hudTimer = setTimeout(() => {
           hudPill.classList.remove("visible");
-        }, 2400);
+        }, 2600);
       }
 
       function clampPan(tx, ty, scale) {
@@ -416,6 +678,7 @@
             flip.active = false;
             flip.dragging = false;
             flip.animFrame = null;
+            bookShell.classList.remove("is-flipping");
           }
           resetZoom(false);
         }
@@ -448,6 +711,7 @@
         applyViewTransform();
         updateCanvasResolution();
         updateHudText();
+        updateBookmarkUI();
         render();
       }
 
@@ -524,12 +788,9 @@
         }
       }
 
-      // 支援多角度斜向捲曲的單頁翻頁效果 (Angled Cylindrical Page Peel)
       function drawSinglePageCurl(lowerIdx, upperIdx, peelP, tiltAngle, w, h) {
-        // 1. 底層即將露出的下一頁
         drawPageImage(upperIdx, 0, 0, w, h, w, h);
 
-        // 隨著翻頁接近完成 (peelP -> 1)，折痕角度自然收斂回垂直書脊，確保最終平貼書本
         const activeAngle = tiltAngle * Math.sin(peelP * Math.PI);
         const curlCurve = Math.sin(peelP * Math.PI);
         const foldCenterX = w * (1 - peelP);
@@ -537,12 +798,10 @@
         const flapWidth = Math.min(w * 0.65, Math.max(22, w * 0.23 * curlCurve));
         const diag = Math.hypot(w, h) * 1.5;
 
-        // 切換到「以折痕為中心、旋轉 activeAngle」的局部座標系，讓斜向裁切、陰影、高光與鏡像背面精準對齊
         ctx.save();
         ctx.translate(foldCenterX, foldCenterY);
         ctx.rotate(activeAngle);
 
-        // 2. 投射在底層頁面上的斜向柔和深陰影
         const shadowWidth = Math.min(w * 0.45, 42 + w * 0.28 * curlCurve);
         const underShadow = ctx.createLinearGradient(
           flapWidth - 10, 0,
@@ -554,25 +813,21 @@
         ctx.fillStyle = underShadow;
         ctx.fillRect(flapWidth - 10, -diag, shadowWidth + 10, diag * 2);
 
-        // 3. 左側尚未掀起的平貼頁面（沿斜向折痕裁切）
         ctx.save();
         ctx.beginPath();
         ctx.rect(-diag, -diag, diag, diag * 2);
         ctx.clip();
 
-        // 還原回書本原點繪製正面頁面
         ctx.rotate(-activeAngle);
         ctx.translate(-foldCenterX, -foldCenterY);
         drawPageImage(lowerIdx, 0, 0, w, h, w, h);
 
-        // 左側書脊陰影
         const leftSpine = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
         leftSpine.addColorStop(0, "rgba(0,0,0,0.16)");
         leftSpine.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = leftSpine;
         ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
 
-        // 回到折痕座標系繪製靠近折痕的內凹陰影 (Ambient Occlusion)
         ctx.translate(foldCenterX, foldCenterY);
         ctx.rotate(activeAngle);
         const creaseAO = Math.max(18, w * 0.065 * curlCurve);
@@ -583,10 +838,8 @@
         ctx.fillRect(-creaseAO, -diag, creaseAO, diag * 2);
         ctx.restore();
 
-        // 4. 被斜向掀起的「紙張背面」圓柱體捲曲（嚴格限制在書本範圍內）
         if (flapWidth > 1 && peelP > 0.005 && peelP < 0.995) {
           ctx.save();
-          // 先限制在書本四邊形範圍內，避免斜角翻頁時紙背突出書本外框
           ctx.rotate(-activeAngle);
           ctx.translate(-foldCenterX, -foldCenterY);
           ctx.beginPath();
@@ -595,16 +848,13 @@
           ctx.translate(foldCenterX, foldCenterY);
           ctx.rotate(activeAngle);
 
-          // 再裁切出折痕右側的紙背捲曲區
           ctx.beginPath();
           ctx.rect(0, -diag, flapWidth, diag * 2);
           ctx.clip();
 
-          // 紙背暖白底色
           ctx.fillStyle = "#faf7f0";
           ctx.fillRect(0, -diag, flapWidth, diag * 2);
 
-          // 沿著斜向折痕對稱鏡像翻折正面內容（模擬真實紙張透光感）
           ctx.save();
           ctx.globalAlpha = 0.15;
           ctx.translate(flapWidth, 0);
@@ -614,7 +864,6 @@
           drawPageImage(lowerIdx, 0, 0, w, h, w, h);
           ctx.restore();
 
-          // 圓柱體立體明暗漸層（折痕深 -> 弧頂高光 -> 紙緣立體陰影）
           const cylGrad = ctx.createLinearGradient(0, 0, flapWidth, 0);
           cylGrad.addColorStop(0, `rgba(0, 0, 0, ${0.28 * curlCurve})`);
           cylGrad.addColorStop(0.24, `rgba(255, 255, 255, ${0.58 * curlCurve})`);
@@ -624,7 +873,6 @@
           ctx.fillStyle = cylGrad;
           ctx.fillRect(0, -diag, flapWidth, diag * 2);
 
-          // 紙張捲起邊緣細線
           ctx.strokeStyle = `rgba(0, 0, 0, ${0.18 * curlCurve})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -638,7 +886,6 @@
         ctx.restore();
       }
 
-      // 雙頁模式支援斜向透視微傾（讓大螢幕雙頁翻動也有上下角掀起的立體感）
       function drawSpreadPageFlip(prevLeftIdx, prevRightIdx, nextLeftIdx, nextRightIdx, flipP, tiltAngle, w, h) {
         const halfW = w / 2;
         drawPageImage(prevLeftIdx, 0, 0, halfW, h, halfW, h);
@@ -664,7 +911,6 @@
           ctx.fillRect(halfW, 0, dropShadowW, h);
 
           ctx.save();
-          // 根據斜拉方向微幅傾斜正在翻起的書頁邊緣
           ctx.transform(1, skewOffset / Math.max(1, pageW), 0, 1, 0, -skewOffset * 0.5);
           if (prevRightIdx < images.length) {
             drawPageImage(prevRightIdx, halfW, 0, pageW, h, halfW, h);
@@ -796,6 +1042,7 @@
 
       function animateSpringTo(targetP, initialVelocity, onComplete) {
         if (flip.animFrame) cancelAnimationFrame(flip.animFrame);
+        bookShell.classList.add("is-flipping");
 
         let pos = flip.progress;
         let vel = initialVelocity || 0;
@@ -816,7 +1063,6 @@
           vel += accel * dt;
           pos += vel * dt;
 
-          // 動畫期間傾斜角度也平滑自然衰減回正
           flip.tiltAngle *= 0.92;
 
           if (pos < 0) {
@@ -838,6 +1084,7 @@
             flip.dragging = false;
             flip.velocity = 0;
             flip.animFrame = null;
+            bookShell.classList.remove("is-flipping");
             if (onComplete) onComplete();
             updateLayout(false);
             return;
@@ -864,6 +1111,7 @@
         flip.toStep = nextStep;
         flip.progress = 0.01;
         flip.tiltAngle = customTilt;
+        bookShell.classList.add("is-flipping");
 
         if (isSpreadCapable && currentStep === 0 && nextStep === 1) {
           updateLayout(false);
@@ -874,7 +1122,27 @@
         });
       }
 
-      // ===== 觸控與滑鼠手勢整合（雙指縮放完全開放、不干擾單指斜向翻頁） =====
+      // ===== 右上角書籤點擊事件（獨立攔截，不干擾下方畫布翻頁） =====
+      bookmarkRibbon.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+      });
+      bookmarkRibbon.addEventListener("touchstart", (e) => {
+        e.stopPropagation();
+      }, { passive: true });
+      bookmarkRibbon.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (flip.active) return;
+        toggleOrMoveBookmark();
+        showHud();
+      });
+
+      btnGotoBookmark.addEventListener("click", (e) => {
+        e.stopPropagation();
+        jumpToBookmark();
+        showHud();
+      });
+
+      // ===== 觸控與滑鼠手勢整合 =====
       let pointerDown = false;
       let hasMoved = false;
       let touchStartTime = 0;
@@ -898,7 +1166,6 @@
           pointerDown = false;
           view.isPanning = false;
 
-          // 若單指剛拉起一點點就放上第二根手指，立刻柔順彈回原位並切換成雙指縮放
           if (flip.active && flip.dragging) {
             const orig = flip.fromStep;
             animateSpringTo(0, -0.5, () => {
@@ -982,7 +1249,6 @@
         }
 
         if (pointerDown && e.touches.length === 1) {
-          // 給第二根手指 40ms 落指緩衝，避免雙指同時放下時的瞬間時間差誤觸翻頁
           if (!hasMoved && performance.now() - touchStartTime < 40) return;
           onSingleMove(e.touches[0].clientX, e.touches[0].clientY);
         }
@@ -1020,7 +1286,6 @@
         }
       });
 
-      // 滑鼠支援
       canvas.addEventListener("mousedown", (e) => {
         if (e.button !== 0) return;
         if (view.scale > 1.02) {
@@ -1065,7 +1330,6 @@
         onSingleEnd(e.clientX, e.clientY);
       });
 
-      // 桌面端 Ctrl + 滾輪縮放 / 觸控板雙指捏合
       readerStage.addEventListener("wheel", (e) => {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
@@ -1135,21 +1399,19 @@
           flip.toStep = targetStep;
           flip.progress = 0;
           flip.tiltAngle = 0;
+          bookShell.classList.add("is-flipping");
 
           if (isSpreadCapable && currentStep === 0 && targetStep === 1) {
             updateLayout(false);
           }
         }
 
-        // 結合「按下的垂直高度（上角/中段/下角）」與「手指垂直移動量 dy」計算自然斜向折痕角度
-        const cornerBias = (flip.startYNorm - 0.5) * 0.42; // 偏下按壓為正、偏上按壓為負
+        const cornerBias = (flip.startYNorm - 0.5) * 0.42;
         const dragBias = (dy / Math.max(180, logicalH)) * 0.55;
         const rawTilt = (dragBias - cornerBias) * flip.direction;
-        // 限制最大斜角在 ±24 度（約 ±0.42 rad），既立體又不破圖
         const targetTilt = Math.max(-0.42, Math.min(0.42, rawTilt));
         flip.tiltAngle = flip.tiltAngle * 0.7 + targetTilt * 0.3;
 
-        // 支援斜向拉動距離計算（斜向滑動時也能順暢推進進度）
         const dragSpan = Math.max(120, logicalW * 0.90);
         const deltaP = (flip.direction === 1 ? -stepDx : stepDx) / dragSpan;
         flip.progress = Math.max(0.002, Math.min(0.998, flip.progress + deltaP));
@@ -1188,7 +1450,6 @@
           const rect = bookShell.getBoundingClientRect();
           const ratio = (clientX - rect.left) / rect.width;
           const yNorm = (clientY - rect.top) / rect.height;
-          // 點擊偏上角或偏下角翻頁時，也自動帶出微微的掀角斜度動畫
           const tapTilt = (0.5 - yNorm) * 0.28;
           if (ratio < 0.28) {
             turnPage(-1, -tapTilt);
@@ -1288,9 +1549,19 @@
       function checkInitialReady() {
         if (!initialShown && readyCount >= Math.min(3, IMAGE_FILES.length)) {
           initialShown = true;
+          // 偵測螢幕尺寸並自動跳轉到上次儲存的書籤頁
+          const stageRect = readerStage.getBoundingClientRect();
+          isSpreadCapable = checkSpreadCapable(stageRect.width || window.innerWidth, stageRect.height || window.innerHeight);
+          if (bookmarkedPageIndex !== null) {
+            currentStep = pageIndexToStep(bookmarkedPageIndex);
+          }
           updateLayout(true);
           loader.classList.add("hidden");
           showHud();
+          if (bookmarkedPageIndex !== null) {
+            const label = bookmarkedPageIndex === 0 ? "封面" : `第 ${bookmarkedPageIndex} 頁`;
+            showBookmarkToast(`已自動回到上次書籤位置：${label}`);
+          }
         }
       }
 
