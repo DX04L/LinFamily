@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=5">
   <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=5">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=5">
-  <link rel="stylesheet" href="./sg-reader.css?v=4">
+  <link rel="stylesheet" href="./sg-reader.css?v=5">
 
   <style>
     :root {
@@ -34,6 +34,7 @@
 
       /* 淺色模式中性色階 */
       --bg-page: #F5F5F7;
+      --page-gutter: clamp(16px, 3.2vw, 60px);
       --bg-card: #FFFFFF;
       --bg-segmented: rgba(118, 118, 128, 0.12);
       --bg-seg-active: #FFFFFF;
@@ -107,7 +108,7 @@
     .container {
       width: 100%;
       max-width: 100%;
-      padding-inline: clamp(16px, 3.2vw, 48px);
+      padding-inline: var(--page-gutter);
     }
 
     /* 頂部導覽列 */
@@ -219,9 +220,8 @@
 
     /* Apple 簡潔課程主視覺區 */
     .hero {
-      background-color: var(--bg-card);
-      border-bottom: 1px solid var(--border-hairline);
-      padding: 28px 0 24px;
+      background-color: var(--bg-page);
+      padding-block: 28px 0;
       text-align: center;
       transition: background-color 0.25s ease;
     }
@@ -841,133 +841,135 @@
     </div>
   </nav>
 
-  <div class="container sg-reading-controls">
-    <div class="sg-date-nav">
-      <button class="sg-nav-btn" id="sg-prev" disabled aria-label="上一週教材" title="上一週">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
+  <div class="sg-study-layout">
+    <div class="container sg-reading-controls">
+      <div class="sg-date-nav">
+        <button class="sg-nav-btn" id="sg-prev" disabled aria-label="上一週教材" title="上一週">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
 
-      <details class="sg-date-picker" id="sg-date-picker">
-        <summary aria-label="選擇教材日期">
-          <span class="sg-date-pill">
-            <span id="heroDateRange">選擇教材日期</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-          </span>
-        </summary>
-        <div id="sg-date-list" aria-label="目前保存的小組教材"></div>
-      </details>
+        <details class="sg-date-picker" id="sg-date-picker">
+          <summary aria-label="選擇教材日期">
+            <span class="sg-date-pill">
+              <span id="heroDateRange">選擇教材日期</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </summary>
+          <div id="sg-date-list" aria-label="目前保存的小組教材"></div>
+        </details>
 
-      <button class="sg-nav-btn" id="sg-next" disabled aria-label="下一週教材" title="下一週">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- 可左右滑動切換週次的閱讀主區域 -->
-  <div id="sg-reading-sheet">
-    <!-- 課程簡約主標題（保留原本乾淨標籤與標題） -->
-    <header class="hero">
-      <div class="container">
-        <div class="eyebrow-row">
-          <span class="pill-tag pill-primary" id="heroWeekBadge">WEEK 2</span>
-          <span class="pill-tag pill-tint" id="heroSeriesTag">信心 ④</span>
-        </div>
-
-        <h1 class="hero-title" id="heroTitle">亞伯拉罕的信心（下）</h1>
-        <div class="hero-scripture">
-          <span>主題經文：</span>
-          <span class="pop-trigger" id="heroScriptureTrigger" data-pop="heb11_17_19">希伯來書 11:17–19</span>
-        </div>
-      </div>
-    </header>
-
-    <p class="status-note" id="sgStatus" hidden></p>
-
-    <!-- Apple Segmented Control 三大功能分頁導覽 -->
-    <div class="tabs-bar">
-      <div class="container">
-        <div class="segmented-control" role="tablist">
-          <button class="seg-btn active" data-tab="tab-info">信息互動填空</button>
-          <button class="seg-btn" data-tab="tab-bg">背景與註釋</button>
-          <button class="seg-btn" data-tab="tab-discuss">小組討論</button>
-        </div>
+        <button class="sg-nav-btn" id="sg-next" disabled aria-label="下一週教材" title="下一週">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
     </div>
 
-    <main class="container">
-
-      <!-- 第一頁（預設首頁）：信息內文與互動填空 -->
-      <section id="tab-info" class="tab-panel active">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">信息內文與互動填空</h2>
-              <p class="card-subtitle">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）</p>
-            </div>
-            <div class="toolbar-actions">
-              <span class="progress-pill" id="blankProgress">已解鎖 0 / 7</span>
-              <button class="pill-action-btn" id="toggleAllBtn">顯示全部</button>
-            </div>
+    <!-- 可左右滑動切換週次的閱讀主區域 -->
+    <div id="sg-reading-sheet">
+      <!-- 課程簡約主標題（保留原本乾淨標籤與標題） -->
+      <header class="hero container">
+        <div class="sg-hero-content">
+          <div class="eyebrow-row">
+            <span class="pill-tag pill-primary" id="heroWeekBadge">WEEK 2</span>
+            <span class="pill-tag pill-tint" id="heroSeriesTag">信心 ④</span>
           </div>
 
-          <div class="article-body" id="articleBody"></div>
-
-          <div class="next-page-bar">
-            <button class="next-page-btn" onclick="switchToTab('tab-bg')">
-              <span>下一步：背景與註釋</span>
-              <span>→</span>
-            </button>
+          <h1 class="hero-title" id="heroTitle">亞伯拉罕的信心（下）</h1>
+          <div class="hero-scripture">
+            <span>主題經文：</span>
+            <span class="pop-trigger" id="heroScriptureTrigger" data-pop="heb11_17_19">希伯來書 11:17–19</span>
           </div>
         </div>
-      </section>
+      </header>
 
-      <!-- 第二頁：背景與註釋 -->
-      <section id="tab-bg" class="tab-panel">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">經文歷史與神學背景</h2>
-              <p class="card-subtitle">深入理解主題經文的救贖歷史脈絡</p>
-            </div>
-          </div>
-          <div id="bgBlocksContainer"></div>
-        </div>
+      <p class="status-note" id="sgStatus" hidden></p>
 
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">原文難字與關鍵詞解析</h2>
-              <p class="card-subtitle">從希伯來文與希臘文原意掌握精準神學含義</p>
-            </div>
-          </div>
-          <div id="wordStudiesContainer"></div>
-          <div class="next-page-bar">
-            <button class="next-page-btn" onclick="switchToTab('tab-discuss')">
-              <span>下一步：小組討論</span>
-              <span>→</span>
-            </button>
+      <!-- Apple Segmented Control 三大功能分頁導覽 -->
+      <div class="tabs-bar">
+        <div class="container">
+          <div class="segmented-control" role="tablist">
+            <button class="seg-btn active" data-tab="tab-info">小組信息</button>
+            <button class="seg-btn" data-tab="tab-bg">背景與註釋</button>
+            <button class="seg-btn" data-tab="tab-discuss">小組討論</button>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- 第三頁：小組討論 -->
-      <section id="tab-discuss" class="tab-panel">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">小組分享與討論</h2>
-              <p class="card-subtitle">透過真實敞開的對話，將神的話語落實在每天的生活中</p>
+      <main class="container">
+
+        <!-- 第一頁（預設首頁）：信息內文與互動填空 -->
+        <section id="tab-info" class="tab-panel active">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">小組信息</h2>
+                <p class="card-subtitle">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）</p>
+              </div>
+              <div class="toolbar-actions">
+                <span class="progress-pill" id="blankProgress">已解鎖 0 / 7</span>
+                <button class="pill-action-btn" id="toggleAllBtn">顯示全部</button>
+              </div>
+            </div>
+
+            <div class="article-body" id="articleBody"></div>
+
+            <div class="next-page-bar">
+              <button class="next-page-btn" onclick="switchToTab('tab-bg')">
+                <span>下一步：背景與註釋</span>
+                <span>→</span>
+              </button>
             </div>
           </div>
-          <div id="questionsContainer"></div>
-        </div>
-      </section>
+        </section>
 
-    </main>
+        <!-- 第二頁：背景與註釋 -->
+        <section id="tab-bg" class="tab-panel">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">經文歷史與神學背景</h2>
+                <p class="card-subtitle">深入理解主題經文的救贖歷史脈絡</p>
+              </div>
+            </div>
+            <div id="bgBlocksContainer"></div>
+          </div>
 
-    <footer>
-      <p>江子翠行道會｜小組牧養教材互動版 · 資料自動同步自教會官網</p>
-    </footer>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">原文難字與關鍵詞解析</h2>
+                <p class="card-subtitle">從希伯來文與希臘文原意掌握精準神學含義</p>
+              </div>
+            </div>
+            <div id="wordStudiesContainer"></div>
+            <div class="next-page-bar">
+              <button class="next-page-btn" onclick="switchToTab('tab-discuss')">
+                <span>下一步：小組討論</span>
+                <span>→</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 第三頁：小組討論 -->
+        <section id="tab-discuss" class="tab-panel">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">小組分享與討論</h2>
+                <p class="card-subtitle">透過真實敞開的對話，將神的話語落實在每天的生活中</p>
+              </div>
+            </div>
+            <div id="questionsContainer"></div>
+          </div>
+        </section>
+
+      </main>
+
+      <footer>
+        <p>江子翠行道會｜小組牧養教材互動版 · 資料自動同步自教會官網</p>
+      </footer>
+    </div>
   </div>
 
   <!-- 經文與神學解析視窗 -->

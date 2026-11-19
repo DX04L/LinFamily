@@ -6,6 +6,40 @@
   padding-block: 12px 0;
 }
 
+/* 主標題、分隔線、分頁和內文沿用同一組左右邊距。 */
+.sg-hero-content {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+@media (min-width: 960px) {
+  .sg-study-layout {
+    display: grid;
+  }
+
+  .sg-reading-controls,
+  #sg-reading-sheet {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  .sg-reading-controls {
+    align-self: start;
+    padding-block-start: 16px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .sg-date-nav {
+    max-width: 17rem;
+    pointer-events: auto;
+  }
+
+  .hero .eyebrow-row {
+    max-width: calc(100% - 35rem);
+  }
+}
+
 .sg-theme-btn {
   display: grid;
   place-items: center;
