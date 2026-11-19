@@ -381,7 +381,7 @@
           ribbonOpenFactor = Math.max(0, Math.min(1.06, pos));
           applyRibbonGeometry(ribbonOpenFactor);
 
-          if (Math.abs(pos - targetT) < 0.003 && Math.abs(vel) < 0.02) {
+          if (Math.abs(pos - targetT) < 0.005 && Math.abs(vel) < 0.03) {
             ribbonOpenFactor = targetT;
             applyRibbonGeometry(targetT);
             ribbonAnimFrame = null;
@@ -768,14 +768,20 @@
           bookH = bookW / targetAspect;
         }
 
-        logicalW = Math.round(bookW);
-        logicalH = Math.round(bookH);
+        const nextLogicalW = Math.round(bookW);
+        const nextLogicalH = Math.round(bookH);
+        const sizeChanged = (nextLogicalW !== logicalW || nextLogicalH !== logicalH);
 
-        bookShell.style.width = logicalW + "px";
-        bookShell.style.height = logicalH + "px";
+        logicalW = nextLogicalW;
+        logicalH = nextLogicalH;
 
-        applyViewTransform();
-        updateCanvasResolution();
+        if (sizeChanged || forceReset) {
+          bookShell.style.width = logicalW + "px";
+          bookShell.style.height = logicalH + "px";
+          applyViewTransform();
+          updateCanvasResolution();
+        }
+
         updateHudText();
         updateBookmarkUI(forceReset);
         render();
@@ -854,41 +860,29 @@
         }
       }
 
-      // 真實對折展開翻頁 (Unfolding Page Peel)：
-      // 被掀起的頁面（紙背）位於折痕（山脊）的「左側」，隨著往左翻動，紙背往左邊越張越開、越翻越多！
+      // 完整 0% -> 100% 展開翻頁：折痕從最右邊 (w) 一路走到最左邊 (0)，整頁完整翻完！
       function drawSinglePageCurl(lowerIdx, upperIdx, peelP, tiltAngle, w, h) {
-        // 1. 底層最右邊已經露出的下一頁（upperIdx）
+        // 1. 底層即將完整露出的下一頁（upperIdx）
         drawPageImage(upperIdx, 0, 0, w, h, w, h);
 
-        // 隨著翻頁接近完成 (peelP -> 1)，折痕角度自然收斂回垂直，確保最終平貼書本
+        // 接近起點或終點時角度平滑收斂，確保 100% 翻完時完全平貼
         const activeAngle = tiltAngle * Math.sin(peelP * Math.PI);
         const curlCurve = Math.sin(peelP * Math.PI);
 
-        // 幾何關係：
-        // 当页面从右边被掀起往左翻折时，假设折痕（山脊）在 foldX：
-        // 被掀起的纸背是从 foldX 往「左边」延伸展开，长度为 peeledAmount = w * peelP！
-        // 为了让纸背边缘在 peelP=1 时刚好贴合书本左边缘 (x=0)，折痕位置为：
-        // foldX - peeledAmount = w * (1 - peelP) => foldX = w * (1 - peelP * 0.5) 吗？
-        // 不！在单页全屏模式下（书脊在最左边 x=0）：
-        // 整张纸的右边边缘（原本在 x=w）被拉到了 targetEdgeX = w * (1 - peelP)，
-        // 而折痕（山脊）位于「原右边缘 w」与「当前拉到的位置 targetEdgeX」的正中间！
-        // 即：foldX = w * (1 - peelP * 0.5)，翻折过来的纸背从 foldX 往左延伸到 targetEdgeX = w * (1 - peelP)！
-        // 验证：
-        // - peelP = 0.0：foldX = w，targetEdgeX = w（还没掀起）
-        // - peelP = 0.2：foldX = 0.9w，纸背往左展开 0.1w（露出右侧 0.1w 的下一页）
-        // - peelP = 0.5：foldX = 0.75w，纸背往左展开 0.25w（露出右侧 0.25w 的下一页，纸背越来越宽！）
-        // - peelP = 1.0：foldX = 0.5w，纸背往左展开 0.5w 直达左书脊 x=0（完全翻过！）
-        const peeledSpan = w * peelP * 0.5;          // 翻折过来的纸背宽度（越翻越宽！）
-        const foldCenterX = w - peeledSpan;          // 山脊折痕所在的 X 坐标
+        // 關鍵修正：
+        // 折痕（山脊）從最右邊 w 一路走到最左邊 0：foldCenterX = w * (1 - peelP)
+        // 而被掀起的紙背從折痕往左邊張開的寬度為 peeledSpan = w * peelP（越翻越寬，超過左邊界後自然翻出書外）
+        const foldCenterX = w * (1 - peelP);
         const foldCenterY = h * 0.5;
+        const peeledSpan = w * peelP;
         const diag = Math.hypot(w, h) * 1.6;
 
         ctx.save();
         ctx.translate(foldCenterX, foldCenterY);
         ctx.rotate(activeAngle);
 
-        // 2. 折痕右侧：投射在底层「下一页 (upperIdx)」上的柔和阴影
-        const rightShadowW = Math.min(w * 0.35, 24 + w * 0.18 * curlCurve);
+        // 2. 折痕右側：投射在底層「下一頁 (upperIdx)」上的柔和陰影
+        const rightShadowW = Math.min(w * 0.36, 22 + w * 0.18 * curlCurve);
         const rightShadow = ctx.createLinearGradient(0, 0, rightShadowW, 0);
         rightShadow.addColorStop(0, `rgba(0, 0, 0, ${0.34 * curlCurve})`);
         rightShadow.addColorStop(0.45, `rgba(0, 0, 0, ${0.12 * curlCurve})`);
@@ -896,40 +890,39 @@
         ctx.fillStyle = rightShadow;
         ctx.fillRect(0, -diag, rightShadowW, diag * 2);
 
-        // 3. 折痕左侧：尚未被掀起的「当前页正面 (lowerIdx)」平贴部分
-        // （位于翻折纸背边缘 -peeledSpan 的更左侧，即 [-diag, -peeledSpan] 区间）
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(-diag, -diag, diag - peeledSpan, diag * 2);
-        ctx.clip();
+        // 3. 折痕左側 [-diag, -peeledSpan]：尚未被掀起的「當前頁正面 (lowerIdx)」
+        if (foldCenterX - peeledSpan > -w * 0.2) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(-diag, -diag, Math.max(0, diag - peeledSpan), diag * 2);
+          ctx.clip();
 
-        ctx.rotate(-activeAngle);
-        ctx.translate(-foldCenterX, -foldCenterY);
-        drawPageImage(lowerIdx, 0, 0, w, h, w, h);
+          ctx.rotate(-activeAngle);
+          ctx.translate(-foldCenterX, -foldCenterY);
+          drawPageImage(lowerIdx, 0, 0, w, h, w, h);
 
-        // 左侧书脊固定阴影
-        const leftSpine = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
-        leftSpine.addColorStop(0, "rgba(0,0,0,0.16)");
-        leftSpine.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = leftSpine;
-        ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
+          const leftSpine = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
+          leftSpine.addColorStop(0, "rgba(0,0,0,0.16)");
+          leftSpine.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = leftSpine;
+          ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
 
-        // 回到折痕坐标系：被翻折过来的纸背边缘（位于 x = -peeledSpan）投射在左侧正面页面上的柔和投影
-        ctx.translate(foldCenterX, foldCenterY);
-        ctx.rotate(activeAngle);
-        const leftCastShadowW = Math.min(w * 0.32, 22 + w * 0.18 * curlCurve);
-        const leftCastShadow = ctx.createLinearGradient(-peeledSpan - leftCastShadowW, 0, -peeledSpan, 0);
-        leftCastShadow.addColorStop(0, "rgba(0, 0, 0, 0)");
-        leftCastShadow.addColorStop(0.55, `rgba(0, 0, 0, ${0.14 * curlCurve})`);
-        leftCastShadow.addColorStop(1, `rgba(0, 0, 0, ${0.36 * curlCurve})`);
-        ctx.fillStyle = leftCastShadow;
-        ctx.fillRect(-peeledSpan - leftCastShadowW, -diag, leftCastShadowW, diag * 2);
-        ctx.restore();
+          ctx.translate(foldCenterX, foldCenterY);
+          ctx.rotate(activeAngle);
+          const leftCastShadowW = Math.min(w * 0.30, 20 + w * 0.16 * curlCurve);
+          const leftCastShadow = ctx.createLinearGradient(-peeledSpan - leftCastShadowW, 0, -peeledSpan, 0);
+          leftCastShadow.addColorStop(0, "rgba(0, 0, 0, 0)");
+          leftCastShadow.addColorStop(0.55, `rgba(0, 0, 0, ${0.14 * curlCurve})`);
+          leftCastShadow.addColorStop(1, `rgba(0, 0, 0, ${0.34 * curlCurve})`);
+          ctx.fillStyle = leftCastShadow;
+          ctx.fillRect(-peeledSpan - leftCastShadowW, -diag, leftCastShadowW, diag * 2);
+          ctx.restore();
+        }
 
-        // 4. 折痕左侧 [-peeledSpan, 0]：被掀起并往左边「越翻越张开」的纸背！
+        // 4. 折痕左側 [-peeledSpan, 0]：往左邊「越翻越張開」的紙背！
         if (peeledSpan > 0.5 && peelP > 0.002 && peelP < 0.998) {
           ctx.save();
-          // 限制在书本外框范围内
+          // 限制在書本四邊形範圍內
           ctx.rotate(-activeAngle);
           ctx.translate(-foldCenterX, -foldCenterY);
           ctx.beginPath();
@@ -938,51 +931,37 @@
           ctx.translate(foldCenterX, foldCenterY);
           ctx.rotate(activeAngle);
 
-          // 裁切出从折痕 (0) 往左边张开的纸背区域 [-peeledSpan, 0]
+          // 裁切出折痕左側張開的紙背區域 [-peeledSpan, 0]
           ctx.beginPath();
           ctx.rect(-peeledSpan, -diag, peeledSpan, diag * 2);
           ctx.clip();
 
-          // 纸背暖白底色
+          // 紙背暖白底色
           ctx.fillStyle = "#faf7f0";
           ctx.fillRect(-peeledSpan, -diag, peeledSpan, diag * 2);
 
-          // 沿折痕 (x=0) 水平镜像翻转当前页内容：
-          // 原本在折痕右边 [0, +peeledSpan] 的画面，翻过来后精准对应到折痕左边 [-peeledSpan, 0]，越翻露出越多！
+          // 沿折痕鏡像翻折正面內容（紙背透光效果，越翻越張開）
           ctx.save();
-          ctx.globalAlpha = 0.22; // 隐约透出正面插画与文字的纸背质感
+          ctx.globalAlpha = 0.20;
           ctx.scale(-1, 1);
           ctx.rotate(-activeAngle);
           ctx.translate(-foldCenterX, -foldCenterY);
           drawPageImage(lowerIdx, 0, 0, w, h, w, h);
           ctx.restore();
 
-          // 纸背质感明暗：
-          // 仅在靠近折痕山脊的一小段（ridgeWidth）有圆弧高光与拱起立体感，再往左延伸则是舒展平铺的纸面！
-          const ridgeWidth = Math.min(peeledSpan, Math.max(26, w * 0.14 * curlCurve));
+          // 紙背明暗漸層：僅在靠近折痕山脊處有立體高光，往左延伸為舒展平鋪的紙張
+          const ridgeWidth = Math.min(peeledSpan, Math.max(24, w * 0.14 * curlCurve));
           const spreadGrad = ctx.createLinearGradient(-peeledSpan, 0, 0, 0);
-          // 最左端纸张边缘（-peeledSpan）：微暗边沿
-          spreadGrad.addColorStop(0, `rgba(0, 0, 0, ${0.16 * curlCurve})`);
-          spreadGrad.addColorStop(0.06, `rgba(255, 255, 255, ${0.12 * curlCurve})`);
-          // 中段舒展区：干净柔和的纸面过渡
-          const ridgeStartStop = Math.max(0.1, 1 - ridgeWidth / Math.max(1, peeledSpan));
-          spreadGrad.addColorStop(ridgeStartStop, "rgba(245, 240, 232, 0.04)");
-          // 靠近折痕山脊的弧顶高光
+          spreadGrad.addColorStop(0, `rgba(0, 0, 0, ${0.14 * curlCurve})`);
+          spreadGrad.addColorStop(0.06, `rgba(255, 255, 255, ${0.10 * curlCurve})`);
+          const ridgeStartStop = Math.max(0.08, 1 - ridgeWidth / Math.max(1, peeledSpan));
+          spreadGrad.addColorStop(ridgeStartStop, "rgba(245, 240, 232, 0.03)");
           const peakStop = Math.min(0.96, ridgeStartStop + (1 - ridgeStartStop) * 0.58);
-          spreadGrad.addColorStop(peakStop, `rgba(255, 255, 255, ${0.52 * curlCurve})`);
-          // 折痕山脊最边缘（x=0）
-          spreadGrad.addColorStop(1, `rgba(0, 0, 0, ${0.20 * curlCurve})`);
+          spreadGrad.addColorStop(peakStop, `rgba(255, 255, 255, ${0.50 * curlCurve})`);
+          spreadGrad.addColorStop(1, `rgba(0, 0, 0, ${0.18 * curlCurve})`);
 
           ctx.fillStyle = spreadGrad;
           ctx.fillRect(-peeledSpan, -diag, peeledSpan, diag * 2);
-
-          // 纸背左边缘（-peeledSpan）极细的立体纸边线
-          ctx.strokeStyle = `rgba(0, 0, 0, ${0.16 * curlCurve})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(-peeledSpan, -diag);
-          ctx.lineTo(-peeledSpan, diag);
-          ctx.stroke();
 
           ctx.restore();
         }
@@ -1144,6 +1123,7 @@
         drawSinglePageCurl(lowerIdx, upperIdx, peelP, flip.tiltAngle, w, h);
       }
 
+      // 無尾端拖泥帶水、無結束閃爍的臨界阻尼彈簧收尾
       function animateSpringTo(targetP, initialVelocity, onComplete) {
         if (flip.animFrame) cancelAnimationFrame(flip.animFrame);
         bookShell.classList.add("is-flipping");
@@ -1152,8 +1132,27 @@
         let vel = initialVelocity || 0;
         let lastTs = performance.now();
 
-        const stiffness = 95;
-        const damping = 19.5;
+        const stiffness = 105;
+        const damping = 20.5;
+
+        function finishAnimation() {
+          flip.progress = targetP;
+          flip.tiltAngle = 0;
+          flip.active = false;
+          flip.dragging = false;
+          flip.velocity = 0;
+          flip.animFrame = null;
+          bookShell.classList.remove("is-flipping");
+          if (onComplete) onComplete();
+          // 僅更新頁碼文字、書籤狀態與重繪靜態畫面，不重設 canvas 寬高避免最後一瞬閃爍卡頓
+          if (isSpreadCapable && (flip.fromStep === 0 || flip.toStep === 0)) {
+            updateLayout(false);
+          } else {
+            updateHudText();
+            updateBookmarkUI(false);
+            render();
+          }
+        }
 
         function tick(now) {
           const dt = Math.min(0.032, (now - lastTs) / 1000);
@@ -1167,30 +1166,24 @@
           vel += accel * dt;
           pos += vel * dt;
 
-          flip.tiltAngle *= 0.94;
+          flip.tiltAngle *= 0.90;
 
-          if (pos < 0) {
-            pos = 0;
-            vel = 0;
-          } else if (pos > 1) {
-            pos = 1;
-            vel = 0;
+          if (pos <= 0 && targetP === 0) {
+            finishAnimation();
+            return;
+          }
+          if (pos >= 1 && targetP === 1) {
+            finishAnimation();
+            return;
           }
 
+          pos = Math.max(0, Math.min(1, pos));
           flip.progress = pos;
           render();
 
-          if (Math.abs(pos - targetP) < 0.002 && Math.abs(vel) < 0.015) {
-            flip.progress = targetP;
-            flip.tiltAngle = 0;
-            render();
-            flip.active = false;
-            flip.dragging = false;
-            flip.velocity = 0;
-            flip.animFrame = null;
-            bookShell.classList.remove("is-flipping");
-            if (onComplete) onComplete();
-            updateLayout(false);
+          // 接近終點 0.8% 內直接順滑落定，避免臨界阻尼尾端無限逼近造成最後停頓感
+          if (Math.abs(pos - targetP) < 0.008 && Math.abs(vel) < 0.18) {
+            finishAnimation();
             return;
           }
 
@@ -1221,7 +1214,7 @@
           updateLayout(false);
         }
 
-        animateSpringTo(1, 0.85, () => {
+        animateSpringTo(1, 0.9, () => {
           currentStep = nextStep;
         });
       }
