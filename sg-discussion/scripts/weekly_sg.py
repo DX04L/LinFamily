@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import re
 import json
 import hashlib
@@ -42,7 +43,7 @@ def discover_gemini_models(api_key: str) -> list:
         is_lite = 1 if "lite" in s else 0
         m = re.search(r"gemini-(\d+(?:\.\d+)?)", s)
         ver = float(m.group(1)) if m else 0.0
-        return (s != "models/gemini-2.5-flash", is_flash, is_lite, -ver, s)
+        return (s != "models/gemini-3-flash-preview", is_flash, is_lite, -ver, s)
 
     candidates.sort(key=priority)
     return candidates
@@ -235,7 +236,9 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
         raise RuntimeError("找不到可用的 Gemini 模型")
 
     last_err = None
-    for model in models[:6]:
+    for attempt, model in enumerate(models[:6] + models[:2]):
+        if attempt:
+            time.sleep(min(5 * attempt, 20))
         payload["generationConfig"].pop("thinkingConfig", None)
         if "gemini-3" in model and "flash" in model:
             payload["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
@@ -246,10 +249,11 @@ def generate_sg_content_with_gemini(item: dict) -> dict:
                 f"{GEMINI_API_ROOT}/{model.lstrip('/')}:generateContent",
                 headers={"x-goog-api-key": api_key},
                 json=payload,
-                timeout=(15, 75)
+                timeout=(15, 100)
             )
             if not resp.ok:
-                last_err = f"HTTP {resp.status_code}"
+                last_err = f"{model}: HTTP {resp.status_code}"
+                print(f"[{item['date']}] {last_err}，嘗試下一個模型")
                 continue
             raw_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
             cleaned = re.sub(r"^```json\s*|\s*```$", "", raw_text)
@@ -276,15 +280,20 @@ def sync_firestore(items):
     initialize_app(credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])))
     db = firestore.client()
     collection = db.collection("sg_discussions")
-    batch = db.batch()
+    failed = []
     count = 0
     for item in items:
         ref = collection.document(item["date"])
         content_hash = hashlib.sha256(json.dumps(item, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
         if (ref.get().to_dict() or {}).get("content_hash") == content_hash:
             continue
-        generated = generate_sg_content_with_gemini(item)
-        batch.set(ref, {
+        try:
+            generated = generate_sg_content_with_gemini(item)
+        except RuntimeError as exc:
+            failed.append(item["date"])
+            print(f"⚠️ {item['date']}：{exc}")
+            continue
+        ref.set({
             **generated,
             "date": item["date"],
             "date_range": item["date_range"],
@@ -294,9 +303,9 @@ def sync_firestore(items):
             "updated_at": firestore.SERVER_TIMESTAMP,
         })
         count += 1
-    if count:
-        batch.commit()
     print(f"核對 {len(items)} 週，寫入 {count} 週。")
+    if failed:
+        raise RuntimeError("尚未匯入：" + "、".join(failed))
 
 
 def main():
