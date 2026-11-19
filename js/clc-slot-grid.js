@@ -3,7 +3,7 @@
  * 像手機主畫面：每個 App 記住自己在第幾格（pos），中間可以留空格。
  * - 長按 App → 進入編輯（晃動）。晃動時：拖曳到空格＝移過去；拖到另一個 App 上＝互換位置；
  *   按「−」刪除、點 App 修改。
- * - 移動與刪除先暫存在畫面上，按「完成」才儲存；按「取消」、點旁邊或 Esc 則全部還原。
+ * - 移動與刪除先暫存在畫面上，按「完成」才儲存；移動後由「完成」、「取消」或 Esc 結束編輯。
  *   （新增／修改 App 的對話框按儲存就會直接存檔，不在暫存範圍內。）
  *   新增：長按空格「＋」（晃動中點一下也可以），不容易誤觸。
  * - 長按後手指不放直接拖，也可以（跟手機一樣）。
@@ -383,7 +383,11 @@
       const t = e.touches[0];
       if (move(e, t.clientX, t.clientY) && e.cancelable) e.preventDefault();
     }, { passive: false });
-    document.addEventListener('touchend', e => { if (g && g.touch) end(); });
+    document.addEventListener('touchend', e => {
+      if (!g?.touch) return;
+      if (g.dragging && e.cancelable) e.preventDefault();
+      end();
+    }, { passive: false });
     document.addEventListener('touchcancel', () => { if (g && g.touch) cancelGesture(); });
     // 手機長按不要跳出系統選單；電腦右鍵照常（可以「在新分頁開啟」）。
     let lastTouch = 0;
@@ -408,7 +412,7 @@
     }, true);
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && editing && !document.querySelector('dialog[open]')) finishEditing(false); });
     document.addEventListener('pointerdown', e => {
-      if (editing && !g && !grid.contains(e.target) && e.target !== done && e.target !== cancel && !e.target.closest('dialog')) finishEditing(false);
+      if (editing && !g && !pending?.pos.size && !grid.contains(e.target) && e.target !== done && e.target !== cancel && !e.target.closest('dialog')) finishEditing(false);
     });
     let rt = null, lastCols = 0;
     window.addEventListener('resize', () => {

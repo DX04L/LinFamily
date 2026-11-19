@@ -15,17 +15,27 @@
     const sec = e.target.closest && e.target.closest('main > section');
     startY = sec && sec.scrollTop <= 0 && e.touches.length === 1 && !busy() ? e.touches[0].clientY : null; dy = 0;
   }, { passive: true });
+  function reset() {
+    startY = null;
+    dy = 0;
+    ind.style.transition = 'opacity .15s, transform .2s';
+    ind.style.opacity = 0;
+    ind.style.transform = 'translateY(-50px)';
+  }
   document.addEventListener('touchmove', e => {
     if (startY === null) return;
+    if (busy() || e.defaultPrevented || e.touches.length !== 1) { reset(); return; }
     dy = Math.min(MAX, Math.max(0, (e.touches[0].clientY - startY) * 0.6));
     ind.style.transition = 'opacity .15s';
     ind.style.opacity = dy > 10 ? Math.min(1, dy / TRIGGER) : 0;
     ind.style.transform = `translateY(${dy - 40}px) rotate(${dy * 4}deg)`;
   }, { passive: true });
-  document.addEventListener('touchend', () => {
+  document.addEventListener('touchend', e => {
     if (startY === null) return;
+    if (busy() || e.defaultPrevented) { reset(); return; }
     startY = null;
     if (dy >= TRIGGER) { ind.style.transition = 'none'; ind.animate && ind.animate([{ transform: `translateY(${dy - 40}px) rotate(0)` }, { transform: `translateY(${dy - 40}px) rotate(360deg)` }], { duration: 600, iterations: Infinity }); location.reload(); return; }
-    ind.style.transition = 'opacity .15s, transform .2s'; ind.style.opacity = 0; ind.style.transform = 'translateY(-50px)';
+    reset();
   });
+  document.addEventListener('touchcancel', reset);
 })();
