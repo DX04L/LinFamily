@@ -55,7 +55,7 @@
     })();
   </script>
 
-  <script src="https://clc-dx04.pages.dev/verse-wait.js?v=1" defer></script>
+  <script src="https://clc-dx04.pages.dev/verse-wait.js?v=2" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js" defer></script>
@@ -613,7 +613,7 @@
     let loginBusy = false;
     async function login() {
       if (!auth) return toast('登入服務尚未載入，請重新整理。');
-      if (loginBusy) return toast('正在開啟 Google 登入，請稍候。');
+      if (loginBusy) return;
       loginBusy = true;
       const loginTimer = setTimeout(() => toast('登入回應較慢，請檢查網路；若未出現登入視窗，請重新整理。'), 12000);
       try {
@@ -644,6 +644,7 @@
     const menu = $('lfMenu'), authBtn = $('lfAuthBtn');
     function setMenu(open) { menu.hidden = !open; authBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
     const enter = () => {
+      if (loginBusy) return;
       if (window.lfEntranceGuard && window.lfEntranceGuard()) return; // 內建瀏覽器先處理（js/entrance.js）
       if (window.lfBootMark) window.lfBootMark('收到登入點擊');
       entered = true;
