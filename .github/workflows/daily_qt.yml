@@ -3,6 +3,7 @@ name: Daily QT
 on:
   schedule:
     - cron: '0 17 * * *' # 台灣時間每天凌晨 01:00 自動執行
+    - cron: '0 18 * * *' # 台灣時間凌晨 02:00 如仍缺資料則補跑
   workflow_dispatch:
     inputs:
       date:
@@ -34,6 +35,7 @@ jobs:
       - name: Run Daily QT Script
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          QT_RETRY_IF_MISSING: ${{ github.event.schedule == '0 18 * * *' }}
           QT_DATE: ${{ inputs.date }}
           QT_YOUTUBE_ONLY: ${{ inputs.youtube_only }}
           QT_RECHECK_DATE: ${{ inputs.recheck_date }}

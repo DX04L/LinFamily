@@ -584,6 +584,11 @@ def recheck_video(target_date):
     print(f"[重新核對 {target_date}] 一致，已清除舊提示。")
 
 def main():
+    if os.environ.get("QT_RETRY_IF_MISSING") == "true":
+        existing = db.collection("devotionals").document(TODAY_STR).get().to_dict() or {}
+        if existing.get("kids_content", {}).get("bible_story_ruby"):
+            print(f"{TODAY_STR} 已有完整靈修，略過備援排程。")
+            return
     print(f"開始執行 {TODAY_STR} 每日 QT 雙來源比對與經文排版...")
     source = fetch_and_verify_sources()
     ref_info = source["ref_info"]
