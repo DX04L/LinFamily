@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>不要怕！森林大霧</title>
@@ -24,7 +26,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
     }
 
-    /* 滿版書本舞台，盡可能佔滿整個畫面 */
     #reader-stage {
       position: relative;
       width: 100vw;
@@ -58,7 +59,6 @@
       cursor: grabbing;
     }
 
-    /* 極簡浮動頁碼指示（僅在滑鼠移動或輕點中央時短暫顯示，不佔版面） */
     #hud-pill {
       position: fixed;
       bottom: 14px;
@@ -108,7 +108,6 @@
       cursor: default;
     }
 
-    /* 載入畫面 */
     #loader {
       position: fixed;
       inset: 0;
@@ -163,7 +162,6 @@
 
   <script>
     (function () {
-      // 總頁數設定：1 張封面 (NoFear.png) + 28 張內頁 (NoFear (1).png ~ NoFear (28).png) = 共 29 張
       const INNER_PAGE_COUNT = 28;
       const IMAGE_FILES = ["images/NoFear.png"];
       const PAGE_TITLES = ["封面"];
@@ -173,7 +171,7 @@
         PAGE_TITLES.push(`第 ${i} 頁`);
       }
 
-      const PAGE_ASPECT = 896 / 1200; // 單頁寬高比
+      const PAGE_ASPECT = 896 / 1200;
 
       const bookShell = document.getElementById("book-shell");
       const canvas = document.getElementById("book-canvas");
@@ -189,18 +187,19 @@
       let readyCount = 0;
       let initialShown = false;
 
-      // 狀態管理
-      let isSpreadCapable = false; // 螢幕是否夠大可顯示雙頁
-      let currentStep = 0;         // 在雙頁模式下：0=封面(0), 1=(1,2), 2=(3,4), ..., 14=(27,28)
-                                   // 在單頁模式下：0..28
+      let isSpreadCapable = false;
+      let currentStep = 0;
 
-      // 翻頁動畫狀態 (仿 Google Play Books 實體紙張捲曲 / 折疊翻頁)
+      // 物理翻頁狀態（加入速度與彈簧回彈支援）
       const flip = {
         active: false,
-        direction: 0,      // 1 = 往下一頁翻(從右往左掀開), -1 = 往上一頁翻(從左往右掀回)
+        direction: 0,      // 1 = 往下一頁翻, -1 = 往上一頁翻
         progress: 0,       // 0.0 -> 1.0
+        velocity: 0,       // 當前進度變化速度 (progress / sec)
         dragging: false,
         startX: 0,
+        lastX: 0,
+        lastTime: 0,
         fromStep: 0,
         toStep: 0,
         animFrame: null
@@ -215,9 +214,6 @@
         }, 2400);
       }
 
-      // 判斷螢幕是否適合雙頁展開：
-      // 1. 寬度大於高度 (橫向螢幕)
-      // 2. 視窗寬度 >= 820px（排除手機與直向小平板）
       function checkSpreadCapable() {
         const w = window.innerWidth;
         const h = window.innerHeight;
@@ -225,22 +221,17 @@
       }
 
       function getMaxStep() {
-        if (isSpreadCapable) {
-          return Math.ceil((IMAGE_FILES.length - 1) / 2);
-        } else {
-          return IMAGE_FILES.length - 1;
-        }
+        return isSpreadCapable
+          ? Math.ceil((IMAGE_FILES.length - 1) / 2)
+          : IMAGE_FILES.length - 1;
       }
 
-      // 將舊的索引轉換到新的視圖模式，保持閱讀進度不跳針
       function convertStepOnResize(wasSpread, nowSpread, oldStep) {
         if (wasSpread === nowSpread) return Math.min(oldStep, getMaxStep());
         if (!wasSpread && nowSpread) {
-          if (oldStep === 0) return 0;
-          return Math.ceil(oldStep / 2);
+          return oldStep === 0 ? 0 : Math.ceil(oldStep / 2);
         } else {
-          if (oldStep === 0) return 0;
-          return Math.min(oldStep * 2 - 1, IMAGE_FILES.length - 1);
+          return oldStep === 0 ? 0 : Math.min(oldStep * 2 - 1, IMAGE_FILES.length - 1);
         }
       }
 
@@ -260,7 +251,6 @@
         const padH = 12;
         const availW = Math.max(200, window.innerWidth - padW);
         const availH = Math.max(200, window.innerHeight - padH);
-
         const targetAspect = showDouble ? (PAGE_ASPECT * 2) : PAGE_ASPECT;
 
         let bookW, bookH;
@@ -306,7 +296,6 @@
         }
       }
 
-      // 繪製單張圖片（含乾淨邊緣與紙張底色）
       function drawPageImage(imgIndex, x, y, w, h) {
         ctx.fillStyle = "#fdfbf7";
         ctx.fillRect(x, y, w, h);
@@ -316,7 +305,6 @@
         }
       }
 
-      // 繪製書脊中央裝訂陰影（雙頁模式用）
       function drawSpineShadow(centerX, h) {
         const spineW = Math.max(18, h * 0.032);
         const grad = ctx.createLinearGradient(centerX - spineW, 0, centerX + spineW, 0);
@@ -329,7 +317,6 @@
         ctx.fillRect(centerX - spineW, 0, spineW * 2, h);
       }
 
-      // 繪製指定 step 的靜態畫面
       function drawStaticStep(step, w, h, forceDoubleLayout) {
         if (!forceDoubleLayout) {
           const idx = isSpreadCapable ? 0 : step;
@@ -353,6 +340,100 @@
             ctx.fillRect(halfW, 0, halfW, h);
           }
           drawSpineShadow(halfW, h);
+        }
+      }
+
+      // Google Play Books 風格：單頁圓柱捲曲折疊效果 (Cylindrical Page Peel)
+      function drawSinglePageCurl(lowerIdx, upperIdx, peelP, w, h) {
+        // 1. 底層即將露出的下一頁
+        drawPageImage(upperIdx, 0, 0, w, h);
+
+        // 捲曲幾何參數：
+        // peelP = 0 時在最右邊；peelP = 1 時完全翻到最左邊
+        const curlCurve = Math.sin(peelP * Math.PI); // 0 -> 1 -> 0 的弧度強度
+        const foldX = w * (1 - peelP);              // 折痕所在的 X 座標
+        // 捲起部分的背面寬度（模擬紙張彎成圓弧時的翻折寬度）
+        const flapWidth = Math.min(w - foldX, Math.max(24, w * 0.22 * curlCurve));
+        const flapRightX = foldX + flapWidth;
+
+        // 2. 投射在底層頁面上的柔和深陰影（隨著紙張掀高而擴散）
+        const shadowWidth = Math.min(w * 0.42, 40 + w * 0.28 * curlCurve);
+        const underShadow = ctx.createLinearGradient(
+          Math.max(0, flapRightX - 10), 0,
+          Math.min(w, flapRightX + shadowWidth), 0
+        );
+        underShadow.addColorStop(0, `rgba(0, 0, 0, ${0.38 * (1 - peelP * 0.45)})`);
+        underShadow.addColorStop(0.35, `rgba(0, 0, 0, ${0.16 * (1 - peelP * 0.5)})`);
+        underShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = underShadow;
+        ctx.fillRect(Math.max(0, flapRightX - 10), 0, shadowWidth + 10, h);
+
+        // 3. 尚未被掀起的左側平貼頁面（帶微幅紙張張力微縮）
+        if (foldX > 0.5) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(0, 0, foldX, h);
+          ctx.clip();
+
+          // 輕微的水平張力拉伸感，讓頁面看起來有連在書脊上
+          drawPageImage(lowerIdx, 0, 0, w, h);
+
+          // 左側書脊陰影
+          const leftSpine = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
+          leftSpine.addColorStop(0, "rgba(0,0,0,0.16)");
+          leftSpine.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = leftSpine;
+          ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
+
+          // 靠近折痕處的內凹陰影（Ambient Occlusion）
+          const creaseAO = Math.min(foldX, Math.max(18, w * 0.06 * curlCurve));
+          const aoGrad = ctx.createLinearGradient(foldX - creaseAO, 0, foldX, 0);
+          aoGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+          aoGrad.addColorStop(1, `rgba(0, 0, 0, ${0.22 * curlCurve})`);
+          ctx.fillStyle = aoGrad;
+          ctx.fillRect(foldX - creaseAO, 0, creaseAO, h);
+
+          ctx.restore();
+        }
+
+        // 4. 被掀起的「紙張背面」圓柱體捲曲（Google Play Books 靈魂所在）
+        if (flapWidth > 1 && peelP > 0.005 && peelP < 0.995) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(foldX, 0, flapWidth, h);
+          ctx.clip();
+
+          // 紙背底色
+          ctx.fillStyle = "#faf7f0";
+          ctx.fillRect(foldX, 0, flapWidth, h);
+
+          // 模擬真實紙張半透明感：把正面內容水平鏡像並極淡地透在紙背上
+          ctx.save();
+          ctx.globalAlpha = 0.14;
+          ctx.translate(foldX + flapWidth, 0);
+          ctx.scale(-1, 1);
+          drawPageImage(lowerIdx, 0, 0, w, h);
+          ctx.restore();
+
+          // 圓柱體立體明暗漸層（折痕深 -> 弧頂高光 -> 紙緣微暗）
+          const cylGrad = ctx.createLinearGradient(foldX, 0, flapRightX, 0);
+          cylGrad.addColorStop(0, `rgba(0, 0, 0, ${0.28 * curlCurve})`);
+          cylGrad.addColorStop(0.22, `rgba(255, 255, 255, ${0.55 * curlCurve})`);
+          cylGrad.addColorStop(0.55, `rgba(245, 240, 230, ${0.15 * curlCurve})`);
+          cylGrad.addColorStop(0.88, `rgba(0, 0, 0, ${0.12 * curlCurve})`);
+          cylGrad.addColorStop(1, `rgba(0, 0, 0, ${0.26 * curlCurve})`);
+          ctx.fillStyle = cylGrad;
+          ctx.fillRect(foldX, 0, flapWidth, h);
+
+          ctx.restore();
+
+          // 紙張邊緣極細微的立體邊線
+          ctx.strokeStyle = `rgba(0, 0, 0, ${0.18 * curlCurve})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(flapRightX, 0);
+          ctx.lineTo(flapRightX, h);
+          ctx.stroke();
         }
       }
 
@@ -393,7 +474,7 @@
             drawPageImage(0, halfW, 0, coverW, h);
             const ridge = ctx.createLinearGradient(halfW, 0, halfW + coverW, 0);
             ridge.addColorStop(0, "rgba(0,0,0,0.18)");
-            ridge.addColorStop(0.7, `rgba(255,255,255,${0.22 * t})`);
+            ridge.addColorStop(0.7, `rgba(255,255,255,${0.28 * t})`);
             ridge.addColorStop(1, `rgba(0,0,0,${0.25 * t})`);
             ctx.fillStyle = ridge;
             ctx.fillRect(halfW, 0, coverW, h);
@@ -414,7 +495,7 @@
 
             const ridge = ctx.createLinearGradient(halfW - flapW, 0, halfW, 0);
             ridge.addColorStop(0, `rgba(0,0,0,${0.22 * (1 - t)})`);
-            ridge.addColorStop(0.3, `rgba(255,255,255,${0.24 * (1 - t)})`);
+            ridge.addColorStop(0.3, `rgba(255,255,255,${0.28 * (1 - t)})`);
             ridge.addColorStop(1, "rgba(0,0,0,0.15)");
             ctx.fillStyle = ridge;
             ctx.fillRect(halfW - flapW, 0, flapW, h);
@@ -449,10 +530,10 @@
             const t = flipP * 2;
             const pageW = halfW * Math.cos(t * Math.PI * 0.5);
 
-            const dropShadowW = Math.min(halfW, pageW + 45);
+            const dropShadowW = Math.min(halfW, pageW + 55);
             const sGrad = ctx.createLinearGradient(halfW, 0, halfW + dropShadowW, 0);
-            sGrad.addColorStop(0, `rgba(0,0,0,${0.35 * (1 - t * 0.4)})`);
-            sGrad.addColorStop(0.75, `rgba(0,0,0,${0.12 * (1 - t)})`);
+            sGrad.addColorStop(0, `rgba(0,0,0,${0.38 * (1 - t * 0.4)})`);
+            sGrad.addColorStop(0.75, `rgba(0,0,0,${0.14 * (1 - t)})`);
             sGrad.addColorStop(1, "rgba(0,0,0,0)");
             ctx.fillStyle = sGrad;
             ctx.fillRect(halfW, 0, dropShadowW, h);
@@ -466,7 +547,7 @@
 
             const curlGrad = ctx.createLinearGradient(halfW, 0, halfW + pageW, 0);
             curlGrad.addColorStop(0, "rgba(0,0,0,0.14)");
-            curlGrad.addColorStop(0.65, `rgba(255,255,255,${0.22 * t})`);
+            curlGrad.addColorStop(0.65, `rgba(255,255,255,${0.28 * t})`);
             curlGrad.addColorStop(0.92, `rgba(0,0,0,${0.18 * t})`);
             curlGrad.addColorStop(1, `rgba(0,0,0,${0.32 * t})`);
             ctx.fillStyle = curlGrad;
@@ -476,11 +557,11 @@
             const pageW = halfW * Math.sin(t * Math.PI * 0.5);
             const leftEdge = halfW - pageW;
 
-            const dropShadowW = Math.min(halfW, pageW + 45);
+            const dropShadowW = Math.min(halfW, pageW + 55);
             const sGrad = ctx.createLinearGradient(halfW - dropShadowW, 0, halfW, 0);
             sGrad.addColorStop(0, "rgba(0,0,0,0)");
-            sGrad.addColorStop(0.25, `rgba(0,0,0,${0.12 * (1 - t)})`);
-            sGrad.addColorStop(1, `rgba(0,0,0,${0.35 * (1 - t * 0.4)})`);
+            sGrad.addColorStop(0.25, `rgba(0,0,0,${0.14 * (1 - t)})`);
+            sGrad.addColorStop(1, `rgba(0,0,0,${0.38 * (1 - t * 0.4)})`);
             ctx.fillStyle = sGrad;
             ctx.fillRect(halfW - dropShadowW, 0, dropShadowW, h);
 
@@ -489,7 +570,7 @@
             const curlGrad = ctx.createLinearGradient(leftEdge, 0, halfW, 0);
             curlGrad.addColorStop(0, `rgba(0,0,0,${0.32 * (1 - t)})`);
             curlGrad.addColorStop(0.08, `rgba(0,0,0,${0.16 * (1 - t)})`);
-            curlGrad.addColorStop(0.35, `rgba(255,255,255,${0.22 * (1 - t)})`);
+            curlGrad.addColorStop(0.35, `rgba(255,255,255,${0.28 * (1 - t)})`);
             curlGrad.addColorStop(1, "rgba(0,0,0,0.14)");
             ctx.fillStyle = curlGrad;
             ctx.fillRect(leftEdge, 0, pageW, h);
@@ -499,69 +580,62 @@
           return;
         }
 
-        // 情況 C：小螢幕（手機 / 直向平板）單頁模式翻頁
+        // 情況 C：小螢幕（手機 / 直向平板）單頁圓柱捲曲翻頁
         const lowerIdx = dir === 1 ? fromStep : toStep;
         const upperIdx = dir === 1 ? toStep : fromStep;
         const peelP = dir === 1 ? p : (1 - p);
 
-        drawPageImage(upperIdx, 0, 0, w, h);
-
-        const revealX = w * (1 - peelP);
-        const shadowSpread = Math.min(w * 0.35, 90);
-        const underShadow = ctx.createLinearGradient(
-          Math.max(0, revealX - 15), 0,
-          Math.min(w, revealX + shadowSpread), 0
-        );
-        underShadow.addColorStop(0, `rgba(0, 0, 0, ${0.34 * (1 - peelP * 0.5)})`);
-        underShadow.addColorStop(0.45, `rgba(0, 0, 0, ${0.14 * (1 - peelP)})`);
-        underShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = underShadow;
-        ctx.fillRect(Math.max(0, revealX - 15), 0, shadowSpread + 15, h);
-
-        if (revealX > 0.5) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(0, 0, revealX, h);
-          ctx.clip();
-
-          drawPageImage(lowerIdx, 0, 0, w, h);
-
-          const leftSpine = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
-          leftSpine.addColorStop(0, "rgba(0,0,0,0.16)");
-          leftSpine.addColorStop(1, "rgba(0,0,0,0)");
-          ctx.fillStyle = leftSpine;
-          ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
-
-          const foldW = Math.min(revealX, Math.max(26, w * 0.09 * Math.sin(peelP * Math.PI) + 18));
-          const foldGrad = ctx.createLinearGradient(revealX - foldW, 0, revealX, 0);
-          foldGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
-          foldGrad.addColorStop(0.45, `rgba(255, 255, 255, ${0.28 * Math.sin(peelP * Math.PI)})`);
-          foldGrad.addColorStop(0.82, `rgba(0, 0, 0, ${0.14 * Math.sin(peelP * Math.PI)})`);
-          foldGrad.addColorStop(1, "rgba(0, 0, 0, 0.32)");
-          ctx.fillStyle = foldGrad;
-          ctx.fillRect(revealX - foldW, 0, foldW, h);
-
-          ctx.restore();
-        }
+        drawSinglePageCurl(lowerIdx, upperIdx, peelP, w, h);
       }
 
-      function animateFlipTo(targetP, onComplete) {
+      // 阻尼彈簧物理動畫（Spring Physics）：讓回彈與翻頁都像真實紙張般柔順
+      function animateSpringTo(targetP, initialVelocity, onComplete) {
         if (flip.animFrame) cancelAnimationFrame(flip.animFrame);
 
-        function tick() {
-          const diff = targetP - flip.progress;
-          if (Math.abs(diff) < 0.008) {
+        let pos = flip.progress;
+        let vel = initialVelocity || 0;
+        let lastTs = performance.now();
+
+        // 臨界阻尼彈簧參數：無多餘震盪、收尾極度絲滑
+        const stiffness = 190; // 彈簧勁度（紙張張力）
+        const damping = 26;    // 阻尼係數（空氣阻力與紙張內耗）
+
+        function tick(now) {
+          const dt = Math.min(0.032, (now - lastTs) / 1000);
+          lastTs = now;
+
+          const displacement = pos - targetP;
+          const springForce = -stiffness * displacement;
+          const dampingForce = -damping * vel;
+          const accel = springForce + dampingForce;
+
+          vel += accel * dt;
+          pos += vel * dt;
+
+          // 邊界軟限制，避免超出 [0, 1] 造成破圖
+          if (pos < 0) {
+            pos = 0;
+            vel = 0;
+          } else if (pos > 1) {
+            pos = 1;
+            vel = 0;
+          }
+
+          flip.progress = pos;
+          render();
+
+          if (Math.abs(pos - targetP) < 0.002 && Math.abs(vel) < 0.02) {
             flip.progress = targetP;
             render();
             flip.active = false;
             flip.dragging = false;
+            flip.velocity = 0;
             flip.animFrame = null;
             if (onComplete) onComplete();
             updateLayout(false);
             return;
           }
-          flip.progress += diff * 0.22;
-          render();
+
           flip.animFrame = requestAnimationFrame(tick);
         }
 
@@ -579,13 +653,14 @@
         flip.direction = dir;
         flip.fromStep = currentStep;
         flip.toStep = nextStep;
-        flip.progress = 0.02;
+        flip.progress = 0.01;
 
         if (isSpreadCapable && currentStep === 0 && nextStep === 1) {
           updateLayout(false);
         }
 
-        animateFlipTo(1, () => {
+        // 點擊翻頁時給予一個初速度，模擬手指輕撥的力道
+        animateSpringTo(1, 1.4, () => {
           currentStep = nextStep;
         });
       }
@@ -598,12 +673,22 @@
       }
 
       function onPointerStart(e) {
-        if (flip.active && !flip.dragging) return;
         if (e.button !== undefined && e.button !== 0) return;
+
+        // 允許在回彈動畫進行中隨時用手指「接住」書頁繼續拉！
+        if (flip.active && flip.animFrame) {
+          cancelAnimationFrame(flip.animFrame);
+          flip.animFrame = null;
+          flip.dragging = true;
+        }
 
         pointerDown = true;
         hasMoved = false;
-        flip.startX = getClientX(e);
+        const x = getClientX(e);
+        flip.startX = x;
+        flip.lastX = x;
+        flip.lastTime = performance.now();
+        flip.velocity = 0;
       }
 
       function onPointerMove(e) {
@@ -612,10 +697,13 @@
           return;
         }
 
+        const now = performance.now();
         const x = getClientX(e);
         const dx = x - flip.startX;
+        const stepDx = x - flip.lastX;
+        const dt = Math.max(1, now - flip.lastTime) / 1000;
 
-        if (!hasMoved && Math.abs(dx) < 8) return;
+        if (!hasMoved && Math.abs(dx) < 6) return;
         hasMoved = true;
 
         const maxStep = getMaxStep();
@@ -639,9 +727,17 @@
           }
         }
 
-        const dragSpan = Math.max(180, w * 0.65);
-        let p = (flip.direction === 1 ? -dx : dx) / dragSpan;
-        flip.progress = Math.max(0.01, Math.min(0.99, p));
+        // 1:1 貼合手指移動距離
+        const dragSpan = w * 0.92;
+        const deltaP = (flip.direction === 1 ? -stepDx : stepDx) / dragSpan;
+        flip.progress = Math.max(0.002, Math.min(0.998, flip.progress + deltaP));
+
+        // 平滑計算當前手指甩動速度
+        const instantVel = deltaP / dt;
+        flip.velocity = flip.velocity * 0.65 + instantVel * 0.35;
+
+        flip.lastX = x;
+        flip.lastTime = now;
         render();
       }
 
@@ -649,7 +745,7 @@
         if (!pointerDown) return;
         pointerDown = false;
 
-        if (!hasMoved) {
+        if (!hasMoved && !flip.dragging) {
           const rect = bookShell.getBoundingClientRect();
           const clickX = (e.changedTouches && e.changedTouches.length
             ? e.changedTouches[0].clientX
@@ -667,14 +763,22 @@
         }
 
         if (flip.dragging) {
-          if (flip.progress >= 0.28) {
+          // 結合「翻頁進度」與「甩動速度」判斷意圖：
+          // 1. 拉過 38% 畫面 -> 翻過去
+          // 2. 雖然只拉了 15%，但手指有明顯往翻頁方向甩動 (velocity > 0.65) -> 順勢翻過去
+          // 3. 慢慢拉起來又放開，或往回推 -> 柔順回彈到原位
+          const shouldComplete =
+            (flip.progress > 0.38 && flip.velocity > -0.5) ||
+            (flip.progress > 0.12 && flip.velocity > 0.65);
+
+          if (shouldComplete) {
             const dest = flip.toStep;
-            animateFlipTo(1, () => {
+            animateSpringTo(1, Math.max(0.5, flip.velocity), () => {
               currentStep = dest;
             });
           } else {
             const orig = flip.fromStep;
-            animateFlipTo(0, () => {
+            animateSpringTo(0, Math.min(-0.3, flip.velocity), () => {
               currentStep = orig;
             });
           }
@@ -732,7 +836,6 @@
         }
       });
 
-      // 預載所有 29 張圖片（前 3 張完成即先顯示書本，其餘背景持續載入並即時重繪）
       function checkInitialReady() {
         if (!initialShown && readyCount >= Math.min(3, IMAGE_FILES.length)) {
           initialShown = true;
