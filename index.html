@@ -207,6 +207,16 @@
     .lf-search[hidden] { display:none; }
     .lf-tabbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:22px 0 24px; }
     .lf-tabbar .lf-tabs { margin:0; }
+    .lf-add-wrap { position:relative; }
+    .lf-add-wrap .lf-menu { width:168px; }
+    dialog.lf-todo-dialog {
+      width:min(94vw, 700px); height:min(88dvh, 740px); max-height:calc(100dvh - 24px); overflow:hidden;
+    }
+    .lf-todo-dialog[open] { display:flex; flex-direction:column; }
+    .lf-todo-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 14px; border-bottom:1px solid var(--border); }
+    .lf-todo-toolbar button { width:36px; height:36px; border:0; border-radius:8px; background:transparent; color:inherit; cursor:pointer; }
+    .lf-todo-toolbar button:hover { background:var(--btn); }
+    .lf-todo-dialog iframe { display:block; flex:1; width:100%; min-height:0; border:0; }
     .lf-tabs .lf-tab-icon { border:0; background:none; padding:8px 12px; border-radius:9999px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; }
     .lf-tabs .lf-tab-icon svg { width:16px; height:16px; }
     .lf-tabs .lf-tab-icon[aria-expanded="true"] { background:var(--pine); color:#fff; }
@@ -359,7 +369,13 @@
       <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-newdot" id="lfAppsDot" hidden></i></button>
       <button type="button" class="lf-tab-icon" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
     </div>
-    <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增 App" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <div class="lf-add-wrap">
+      <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增" aria-controls="lfAddMenu" aria-expanded="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div id="lfAddMenu" class="lf-menu" aria-label="新增項目" hidden>
+        <button type="button" id="lfAddApp">新增 APP</button>
+        <button type="button" id="lfAddTodo" hidden>新增待辦事項</button>
+      </div>
+    </div>
     </div>
     <label class="lf-search" for="lfSearch" id="lfSearchBox" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
@@ -459,6 +475,14 @@
   <footer>© 2026 LinFamily</footer>
 
   <!-- 新增／修改 App -->
+  <dialog class="lf-dialog lf-todo-dialog" id="lfTodoDialog" aria-label="待辦事項">
+    <div class="lf-todo-toolbar">
+      <strong>待辦事項</strong>
+      <button type="button" id="lfTodoClose" aria-label="關閉待辦事項">✕</button>
+    </div>
+    <iframe id="lfTodoFrame" title="DX 待辦事項" allow="microphone"></iframe>
+  </dialog>
+
   <dialog class="lf-dialog" id="lfAppDialog">
     <form method="dialog" novalidate>
       <h3 id="lfAppTitle">新增 App</h3>
@@ -846,7 +870,16 @@
     let addPos = null;
     let curTab = 'apps', cabinetOnly = false; // cabinetOnly：Superuser 在 Apps 分頁按 ＋，只加到 App 櫃（不放自己的主畫面）
     // ＋ 只在用得到的地方出現：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）；Family 等其他分頁收起來
-    function syncAddBtn() { $('lfAddBtn').hidden = !role || !(curTab === 'apps' || (curTab === 'all' && isSuper())); }
+    function setAddMenu(open) {
+      $('lfAddMenu').hidden = !open;
+      $('lfAddBtn').setAttribute('aria-expanded', String(open));
+    }
+    function syncAddBtn() {
+      $('lfAddBtn').hidden = !role || !(curTab === 'apps' || (curTab === 'all' && isSuper()));
+      $('lfAddTodo').hidden = !isSuper();
+      setAddMenu(false);
+      if (!isSuper() && $('lfTodoDialog').open) $('lfTodoDialog').close();
+    }
     // 整個 App 區都可以放 App（含最底部）：格數＝畫面放得下的行數 × 每行個數；放滿才多一行（只有 App 區捲動）
     function fitSlots() {
       const p = $('panelApps'), gr = $('lfApps'), cs = getComputedStyle(gr);
@@ -1289,9 +1322,41 @@
     });
     // 放大鏡：點了才出現搜尋列；清空或離開（沒有字）就收起來，不占版面
     $('lfAddBtn').addEventListener('click', () => {
+      const open = $('lfAddMenu').hidden;
+      if (open) setMenu(false);
+      setAddMenu(open);
+      if (open) $('lfAddApp').focus({ preventScroll: true });
+    });
+    document.addEventListener('pointerdown', e => {
+      if (!e.target.closest('.lf-add-wrap')) setAddMenu(false);
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || $('lfAddMenu').hidden) return;
+      setAddMenu(false);
+      $('lfAddBtn').focus();
+    });
+    $('lfAddApp').addEventListener('click', () => {
+      setAddMenu(false);
       addPos = null; cabinetOnly = curTab === 'all' && isSuper();
       openApp(null);
       if (cabinetOnly) $('lfAppTitle').textContent = '新增 App 到 App 櫃';
+    });
+    const todoDialog = $('lfTodoDialog'), todoFrame = $('lfTodoFrame');
+    $('lfAddTodo').addEventListener('click', () => {
+      if (!isSuper() || todoDialog.open) return;
+      setAddMenu(false);
+      const url = new URL('/?view=todos', DX04.url);
+      if (url.origin !== location.origin) {
+        location.assign(url.href);
+        return;
+      }
+      todoFrame.src = url.href;
+      todoDialog.showModal();
+    });
+    $('lfTodoClose').addEventListener('click', () => todoDialog.close());
+    todoDialog.addEventListener('close', () => {
+      todoFrame.removeAttribute('src');
+      if (!$('lfAddBtn').hidden) $('lfAddBtn').focus({ preventScroll:true });
     });
     const sBox = $('lfSearchBox'), sBtn = $('lfSearchBtn');
     function showSearch(on) { sBox.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) search.focus(); }
