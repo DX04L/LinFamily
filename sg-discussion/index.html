@@ -1466,6 +1466,24 @@
       if (target) selectWeek(target.date, true);
     }
 
+    function selectCurrentWeek() {
+      const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(new Date());
+      const monday = new Date(today + 'T00:00:00Z');
+      monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7);
+      const start = monday.toISOString().slice(0, 10);
+      const nextMonday = new Date(monday);
+      nextMonday.setUTCDate(nextMonday.getUTCDate() + 7);
+      const end = nextMonday.toISOString().slice(0, 10);
+
+      // 日期已由新到舊排序；本週尚無教材時，顯示最近一期已到日期的教材。
+      const target = recentList.find(item => item.date >= start && item.date < end)
+        || recentList.find(item => item.date < start)
+        || recentList.at(-1);
+      if (target) selectWeek(target.date, false);
+    }
+
     async function loadDiscussions() {
       const statusEl = document.getElementById('sgStatus');
       try {
@@ -1474,7 +1492,7 @@
         recentList = snap.docs.map(d => ({ ...d.data(), date: d.id }));
         if (recentList.length > 0) {
           statusEl.hidden = true;
-          selectWeek(recentList[0].date, false);
+          selectCurrentWeek();
         } else {
           recentList = [fallbackDoc];
           selectWeek(fallbackDoc.date, false);
@@ -1489,7 +1507,7 @@
     document.getElementById('sg-prev').addEventListener('click', () => shiftWeek(-1));
     document.getElementById('sg-next').addEventListener('click', () => shiftWeek(1));
     document.getElementById('brandHome').addEventListener('click', () => {
-      if (recentList.length > 0) selectWeek(recentList[0].date, false);
+      selectCurrentWeek();
     });
 
     const installAppBtn = document.getElementById('installAppBtn');
