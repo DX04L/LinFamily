@@ -390,16 +390,18 @@ def discover_gemini_models(api_key: str) -> list:
         lower_name = name.lower()
         if any(skip in lower_name for skip in skip_keywords):
             continue
-        if "gemini" in lower_name:
+        # QT 僅使用文字生成的 Flash / Flash-Lite 系列；不自動嘗試 Pro 付費風險較高的模型。
+        # 具體免費額度仍由 Google API 專案的 Free Tier 設定決定。
+        if "gemini" in lower_name and "flash" in lower_name and "pro" not in lower_name:
             candidates.append(name)
 
     def model_priority(model_path: str):
         s = model_path.lower()
-        is_flash = 0 if "flash" in s else 1
-        is_lite = 1 if "lite" in s else 0
+        is_lite = 0 if "lite" in s else 1
+        is_preview = 1 if "preview" in s or "exp" in s else 0
         ver_match = re.search(r"gemini-(\d+(?:\.\d+)?)", s)
         ver = float(ver_match.group(1)) if ver_match else 0.0
-        return (is_flash, is_lite, -ver, s)
+        return (is_lite, is_preview, -ver, s)
 
     candidates.sort(key=model_priority)
     return candidates
