@@ -538,7 +538,13 @@ function previewDate(data) {
   return preview;
 }
 
-async function selectDate(date, animate = true, fallbackToLatest = false) {
+function weekStart(date) {
+  const monday = new Date(date + 'T00:00:00Z');
+  monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7);
+  return monday.toISOString().slice(0, 10);
+}
+
+async function selectDate(date, animate = true, fallbackWithinWeek = false) {
   const next = recent.find(entry => entry.date === date);
   if (animate && current && next && current.date !== date) {
     $('date-picker').open = false;
@@ -549,15 +555,16 @@ async function selectDate(date, animate = true, fallbackToLatest = false) {
   const previousDate = $('date').dateTime;
   $('date-picker').open = false;
   QTReader.clear();
-  if (!fallbackToLatest) renderDate($('date'), date);
+  if (!fallbackWithinWeek) renderDate($('date'), date);
   current = null;
   updateView();
   showStatus('正在讀取靈修內容…');
   try {
     if (!recent.length) recent = await readRecent();
     if (id !== request) return;
+    const start = fallbackWithinWeek ? weekStart(date) : date;
     const data = recent.find(entry => entry.date === date)
-      || (fallbackToLatest ? recent.find(entry => entry.date < date) : null);
+      || (fallbackWithinWeek ? recent.find(entry => start <= entry.date && entry.date < date) : null);
     const displayedDate = data?.date || date;
     renderDate($('date'), displayedDate);
     current = data;
@@ -565,8 +572,8 @@ async function selectDate(date, animate = true, fallbackToLatest = false) {
     updateView();
     updateDates();
     if (data && previousDate && previousDate !== displayedDate) window.scrollTo(0, 0);
-    showStatus(!data ? '這天沒有靈修資料。'
-      : displayedDate !== date ? '今天的靈修尚未更新，目前顯示最近一筆。' : '');
+    showStatus(!data ? (fallbackWithinWeek ? '本週的靈修尚未更新，可從日期選單查看其他日期。' : '這天沒有靈修資料。')
+      : displayedDate !== date ? '今天的靈修尚未更新，目前顯示本週最近一筆。' : '');
   } catch {
     if (id !== request) return;
     current = null;
