@@ -2,6 +2,7 @@
 <html lang="zh-TW" class="dark lf-pending">
 <head>
   <meta charset="UTF-8">
+  <link rel="stylesheet" href="css/lf-todos.css">
   <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
   <script>
     (function () {
@@ -209,14 +210,7 @@
     .lf-tabbar .lf-tabs { margin:0; }
     .lf-add-wrap { position:relative; }
     .lf-add-wrap .lf-menu { width:168px; }
-    dialog.lf-todo-dialog {
-      width:min(94vw, 700px); height:min(88dvh, 740px); max-height:calc(100dvh - 24px); overflow:hidden;
-    }
-    .lf-todo-dialog[open] { display:flex; flex-direction:column; }
-    .lf-todo-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 14px; border-bottom:1px solid var(--border); }
-    .lf-todo-toolbar button { width:36px; height:36px; border:0; border-radius:8px; background:transparent; color:inherit; cursor:pointer; }
-    .lf-todo-toolbar button:hover { background:var(--btn); }
-    .lf-todo-dialog iframe { display:block; flex:1; width:100%; min-height:0; border:0; }
+
     .lf-tabs .lf-tab-icon { border:0; background:none; padding:8px 12px; border-radius:9999px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; }
     .lf-tabs .lf-tab-icon svg { width:16px; height:16px; }
     .lf-tabs .lf-tab-icon[aria-expanded="true"] { background:var(--pine); color:#fff; }
@@ -373,7 +367,7 @@
       <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增" aria-controls="lfAddMenu" aria-expanded="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
       <div id="lfAddMenu" class="lf-menu" aria-label="新增項目" hidden>
         <button type="button" id="lfAddApp">新增 APP</button>
-        <button type="button" id="lfAddTodo" hidden>新增待辦事項</button>
+        <button type="button" id="lfAddTodo" hidden>新增待辦事項區域</button>
       </div>
     </div>
     </div>
@@ -383,7 +377,8 @@
       <button type="button" id="lfSearchClear" aria-label="清除搜尋" hidden>✕</button>
     </label>
 
-    <section id="panelApps" aria-label="App">
+    <section id="panelApps" aria-label="主畫面">
+      <div id="lfTodoAreas"></div>
       <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
            登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到任何位置（空位編輯時才看得到）或和別的 App 互換、「−」移除、點 App 修改、＋ 圓鈕新增、按「完成」結束。 -->
       <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
@@ -475,14 +470,6 @@
   <footer>© 2026 LinFamily</footer>
 
   <!-- 新增／修改 App -->
-  <dialog class="lf-dialog lf-todo-dialog" id="lfTodoDialog" aria-label="待辦事項">
-    <div class="lf-todo-toolbar">
-      <strong>待辦事項</strong>
-      <button type="button" id="lfTodoClose" aria-label="關閉待辦事項">✕</button>
-    </div>
-    <iframe id="lfTodoFrame" title="DX 待辦事項" allow="microphone"></iframe>
-  </dialog>
-
   <dialog class="lf-dialog" id="lfAppDialog">
     <form method="dialog" novalidate>
       <h3 id="lfAppTitle">新增 App</h3>
@@ -528,6 +515,9 @@
   <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script>
   <script src="js/clc-icon-upload.js?v=20261116-menu2"></script>
   <script src="js/lf-menu.js?v=3"></script>
+  <script src="https://clc-dx04.pages.dev/reorder.js?v=shared-todo-2"></script>
+  <script src="js/dashboard-todos.js"></script>
+  <script src="js/lf-todos.js"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -735,6 +725,7 @@
     // 個人桌面：linfamily_desktops/{email}（每人自己排列、新增、移除）。沒有個人桌面時顯示預設桌面（Superuser 編的全部 App）。
     // Superuser 永遠看、編預設桌面＝全部 App。之後要做「哪些 App 給哪些人」時，在預設桌面的 App 上加權限欄位即可。
     const DESK_COL = 'linfamily_desktops';
+    const desktopTodos = window.lfDesktopTodos($('lfTodoAreas'), { db, toast });
     let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '', finishDeskWait;
     const deskKey = () => 'linfamily_desk_' + deskEmail;
     function showApps() {
@@ -747,6 +738,7 @@
       finishDeskWait?.();
       if (deskUnsub) { deskUnsub(); deskUnsub = null; }
       deskEmail = email; myDesk = null;
+      desktopTodos.sync(email);
       if (email) try { const c = JSON.parse(localStorage.getItem('linfamily_look_' + email) || 'null'); if (c) applyLook(c); } catch (_) {} // 先用上次的主題，不閃預設色
       if (email) {
         try { const c = JSON.parse(localStorage.getItem(deskKey()) || 'null'); if (Array.isArray(c)) myDesk = c; } catch (_) {}
@@ -756,6 +748,7 @@
             finish?.();
             const d = snap.exists ? snap.data() : null;
             myDesk = d && Array.isArray(d.items) ? d.items.filter(a => a && a.id && a.name) : null;
+            desktopTodos.sync(email, d?.todoAreas);
             mySeen = d && Array.isArray(d.seen) ? d.seen : [];
             applyLook(d || {}, true);
             try { if (myDesk) localStorage.setItem(deskKey(), JSON.stringify(myDesk)); else localStorage.removeItem(deskKey()); } catch (_) {}
@@ -876,9 +869,8 @@
     }
     function syncAddBtn() {
       $('lfAddBtn').hidden = !role || !(curTab === 'apps' || (curTab === 'all' && isSuper()));
-      $('lfAddTodo').hidden = !isSuper();
+      $('lfAddTodo').hidden = !role || curTab !== 'apps';
       setAddMenu(false);
-      if (!isSuper() && $('lfTodoDialog').open) $('lfTodoDialog').close();
     }
     // 整個 App 區都可以放 App（含最底部）：格數＝畫面放得下的行數 × 每行個數；放滿才多一行（只有 App 區捲動）
     function fitSlots() {
@@ -1341,22 +1333,10 @@
       openApp(null);
       if (cabinetOnly) $('lfAppTitle').textContent = '新增 App 到 App 櫃';
     });
-    const todoDialog = $('lfTodoDialog'), todoFrame = $('lfTodoFrame');
     $('lfAddTodo').addEventListener('click', () => {
-      if (!isSuper() || todoDialog.open) return;
+      if (!role || curTab !== 'apps') return;
       setAddMenu(false);
-      const url = new URL('/?view=todos', DX04.url);
-      if (url.origin !== location.origin) {
-        location.assign(url.href);
-        return;
-      }
-      todoFrame.src = url.href;
-      todoDialog.showModal();
-    });
-    $('lfTodoClose').addEventListener('click', () => todoDialog.close());
-    todoDialog.addEventListener('close', () => {
-      todoFrame.removeAttribute('src');
-      if (!$('lfAddBtn').hidden) $('lfAddBtn').focus({ preventScroll:true });
+      desktopTodos.add();
     });
     const sBox = $('lfSearchBox'), sBtn = $('lfSearchBtn');
     function showSearch(on) { sBox.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) search.focus(); }
