@@ -895,8 +895,8 @@
       <div class="tabs-bar">
         <div class="container">
           <div class="segmented-control" role="tablist">
-            <button class="seg-btn active" data-tab="tab-info">小組信息</button>
             <button class="seg-btn" data-tab="tab-bg">背景與註釋</button>
+            <button class="seg-btn active" data-tab="tab-info">小組信息</button>
             <button class="seg-btn" data-tab="tab-discuss">小組討論</button>
           </div>
         </div>
@@ -904,32 +904,7 @@
 
       <main class="container">
 
-        <!-- 第一頁（預設首頁）：信息內文與互動填空 -->
-        <section id="tab-info" class="tab-panel active">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h2 class="card-title">小組信息</h2>
-                <p class="card-subtitle" id="legacyReadingHint">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）</p>
-              </div>
-              <div class="toolbar-actions" id="blankActions">
-                <span class="progress-pill" id="blankProgress">已解鎖 0 / 7</span>
-                <button class="pill-action-btn" id="toggleAllBtn">顯示全部</button>
-              </div>
-            </div>
-
-            <div class="article-body" id="articleBody"></div>
-
-            <div class="next-page-bar">
-              <button class="next-page-btn" onclick="switchToTab('tab-bg')">
-                <span>下一步：背景與註釋</span>
-                <span>→</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- 第二頁：背景與註釋 -->
+        <!-- 第一頁：背景與註釋 -->
         <section id="tab-bg" class="tab-panel">
           <div class="card">
             <div class="card-header">
@@ -949,6 +924,31 @@
               </div>
             </div>
             <div id="wordStudiesContainer"></div>
+            <div class="next-page-bar">
+              <button class="next-page-btn" onclick="switchToTab('tab-info')">
+                <span>下一步：小組信息</span>
+                <span>→</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 第二頁（預設開啟）：信息內文與互動填空 -->
+        <section id="tab-info" class="tab-panel active">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">小組信息</h2>
+                <p class="card-subtitle" id="legacyReadingHint">點擊淡黃色空格顯示解答，點擊藍綠色詞彙查看經文與神學解析（反白文字可劃記與寫筆記）</p>
+              </div>
+              <div class="toolbar-actions" id="blankActions">
+                <span class="progress-pill" id="blankProgress">已解鎖 0 / 7</span>
+                <button class="pill-action-btn" id="toggleAllBtn">顯示全部</button>
+              </div>
+            </div>
+
+            <div class="article-body" id="articleBody"></div>
+
             <div class="next-page-bar">
               <button class="next-page-btn" onclick="switchToTab('tab-discuss')">
                 <span>下一步：小組討論</span>
