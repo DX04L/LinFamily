@@ -1,5 +1,5 @@
-#lfTodoAreas:not(:empty) { display: grid; gap: 12px; margin: 0 0 18px; }
-.lf-todo-card {
+#lfTodoAreas:not(:empty) { margin-bottom: 18px; }
+:is(.lf-todo-card, .lf-todo-drawer) {
   min-width: 0;
   padding: 16px;
   border: 1px solid var(--border);
@@ -7,55 +7,71 @@
   background: var(--surface);
   color: var(--text);
 }
-.lf-todo-card > div:first-child,
-.lf-todo-card form { display: flex; align-items: center; gap: 10px; }
-.lf-todo-card > div:first-child { justify-content: space-between; }
-.lf-todo-card h2 { margin: 0; font-size: 18px; color: inherit; }
-.lf-todo-card p { margin: 0; }
-.lf-todo-card :is([data-todo-field="todoSummary"], [data-todo-field="todoStatus"], .todo-meta, .todo-group, .todo-empty) {
+:is(.lf-todo-card, .lf-todo-drawer) .widget-content > div:first-child,
+:is(.lf-todo-card, .lf-todo-drawer) form { display: flex; align-items: center; gap: 10px; }
+:is(.lf-todo-card, .lf-todo-drawer) .widget-content > div:first-child { justify-content: space-between; }
+:is(.lf-todo-card, .lf-todo-drawer) h2 { margin: 0; font-size: 18px; color: inherit; }
+:is(.lf-todo-card, .lf-todo-drawer) p { margin: 0; }
+:is(.lf-todo-card, .lf-todo-drawer) :is([data-todo-field="todoSummary"], [data-todo-field="todoStatus"], .todo-meta, .todo-group, .todo-empty) {
   color: var(--muted);
   font-size: 13px;
 }
-.lf-todo-card form { margin: 8px 0; padding: 5px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--btn); }
-.lf-todo-card :is(textarea, select) { min-width: 0; background: transparent; color: inherit; font: inherit; }
-.lf-todo-card textarea { flex: 1; }
-.lf-todo-card .todo-add-input { padding: 5px; border: 0; resize: none; }
-.lf-todo-card .todo-edit { padding: 5px; border: 1px solid var(--teal); border-radius: 6px; }
-.lf-todo-card [hidden], .lf-todo-card .hidden, .lf-todo-card .todo-move-area { display: none !important; }
-.lf-todo-card .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.lf-todo-card :is(.todo-list, ul) { padding: 0; margin: 0; list-style: none; }
-.lf-todo-card .todo-row, .lf-todo-card .todo-item { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
-.lf-todo-card .todo-item { flex: 1; }
-.lf-todo-card .todo-row { position: relative; padding: 8px 0; transition: translate 170ms ease-out; }
-.lf-todo-card .todo-scroll { max-height: 42vh; overflow-y: auto; padding: 5px 2px; }
-.lf-todo-card .todo-ck { width: 18px; height: 18px; accent-color: var(--teal); }
-.lf-todo-card .todo-text { display: grid; flex: 1; min-width: 0; cursor: text; }
-.lf-todo-card .todo-title { white-space: pre-wrap; overflow-wrap: anywhere; }
-.lf-todo-card .todo-row:has(.todo-ck:checked) .todo-title { opacity: .55; text-decoration: line-through; }
-.lf-todo-card button { border: 0; background: transparent; color: inherit; cursor: pointer; }
-.lf-todo-card .todo-mic svg, .lf-todo-card .todo-chevron { width: 18px; height: 18px; }
-.lf-todo-card .todo-mic.is-listening { color: #e0525e; }
-.lf-todo-card .todo-del, .lf-todo-card .todo-minus { color: #e0525e; }
-.lf-todo-card .todo-minus { position: absolute; right: 28px; top: 6px; }
-.lf-todo-card .todo-minus::after { content: "−"; }
-.lf-todo-card .todo-drop-before { box-shadow: inset 0 2px var(--teal); }
-.lf-todo-card .todo-drop-after { box-shadow: inset 0 -2px var(--teal); }
+:is(.lf-todo-card, .lf-todo-drawer) form { margin: 8px 0; padding: 5px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--btn); }
+:is(.lf-todo-card, .lf-todo-drawer) :is(textarea, select) { min-width: 0; background: transparent; color: inherit; font: inherit; }
+:is(.lf-todo-card, .lf-todo-drawer) textarea { flex: 1; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-add-input { padding: 5px; border: 0; resize: none; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-edit { padding: 5px; border: 1px solid var(--teal); border-radius: 6px; }
+:is(.lf-todo-card, .lf-todo-drawer) [hidden], :is(.lf-todo-card, .lf-todo-drawer) .hidden, :is(.lf-todo-card, .lf-todo-drawer) .todo-move-area { display: none !important; }
+:is(.lf-todo-card, .lf-todo-drawer) .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+:is(.lf-todo-card, .lf-todo-drawer) :is(.todo-list, ul) { padding: 0; margin: 0; list-style: none; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-row, :is(.lf-todo-card, .lf-todo-drawer) .todo-item { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-item { flex: 1; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-row { position: relative; padding: 8px 0; transition: translate 170ms ease-out; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-scroll { padding: 5px 2px; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-ck { width: 18px; height: 18px; accent-color: var(--teal); }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-text { display: grid; flex: 1; min-width: 0; cursor: text; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-title { white-space: pre-wrap; overflow-wrap: anywhere; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-row:has(.todo-ck:checked) .todo-title { opacity: .55; text-decoration: line-through; }
+:is(.lf-todo-card, .lf-todo-drawer) button { border: 0; background: transparent; color: inherit; cursor: pointer; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-mic svg, :is(.lf-todo-card, .lf-todo-drawer) .todo-chevron { width: 18px; height: 18px; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-mic.is-listening { color: #e0525e; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-del, :is(.lf-todo-card, .lf-todo-drawer) .todo-minus { color: #e0525e; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-minus { position: absolute; right: 28px; top: 6px; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-minus::after { content: "−"; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-drop-before { box-shadow: inset 0 2px var(--teal); }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-drop-after { box-shadow: inset 0 -2px var(--teal); }
 .lf-todo-card.todo-area-drop { outline: 2px solid var(--teal); }
-.lf-todo-card .reorder-source { opacity: 0; }
+:is(.lf-todo-card, .lf-todo-drawer) .reorder-source { opacity: 0; }
 .reorder-floating { display: flex; gap: 8px; padding: 8px; list-style: none; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); }
 .reorder-floating :is(.todo-del, .todo-minus, .todo-move-area) { display: none; }
 
-#lfTodoAreas:not(:empty) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); align-items: start; }
-.lf-todo-card { --todo-font: 16px; padding: 24px 14px 20px; }
-@media (min-width: 1024px) { .lf-todo-card { --todo-font: 19px; } }
-.lf-todo-card h2 { font-size: calc(1.25 * var(--todo-font)); font-weight: 800; }
-.lf-todo-card .todo-title { font-size: var(--todo-font); line-height: 1.5; }
-.lf-todo-card .todo-add-input { font-size: 15px; line-height: 1.5; }
-.lf-todo-card .todo-group { font-size: calc(.75 * var(--todo-font)); font-weight: 700; }
-.lf-todo-card .todo-meta { font-size: calc(.8125 * var(--todo-font)); }
-.lf-todo-card [data-todo-field="todoDoneToggle"] { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; font-size: calc(.875 * var(--todo-font)); color: var(--muted); }
-.lf-todo-actions { position: relative; margin-inline-start: auto; flex: none; }
-.lf-todo-actions > button { min-width: 32px; min-height: 30px; font-size: 20px; }
-.lf-todo-actions .lf-menu { width: 146px; }
-.lf-todo-actions .lf-menu button:disabled { opacity: .4; cursor: default; }
-.lf-todo-actions .lf-menu button:focus-visible { outline: none; background: var(--btn); }
+:is(.lf-todo-card, .lf-todo-drawer) { --todo-font: 16px; padding: 24px 14px 20px; }
+@media (min-width: 1024px) { :is(.lf-todo-card, .lf-todo-drawer) { --todo-font: 19px; } }
+:is(.lf-todo-card, .lf-todo-drawer) h2 { font-size: calc(1.25 * var(--todo-font)); font-weight: 800; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-title { font-size: var(--todo-font); line-height: 1.5; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-add-input { font-size: 15px; line-height: 1.5; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-group { font-size: calc(.75 * var(--todo-font)); font-weight: 700; }
+:is(.lf-todo-card, .lf-todo-drawer) .todo-meta { font-size: calc(.8125 * var(--todo-font)); }
+:is(.lf-todo-card, .lf-todo-drawer) [data-todo-field="todoDoneToggle"] { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; font-size: calc(.875 * var(--todo-font)); color: var(--muted); }
+
+.lf-todo-drawer { border: 0; max-width: none; }
+#lfTodoAreas ~ [role="status"]:empty { display: none; }
+body:has(#lfTodoAreas > .lf-todo-card ~ .lf-todo-card) .lf-todo-drawer .todo-move-area {
+  display: block !important; flex: none; max-width: 6em;
+}
+.lf-todo-menu {
+  width: 210px;
+  border: 1px solid var(--border);
+  border-radius: 11.25px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.lf-todo-menu > button {
+  padding: 9.375px 15px;
+  font-size: 13.125px;
+  line-height: 18.75px;
+}
+@media (min-width: 640px) { .lf-todo-menu > button { font-size: 15px; } }
+
+.lf-todo-menu.is-card-popup > button:only-of-type { grid-column: 1 / -1; }

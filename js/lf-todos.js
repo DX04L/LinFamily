@@ -2,6 +2,15 @@
 window.lfDesktopTodos = function (host, { db, toast }) {
   const cards = new Map(), listeners = new Map();
   let owner = '', areas = {};
+  const layout = window.clcDashboardWidgets(host, {
+    key: () => 'linfamily_todo_layout:' + owner,
+    canEdit: () => !!owner,
+    async remove(id) {
+      if (!confirm('確定刪除此區塊和裡面的待辦事項？')) return;
+      try { await change(next => { delete next[id]; }); }
+      catch (_) { toast('待辦區塊更新失敗，請稍後再試。'); }
+    }
+  });
   let mount;
   window.clcMountTodos({
     find: (widget, id) => widget.querySelector('[data-todo-field="' + id + '"]'),
@@ -61,78 +70,9 @@ window.lfDesktopTodos = function (host, { db, toast }) {
       (data[a]?.position ?? Number.MAX_SAFE_INTEGER) - (data[b]?.position ?? Number.MAX_SAFE_INTEGER));
   }
 
-  function cardMenu(el, id) {
-    const header = el.firstElementChild;
-    const actions = document.createElement('div');
-    actions.className = 'lf-todo-actions';
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = '⋯';
-    button.setAttribute('aria-label', '待辦區塊選單');
-    button.setAttribute('aria-expanded', 'false');
-    const menu = document.createElement('div');
-    menu.className = 'lf-menu';
-    menu.hidden = true;
-    function toggle(open) {
-      menu.hidden = !open;
-      button.setAttribute('aria-expanded', String(open));
-    }
-    for (const [label, step] of [['往前移', -1], ['往後移', 1], ['刪除區塊', 0]]) {
-      const action = document.createElement('button');
-      action.type = 'button';
-      action.textContent = label;
-      if (!step) action.className = 'lf-danger';
-      action.addEventListener('click', async () => {
-        toggle(false);
-        if (!step && !confirm('確定刪除此區塊和裡面的待辦事項？')) return;
-        try {
-          await change(next => {
-            if (!Object.hasOwn(next, id)) return false;
-            if (!step) { delete next[id]; return true; }
-            const order = ordered(next);
-            const from = order.indexOf(id), to = from + step;
-            if (!order[to]) return false;
-            [order[from], order[to]] = [order[to], order[from]];
-            order.forEach((key, position) => { next[key].position = position; });
-            return true;
-          });
-        } catch (_) { toast('待辦區塊更新失敗，請稍後再試。'); }
-      });
-      menu.append(action);
-    }
-    actions.append(button, menu);
-    header.append(actions);
-    function openMenu() {
-      for (const active of host.querySelectorAll('.lf-todo-actions [aria-expanded="true"]')) {
-        if (active !== button) active.click();
-      }
-      const order = ordered(areas);
-      const position = order.indexOf(id);
-      menu.children[0].disabled = position <= 0;
-      menu.children[1].disabled = position >= order.length - 1;
-      toggle(true);
-    }
-    button.addEventListener('click', () => menu.hidden ? openMenu() : toggle(false));
-    el.addEventListener('contextmenu', e => {
-      if (e.target.closest('input, textarea, select, .todo-row')) return;
-      e.preventDefault();
-      openMenu();
-    });
-    return toggle;
-  }
-
-  document.addEventListener('pointerdown', e => {
-    for (const { el, toggleMenu } of cards.values()) {
-      if (!el.querySelector('.lf-todo-actions').contains(e.target)) toggleMenu(false);
-    }
-  });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') for (const { toggleMenu } of cards.values()) toggleMenu(false);
-  });
-
   function sync(email, next = {}) {
     if (email !== owner) {
-      for (const card of cards.values()) { card.dispose(); card.el.remove(); }
+      for (const [id, card] of cards) { card.dispose(); layout.detach(id); }
       cards.clear();
       owner = email;
       areas = {};
@@ -141,7 +81,7 @@ window.lfDesktopTodos = function (host, { db, toast }) {
     for (const [id, card] of cards) {
       if (Object.hasOwn(next, id)) continue;
       card.dispose();
-      card.el.remove();
+      layout.detach(id);
       cards.delete(id);
     }
     const previous = areas;
@@ -156,19 +96,18 @@ window.lfDesktopTodos = function (host, { db, toast }) {
         continue;
       }
       const el = document.createElement('section');
-      el.className = 'lf-todo-card';
+      el.className = 'lf-todo-card dash-widget';
       el.dataset.widget = 'todo';
       el.dataset.widgetId = id;
       el.setAttribute('aria-labelledby', 'todoTitle-' + id);
-      el.append(window.clcBuildTodoFields(id));
+      const handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'drag-handle';
+      el.append(handle, window.clcBuildTodoFields(id));
       el.querySelector('h2').textContent = area.title || '代辦事項';
-      host.append(el);
-      cards.set(id, { el, toggleMenu: cardMenu(el, id), dispose: mount(el, id) });
+      layout.attach(el, id);
+      cards.set(id, { el, dispose: mount(el, id) });
     }
-    const visible = ordered(areas).map(id => cards.get(id)?.el).filter(Boolean);
-    visible.forEach((el, index) => {
-      if (host.children[index] !== el) host.insertBefore(el, host.children[index] || null);
-    });
   }
 
   return {
