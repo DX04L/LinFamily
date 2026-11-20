@@ -44,3 +44,18 @@
 .lf-todo-card .reorder-source { opacity: 0; }
 .reorder-floating { display: flex; gap: 8px; padding: 8px; list-style: none; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); }
 .reorder-floating :is(.todo-del, .todo-minus, .todo-move-area) { display: none; }
+
+#lfTodoAreas:not(:empty) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); align-items: start; }
+.lf-todo-card { --todo-font: 16px; padding: 24px 14px 20px; }
+@media (min-width: 1024px) { .lf-todo-card { --todo-font: 19px; } }
+.lf-todo-card h2 { font-size: calc(1.25 * var(--todo-font)); font-weight: 800; }
+.lf-todo-card .todo-title { font-size: var(--todo-font); line-height: 1.5; }
+.lf-todo-card .todo-add-input { font-size: 15px; line-height: 1.5; }
+.lf-todo-card .todo-group { font-size: calc(.75 * var(--todo-font)); font-weight: 700; }
+.lf-todo-card .todo-meta { font-size: calc(.8125 * var(--todo-font)); }
+.lf-todo-card [data-todo-field="todoDoneToggle"] { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; font-size: calc(.875 * var(--todo-font)); color: var(--muted); }
+.lf-todo-actions { position: relative; margin-inline-start: auto; flex: none; }
+.lf-todo-actions > button { min-width: 32px; min-height: 30px; font-size: 20px; }
+.lf-todo-actions .lf-menu { width: 146px; }
+.lf-todo-actions .lf-menu button:disabled { opacity: .4; cursor: default; }
+.lf-todo-actions .lf-menu button:focus-visible { outline: none; background: var(--btn); }
