@@ -208,6 +208,12 @@
     .lf-search button[hidden] { display:none; }
     .lf-search[hidden] { display:none; }
     .lf-tabbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:22px 0 24px; }
+    @media (max-width:639px) {
+      .lf-top > :first-child { flex:1; min-width:0; }
+      .lf-title { margin-right:var(--lf-greeting-reserve, 0px); font-size:var(--lf-greeting-size, clamp(24px, 6.6vw, 42px)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      main { padding-top:10px; }
+      .lf-tabbar { margin-top:14px; }
+    }
     .lf-tabbar .lf-tabs { margin:0; }
     .lf-add-wrap { position:relative; }
     .lf-add-wrap .lf-menu { width:168px; }
@@ -1244,11 +1250,34 @@
       }
       const nameOf = () => { const n = user && (user.displayName || '').trim().split(/\s+/)[0]; return n || 'there'; };
       const el = $('lfGreeting'); let curKey = '', curLine = '';
+      const mobile = matchMedia('(max-width:639px)');
+      const right = document.querySelector('.lf-right');
+      function fitGreeting() {
+        if (!mobile.matches) return;
+        el.style.removeProperty('--lf-greeting-size');
+        const reserve = Math.max(0, el.parentElement.getBoundingClientRect().right - right.getBoundingClientRect().left + 8);
+        el.style.setProperty('--lf-greeting-reserve', reserve + 'px');
+        const available = el.clientWidth;
+        const required = el.scrollWidth;
+        if (available > 0 && required > available) {
+          const size = parseFloat(getComputedStyle(el).fontSize);
+          el.style.setProperty('--lf-greeting-size', Math.max(14, size * (available - 1) / required) + 'px');
+        }
+      }
+      const greetingResize = new ResizeObserver(fitGreeting);
+      greetingResize.observe(el.parentElement);
+      greetingResize.observe(right);
+      mobile.addEventListener('change', fitGreeting);
+      document.fonts.ready.then(fitGreeting);
+
       function render(force) {
         const p = poolFor(new Date());
         if (force || p.key !== curKey) { curKey = p.key; curLine = p.list[Math.floor(Math.random() * p.list.length)].replace('{d}', p.dayName); } // 換時段才重抽
         const text = curLine.replace('{n}', nameOf()).replace('Hey there night owl', 'Hey night owl');
-        if (el.textContent !== text) el.textContent = text;
+        if (el.textContent !== text) {
+          el.textContent = text;
+          fitGreeting();
+        }
       }
       window.lfGreetingRender = render;
       render(true);
