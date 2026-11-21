@@ -382,11 +382,15 @@
       border-radius: 8px;
     }
 
-    #hud-pill {
+    #book-canvas.toc-link-hover {
+      cursor: pointer;
+    }
+
+    #highlight-tools {
       position: fixed;
-      bottom: 14px;
+      top: 14px;
       left: 50%;
-      transform: translateX(-50%) translateY(8px);
+      transform: translateX(-50%) translateY(-8px);
       background: rgba(18, 52, 60, 0.90);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
@@ -409,7 +413,7 @@
       justify-content: center;
     }
 
-    #hud-pill.visible {
+    #highlight-tools.visible {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
       pointer-events: auto;
@@ -437,18 +441,6 @@
       cursor: default;
     }
 
-    #btn-toc {
-      color: #18424a;
-      background: #8cd943;
-      font-weight: 700;
-      font-size: 12px;
-      padding: 4px 10px;
-    }
-
-    #btn-toc:hover {
-      background: #9ee657 !important;
-    }
-
     #btn-hl-toggle {
       color: #ffe45e;
       background: rgba(255, 228, 94, 0.14);
@@ -469,26 +461,6 @@
       background: rgba(255, 255, 255, 0.10);
       font-size: 12px;
       padding: 4px 9px;
-    }
-
-    #btn-goto-bookmark {
-      color: #18424a;
-      background: #ffe45e;
-      font-weight: 700;
-      font-size: 12px;
-      padding: 4px 10px;
-    }
-
-    #btn-goto-bookmark:hover {
-      background: #ffec85 !important;
-    }
-
-    #page-label {
-      padding: 0 5px;
-      font-weight: 600;
-      color: #fffdf5;
-      white-space: nowrap;
-      font-size: 12.5px;
     }
 
     #loader {
@@ -609,17 +581,10 @@
     </div>
   </div>
 
-  <!-- 底部互動導覽列（支援左翻書邏輯：← 下一頁 / 目錄 / 螢光筆 / 上一頁 →） -->
-  <div id="hud-pill">
-    <button class="hud-btn" id="btn-next" title="往左翻看下一頁 (←)">‹ 下一頁</button>
-    <button class="hud-btn" id="btn-toc" title="前往章節目錄">📖 目錄</button>
+  <!-- 既有螢光筆與劃記清單入口 -->
+  <div id="highlight-tools">
     <button class="hud-btn" id="btn-hl-toggle" title="開啟或關閉直向螢光筆模式（也可長按經文直接直向拖曳畫記）">🖍️ 螢光筆</button>
     <button class="hud-btn" id="btn-hl-list" title="查看所有直向劃記與筆記">劃記 (0)</button>
-    <span id="page-label">封面</span>
-    <button class="hud-btn" id="btn-prev" title="往右翻回上一頁 (→)">上一頁 ›</button>
-    <button class="hud-btn" id="btn-first" title="回到封面">⇥ 封面</button>
-    <button class="hud-btn" id="btn-goto-bookmark" title="回到上次書籤頁" style="display:none;">🔖 回到書籤</button>
-    <button class="hud-btn" id="btn-reset-zoom" title="還原大小" style="display:none; font-size:12px;">100%</button>
   </div>
 
   <script>
@@ -2091,16 +2056,9 @@
       const canvas = document.getElementById("book-canvas");
       const ctx = canvas.getContext("2d", { alpha: false });
       const loader = document.getElementById("loader");
-      const hudPill = document.getElementById("hud-pill");
-      const pageLabel = document.getElementById("page-label");
-      const btnFirst = document.getElementById("btn-first");
-      const btnPrev = document.getElementById("btn-prev");
-      const btnNext = document.getElementById("btn-next");
-      const btnToc = document.getElementById("btn-toc");
+      const highlightTools = document.getElementById("highlight-tools");
       const btnHlToggle = document.getElementById("btn-hl-toggle");
       const btnHlList = document.getElementById("btn-hl-list");
-      const btnGotoBookmark = document.getElementById("btn-goto-bookmark");
-      const btnResetZoom = document.getElementById("btn-reset-zoom");
       const bookmarkRibbon = document.getElementById("bookmark-ribbon");
       const bookmarkToast = document.getElementById("bookmark-toast");
 
@@ -2310,7 +2268,7 @@
         showBookmarkToast(highlightToolActive
           ? "已開啟直向螢光筆：上下拖曳經文畫線，再次點擊可切回翻頁"
           : "已切回正常翻頁模式（長按經文仍可直接直向畫記）");
-        showHud();
+        showHighlightTools();
       });
 
       btnHlList.addEventListener("click", (e) => {
@@ -2556,13 +2514,6 @@
           animateRibbonTo(0, immediate);
         }
 
-        if (bookmarkedPageIndex !== null && !isHere) {
-          btnGotoBookmark.style.display = "inline-block";
-          const targetName = bookmarkedPageIndex === 0 ? "封面" : `第 ${bookmarkedPageIndex} 頁`;
-          btnGotoBookmark.textContent = `🔖 回到${targetName}`;
-        } else {
-          btnGotoBookmark.style.display = "none";
-        }
       }
 
       bookmarkRibbon.addEventListener("mouseenter", () => {
@@ -2662,13 +2613,13 @@
         });
       }
 
-      let hudTimer = null;
-      function showHud() {
-        hudPill.classList.add("visible");
-        clearTimeout(hudTimer);
-        hudTimer = setTimeout(() => {
+      let highlightToolsTimer = null;
+      function showHighlightTools() {
+        highlightTools.classList.add("visible");
+        clearTimeout(highlightToolsTimer);
+        highlightToolsTimer = setTimeout(() => {
           if (!highlightToolActive && hlPopover.hidden) {
-            hudPill.classList.remove("visible");
+            highlightTools.classList.remove("visible");
           }
         }, 3400);
       }
@@ -2692,11 +2643,8 @@
         view.ty = clamped.ty;
         if (view.scale <= 1.001 && Math.abs(view.tx) < 0.5 && Math.abs(view.ty) < 0.5) {
           bookShell.style.transform = "";
-          btnResetZoom.style.display = "none";
         } else {
           bookShell.style.transform = `translate3d(${view.tx.toFixed(2)}px, ${view.ty.toFixed(2)}px, 0) scale(${view.scale.toFixed(4)})`;
-          btnResetZoom.style.display = "inline-block";
-          btnResetZoom.textContent = `${Math.round(view.scale * 100)}%`;
         }
       }
 
@@ -2827,38 +2775,8 @@
           updateCanvasResolution();
         }
 
-        updateHudText();
         updateBookmarkUI(forceReset);
         render();
-      }
-
-      function updateHudText() {
-        const maxStep = getMaxStep();
-        btnFirst.disabled = currentStep === 0;
-        btnPrev.disabled = currentStep === 0;
-        btnNext.disabled = currentStep >= maxStep;
-
-        if (!isSpreadCapable) {
-          if (currentStep === 0) {
-            pageLabel.textContent = "封面";
-          } else {
-            const p = BOOK_PAGES[currentStep];
-            pageLabel.textContent = `${p.title}（${currentStep}/${BOOK_PAGES.length - 1}）`;
-          }
-        } else {
-          if (currentStep === 0) {
-            pageLabel.textContent = "封面";
-          } else {
-            const rightIdx = currentStep * 2 - 1;
-            const leftIdx = currentStep * 2;
-            const pRight = BOOK_PAGES[rightIdx];
-            if (leftIdx < BOOK_PAGES.length) {
-              pageLabel.textContent = `${pRight.title}｜第 ${rightIdx}–${leftIdx} 頁`;
-            } else {
-              pageLabel.textContent = `${pRight.title}｜第 ${rightIdx} 頁`;
-            }
-          }
-        }
       }
 
       function drawPageImage(pageIndex, x, y, w, h, basePageW, basePageH) {
@@ -3182,7 +3100,6 @@
           if (isSpreadCapable && (flip.fromStep === 0 || flip.toStep === 0)) {
             updateLayout(false);
           } else {
-            updateHudText();
             updateBookmarkUI(false);
             render();
           }
@@ -3247,12 +3164,12 @@
       }
 
       // ===== 12. 目錄卡片點擊命中偵測 =====
-      function checkTocClick(clientX, clientY) {
-        if (flip.active) return false;
+      function getTocTarget(clientX, clientY) {
+        if (flip.active) return null;
         const rect = bookShell.getBoundingClientRect();
         const relX = (clientX - rect.left) / rect.width;
         const relY = (clientY - rect.top) / rect.height;
-        if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return false;
+        if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return null;
 
         const isDouble = isSpreadCapable && currentStep > 0;
         let targetPageIdx = -1;
@@ -3271,18 +3188,17 @@
         }
 
         const pageObj = BOOK_PAGES[targetPageIdx];
-        if (!pageObj || pageObj.type !== "toc") return false;
+        if (!pageObj || pageObj.type !== "toc") return null;
 
         const px = pageNormX * PAGE_W;
         const py = relY * PAGE_H;
         const spots = TOC_HOTSPOTS[targetPageIdx] || [];
         for (const spot of spots) {
           if (px >= spot.x && px <= spot.x + spot.w && py >= spot.y && py <= spot.y + spot.h) {
-            jumpToPage(spot.targetPage);
-            return true;
+            return spot.targetPage;
           }
         }
-        return false;
+        return null;
       }
 
       // ===== 13. 觸控與滑鼠手勢整合（含直向螢光筆直向拖曳畫線與長按畫記） =====
@@ -3292,19 +3208,7 @@
         e.stopPropagation();
         if (flip.active) return;
         toggleOrMoveBookmark();
-        showHud();
-      });
-
-      btnGotoBookmark.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (bookmarkedPageIndex !== null) jumpToPage(bookmarkedPageIndex);
-        showHud();
-      });
-
-      btnToc.addEventListener("click", (e) => {
-        e.stopPropagation();
-        jumpToPage(1);
-        showHud();
+        showHighlightTools();
       });
 
       let pointerDown = false;
@@ -3439,7 +3343,9 @@
         if (view.isPanning) {
           view.isPanning = false;
           if (!hasMoved && e.changedTouches.length) {
-            handleTapOrDoubleTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            if (handleTapOrDoubleTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY)) {
+              e.preventDefault();
+            }
           }
           return;
         }
@@ -3447,9 +3353,9 @@
         if (pointerDown) {
           const endX = e.changedTouches.length ? e.changedTouches[0].clientX : flip.lastX;
           const endY = e.changedTouches.length ? e.changedTouches[0].clientY : flip.startY;
-          onSingleEnd(endX, endY);
+          if (onSingleEnd(endX, endY)) e.preventDefault();
         }
-      });
+      }, { passive: false });
 
       canvas.addEventListener("mousedown", (e) => {
         if (e.button !== 0) return;
@@ -3465,6 +3371,12 @@
         }
       });
 
+      canvas.addEventListener("mousemove", (e) => {
+        canvas.classList.toggle("toc-link-hover", !pointerDown && !view.isPanning && getTocTarget(e.clientX, e.clientY) !== null);
+      });
+
+      canvas.addEventListener("mouseleave", () => canvas.classList.remove("toc-link-hover"));
+
       window.addEventListener("mousemove", (e) => {
         if (view.isPanning) {
           const dx = e.clientX - view.panStartX;
@@ -3477,7 +3389,7 @@
           return;
         }
         if (!pointerDown) {
-          showHud();
+          showHighlightTools();
           return;
         }
         onSingleMove(e.clientX, e.clientY);
@@ -3523,6 +3435,7 @@
           flip.animFrame = null;
           flip.dragging = true;
         }
+        canvas.classList.remove("toc-link-hover");
         pointerDown = true;
         hasMoved = false;
         flip.startX = x;
@@ -3636,9 +3549,11 @@
       }
 
       function handleTapOrDoubleTap(clientX, clientY) {
-        if (checkTocClick(clientX, clientY)) {
-          showHud();
-          return;
+        const tocTarget = getTocTarget(clientX, clientY);
+        if (tocTarget !== null) {
+          jumpToPage(tocTarget);
+          showHighlightTools();
+          return true;
         }
 
         // 若點擊到既有的直向螢光劃記，立即開啟色票／筆記／刪除選單
@@ -3646,7 +3561,7 @@
         const existingHl = findHighlightAtHit(hit);
         if (existingHl) {
           openHighlightPopover(existingHl, clientX, clientY);
-          showHud();
+          showHighlightTools();
           return;
         }
 
@@ -3659,7 +3574,7 @@
         if (highlightToolActive && hit) {
           const created = addOrMergeHighlight(hit.chapter, hit.verse, hit.verseCharIdx, hit.verseCharIdx, "sun");
           if (created) openHighlightPopover(created, clientX, clientY);
-          showHud();
+          showHighlightTools();
           return;
         }
 
@@ -3694,10 +3609,10 @@
           } else if (ratio > 0.72) {
             turnPage(-1, -tapTilt);
           } else {
-            showHud();
+            showHighlightTools();
           }
         } else {
-          showHud();
+          showHighlightTools();
         }
       }
 
@@ -3717,14 +3632,13 @@
           );
           if (saved) {
             openHighlightPopover(saved, endX, endY);
-            showHud();
+            showHighlightTools();
           }
           return;
         }
 
         if (!hasMoved && !flip.dragging) {
-          handleTapOrDoubleTap(endX, endY);
-          return;
+          return handleTapOrDoubleTap(endX, endY);
         }
         if (flip.dragging) {
           const shouldComplete =
@@ -3754,41 +3668,13 @@
             resetZoom(false);
             currentStep = 0;
             updateLayout(false);
-            showHud();
+            showHighlightTools();
           }
         } else if (e.key === "Escape") {
           if (!hlPopover.hidden) closeHighlightPopover();
           else if (!hlDrawerBackdrop.hidden) hlDrawerBackdrop.hidden = true;
           else if (view.scale > 1.02) resetZoom(true);
         }
-      });
-
-      btnFirst.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (flip.active || currentStep === 0) return;
-        closeHighlightPopover();
-        resetZoom(false);
-        currentStep = 0;
-        updateLayout(false);
-        showHud();
-      });
-
-      btnPrev.addEventListener("click", (e) => {
-        e.stopPropagation();
-        turnPage(-1);
-        showHud();
-      });
-
-      btnNext.addEventListener("click", (e) => {
-        e.stopPropagation();
-        turnPage(1);
-        showHud();
-      });
-
-      btnResetZoom.addEventListener("click", (e) => {
-        e.stopPropagation();
-        resetZoom(true);
-        showHud();
       });
 
       if (typeof ResizeObserver !== "undefined") {
@@ -3807,7 +3693,7 @@
         }
         updateLayout(true);
         loader.classList.add("hidden");
-        showHud();
+        showHighlightTools();
         if (bookmarkedPageIndex !== null) {
           const pInfo = BOOK_PAGES[bookmarkedPageIndex];
           const label = bookmarkedPageIndex === 0 ? "封面" : `${pInfo.title}（第 ${bookmarkedPageIndex} 頁）`;
