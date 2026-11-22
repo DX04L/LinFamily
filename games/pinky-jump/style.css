@@ -308,3 +308,9 @@ html, body {
   70% { transform: scale(1.12); }
   100% { transform: scale(1); }
 }
+
+/* Heart slots (replaces the shield counter). */
+#shield-hearts { display: inline-flex; gap: 1px; font-family: system-ui, sans-serif; line-height: 1; }
+#shield-hearts i { font-style: normal; color: #f2a9c8; font-size: 15px; }
+#shield-hearts i.on { color: #ff2d6f; }
+@media (max-width: 900px) { #shield-hearts i { font-size: 11px; } #shield-hearts { gap: 0; } }

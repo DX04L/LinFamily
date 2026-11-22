@@ -214,7 +214,17 @@ function bumpShieldIcon() {
   void box.offsetWidth;
   box.classList.add('shield-hit');
 }
-const shieldEl = document.getElementById('shield-count');
+const shieldEl = document.getElementById('shield-hearts');
+const MAX_HEARTS = 5;
+// Show collected hearts as filled red hearts out of 5 slots.
+function renderHearts() {
+  shieldEl.querySelectorAll('i').forEach((el, i) => {
+    const on = i < shield;
+    el.classList.toggle('on', on);
+    el.textContent = on ? '♥' : '♡';
+  });
+  shieldEl.setAttribute('aria-label', shield + ' / ' + MAX_HEARTS);
+}
 let gameSpeed = 7;
 let frameCount = 0;
 let lastMilestone = 0;
@@ -1225,7 +1235,7 @@ function simulateFrame() {
       };
 
       if(obs.type!=='cloudGate' && immunity===0 && checkCollision(pBox,oBox)){
-        if(shield>0){shield--;shieldEl.textContent=shield;immunity=90;shieldShake=18;sfx.shieldHit();bumpShieldIcon();spawnDust(player.x,player.y-32,'#ffe27a',16);}
+        if(shield>0){shield--;renderHearts();immunity=90;shieldShake=18;sfx.shieldHit();bumpShieldIcon();spawnDust(player.x,player.y-32,'#ffe27a',16);}
         else triggerGameOver();
       }
 
@@ -1243,7 +1253,7 @@ function simulateFrame() {
         const cBox = { x: c.x - c.r, y: c.y - c.r, w: c.r * 2, h: c.r * 2 };
         if (checkCollision(pBox, cBox)) {
           c.collected = true;
-          if(c.type==='heart'){shield=Math.min(2,shield+1);shieldEl.textContent=shield;sfx.heart();}
+          if(c.type==='heart'){shield=Math.min(MAX_HEARTS,shield+1);renderHearts();sfx.heart();}
           else if(c.type==='star'){score+=100;sfx.star();}
           else {score+=50;sfx.coin();}
           spawnDust(c.x, c.y, '#ffd426', 10);
@@ -1326,7 +1336,7 @@ function startGame() {
   terrainRoute = [[0,0],[900,0]];
   terrainPhase = Math.random()*Math.PI*2;
   extendTerrainTo(width*2);
-  shield=0;immunity=0;shieldShake=0;shieldEl.textContent=0;
+  shield=0;immunity=0;shieldShake=0;renderHearts();
   runJumps = {motion:0, manual:0};
   player.reset();
   startPanel.classList.add('hidden');

@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" />
   <link rel="canonical" href="https://linfamily.pages.dev/games/pinky-jump/" />
   <link rel="manifest" href="manifest.webmanifest?v=4" />
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=7" />
   <link rel="stylesheet" href="install.css?v=1" />
   <link rel="stylesheet" href="splash.css?v=2" />
   <link rel="stylesheet" href="pinky-arcade.css?v=18" />
@@ -83,7 +83,7 @@
           <span class="label">SCORE</span>
           <span id="current-score">00000</span>
         </div>
-        <div class="score-box shield-box" title="Shields absorb one hit each" data-zh-title="護盾：每個可以抵擋一次撞擊"><span>🛡️</span><span id="shield-count">0</span></div>
+        <div class="score-box shield-box" title="Hearts: each one absorbs one hit (up to 5)" data-zh-title="愛心：每顆可以抵擋一次撞擊，最多 5 顆"><span id="shield-hearts" role="img" aria-label="0 / 5"><i>♡</i><i>♡</i><i>♡</i><i>♡</i><i>♡</i></span></div>
         <button type="button" id="pinky-pair-btn" class="icon-btn" aria-label="Settings" title="Settings" aria-haspopup="dialog" data-zh-aria-label="遊戲設定" data-zh-title="遊戲設定">
           <span class="pinky-settings-paw" aria-hidden="true"></span><span class="pinky-settings-gear" aria-hidden="true">⚙</span>
         </button>
@@ -101,7 +101,7 @@
       <div id="start-panel" class="panel">
         <img class="start-mascot" src="pinky-icon.png?v=3" alt="Pinky the cat" data-zh-alt="Pinky Jump 主角" />
         <h1>Pinky Jump！</h1>
-        <p class="subtitle" data-zh="跨越山峰、穿越棉花雲，閃避飛機與小鳥！收集金幣 🪙、星星 ⭐、愛心護盾 💗">Leap over peaks, dodge birds and planes, and grab coins 🪙, stars ⭐, and shield hearts 💗!</p>
+        <p class="subtitle" data-zh="跨越山峰、穿越棉花雲，閃避飛機與小鳥！收集金幣 🪙、星星 ⭐、愛心 💗">Leap over peaks, dodge birds and planes, and grab coins 🪙, stars ⭐, and shield hearts 💗!</p>
         <div class="controls-hint">
           <span data-zh="👆 點一下畫面就跳（電腦可按空白鍵）">👆 Tap the screen or press Space to jump</span>
         </div>
@@ -223,7 +223,7 @@
       <dl class="pinky-guide-items">
         <div><dt><canvas data-game-icon="coin" width="100" height="60" aria-hidden="true"></canvas><span data-zh="金幣">Coin</span></dt><dd data-zh="碰到就加 50 分。">Pick it up for 50 points.</dd></div>
         <div><dt><canvas data-game-icon="star" width="100" height="60" aria-hidden="true"></canvas><span data-zh="星星">Star</span></dt><dd data-zh="碰到就加 100 分。">Pick it up for 100 points.</dd></div>
-        <div><dt><canvas data-game-icon="heart" width="100" height="60" aria-hidden="true"></canvas><span data-zh="愛心">Shield Heart</span></dt><dd data-zh="獲得一層護盾，可抵擋一次撞擊。最多兩層。">Gain one shield charge, which absorbs one hit. Carry up to two.</dd></div>
+        <div><dt><canvas data-game-icon="heart" width="100" height="60" aria-hidden="true"></canvas><span data-zh="愛心">Shield Heart</span></dt><dd data-zh="獲得一顆愛心，可抵擋一次撞擊。最多存 5 顆。">Gain a heart that absorbs one hit. Hold up to five.</dd></div>
       </dl>
       <h3 data-zh="路上的東西">On the Course</h3>
       <dl class="pinky-guide-items">
@@ -236,7 +236,7 @@
       <h3 data-zh="畫面上的按鈕">HUD and Buttons</h3>
       <ul class="pinky-guide-controls">
         <li data-zh="🏆 TOP 或 HI 可開啟排行榜，SCORE 顯示本局分數。">🏆 TOP and HI open the leaderboard. SCORE tracks your current run.</li>
-        <li data-zh="🛡️ 顯示剩餘護盾。貓掌齒輪可開啟設定與遊戲說明。">🛡️ Shows your remaining shield charges. Tap the paw gear for Settings and the Game Guide.</li>
+        <li data-zh="♥ 顯示剩餘愛心（最多 5 顆）。貓掌齒輪可開啟設定與遊戲說明。">♥ Shows your remaining hearts (up to 5). Tap the paw gear for Settings and the Game Guide.</li>
         <li data-zh="⛶ 切換全螢幕，🔊 開關聲音，📲 安裝可將遊戲加到裝置。">⛶ Toggles fullscreen, 🔊 toggles sound, and 📲 installs the game on your device.</li>
       </ul>
     </section>
@@ -278,7 +278,7 @@
   </main>
 
   <script src="locale.js?v=3"></script>
-  <script src="game.js?v=20261122-cat-v2"></script>
+  <script src="game.js?v=20261122-hearts"></script>
   <script src="name-filter.js?v=1"></script>
   <script src="pinky-online.js?v=23"></script>
   <script src="lf-menu.js?v=3"></script>
