@@ -153,7 +153,7 @@ let height = window.innerHeight;
 let dpr = Math.min(window.devicePixelRatio || 1, 2);
 let gameState = 'START';
 let score = 0;
-let hiScore = 0;
+let hiScore = Number(localStorage.getItem('pinkyJumpHiScore') || 0) || 0;
 let shield = 0;
 let immunity = 0;
 const shieldEl = document.getElementById('shield-count');
@@ -1092,6 +1092,7 @@ function startGame() {
   player.reset();
   startPanel.classList.add('hidden');
   gameoverPanel.classList.add('hidden');
+  window.pinkyArcade?.onStart();
   gameWrapper.focus({preventScroll:true});
 }
 
@@ -1107,7 +1108,7 @@ function triggerGameOver() {
 
   if (finalVal > hiScore) {
     hiScore = finalVal;
-
+    try {localStorage.setItem('pinkyJumpHiScore',String(hiScore));} catch (_) {}
     hiScoreEl.textContent = String(hiScore).padStart(5, '0');
     newRecordBadge.classList.remove('hidden');
   } else {
@@ -1115,7 +1116,21 @@ function triggerGameOver() {
   }
 
   gameoverPanel.classList.remove('hidden');
+  window.pinkyArcade?.onGameOver(finalVal);
 }
+
+// Remote jump controls exposed only to this game's paired session.
+window.pinkyRemoteStart = function() {
+  if (document.getElementById('record-panel')?.classList.contains('hidden') === false) return;
+  if (gameState !== 'PLAYING') startGame();
+};
+window.pinkyRemoteJump = function(strength = .65) {
+  if (gameState === 'START') startGame();
+  if (gameState !== 'PLAYING' || !player.isGrounded) return;
+  player.jump();
+  const hold = 110 + Math.round(Math.max(0,Math.min(1,strength)) * 650);
+  setTimeout(() => player.releaseJump(),hold);
+};
 
 // Capture Space even when the start button still has keyboard focus.
 const jumpKeys = ['Space','ArrowUp','KeyW'];
@@ -1126,8 +1141,12 @@ function isJumpKey(event) {
 }
 document.addEventListener('keydown', event => {
   if (!isJumpKey(event)) return;
-  const installDialog = document.getElementById('pinky-install-dialog');
-  if (installDialog && installDialog.open) return;
+  const target = event.target;
+  if (target && target.closest && target.closest('input,textarea,select,[contenteditable="true"],dialog')) return;
+  if (document.getElementById('pinky-rank-dialog')?.open ||
+      document.getElementById('pinky-pair-dialog')?.open ||
+      document.getElementById('pinky-install-dialog')?.open ||
+      document.getElementById('record-panel')?.classList.contains('hidden') === false) return;
   event.preventDefault();
   if (event.repeat) return;
   if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
