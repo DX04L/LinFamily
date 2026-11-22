@@ -23,8 +23,6 @@ const currentScoreEl = document.getElementById('current-score');
 const hiScoreEl = document.getElementById('hi-score');
 const finalScoreEl = document.getElementById('final-score');
 const newRecordBadge = document.getElementById('new-record-badge');
-const touchJump = document.getElementById('touch-jump');
-const touchDuck = document.getElementById('touch-duck');
 
 // 音效合成器 (Web Audio API，無需外部音檔即可發出可愛 8-bit 音效)
 class SoundFX {
@@ -142,12 +140,9 @@ const player = {
   vy: 0,
   gravity: 0.78,
   isGrounded: true,
-  isDucking: false,
   runCycle: 0,
   blinkTimer: 0,
   hurt: false,
-  jumpHeld: false,
-  holdCount: 0,
 
   getScale() {
     return Math.max(0.64, Math.min(1, width / 550, height / 510));
@@ -157,49 +152,29 @@ const player = {
     this.y = getGroundY();
     this.vy = 0;
     this.isGrounded = true;
-    this.isDucking = false;
     this.hurt = false;
-    this.jumpHeld = false;
-    this.holdCount = 0;
   },
   jump() {
     if (this.isGrounded && gameState === 'PLAYING') {
+      // 每次點一下都固定跳躍，不再根據按住時間改變高度。
       this.vy = -Math.max(10.5, Math.min(16.8, height * 0.021));
       this.isGrounded = false;
-      this.isDucking = false;
-      this.jumpHeld = true;
-      this.holdCount = 0;
       sfx.jump();
       spawnDust(this.x, this.y, '#f784ba', 8);
     }
   },
-  stopJump() {
-    this.jumpHeld = false;
-    if (this.vy < -3) this.vy *= 0.4;
-  },
-
-  duck(active) {
-    if (active && !this.isGrounded) {
-      // 空中按蹲下可快速下落
-      this.vy += 1.8;
-    }
-    this.isDucking = active && this.isGrounded;
-  },
-
   update() {
     const groundY = getGroundY();
     this.gravity=Math.max(.65,Math.min(.9,height*.00105));
-    if(!this.isGrounded && this.jumpHeld && this.vy<0 && this.holdCount < 48){this.vy-=this.gravity*1.12;this.holdCount++;}
     this.vy+=this.gravity;
     this.y+=this.vy;
     const ceiling=54+88*this.getScale();
-    if(this.y<ceiling){this.y=ceiling;this.vy=0;this.jumpHeld=false;}
+    if(this.y<ceiling){this.y=ceiling;this.vy=0;}
 
     if (this.y >= groundY) {
       this.y = groundY;
       this.vy = 0;
       this.isGrounded = true;
-      this.jumpHeld = false;
     }
 
     if (this.isGrounded && gameState === 'PLAYING') {
@@ -210,14 +185,6 @@ const player = {
   },
 
   getHitbox() {
-    if (this.isDucking) {
-      return {
-        x: this.x - 28,
-        y: this.y - 44,
-        w: 56,
-        h: 42
-      };
-    }
     return {
       x: this.x - 22,
       y: this.y - 68,
@@ -232,7 +199,7 @@ const player = {
     ctx.scale(this.getScale(),this.getScale());
 
     const bounce = this.isGrounded ? Math.abs(Math.sin(this.runCycle)) * -5 : 0;
-    const tilt = !this.isGrounded ? Math.max(-0.22, Math.min(0.22, this.vy * 0.015)) : (this.isDucking ? 0.12 : 0);
+    const tilt = !this.isGrounded ? Math.max(-0.22, Math.min(0.22, this.vy * 0.015)) : 0;
 
     // 地面陰影
     const groundOffset = getGroundY() - this.y;
@@ -244,10 +211,6 @@ const player = {
 
     ctx.translate(0, bounce);
     ctx.rotate(tilt);
-
-    if (this.isDucking) {
-      ctx.scale(1.12, 0.72);
-    }
 
     // 1. 粉白尾巴 (擺動)
     const tailWag = Math.sin(this.runCycle * 1.2) * 0.35;
@@ -556,7 +519,10 @@ function spawnEntity(){
     obstacles.push({type:'cloudGate',x,y:gapY,w:100,h:gapH});
     coins.push({type:'star',x:x+48,y:gapY+gapH/2,r:13,collected:false,spin:0});
   } else if(score>160 && r<.65){
-    obstacles.push({type:'mountain',x,y:groundY,w:60,h:48});
+    // 山丘高度略有變化：一般較低，偶爾出現稍高的山峰。
+    const heights = [48,56,64,72];
+    const h = heights[Math.floor(Math.random()*heights.length)];
+    obstacles.push({type:'mountain',x,y:groundY,w:60,h});
   } else {
     const count=score>460&&Math.random()<.26?2:1;
     obstacles.push({type:'crystal',x,y:groundY,w:count*30,h:45,count});
@@ -925,52 +891,23 @@ function triggerGameOver() {
   gameoverPanel.classList.remove('hidden');
 }
 
-// 鍵盤控制
-window.addEventListener('keydown', (e) => {
-  if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) {
-    e.preventDefault();
-    if (gameState === 'START' || gameState === 'GAMEOVER') {
-      startGame();
-    } else if (gameState === 'PLAYING'&&!e.repeat) {
-      player.jump();
-    }
-  } else if (['ArrowDown', 'KeyS'].includes(e.code)) {
-    e.preventDefault();
-    if (gameState === 'PLAYING') {
-      player.duck(true);
-    }
-  }
+// 簡單操作：整個遊戲畫面點一下就跳，不區分左右，也不用長按或蹲下。
+window.addEventListener('keydown', (event) => {
+  if (!['Space', 'ArrowUp', 'KeyW'].includes(event.code)) return;
+  event.preventDefault();
+  if (event.repeat) return;
+  if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
+  else if (gameState === 'PLAYING') player.jump();
 });
 
-window.addEventListener('keyup', (e) => {
-  if(['Space','ArrowUp','KeyW'].includes(e.code))player.stopJump();
-  if (['ArrowDown', 'KeyS'].includes(e.code)) {
-    player.duck(false);
-  }
+document.getElementById('game-wrapper').addEventListener('pointerdown', (event) => {
+  if (gameState !== 'PLAYING') return;
+  // 不攔截「安裝、全螢幕、音效、開始、再玩一次」等真正的控制按鈕。
+  if (event.target.closest('button, a, dialog, .panel')) return;
+  if (event.isPrimary === false) return;
+  event.preventDefault();
+  player.jump();
 });
-
-// 觸控與滑鼠控制
-touchJump.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  if (gameState === 'PLAYING') player.jump();
-}, { passive: false });
-
-touchJump.addEventListener('touchend',(e)=>{e.preventDefault();player.stopJump();},{passive:false});
-touchJump.addEventListener('touchcancel',()=>player.stopJump());
-
-touchDuck.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  if (gameState === 'PLAYING') player.duck(true);
-}, { passive: false });
-
-touchDuck.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  player.duck(false);
-});
-
-canvas.addEventListener('pointerdown',(e)=>{if(gameState==='PLAYING'){player.jump();}});
-canvas.addEventListener('pointerup',()=>player.stopJump());
-canvas.addEventListener('pointercancel',()=>player.stopJump());
 
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
