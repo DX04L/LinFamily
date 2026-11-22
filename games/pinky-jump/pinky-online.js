@@ -138,8 +138,9 @@
     setGamePaused(true);
     dialog.showModal();
   }
-  function showBoard() {
-    rankTab='motion';
+  function showBoard(tab) {
+    // Manual opens default to Motion; after registering, the caller picks the tab.
+    rankTab = tab==='all' ? 'all' : 'motion';
     refreshScores();
     const dialog=$('pinky-rank-dialog');
     openGameDialog(dialog);
@@ -311,7 +312,13 @@
   async function submitScore(event) {
     event.preventDefault();
     const name=$('pinky-player-name')?.value;
-    if(await saveGlobalScore(name)) showBoard();
+    const score=pendingScore, motion=pendingMotion;
+    if(await saveGlobalScore(name)) {
+      // Motion run that made the Motion Top 10 -> Motion tab; anything else -> All Players.
+      const {key}=PinkyNameFilter.clean(name);
+      const above=motionBoard.filter(e=>e.key!==key && e.score>score).length;
+      showBoard(motion && above<10 ? 'motion' : 'all');
+    }
   }
   async function saveFromPhone(name) {
     await saveGlobalScore(name);
