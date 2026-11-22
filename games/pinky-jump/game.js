@@ -247,10 +247,7 @@ document.querySelector('.shield-box').addEventListener('pointerdown', event => {
   const now = performance.now();
   cheatTaps = now - cheatLastTap < 800 ? cheatTaps + 1 : 1;
   cheatLastTap = now;
-  shield = cheatTaps; renderHearts(); bumpShieldIcon();
-  if (cheatTaps >= MAX_HEARTS) { startGame(true); return; }
-  const taps = cheatTaps;
-  setTimeout(() => { if (cheatTaps === taps && gameState !== 'PLAYING') { cheatTaps = 0; shield = 0; renderHearts(); } }, 800);
+  if (cheatTaps >= MAX_HEARTS) startGame(true);
 });
 let gameSpeed = 7;
 let frameCount = 0;
@@ -1389,8 +1386,7 @@ function triggerGameOver() {
 
   // HI is the Firebase global score, never a device-local fallback.
   const globalBest=window.pinkyArcade?.globalBest?.();
-  document.getElementById('cheat-note').classList.toggle('hidden', !cheatRun);
-  if(!cheatRun && globalBest!==null && globalBest!==undefined && finalVal>globalBest) {
+  if(globalBest!==null && globalBest!==undefined && finalVal>globalBest) {
     newRecordBadge.classList.remove('hidden');
   } else {
     newRecordBadge.classList.add('hidden');
