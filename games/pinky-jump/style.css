@@ -330,3 +330,4 @@ html, body {
   #start-panel .controls-hint { margin: 0 0 10px; padding: 5px 12px; font-size: 12px; }
   #start-panel .btn-primary { padding-top: 8px; padding-bottom: 8px; justify-self: center; }
 }
+.shield-box{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}

@@ -239,8 +239,8 @@ function renderHearts() {
 // Cheat: tap the hearts box 5 times in a row before a run → start with 5 hearts.
 // That run is never logged to the leaderboard; the next run is normal again.
 let cheatRun = false, cheatTaps = 0, cheatLastTap = 0;
+// Fast taps count too: every finger counts (no isPrimary check) and the box blocks zoom/selection.
 document.querySelector('.shield-box').addEventListener('pointerdown', event => {
-  if (event.isPrimary === false) return;
   const ready = gameState === 'START' || (gameState === 'GAMEOVER' && performance.now() - gameOverAt > 700);
   if (!ready || !document.getElementById('record-panel').classList.contains('hidden')) return;
   event.preventDefault();
