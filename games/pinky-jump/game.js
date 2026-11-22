@@ -1229,6 +1229,7 @@ function syncPauseControl() {
 }
 function setGamePaused(paused) {
   if (paused ? gameState !== 'PLAYING' : gameState !== 'PAUSED') return;
+  if (!paused && (document.hidden || document.querySelector('dialog[open]'))) return;
   gameState = paused ? 'PAUSED' : 'PLAYING';
   syncPauseControl();
   if (paused) {
@@ -1247,6 +1248,10 @@ function setGamePaused(paused) {
 }
 pauseControl.addEventListener('click', () => setGamePaused(true));
 document.getElementById('pinky-paused').addEventListener('click', () => setGamePaused(false));
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) setGamePaused(true);
+});
+window.addEventListener('pagehide', () => setGamePaused(true));
 
 window.pinkyRemoteStart = function(pause = false) {
   if (!document.getElementById('record-panel').classList.contains('hidden')) return;

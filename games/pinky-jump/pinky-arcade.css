@@ -429,3 +429,5 @@ html[lang="en"] #pinky-language span:first-child, html[lang="zh-Hant"] #pinky-la
   .pinky-pair-actions form { flex: 1; min-width: 0; }
   .pinky-pair-actions .pinky-setting-row { gap: 4px; }
 }
+
+#pinky-general-pane .pinky-pause-tip { margin-top: 10px; }

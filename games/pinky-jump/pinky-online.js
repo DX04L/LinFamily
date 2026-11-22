@@ -89,10 +89,15 @@
       PinkyLocale.message('⚠️ 全球排行榜未連線：{0}',globalError));
     setText('hi-score',remoteOnline ? String(board[0]?.score||0).padStart(5,'0') : '-----');
   }
+  function openGameDialog(dialog) {
+    if (!dialog || dialog.open) return;
+    setGamePaused(true);
+    dialog.showModal();
+  }
   function showBoard() {
     refreshScores();
     const dialog=$('pinky-rank-dialog');
-    if(dialog && !dialog.open)dialog.showModal();
+    openGameDialog(dialog);
   }
   function syncOverlayViewport() {
     const viewport=window.visualViewport;
@@ -287,7 +292,7 @@
     if(field)field.value=link.href;
     renderRoomStatus('正在建立配對…');
     const dialog=$('pinky-pair-dialog');
-    if(dialog && !dialog.open)dialog.showModal();
+    openGameDialog(dialog);
     try {
       const {db,fs,auth}=await cloud();
       const ref=fs.doc(db,'pinky_jump_rooms',code);
@@ -381,7 +386,7 @@
     renderRoomStatus(message);
     showSettingsPane('pair');
     const settings=$('pinky-pair-dialog');
-    if (!settings.open) settings.showModal();
+    openGameDialog(settings);
     syncOverlayViewport();
   }
   async function connectPhone(event) {
@@ -629,7 +634,7 @@
     });
     const settings=$('pinky-pair-dialog');
     $('pinky-pair-btn').addEventListener('click',()=>{
-      settings.showModal();
+      openGameDialog(settings);
       syncOverlayViewport();
     });
     bindSlidingTabs($('pinky-settings-tabs'),selectSettingsPane);
@@ -689,7 +694,7 @@
     if(roomPattern.test(urlRoom)){
       $('controller-room-input').value=urlRoom;
       showSettingsPane('pair');
-      settings.showModal();
+      openGameDialog(settings);
       syncOverlayViewport();
     }
     $('pinky-create-room')?.addEventListener('click',createRoom);

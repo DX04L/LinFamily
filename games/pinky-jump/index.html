@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=2" />
   <link rel="stylesheet" href="style.css?v=4" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=11" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=12" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=2"></script>
@@ -140,6 +140,7 @@
               <p data-zh="多按一會兒，跳得更高。">Hold a little longer to jump higher.</p>
             </div>
           </div>
+          <p class="pinky-pause-tip" data-zh="點右下角的箭頭即可暫停，再點遊戲畫面繼續。">Tap the arrows in the bottom-right corner to pause. Tap the game screen to resume.</p>
         </section>
         <section id="pinky-motion-pane" aria-labelledby="pinky-motion-tab" hidden>
           <p data-zh="輕抬手機或平板可短跳，抬快一點就會跳得更高。切回「一般控制」可恢復點畫面跳躍。">Lift your device gently for a short hop, or lift it faster to jump higher. Switch back to Controls to use the screen.</p>
@@ -239,8 +240,8 @@
   </main>
 
   <script src="locale.js?v=1"></script>
-  <script src="game.js?v=20261122-touch-response"></script>
-  <script src="pinky-online.js?v=14"></script>
+  <script src="game.js?v=20261122-auto-pause"></script>
+  <script src="pinky-online.js?v=15"></script>
   <script src="lf-menu.js?v=3"></script>
 </body>
 </html>
