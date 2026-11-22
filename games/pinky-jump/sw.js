@@ -1,6 +1,6 @@
 /* Pinky Jump: per-game offline PWA (scoped to this folder only). */
-const CACHE = 'pinky-jump-v5';
-const ASSETS = ['./','./index.html','./style.css','./game.js?v=20261122-big-hills-music','./install.css','./install.js','./manifest.webmanifest','./pinky-icon.png','./app-icon.svg','./sergequadrado-humorous-loop-275485.mp3'];
+const CACHE = 'pinky-jump-v6';
+const ASSETS = ['./','./index.html','./style.css','./game.js?v=20261122-space-lookahead-random','./install.css','./install.js','./manifest.webmanifest','./pinky-icon.png','./app-icon.svg','./sergequadrado-humorous-loop-275485.mp3'];
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(ASSETS.map(path => cache.add(path)))));
