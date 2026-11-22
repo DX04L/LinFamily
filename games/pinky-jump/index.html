@@ -14,6 +14,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="install.css?v=1" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=1" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=1"></script>
@@ -35,6 +36,8 @@
     <div id="hud">
       <div class="hud-left">
         <span class="badge-title"><img src="pinky-icon.png" alt="" /> Pinky Jump</span>
+        <button type="button" id="pinky-rank-btn" class="icon-btn pinky-arcade-hud" title="Top 10 排行榜">🏆 <span class="pinky-hud-label">TOP 10</span></button>
+        <button type="button" id="pinky-pair-btn" class="icon-btn pinky-arcade-hud" title="連接手機體感控制器">🎮 <span class="pinky-hud-label">手機控制</span></button>
         <button type="button" id="pinky-install-btn" class="icon-btn" title="安裝 Pinky Jump 到桌面" hidden>📲 安裝</button>
         <button id="fullscreen-btn" class="icon-btn" title="切換全螢幕">⛶ 全螢幕</button>
         <button id="mute-btn" class="icon-btn" title="背景音樂與音效開關">🔊</button>
@@ -73,6 +76,19 @@
         <p id="new-record-badge" class="new-record hidden">🎉 刷新最高紀錄！</p>
         <button id="restart-btn" class="btn-primary">再玩一次 ↻</button>
       </div>
+
+      <div id="record-panel" class="panel hidden" aria-live="polite">
+        <h2 class="gameover-title">🏆 NEW HIGH SCORE!</h2>
+        <p>你的成績 <strong id="pinky-new-score">000000</strong> 進入 Top 10！</p>
+        <form id="pinky-record-form">
+          <label for="pinky-player-name">請輸入名字（最多 12 字）</label>
+          <input id="pinky-player-name" name="name" maxlength="12" autocomplete="nickname" placeholder="PINKY" spellcheck="false">
+          <div class="pinky-record-actions">
+            <button class="btn-primary" type="submit">登記排名 ★</button>
+            <button class="pinky-light" id="pinky-skip-record" type="button">略過</button>
+          </div>
+        </form>
+      </div>
     </div>
 
   </div>
@@ -84,6 +100,29 @@
     <p class="pinky-install-hint">若已經安裝，請從桌面或應用程式清單開啟 Pinky Jump。</p>
     <div class="pinky-install-actions"><button type="button" id="pinky-install-close">知道了</button></div>
   </dialog>
-  <script src="game.js?v=20261122-space-lookahead-random"></script>
+  <dialog id="pinky-rank-dialog" class="pinky-arcade-dialog" aria-labelledby="pinky-rank-title">
+    <h2 id="pinky-rank-title">🏆 PINKY JUMP TOP 10</h2>
+    <p id="pinky-rank-origin" class="pinky-rank-origin"></p>
+    <ol id="pinky-rank-rows"></ol>
+    <div class="pinky-dialog-actions"><button id="pinky-rank-close" type="button">關閉</button></div>
+  </dialog>
+
+  <dialog id="pinky-pair-dialog" class="pinky-arcade-dialog" aria-labelledby="pinky-pair-title">
+    <h2 id="pinky-pair-title">🎮 手機體感控制器</h2>
+    <p>電腦開著 Pinky Jump，按下面按鈕產生配對碼；手機開啟遊戲的控制器頁並輸入代碼。</p>
+    <button id="pinky-create-room" type="button">產生 6 碼配對碼</button>
+    <p id="pinky-room-code" class="pinky-pair-code">— — — — — —</p>
+    <label for="pinky-room-link">手機控制器連結</label>
+    <input id="pinky-room-link" type="text" readonly placeholder="先產生配對碼">
+    <div class="pinky-dialog-actions">
+      <button id="pinky-copy-link" class="pinky-light" type="button">複製連結</button>
+      <button id="pinky-pair-close" type="button">完成</button>
+    </div>
+    <p id="pinky-pair-status" role="status">請先建立配對碼。</p>
+    <p class="pinky-rank-origin">手機也可以直接開啟 <a href="controller.html" target="_blank" rel="noopener">控制器頁面</a> 手動輸入配對碼。</p>
+  </dialog>
+
+  <script src="game.js?v=20261122-arcade-motion1"></script>
+  <script src="pinky-online.js?v=1"></script>
 </body>
 </html>
