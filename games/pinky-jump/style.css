@@ -317,3 +317,16 @@ html, body {
 .score-box.shield-box { display: inline-flex; align-items: center; }
 @media (max-width: 900px) { #shield-hearts i { font-size: 15px; } #shield-hearts { gap: 0; } }
 .score-box { white-space: nowrap; }
+
+/* 手機橫向（矮螢幕）：開始面板重新排版，貓放在標題左邊，不出捲軸、不蓋住上方 HUD */
+@media (orientation: landscape) and (max-height: 500px) {
+  .ui-overlay { padding: 50px 12px 8px; box-sizing: border-box; }
+  .panel { max-height: calc(100dvh - 60px); padding: 10px 22px 14px; border-radius: 22px; }
+  #start-panel { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 12px; }
+  #start-panel > * { grid-column: 1 / -1; }
+  #start-panel .start-mascot { grid-column: 1; width: 52px; height: 52px; margin: 0; border-radius: 13px; }
+  #start-panel h1 { grid-column: 2; margin: 0; font-size: 26px; text-align: left; }
+  #start-panel .subtitle { margin: 6px 0 8px; font-size: 13px; }
+  #start-panel .controls-hint { margin: 0 0 10px; padding: 5px 12px; font-size: 12px; }
+  #start-panel .btn-primary { padding-top: 8px; padding-bottom: 8px; justify-self: center; }
+}
