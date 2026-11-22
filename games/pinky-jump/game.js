@@ -131,7 +131,20 @@ muteBtn.addEventListener('click', () => {
   sfx.muted = !sfx.muted;
   muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
 });
-function getGroundY() { return Math.max(height * 0.78, height - 90); }
+// Mild, occasional rolling terrain. The shape is shared by rendering and physics.
+let terrainDistance = 0;
+const terrainOffsets = [0,0,0,-34,-50,-50,-24,0,0,25,25,0,0,0];
+function getGroundY(x = width * 0.17) {
+  const base = Math.max(height * 0.78, height - 90);
+  const spacing = Math.max(230, Math.min(360, width * 0.45));
+  const progress = (terrainDistance + x) / spacing;
+  const segment = Math.floor(progress);
+  const t = progress - segment;
+  const ease = t * t * (3 - 2 * t);
+  const a = terrainOffsets[((segment % terrainOffsets.length) + terrainOffsets.length) % terrainOffsets.length];
+  const b = terrainOffsets[(((segment + 1) % terrainOffsets.length) + terrainOffsets.length) % terrainOffsets.length];
+  return Math.min(height - 43, Math.max(height * 0.65, base + a + (b - a) * ease));
+}
 
 // The player is separate from SoundFX; jump physics belongs here.
 const player = {
@@ -143,6 +156,9 @@ const player = {
   runCycle: 0,
   blinkTimer: 0,
   hurt: false,
+  jumpHeld: false,
+  holdFrames: 0,
+  jumpCeilingReached: false,
 
   getScale() {
     return Math.max(0.64, Math.min(1, width / 550, height / 510));
@@ -153,34 +169,59 @@ const player = {
     this.vy = 0;
     this.isGrounded = true;
     this.hurt = false;
+    this.jumpHeld = false;
+    this.holdFrames = 0;
+    this.jumpCeilingReached = false;
   },
   jump() {
-    if (this.isGrounded && gameState === 'PLAYING') {
-      // 每次點一下都固定跳躍，不再根據按住時間改變高度。
-      this.vy = -Math.max(10.5, Math.min(16.8, height * 0.021));
-      this.isGrounded = false;
-      sfx.jump();
-      spawnDust(this.x, this.y, '#f784ba', 8);
-    }
+    if (!this.isGrounded || gameState !== 'PLAYING') return;
+    // Quick tap = a little hop; hold = a much higher jump.
+    this.vy = -Math.max(11, Math.min(16.5, height * 0.0205));
+    this.isGrounded = false;
+    this.jumpHeld = true;
+    this.holdFrames = 0;
+    this.jumpCeilingReached = false;
+    sfx.jump();
+    spawnDust(this.x, this.y, '#f784ba', 8);
+  },
+  releaseJump() {
+    this.jumpHeld = false;
+    // Releasing early gently cuts the ascent, without an abrupt stop.
+    if (!this.isGrounded && this.vy < -4) this.vy *= 0.55;
   },
   update() {
-    const groundY = getGroundY();
-    this.gravity=Math.max(.65,Math.min(.9,height*.00105));
-    this.vy+=this.gravity;
-    this.y+=this.vy;
-    const ceiling=54+88*this.getScale();
-    if(this.y<ceiling){this.y=ceiling;this.vy=0;}
-
-    if (this.y >= groundY) {
+    const groundY = getGroundY(this.x);
+    this.gravity = Math.max(0.65, Math.min(0.9, height * 0.00105));
+    if (this.isGrounded) {
+      // Walk smoothly over the slope instead of running through the hill.
       this.y = groundY;
       this.vy = 0;
-      this.isGrounded = true;
+    } else {
+      if (this.jumpHeld && !this.jumpCeilingReached && this.vy < 0 && this.holdFrames < 58) {
+        this.vy -= this.gravity * 1.24;
+        this.holdFrames++;
+      }
+      this.vy += this.gravity;
+      this.y += this.vy;
+      const s = this.getScale();
+      // Landscape: sprite reaches the top; portrait: well above mid-screen.
+      const ceiling = width > height
+        ? 93 * s
+        : Math.max(110 * s, height * 0.31 + 95 * s);
+      if (this.y <= ceiling) {
+        this.y = ceiling;
+        this.vy = 0;
+        this.jumpHeld = false;
+        this.jumpCeilingReached = true;
+      }
+      if (this.y >= groundY) {
+        this.y = groundY;
+        this.vy = 0;
+        this.isGrounded = true;
+        this.jumpHeld = false;
+      }
     }
-
-    if (this.isGrounded && gameState === 'PLAYING') {
-      this.runCycle += gameSpeed * 0.032;
-    }
-
+    if (this.isGrounded && gameState === 'PLAYING') this.runCycle += gameSpeed * 0.032;
     this.blinkTimer++;
   },
 
@@ -202,7 +243,7 @@ const player = {
     const tilt = !this.isGrounded ? Math.max(-0.22, Math.min(0.22, this.vy * 0.015)) : 0;
 
     // 地面陰影
-    const groundOffset = getGroundY() - this.y;
+    const groundOffset = getGroundY(this.x) - this.y;
     const shadowScale = Math.max(0.4, 1 - groundOffset / 240);
     ctx.fillStyle = 'rgba(214, 40, 114, 0.2)';
     ctx.beginPath();
@@ -481,7 +522,7 @@ function initScenery() {
       speed: 0.4 + Math.random() * 0.6
     });
   }
-  planes=[{x:width*.9,y:Math.max(72,height*.17),speed:.55}];
+  planes=[]; // Airplanes are flying obstacles, not static scenery.
   bgHills = [];
   for (let i = 0; i < 5; i++) {
     bgHills.push({
@@ -507,30 +548,50 @@ function spawnDust(x, y, color, count = 6) {
   }
 }
 
-function spawnEntity(){
-  const groundY=getGroundY(), r=Math.random(), x=width+60;
-  if(score>250 && r<.25){
-    const kinds=['robin','chick','butterfly'];
-    obstacles.push({type:'bird',kind:kinds[Math.floor(Math.random()*3)],x,y:groundY-(46+Math.random()*100),w:44,h:32,flap:0});
-  } else if(score>420 && r<.4){
-    obstacles.push({type:'airplane',x,y:groundY-(115+Math.random()*60),w:70,h:30});
-  } else if(score>360 && r<.55){
-    const gapY=Math.max(82,groundY*.28),gapH=Math.max(105,Math.min(165,height*.27));
+function spawnEntity() {
+  const x = width + 60;
+  const groundY = getGroundY(x);
+  const r = Math.random();
+  if (score > 90 && r < 0.20) {
+    // Birds fly lower than airplanes, entering from the right.
+    const kinds = ['robin','chick','butterfly'];
+    obstacles.push({
+      type:'bird', kind:kinds[Math.floor(Math.random()*kinds.length)],
+      x, y:groundY-(62+Math.random()*110),
+      w:44, h:32, flap:0
+    });
+  } else if (score > 150 && r < 0.36) {
+    // Slightly larger than a bird, high up, moving across the screen.
+    obstacles.push({
+      type:'airplane', x, y:height*(0.17 + Math.random()*0.13),
+      w:62, h:30, flap:0
+    });
+  } else if (score > 250 && r < 0.51) {
+    const gapY = Math.max(82, groundY*0.28);
+    const gapH = Math.max(105, Math.min(165, height*0.27));
     obstacles.push({type:'cloudGate',x,y:gapY,w:100,h:gapH});
     coins.push({type:'star',x:x+48,y:gapY+gapH/2,r:13,collected:false,spin:0});
-  } else if(score>160 && r<.65){
-    // 山丘高度略有變化：一般較低，偶爾出現稍高的山峰。
-    const heights = [48,56,64,72];
-    const h = heights[Math.floor(Math.random()*heights.length)];
-    obstacles.push({type:'mountain',x,y:groundY,w:60,h});
+  } else if (score > 90 && r < 0.70) {
+    // Mostly small slopes/mountains; only ~6% of mountains reach half-screen.
+    const tall = Math.random() < 0.06;
+    const ordinary = [48,56,66,78,Math.min(108,height*0.20)];
+    const h = tall
+      ? Math.max(84, groundY-height*0.48)
+      : ordinary[Math.floor(Math.random()*ordinary.length)];
+    const w = tall ? Math.min(136, Math.max(76,h*0.34)) : 64;
+    obstacles.push({type:'mountain',x,y:groundY,w,h,tall});
   } else {
     const count=score>460&&Math.random()<.26?2:1;
     obstacles.push({type:'crystal',x,y:groundY,w:count*30,h:45,count});
   }
-  if(Math.random()<.85){
+  if (Math.random() < .85) {
     const roll=Math.random(),type=roll<.11?'heart':roll<.36?'star':'coin';
-    const cy=groundY-(type==='heart'?125:(Math.random()<.5?58:Math.min(180,height*.38)));
-    for(let i=0;i<(type==='coin'?3:1);i++) coins.push({type,x:x+70+i*34,y:cy-Math.sin(i*Math.PI/2)*15,r:12,collected:false,spin:i*.6});
+    const lift = type==='heart'?125:(Math.random()<.5?58:Math.min(180,height*.38));
+    for(let i=0;i<(type==='coin'?3:1);i++) {
+      const cx=x+70+i*34;
+      coins.push({type,x:cx,y:getGroundY(cx)-lift-Math.sin(i*Math.PI/2)*15,
+        lift:lift+Math.sin(i*Math.PI/2)*15,r:12,collected:false,spin:i*.6});
+    }
   }
 }
 
@@ -610,21 +671,31 @@ function drawBackground() {
     ctx.fill();
   });
 
-  // 彩色草地跑道
+  // The ground itself curves up and down; ground physics uses this same curve.
   ctx.fillStyle = dayNightFactor > 0.5 ? '#3b0764' : '#ff9ecb';
-  ctx.fillRect(0, groundY, width, height - groundY);
+  ctx.beginPath();
+  ctx.moveTo(-12, getGroundY(-12));
+  for (let x=0; x<=width+14; x+=12) ctx.lineTo(x,getGroundY(x));
+  ctx.lineTo(width+16,height+10);
+  ctx.lineTo(-16,height+10);
+  ctx.closePath();
+  ctx.fill();
 
-  // 跑道上緣亮邊
-  ctx.fillStyle = '#ff5ca8';
-  ctx.fillRect(0, groundY, width, 6);
+  ctx.strokeStyle = '#ff5ca8';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(-12,getGroundY(-12));
+  for (let x=0; x<=width+14; x+=12) ctx.lineTo(x,getGroundY(x));
+  ctx.stroke();
 
-  // 跑道裝飾點點與小花
-  const scrollOffset = (frameCount * gameSpeed) % 80;
-  ctx.fillStyle = '#ffffff';
-  for (let x = -scrollOffset; x < width; x += 80) {
+  // Small flowers/dots remain attached to the moving terrain.
+  const scrollOffset = terrainDistance % 80;
+  ctx.fillStyle='#ffffff';
+  for (let x=-scrollOffset; x<width+40; x+=80) {
+    const y=getGroundY(x);
     ctx.beginPath();
-    ctx.arc(x + 20, groundY + 18, 3, 0, Math.PI * 2);
-    ctx.arc(x + 55, groundY + 32, 2.5, 0, Math.PI * 2);
+    ctx.arc(x+20,y+18,3,0,Math.PI*2);
+    ctx.arc(x+55,y+32,2.5,0,Math.PI*2);
     ctx.fill();
   }
 }
@@ -633,9 +704,18 @@ function drawBackground() {
 function drawObstacles() {
   obstacles.forEach(obs => {
     if(obs.type==='airplane'){
-      ctx.save();ctx.translate(obs.x,obs.y+14);ctx.fillStyle='#7bbae5';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(57,-7);ctx.lineTo(70,0);ctx.lineTo(53,10);ctx.lineTo(22,10);ctx.lineTo(11,18);ctx.lineTo(3,16);ctx.lineTo(10,8);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(25,0,6,4);ctx.fillRect(36,0,6,4);ctx.restore();
+      ctx.save();ctx.translate(obs.x,obs.y+14);ctx.scale(obs.w/70,obs.h/30);ctx.fillStyle='#7bbae5';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(57,-7);ctx.lineTo(70,0);ctx.lineTo(53,10);ctx.lineTo(22,10);ctx.lineTo(11,18);ctx.lineTo(3,16);ctx.lineTo(10,8);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(25,0,6,4);ctx.fillRect(36,0,6,4);ctx.restore();
     }else if(obs.type==='mountain'){
-      ctx.fillStyle='#9ac6ab';ctx.beginPath();ctx.moveTo(obs.x,obs.y);ctx.lineTo(obs.x+28,obs.y-obs.h);ctx.lineTo(obs.x+obs.w,obs.y);ctx.closePath();ctx.fill();ctx.fillStyle='#fff5f9';ctx.beginPath();ctx.moveTo(obs.x+18,obs.y-obs.h*.62);ctx.lineTo(obs.x+28,obs.y-obs.h);ctx.lineTo(obs.x+38,obs.y-obs.h*.62);ctx.fill();
+      const cx=obs.x+obs.w*.5, peak=obs.y-obs.h;
+      ctx.fillStyle=obs.tall?'#a9c8b5':'#9ac6ab';
+      ctx.beginPath();
+      ctx.moveTo(obs.x,getGroundY(obs.x));
+      ctx.lineTo(cx,peak);
+      ctx.lineTo(obs.x+obs.w,getGroundY(obs.x+obs.w));
+      ctx.closePath();ctx.fill();
+      ctx.fillStyle='#fff5f9';ctx.beginPath();
+      ctx.moveTo(cx-obs.w*.15,peak+obs.h*.28);
+      ctx.lineTo(cx,peak);ctx.lineTo(cx+obs.w*.15,peak+obs.h*.28);ctx.fill();
     }else if(obs.type==='cloudGate'){
       const cloud=(cy)=>{ctx.fillStyle='#fff';for(let j=0;j<4;j++){ctx.beginPath();ctx.arc(obs.x+17+j*23,cy+(j%2)*6,20,0,Math.PI*2);ctx.fill();}};
       cloud(obs.y-15);cloud(obs.y+obs.h+15);
@@ -779,6 +859,7 @@ function drawParticles() {
 // 主迴圈更新
 function update() {
   frameCount++;
+  if (gameState === 'PLAYING') terrainDistance += gameSpeed;
   drawBackground();
 
   if (gameState === 'PLAYING') {
@@ -808,6 +889,8 @@ function update() {
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const obs = obstacles[i];
       obs.x -= gameSpeed;
+      if (obs.type === 'mountain' || obs.type === 'crystal')
+        obs.y = getGroundY(obs.x + obs.w * 0.5);
 
       const oBox = {
         x: obs.x + 6,
@@ -830,6 +913,7 @@ function update() {
     for (let i = coins.length - 1; i >= 0; i--) {
       const c = coins[i];
       c.x -= gameSpeed;
+      if (typeof c.lift === 'number') c.y = getGroundY(c.x) - c.lift;
       if (!c.collected) {
         const cBox = { x: c.x - c.r, y: c.y - c.r, w: c.r * 2, h: c.r * 2 };
         if (checkCollision(pBox, cBox)) {
@@ -864,6 +948,7 @@ function startGame() {
   coins = [];
   particles = [];
   spawnTimer = 120;
+  terrainDistance = 0;
   shield=0;immunity=0;shieldEl.textContent=0;
   player.reset();
   startPanel.classList.add('hidden');
@@ -891,24 +976,35 @@ function triggerGameOver() {
   gameoverPanel.classList.remove('hidden');
 }
 
-// 簡單操作：整個遊戲畫面點一下就跳，不區分左右，也不用長按或蹲下。
-window.addEventListener('keydown', (event) => {
-  if (!['Space', 'ArrowUp', 'KeyW'].includes(event.code)) return;
+// Tap anywhere to jump; holding longer produces a taller jump.
+const jumpKeys = ['Space','ArrowUp','KeyW'];
+window.addEventListener('keydown', event => {
+  if (!jumpKeys.includes(event.code)) return;
   event.preventDefault();
   if (event.repeat) return;
   if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
   else if (gameState === 'PLAYING') player.jump();
 });
-
-document.getElementById('game-wrapper').addEventListener('pointerdown', (event) => {
-  if (gameState !== 'PLAYING') return;
-  // 不攔截「安裝、全螢幕、音效、開始、再玩一次」等真正的控制按鈕。
+window.addEventListener('keyup', event => {
+  if (jumpKeys.includes(event.code)) player.releaseJump();
+});
+let jumpPointerId = null;
+const gameWrapper = document.getElementById('game-wrapper');
+gameWrapper.addEventListener('pointerdown', event => {
+  if (gameState !== 'PLAYING' || event.isPrimary === false) return;
   if (event.target.closest('button, a, dialog, .panel')) return;
-  if (event.isPrimary === false) return;
   event.preventDefault();
+  jumpPointerId = event.pointerId;
   player.jump();
 });
-
+function endPointerJump(event) {
+  if (jumpPointerId === event.pointerId) {
+    jumpPointerId = null;
+    player.releaseJump();
+  }
+}
+window.addEventListener('pointerup',endPointerJump);
+window.addEventListener('pointercancel',endPointerJump);
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 
