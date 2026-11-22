@@ -141,7 +141,7 @@ function updateMediaSession(state) {
         title: MUSIC_TITLE,
         artist: 'Pinky Jump',
         album: 'Pinky Jump',
-        artwork: [{src: new URL('pinky-icon.png', window.location.href).href,
+        artwork: [{src: new URL('pinky-icon.png?v=3', window.location.href).href,
                    sizes: '128x128', type: 'image/png'}]
       });
     }
@@ -469,6 +469,14 @@ const player = {
     // 前腳
     this.drawFoot(10 + legSwing, -7);
 
+    // 前手：跑步時擺動、跳躍時舉高、撞到時張開
+    let armL, armR;
+    if (this.hurt) { armL = 1.2; armR = -1.2; }
+    else if (!this.isGrounded) { armL = 1.95; armR = -1.95; }
+    else { const swing = Math.sin(this.runCycle) * 0.55; armL = 0.35 + swing; armR = -0.35 + swing; }
+    this.drawArm(-15, -37, armL);
+    this.drawArm(15, -37, armR);
+
     // 3. 寶藍色項圈與金黃紅菱形徽章
     ctx.fillStyle = '#0d52e8';
     ctx.strokeStyle = '#0836a3';
@@ -497,90 +505,128 @@ const player = {
     ctx.closePath();
     ctx.fill();
 
-    // 4. 大頭與特徵 (微幅點頭)
+    // 4. 大頭與特徵（參考毛絨原稿）
     ctx.save();
     ctx.translate(2, -62);
 
-    // 左右貓耳朵 (粉白鋸齒 + 頂端雙藍絨球)
-    this.drawEar(-18, -16, -0.25, false);
-    this.drawEar(18, -16, 0.25, true);
+    // 左右貓耳朵
+    this.drawEar(-18, -20, -0.3, false);
+    this.drawEar(18, -20, 0.3, true);
 
-    // 臉部輪廓 (白底 + 兩側毛絨翹角)
+    // 頭形：圓頂 + 兩側外翹的毛絨翼
+    const head = new Path2D();
+    head.moveTo(-27, -6);
+    head.quadraticCurveTo(-36, 0, -45, -5);
+    head.quadraticCurveTo(-40, 17, -20, 19);
+    head.quadraticCurveTo(0, 25, 20, 19);
+    head.quadraticCurveTo(40, 17, 45, -5);
+    head.quadraticCurveTo(36, 0, 27, -6);
+    head.arc(0, -6, 27.5, 0, Math.PI, true);
+    head.closePath();
+    ctx.fillStyle = '#ff7eb9';
+    ctx.fill(head);
+
+    // 白色臉部：從額頭寶石往下展開到兩側翼尖
+    ctx.save();
+    ctx.clip(head);
     ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#ff7eb9';
-    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(-26, -10);
-    ctx.quadraticCurveTo(-34, 4, -42, 2);   // 左翹毛尖端
-    ctx.quadraticCurveTo(-36, 17, -18, 18);
-    ctx.lineTo(18, 18);
-    ctx.quadraticCurveTo(36, 17, 42, 2);    // 右翹毛尖端
-    ctx.quadraticCurveTo(34, 4, 26, -10);
-    ctx.arc(0, -4, 27, -0.2, Math.PI + 0.2, true);
+    ctx.moveTo(-48, -2);
+    ctx.quadraticCurveTo(-32, 3, -25, -4);
+    ctx.quadraticCurveTo(-10, -7, -2.5, -13);
+    ctx.lineTo(0, -16);
+    ctx.lineTo(2.5, -13);
+    ctx.quadraticCurveTo(10, -7, 25, -4);
+    ctx.quadraticCurveTo(32, 3, 48, -2);
+    ctx.lineTo(48, 24);
+    ctx.lineTo(-48, 24);
     ctx.closePath();
     ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = '#f0559e';
+    ctx.lineWidth = 2.4;
+    ctx.stroke(head);
+
+    // 額頭寶藍色菱形
+    ctx.fillStyle = '#1d3fb8';
+    ctx.beginPath();
+    ctx.moveTo(0, -24);
+    ctx.lineTo(3.6, -18.5);
+    ctx.lineTo(0, -13);
+    ctx.lineTo(-3.6, -18.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // 灰色點狀眉飾（從寶石往兩側微微上揚）
+    ctx.fillStyle = '#6e737b';
+    for (const [dx, dy] of [[7, -21], [11, -22.5], [15, -23.6], [19, -24.2], [23, -24.2]]) {
+      ctx.beginPath();
+      ctx.arc(dx, dy, 1.25, 0, Math.PI * 2);
+      ctx.arc(-dx, dy, 1.25, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 粉紅細鬍鬚
+    ctx.strokeStyle = '#ff9cc9';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    for (const side of [-1, 1]) {
+      ctx.moveTo(side * 31, 8); ctx.lineTo(side * 41, 5.5);
+      ctx.moveTo(side * 31, 11); ctx.lineTo(side * 41, 10.5);
+    }
     ctx.stroke();
 
-    // 粉色中分瀏海
-    ctx.fillStyle = '#ff7eb9';
+    // 大眼睛：寶藍虹膜 + 紅色花瓣眼眶
+    this.drawEye(-14, 2.5, -1);
+    this.drawEye(14, 2.5, 1);
+
+    // 桃紅色圓腮紅
+    ctx.fillStyle = '#e0187a';
     ctx.beginPath();
-    ctx.moveTo(-27, -4);
-    ctx.arc(0, -5, 27.5, Math.PI, 0, false);
-    ctx.quadraticCurveTo(18, 6, 0, -10);
-    ctx.quadraticCurveTo(-18, 6, -27, -4);
+    ctx.arc(-24, 11, 4.6, 0, Math.PI * 2);
+    ctx.arc(24, 11, 4.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 紅色三角鼻
+    ctx.fillStyle = '#e8253f';
+    ctx.beginPath();
+    ctx.moveTo(-3.8, 7.5);
+    ctx.lineTo(3.8, 7.5);
+    ctx.lineTo(0, 11.5);
     ctx.closePath();
     ctx.fill();
 
-    // 額頭中央寶藍色菱形寶石
-    ctx.fillStyle = '#0d52e8';
-    ctx.beginPath();
-    ctx.moveTo(0, -18);
-    ctx.lineTo(4.5, -11);
-    ctx.lineTo(0, -4);
-    ctx.lineTo(-4.5, -11);
-    ctx.closePath();
-    ctx.fill();
-
-    // 額頭兩側灰色點狀眉飾
-    ctx.fillStyle = '#6e737b';
-    const leftDots = [[-8, -12], [-13, -13], [-18, -15], [-22, -18]];
-    const rightDots = [[8, -12], [13, -13], [18, -15], [22, -18]];
-    [...leftDots, ...rightDots].forEach(([dx, dy]) => {
-      ctx.beginPath();
-      ctx.arc(dx, dy, 1.4, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // 寶藍色大眼睛 + 玫紅色花邊眼眶
-    this.drawEye(-12, 3);
-    this.drawEye(13, 3);
-
-    // 桃紅色大圓腮紅 + 兩撇小鬍鬚
-    ctx.fillStyle = '#e6197a';
-    ctx.beginPath();
-    ctx.arc(-23, 11, 5.2, 0, Math.PI * 2);
-    ctx.arc(24, 11, 5.2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 粉紅小鼻子與 W 微笑嘴型
-    ctx.fillStyle = '#e81e56';
-    ctx.beginPath();
-    ctx.moveTo(-3.5, 6);
-    ctx.lineTo(3.5, 6);
-    ctx.lineTo(0, 10);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = '#e81e56';
-    ctx.lineWidth = 2.2;
+    // ω 形嘴巴
+    ctx.strokeStyle = '#e8253f';
+    ctx.lineWidth = 1.9;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(-6, 12);
-    ctx.quadraticCurveTo(-3, 16, 0, 11);
-    ctx.quadraticCurveTo(3, 16, 6, 12);
+    ctx.moveTo(-8.5, 12.5);
+    ctx.quadraticCurveTo(-7.5, 17, -4, 16.6);
+    ctx.quadraticCurveTo(-0.6, 16.2, 0, 12.8);
+    ctx.quadraticCurveTo(0.6, 16.2, 4, 16.6);
+    ctx.quadraticCurveTo(7.5, 17, 8.5, 12.5);
     ctx.stroke();
 
     ctx.restore();
+    ctx.restore();
+  },
+
+  drawArm(x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#f5a3c7';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.ellipse(0, 7, 5.6, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ff8cc3';
+    ctx.beginPath();
+    ctx.ellipse(0, 11.5, 3.6, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   },
 
@@ -589,14 +635,14 @@ const player = {
     ctx.strokeStyle = '#ff7eb9';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
-    ctx.ellipse(x, y, 8, 6.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, 8.5, 6.8, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // 粉色腳掌肉球
-    ctx.fillStyle = '#ff85c0';
+    // 粉色大腳掌
+    ctx.fillStyle = '#ff74b5';
     ctx.beginPath();
-    ctx.arc(x + 2, y, 4.2, 0, Math.PI * 2);
+    ctx.ellipse(x + 3, y, 4.6, 5.2, 0, 0, Math.PI * 2);
     ctx.fill();
   },
 
@@ -607,43 +653,55 @@ const player = {
 
     // 外耳粉紅
     ctx.fillStyle = '#ff7eb9';
-    ctx.strokeStyle = '#ff5ca8';
+    ctx.strokeStyle = '#f0559e';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(-13, 8);
-    ctx.quadraticCurveTo(-12, -16, 0, -24);
+    ctx.quadraticCurveTo(-12, -16, 0, -25);
     ctx.quadraticCurveTo(12, -16, 13, 8);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
 
-    // 內耳白色與鋸齒毛邊
+    // 內耳白色長條（靠臉內側）
+    const inner = isRight ? -1 : 1;
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.moveTo(-7, 6);
-    ctx.lineTo(-4, -2);
-    ctx.lineTo(0, 2);
-    ctx.lineTo(4, -2);
-    ctx.lineTo(7, 6);
-    ctx.lineTo(0, -17);
+    ctx.moveTo(inner * -1, -20);
+    ctx.quadraticCurveTo(inner * 9, -9, inner * 10, 6);
+    ctx.lineTo(inner * 1, 6);
+    ctx.quadraticCurveTo(inner * -2, -8, inner * -1, -20);
+    ctx.fill();
+
+    // 耳根白色鋸齒星形
+    ctx.beginPath();
+    ctx.moveTo(-10, 7);
+    ctx.lineTo(-8, 1);
+    ctx.lineTo(-5, 4);
+    ctx.lineTo(-2, -1);
+    ctx.lineTo(1, 4);
+    ctx.lineTo(4, 0);
+    ctx.lineTo(6, 5);
+    ctx.lineTo(10, 7);
     ctx.closePath();
     ctx.fill();
 
-    // 耳尖雙寶藍色絨球
-    const pomSide = isRight ? 4 : -4;
-    ctx.fillStyle = '#0d52e8';
+    // 耳尖三顆寶藍色絨球
+    const out = isRight ? 1 : -1;
+    ctx.fillStyle = '#1550e0';
     ctx.beginPath();
-    ctx.arc(pomSide, -23, 3.8, 0, Math.PI * 2);
-    ctx.arc(pomSide * 1.3, -17, 3.5, 0, Math.PI * 2);
+    ctx.arc(out * 1, -26, 2.7, 0, Math.PI * 2);
+    ctx.arc(out * 4.2, -21.5, 2.4, 0, Math.PI * 2);
+    ctx.arc(out * 5.2, -17, 2.3, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
   },
 
-  drawEye(x, y) {
+  drawEye(x, y, side) {
     // 撞到時顯示 X 眼
     if (this.hurt) {
-      ctx.strokeStyle = '#0d52e8';
+      ctx.strokeStyle = '#1d3fb8';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.moveTo(x - 4, y - 4);
@@ -653,27 +711,39 @@ const player = {
       ctx.stroke();
       return;
     }
+    ctx.save();
+    ctx.translate(x, y);
 
-    // 眼白與玫紅色波浪花邊框
+    // 紅色花瓣邊（在眼睛外上方）
+    ctx.fillStyle = '#e8253f';
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + side * (0.1 + i * 0.34);
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * 9.8, Math.sin(a) * 11.2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 眼白 + 紅色眼眶
     ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#e81e56';
-    ctx.lineWidth = 2.3;
+    ctx.strokeStyle = '#e8253f';
+    ctx.lineWidth = 1.9;
     ctx.beginPath();
-    ctx.ellipse(x, y, 7.5, 8.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 9.4, 10.8, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // 寶藍色瞳孔
-    ctx.fillStyle = '#0d52e8';
+    // 寶藍虹膜（偏向臉內側，外側露出眼白）
+    ctx.fillStyle = '#1b2f9c';
     ctx.beginPath();
-    ctx.ellipse(x + 0.8, y, 5.2, 6.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(-side * 1.6, 0.8, 7.1, 9, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 白色高光點
+    // 白色小高光
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(x - 1, y - 2.5, 1.8, 0, Math.PI * 2);
+    ctx.arc(-side * 1.5 + 2, -3.6, 1.4, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
   }
 };
 
