@@ -506,21 +506,14 @@
       sendCommand('skip',0);
       updateControllerStatus('正在略過姓名登記…');
     });
-    let pressedAt=0;
+    // Manual control sends one jump immediately, never based on press duration.
     $('controller-jump')?.addEventListener('pointerdown',event=>{
-      if(!controllerConnected)return;
-      pressedAt=performance.now();
-      event.currentTarget.setPointerCapture?.(event.pointerId);
-    });
-    $('controller-jump')?.addEventListener('pointerup',()=>{
-      if(!controllerConnected)return;
-      const ms=performance.now()-pressedAt;
-      const strength=Math.max(.10,Math.min(1,ms/750));
-      sendCommand('jump',strength);
-      setText('controller-last-power',Math.round(strength*100)+'%');
+      if(!controllerConnected||event.isPrimary===false)return;
+      sendCommand('jump');
     });
     $('controller-jump')?.addEventListener('click',event=>{
-      if(event.detail===0&&controllerConnected)sendCommand('jump',.28);
+      // Keyboard or assistive technology click (no pointerdown).
+      if(event.detail===0&&controllerConnected)sendCommand('jump');
     });
     window.addEventListener('offline',()=>{
       if(controllerConnected)
