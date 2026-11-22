@@ -133,17 +133,34 @@ muteBtn.addEventListener('click', () => {
 });
 // Mild, occasional rolling terrain. The shape is shared by rendering and physics.
 let terrainDistance = 0;
-const terrainOffsets = [0,0,0,-34,-50,-50,-24,0,0,25,25,0,0,0];
+let cameraY = 0;
+// Long, rare mountain-road climbs and descents. Values are in screen heights.
+const terrainRoute = [
+  [0,0], [1250,0], [1900,-.06], [2400,-.06],
+  [4100,-1.2], [5100,-1.2],
+  [6800,.48], [7700,.48], [9250,0], [10900,0]
+];
+function baseGroundY() { return Math.max(height * 0.78, height - 90); }
 function getGroundY(x = width * 0.17) {
-  const base = Math.max(height * 0.78, height - 90);
-  const spacing = Math.max(230, Math.min(360, width * 0.45));
-  const progress = (terrainDistance + x) / spacing;
-  const segment = Math.floor(progress);
-  const t = progress - segment;
-  const ease = t * t * (3 - 2 * t);
-  const a = terrainOffsets[((segment % terrainOffsets.length) + terrainOffsets.length) % terrainOffsets.length];
-  const b = terrainOffsets[(((segment + 1) % terrainOffsets.length) + terrainOffsets.length) % terrainOffsets.length];
-  return Math.min(height - 43, Math.max(height * 0.65, base + a + (b - a) * ease));
+  const period = terrainRoute[terrainRoute.length - 1][0];
+  const worldX = Math.max(0, terrainDistance + x);
+  const progress = worldX % period;
+  let offset = 0;
+  for (let i = 1; i < terrainRoute.length; i++) {
+    const [endX, endV] = terrainRoute[i];
+    const [startX, startV] = terrainRoute[i - 1];
+    if (progress <= endX) {
+      const t = (progress - startX) / (endX - startX);
+      // A smooth road that levels off at the start and end of each hill.
+      const eased = t * t * (3 - 2 * t);
+      offset = (startV + (endV - startV) * eased) * height;
+      break;
+    }
+  }
+  // Keep gentle small undulations between the large slopes.
+  return baseGroundY() + offset + height * (
+    Math.sin(worldX / 290) * .012 + Math.sin(worldX / 117) * .005
+  );
 }
 
 // The player is separate from SoundFX; jump physics belongs here.
@@ -205,9 +222,9 @@ const player = {
       this.y += this.vy;
       const s = this.getScale();
       // Landscape: sprite reaches the top; portrait: well above mid-screen.
-      const ceiling = width > height
+      const ceiling = cameraY + (width > height
         ? 93 * s
-        : Math.max(110 * s, height * 0.31 + 95 * s);
+        : Math.max(110 * s, height * 0.31 + 95 * s));
       if (this.y <= ceiling) {
         this.y = ceiling;
         this.vy = 0;
@@ -563,7 +580,7 @@ function spawnEntity() {
   } else if (score > 150 && r < 0.36) {
     // Slightly larger than a bird, high up, moving across the screen.
     obstacles.push({
-      type:'airplane', x, y:height*(0.17 + Math.random()*0.13),
+      type:'airplane', x, y:groundY - height*(0.43 + Math.random()*0.13),
       w:62, h:30, flap:0
     });
   } else if (score > 250 && r < 0.51) {
@@ -576,7 +593,7 @@ function spawnEntity() {
     const tall = Math.random() < 0.06;
     const ordinary = [48,56,66,78,Math.min(108,height*0.20)];
     const h = tall
-      ? Math.max(84, groundY-height*0.48)
+      ? Math.max(110, height * .46)
       : ordinary[Math.floor(Math.random()*ordinary.length)];
     const w = tall ? Math.min(136, Math.max(76,h*0.34)) : 64;
     obstacles.push({type:'mountain',x,y:groundY,w,h,tall});
@@ -629,7 +646,7 @@ function drawBackground() {
     ctx.fillStyle = `rgba(255, 245, 180, ${dayNightFactor * 0.85})`;
     for (let i = 0; i < 24; i++) {
       const sx = ((i * 197 + frameCount * 0.1) % width);
-      const sy = (i * 83) % (getGroundY() - 80);
+      const sy = (i * 83) % (height * 0.63);
       const r = (i % 3 === 0) ? 2.5 : 1.5;
       ctx.beginPath();
       ctx.arc(sx, sy, r, 0, Math.PI * 2);
@@ -657,27 +674,33 @@ function drawBackground() {
     ctx.restore();
   });
 
-  // 遠景粉彩山丘
-  const groundY = getGroundY();
+  // Scenic hills follow the camera more slowly than the actual road.
+  ctx.save();
+  ctx.translate(0, -cameraY * 0.35);
+  const horizon = baseGroundY();
   bgHills.forEach(h => {
     if (gameState === 'PLAYING') {
       h.x -= gameSpeed * 0.22;
       if (h.x + h.w < 0) h.x += bgHills.length * 320;
     }
-    ctx.fillStyle = dayNightFactor > 0.5 ? 'rgba(131, 24, 67, 0.45)' : h.color;
+    ctx.fillStyle = dayNightFactor > 0.5 ? 'rgba(131,24,67,.45)' : h.color;
     ctx.beginPath();
-    ctx.moveTo(h.x, groundY);
-    ctx.quadraticCurveTo(h.x + h.w / 2, groundY - h.h, h.x + h.w, groundY);
+    ctx.moveTo(h.x, horizon);
+    ctx.quadraticCurveTo(h.x+h.w/2, horizon-h.h, h.x+h.w, horizon);
     ctx.fill();
   });
+  ctx.restore();
 
+  // Terrain is drawn in world coordinates and shifted by the camera.
+  ctx.save();
+  ctx.translate(0, -cameraY);
   // The ground itself curves up and down; ground physics uses this same curve.
   ctx.fillStyle = dayNightFactor > 0.5 ? '#3b0764' : '#ff9ecb';
   ctx.beginPath();
   ctx.moveTo(-12, getGroundY(-12));
   for (let x=0; x<=width+14; x+=12) ctx.lineTo(x,getGroundY(x));
-  ctx.lineTo(width+16,height+10);
-  ctx.lineTo(-16,height+10);
+  ctx.lineTo(width+16,height*4);
+  ctx.lineTo(-16,height*4);
   ctx.closePath();
   ctx.fill();
 
@@ -698,6 +721,7 @@ function drawBackground() {
     ctx.arc(x+55,y+32,2.5,0,Math.PI*2);
     ctx.fill();
   }
+  ctx.restore();
 }
 
 // 繪製障礙物
@@ -860,7 +884,12 @@ function drawParticles() {
 function update() {
   frameCount++;
   if (gameState === 'PLAYING') terrainDistance += gameSpeed;
+  // Smooth vertical camera follows the road, not each individual jump.
+  const desiredCamera = getGroundY(player.x) - baseGroundY();
+  cameraY += (desiredCamera - cameraY) * 0.10;
   drawBackground();
+  ctx.save();
+  ctx.translate(0, -cameraY);
 
   if (gameState === 'PLAYING') {
     // 隨分數漸進加速
@@ -934,6 +963,7 @@ function update() {
   drawObstacles();
   player.draw();
   drawParticles();
+  ctx.restore();
 
   requestAnimationFrame(update);
 }
@@ -949,6 +979,7 @@ function startGame() {
   particles = [];
   spawnTimer = 120;
   terrainDistance = 0;
+  cameraY = 0;
   shield=0;immunity=0;shieldEl.textContent=0;
   player.reset();
   startPanel.classList.add('hidden');
