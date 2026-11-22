@@ -1,23 +1,33 @@
-# Pinky Jump 第一版：Firebase 設定（手機跨裝置 + 共用 Top 10）
+# Pinky Jump｜全球 Top 10 與手機體感控制器
 
-程式已放在 games/pinky-jump/，沿用 Firebase 專案 linfamily-31cb6，不需要 WebRTC。
+這個遊戲沿用 Firebase 專案 linfamily-31cb6，不需要 WebRTC。
 
-## Firebase Console 要手動完成的兩件事
-1. 開啟 https://console.firebase.google.com/project/linfamily-31cb6/authentication/providers ，在 Authentication → Sign-in method 啟用 Anonymous（匿名登入）。遊戲使用獨立的 Firebase App 名稱，不會要求玩家輸入帳號。
-2. 開啟 https://console.firebase.google.com/project/linfamily-31cb6/firestore/rules ，在目前正式運行的規則中，只合併 GitHub 專案根目錄 firestore.rules 最新加入的 match /pinky_jump_rooms/{room} 與 match /pinky_jump_scores/{entry} 兩段，然後按「發布」。
+## Firebase Console（必須手動確認）
 
-注意：GitHub 上更新 firestore.rules 不等於自動發布到 Firebase。切勿用 GitHub 備份整份覆寫 Firebase Console，因為線上規則可能包含其他較新的設定。
+1. Authentication → Sign-in method：啟用 Anonymous（匿名登入）。Auto cleanup 不需要為了遊戲特別啟用。
+   https://console.firebase.google.com/project/linfamily-31cb6/authentication/providers
+2. Firestore Database → Rules：把目前線上規則中 Pinky Jump 的兩段，更新為 GitHub 根目錄 firestore.rules 內的最新版本。
+   https://console.firebase.google.com/project/linfamily-31cb6/firestore/rules
+   - match /pinky_jump_rooms/{room}：允許房主回傳 phase / runScore，手機送出 start / jump / submit / skip 指令。
+   - match /pinky_jump_scores/{entry}：全球公開讀取前十名，匿名登入後登記分數。
 
-## 測試方法
-1. 電腦開啟 Pinky Jump，點「🎮 手機控制」→「產生 6 碼配對碼」。
-2. 手機開啟 controller.html、輸入代碼並「連接電腦」，或用電腦複製連結傳給手機。
-3. 手機先按「跳躍測試」確認網路連線，再點「啟用動作感應」，校準約一秒。
-4. 向上輕抬手機即可觸發跳躍；不需要真的跳高，避免拋接或甩動手機。
-5. 玩到破榜後輸入名字，可登記本機 Top 10；開啟 Firebase 規則後也能使用共用 Top 10（測試版）。
+**請勿把 GitHub 的整份備份規則直接覆蓋 Firebase 線上的最新版**，除非你已確認兩份內容一致。只替換上述 Pinky Jump 專用的兩段，其他 LinFamily / QT 等規則不動。
 
-## 安全與限制
-- 手機體感使用加速度計，感應精度和手機型號、權限、握法有關。
-- Firestore 的更新延遲受網路影響；這版不是 WebRTC 即時連線。
-- 房間代碼有效期約 1 小時；房間不能被列舉，僅第一支配對手機能發送指令。
-- 共用 Top 10 是公開測試榜，分數由前端送出，尚未做伺服器防作弊與審核；不適合直接作為有獎金的正式競賽。
-- 若 Firebase 未完成上述設定：本機排行榜仍可用；同一瀏覽器的兩個分頁可用 BroadcastChannel 測試配對控制，但不同裝置不能連線。
+GitHub 的 rules 不會自動發布到 Firebase；沒有這步，手機可能配對失敗、無法提交名字，也無法全球同步。
+
+## 使用方法
+
+1. 電腦開啟 Pinky Jump，點「🎮 手機控制」→ 產生六碼配對碼。
+2. 手機開啟 controller.html，填代碼並連接（也可把電腦顯示的連結傳給手機）。
+3. 連線成功後，手機配對表單隱藏，改顯示遊戲控制器。
+4. 手機可開始遊戲、手動跳躍或啟用體感感應。感應預設為低靈敏度；握穩校準後再試。
+5. 電腦端撞到障礙物後，手機會同步顯示 Game Over / 再玩一次；進入全球 Top 10 時，手機直接輸入名字登記。
+6. 登記後返回同一頁的控制介面；若斷線按「重新連線」即可。
+7. 全球榜單只顯示 Firebase 的前十名。網路失敗時會明確顯示未連線，不會把不同裝置的本機分數冒充全球名次。
+
+## 測試版限制
+
+- Firestore 的即時監聽延遲取決於網路，不保證與本機鍵盤一樣即時。
+- 公開 Top 10 是全球前十名「查詢結果」，資料庫裡的舊分數不會自動刪除。
+- 分數目前由客戶端提交，沒有防作弊或寫入頻率防護；正式競賽前應增加後端驗證、App Check、節流與資料清理。
+- 配對碼有效期約一小時；匿名帳號沒有 LinFamily 原有管理員權限。
