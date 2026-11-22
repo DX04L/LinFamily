@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <title>Pinky Jump｜粉紅魔法貓跳跳冒險</title>
   <meta name="theme-color" content="#f760a6" />
-  <meta name="description" content="Pinky Jump：長按跳得更高，穿越雲朵、收集星星與愛心！" />
+  <meta name="description" content="Pinky Jump：點一下就跳躍，翻越山峰、穿越雲朵、收集星星與愛心！" />
   <link rel="icon" type="image/png" href="pinky-icon.png" />
   <link rel="apple-touch-icon" href="pinky-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -62,8 +62,7 @@
         <h1>Pinky Jump！</h1>
         <p class="subtitle">跨越山峰、穿越棉花雲，閃避飛機與小鳥！收集金幣 🪙、星星 ⭐、愛心護盾 💗</p>
         <div class="controls-hint">
-          <span>💻 電腦：<b>長按空白鍵 / ↑</b> 跳更高、<b>↓</b> 蹲下</span>
-          <span>📱 手機：<b>長按左側</b> 跳更高、<b>長按右側</b> 蹲下</span>
+          <span>👆 點一下畫面就能跳躍，電腦也可以按空白鍵</span>
         </div>
         <button id="start-btn" class="btn-primary pulse">開始奔跑 ▶</button>
       </div>
@@ -76,15 +75,6 @@
       </div>
     </div>
 
-    <!-- 手機觸控輔助按鈕 (觸控裝置顯示) -->
-    <div id="touch-controls" class="touch-controls">
-      <div id="touch-jump" class="touch-zone left-zone" aria-label="跳躍">
-        <span>▲ 按住跳更高</span>
-      </div>
-      <div id="touch-duck" class="touch-zone right-zone" aria-label="蹲下">
-        <span>▼ 蹲下</span>
-      </div>
-    </div>
   </div>
 
   <dialog id="pinky-install-dialog" class="pinky-install-dialog" aria-labelledby="pinky-install-title">
@@ -94,6 +84,6 @@
     <p class="pinky-install-hint">若已經安裝，請從桌面或應用程式清單開啟 Pinky Jump。</p>
     <div class="pinky-install-actions"><button type="button" id="pinky-install-close">知道了</button></div>
   </dialog>
-  <script src="game.js?v=20261122-startupfix"></script>
+  <script src="game.js?v=20261122-tapjump"></script>
 </body>
 </html>
