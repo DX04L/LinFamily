@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css?v=4" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=7" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=8" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=1"></script>
@@ -116,46 +116,58 @@
     <div id="pinky-settings-view">
       <h2 id="pinky-pair-title">Pinky 設定</h2>
       <div class="pinky-settings-bar">
-        <div id="pinky-settings-tabs" class="pinky-settings-tabs" data-pane="pair" role="group" aria-label="設定頁面">
-          <button id="pinky-pair-tab" type="button" aria-pressed="true" aria-controls="pinky-pair-pane">手機配對</button>
-          <button id="pinky-motion-tab" type="button" aria-pressed="false" aria-controls="pinky-motion-pane">體感跳躍</button>
+        <div id="pinky-settings-tabs" class="pinky-settings-tabs" data-pane="general" role="group" aria-label="設定頁面">
+          <button id="pinky-general-tab" type="button" data-pane="general" aria-pressed="true" aria-controls="pinky-general-pane">一般控制</button>
+          <button id="pinky-motion-tab" type="button" data-pane="motion" aria-pressed="false" aria-controls="pinky-motion-pane">體感跳躍</button>
+          <button id="pinky-pair-tab" type="button" data-pane="pair" aria-pressed="false" aria-controls="pinky-pair-pane">手機控制</button>
         </div>
         <button id="fullscreen-btn" type="button" class="pinky-light" aria-label="全螢幕" title="全螢幕">⛶</button>
         <button id="mute-btn" type="button" class="pinky-light" aria-label="聲音" title="聲音" aria-pressed="true">🔊</button>
       </div>
       <div class="pinky-settings-body">
-      <section id="pinky-pair-pane" aria-labelledby="pinky-pair-tab">
-        <div class="pinky-setting-row pinky-room-create">
+        <section id="pinky-general-pane" aria-labelledby="pinky-general-tab">
+          <h3>怎麼跳</h3>
+          <p>手機點一下遊戲畫面即可跳。鍵盤可用空白鍵、↑ 或 W 控制高度。</p>
+          <div class="pinky-jump-examples">
+            <div>
+              <span class="pinky-jump-arc" aria-hidden="true"></span>
+              <strong>輕點 · 短跳</strong>
+              <p>很快放開，適合跨過低障礙。</p>
+            </div>
+            <div>
+              <span class="pinky-jump-arc is-high" aria-hidden="true"></span>
+              <strong>按住 · 高跳</strong>
+              <p>多按一會兒，跳得更高。</p>
+            </div>
+          </div>
+        </section>
+        <section id="pinky-motion-pane" aria-labelledby="pinky-motion-tab" hidden>
+          <p>開始遊戲後，向上抬起手機或平板即可跳躍。切回「一般控制」可恢復點畫面跳躍。</p>
+          <div class="pinky-setting-row">
+            <label for="controller-sensitivity">靈敏度</label>
+            <select id="controller-sensitivity">
+              <option value="low">低</option><option value="normal" selected>中</option><option value="high">高</option>
+            </select>
+          </div>
+          <p id="pinky-motion-status" role="status"></p>
+        </section>
+        <section id="pinky-pair-pane" aria-labelledby="pinky-pair-tab" hidden>
+          <form id="pinky-connect-form">
+            <div class="pinky-setting-row">
+              <input id="controller-room-input" aria-label="手機配對碼" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="6 碼配對碼">
+              <button id="controller-connect" type="submit">連線</button>
+            </div>
+          </form>
           <button id="pinky-create-room" type="button" class="pinky-light">產生 6 碼配對碼</button>
-          <p id="pinky-room-code" class="pinky-pair-code" hidden></p>
-        </div>
-        <form id="pinky-connect-form">
-
-          <div class="pinky-setting-row">
-            <input id="controller-room-input" aria-label="手機配對碼" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="6 碼配對碼">
-            <button id="controller-connect" type="submit">連線</button>
+          <div id="pinky-share-room" hidden>
+            <p id="pinky-room-code" class="pinky-pair-code" hidden></p>
+            <div class="pinky-setting-row">
+              <input id="pinky-room-link" aria-label="手機控制器連結" readonly>
+              <button id="pinky-copy-link" type="button" class="pinky-light">複製連結</button>
+            </div>
           </div>
-        </form>
-        <div id="pinky-share-room" hidden>
-
-          <div class="pinky-setting-row">
-            <input id="pinky-room-link" aria-label="手機控制器連結" readonly>
-            <button id="pinky-copy-link" type="button" class="pinky-light">複製連結</button>
-          </div>
-        </div>
-        <p id="pinky-pair-status" role="status"></p>
-      </section>
-      <section id="pinky-motion-pane" aria-labelledby="pinky-motion-tab" hidden>
-        <p>切回「手機配對」即可關閉體感跳躍。</p>
-        <div class="pinky-setting-row">
-          <label for="controller-sensitivity">靈敏度</label>
-          <select id="controller-sensitivity">
-            <option value="low">低</option><option value="normal" selected>中</option><option value="high">高</option>
-          </select>
-        </div>
-        <p id="pinky-motion-mode">本機模式可用手機或平板感應，無須配對。</p>
-        <p id="pinky-motion-status" role="status"></p>
-      </section>
+          <p id="pinky-pair-status" role="status"></p>
+        </section>
       </div>
       <div class="pinky-dialog-actions">
         <button id="pinky-help-open" type="button" class="pinky-light">遊戲說明</button>
@@ -179,8 +191,6 @@
         <div><dt><canvas data-game-icon="airplane" width="100" height="60" aria-hidden="true"></canvas>飛機</dt><dd>在較高的位置飛過。飛機經過時，可從下方跑過。</dd></div>
         <div><dt><canvas data-game-icon="cloudGate" width="100" height="60" aria-hidden="true"></canvas>雲朵通道</dt><dd>雲朵不會造成撞擊，通道中央有星星可以收集。</dd></div>
       </dl>
-      <h3>怎麼跳</h3>
-      <p>點一下遊戲畫面。電腦也可按空白鍵、↑ 或 W。選「體感跳躍」後，向上抬起手機或平板就能跳。切回「手機配對」可恢復點畫面跳躍。</p>
       <h3>畫面上的按鈕</h3>
       <ul class="pinky-guide-controls">
         <li>🏆 TOP 10 或 HI 可開啟排行榜，SCORE 顯示本局分數。</li>
@@ -206,8 +216,8 @@
       <button id="controller-skip" type="button" class="pinky-light">不用登記，略過</button>
     </form>
     <div id="controller-tabs" class="pinky-settings-tabs" data-pane="motion" role="group" aria-label="控制方式">
-      <button id="controller-manual-tab" type="button" aria-controls="controller-manual" aria-pressed="false">手機控制</button>
-      <button id="controller-motion-tab" type="button" aria-controls="controller-motion" aria-pressed="true">體感跳躍</button>
+      <button id="controller-manual-tab" type="button" data-pane="manual" aria-controls="controller-manual" aria-pressed="false">手機控制</button>
+      <button id="controller-motion-tab" type="button" data-pane="motion" aria-controls="controller-motion" aria-pressed="true">體感跳躍</button>
     </div>
     <section id="controller-manual" hidden>
       <button id="controller-jump" type="button" class="btn-primary">跳躍</button>
@@ -227,7 +237,7 @@
   </main>
 
   <script src="game.js?v=20261122-controller"></script>
-  <script src="pinky-online.js?v=10"></script>
+  <script src="pinky-online.js?v=11"></script>
   <script src="lf-menu.js?v=2"></script>
 </body>
 </html>

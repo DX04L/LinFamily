@@ -147,7 +147,7 @@
 #pinky-pair-dialog {
   inset: var(--pinky-settings-top, 0px) 0 var(--pinky-settings-bottom, 0px) !important;
   width: min(460px, calc(100vw - 24px));
-  height: min(375px, calc(var(--pinky-settings-height, 100dvh) - 16px));
+  height: min(440px, calc(var(--pinky-settings-height, 100dvh) - 16px));
   padding: 12px clamp(10px,4vw,20px);
   overflow: hidden;
   max-height: none;
@@ -263,9 +263,17 @@
 #pinky-pair-dialog .pinky-settings-body button { min-height: 36px; padding: 6px 10px; }
 #pinky-connect-form { margin-top: 0; }
 #pinky-pair-status { min-height: 0; }
-#pinky-pair-dialog .pinky-pair-code { margin: 0; font-size: clamp(17px, 5vw, 26px) !important; letter-spacing: 3px; }
+
 #pinky-settings-view .pinky-dialog-actions { flex: none; margin-top: 6px; }
-#pinky-help-view { height: 100%; overflow: auto; }
+#pinky-help-view {
+  height: 100%;
+  overflow: auto;
+  padding-right: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: #d58aac transparent;
+}
+#pinky-help-view::-webkit-scrollbar { width: 5px; }
+#pinky-help-view::-webkit-scrollbar-thumb { border-radius: 8px; background: #d58aac; }
 #pinky-help-back { position: absolute; top: 9px; right: 12px; padding: 0; width: 40px; font-size: 24px; }
 @media (max-height: 345px) {
   #pinky-pair-dialog { padding-block: 7px; }
@@ -318,3 +326,44 @@
 #controller-name { flex: 1; min-width: 0; min-height: 44px; font-size: 18px; border: 1px solid #efb2d0; border-radius: 10px; padding: 6px 10px; }
 #controller-submit { padding-inline: 14px; white-space: nowrap; }
 #controller-motion p, #controller-status { font-size: 14px; line-height: 1.5; margin-top: 8px; }
+
+#pinky-settings-tabs { grid-template-columns: repeat(3,minmax(0,1fr)); }
+#pinky-settings-tabs::before { right: 66.6667%; }
+#pinky-settings-tabs[data-pane="pair"]::before { transform: translateX(200%); }
+#pinky-pair-dialog #pinky-settings-tabs button { font-size: clamp(9px, 3.35vw, 14px); }
+@media (max-width: 280px) {
+  .pinky-settings-bar { grid-template-columns: minmax(0,1fr) 30px 30px; gap: 4px; }
+  #pinky-pair-dialog .pinky-settings-bar > button { font-size: 17px; }
+}
+#pinky-general-pane h3 { margin: 4px 0; color: #a02a67; font-size: 16px; }
+.pinky-jump-examples { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 8px; }
+.pinky-jump-examples > div { padding: 5px; text-align: center; border-radius: 10px; background: #fff0f7; }
+.pinky-jump-examples strong { font-size: 14px; color: #a02a67; }
+.pinky-jump-arc { position: relative; display: block; height: 33px; margin: 0 auto 2px; width: 52px; }
+.pinky-jump-arc::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 1px;
+  width: 46px;
+  height: 13px;
+  border: 2px solid #c72b7a;
+  border-bottom: 0;
+  border-radius: 55% 55% 0 0 / 100% 100% 0 0;
+}
+.pinky-jump-arc.is-high::before { height: 29px; }
+.pinky-jump-arc::after { content: "▾"; position: absolute; bottom: -7px; right: -2px; color: #c72b7a; font-size: 14px; }
+#pinky-pair-pane:not([hidden]) { min-height: 100%; display: flex; align-items: flex-start; flex-direction: column; }
+#pinky-connect-form, #pinky-share-room { width: 100%; }
+#pinky-share-room:not([hidden]) { flex: 1; display: grid; align-content: center; gap: 8px; padding-top: 8px; }
+#pinky-pair-dialog .pinky-pair-code {
+  margin: 0;
+  font-size: clamp(25px, 8vw, 43px) !important;
+  letter-spacing: .15em;
+  line-height: 1.2;
+}
+@media (max-height: 420px) {
+  #pinky-pair-dialog { padding-block: 7px; }
+  #pinky-share-room:not([hidden]) { gap: 4px; padding-top: 4px; }
+  #pinky-pair-dialog .pinky-pair-code { font-size: clamp(25px, 7vw, 34px) !important; }
+}

@@ -297,7 +297,7 @@
   }
   function showSettingsPane(pane) {
     $('pinky-settings-tabs').dataset.pane=pane;
-    for (const key of ['pair','motion']) {
+    for (const key of ['general','motion','pair']) {
       const active=key===pane;
       $('pinky-'+key+'-pane').hidden=!active;
       $('pinky-'+key+'-tab').setAttribute('aria-pressed',String(active));
@@ -365,6 +365,7 @@
     $('pinky-controller').hidden=true;
     $('game-wrapper').hidden=false;
     renderRoomStatus(message);
+    showSettingsPane('pair');
     const settings=$('pinky-pair-dialog');
     if (!settings.open) settings.showModal();
     syncOverlayViewport();
@@ -510,7 +511,8 @@
     previousImpulse=impulse;
   }
 
-  function bindSlidingTabs(settingsTabs, left, right, select) {
+  function bindSlidingTabs(settingsTabs, select) {
+    const panes=Array.from(settingsTabs.querySelectorAll('button'),tab=>tab.dataset.pane);
     let tabSwipe=null, suppressTabClick=false;
     settingsTabs.addEventListener('pointerdown',event=>{
       suppressTabClick=false;
@@ -524,12 +526,14 @@
       tabSwipe=null;
       if(Math.abs(dx)<30 || Math.abs(dx)<Math.abs(dy)*1.5)return;
       suppressTabClick=true;
-      select(dx<0?right:left);
+      const current=panes.indexOf(settingsTabs.dataset.pane);
+      const next=Math.max(0,Math.min(panes.length-1,current+(dx<0?1:-1)));
+      if (next!==current) select(panes[next]);
     });
     settingsTabs.addEventListener('click',event=>{
       if(suppressTabClick && event.detail>0)return;
       const tab=event.target.closest('button');
-      if(tab)select(tab===settingsTabs.firstElementChild?left:right);
+      if(tab)select(tab.dataset.pane);
     });
   }
   function initGame() {
@@ -602,8 +606,8 @@
       settings.showModal();
       syncOverlayViewport();
     });
-    bindSlidingTabs($('pinky-settings-tabs'),'pair','motion',selectSettingsPane);
-    bindSlidingTabs($('controller-tabs'),'manual','motion',selectPhoneMode);
+    bindSlidingTabs($('pinky-settings-tabs'),selectSettingsPane);
+    bindSlidingTabs($('controller-tabs'),selectPhoneMode);
     $('controller-primary').addEventListener('click',usePhonePrimary);
     $('controller-pause').addEventListener('click',usePhonePrimary);
     $('controller-jump').addEventListener('click',sendPairedJump);
@@ -638,6 +642,7 @@
     });
     if(roomPattern.test(urlRoom)){
       $('controller-room-input').value=urlRoom;
+      showSettingsPane('pair');
       settings.showModal();
       syncOverlayViewport();
     }
