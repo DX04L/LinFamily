@@ -236,6 +236,22 @@ function renderHearts() {
   });
   shieldEl.setAttribute('aria-label', shield + ' / ' + MAX_HEARTS);
 }
+// Cheat: tap the hearts box 5 times in a row before a run → start with 5 hearts.
+// That run is never logged to the leaderboard; the next run is normal again.
+let cheatRun = false, cheatTaps = 0, cheatLastTap = 0;
+document.querySelector('.shield-box').addEventListener('pointerdown', event => {
+  if (event.isPrimary === false) return;
+  const ready = gameState === 'START' || (gameState === 'GAMEOVER' && performance.now() - gameOverAt > 700);
+  if (!ready || !document.getElementById('record-panel').classList.contains('hidden')) return;
+  event.preventDefault();
+  const now = performance.now();
+  cheatTaps = now - cheatLastTap < 800 ? cheatTaps + 1 : 1;
+  cheatLastTap = now;
+  shield = cheatTaps; renderHearts(); bumpShieldIcon();
+  if (cheatTaps >= MAX_HEARTS) { startGame(true); return; }
+  const taps = cheatTaps;
+  setTimeout(() => { if (cheatTaps === taps && gameState !== 'PLAYING') { cheatTaps = 0; shield = 0; renderHearts(); } }, 800);
+});
 let gameSpeed = 7;
 let frameCount = 0;
 let lastMilestone = 0;
@@ -1326,8 +1342,10 @@ function update(timestamp = performance.now()) {
   paintFrame();
 }
 
-function startGame() {
+function startGame(cheat) {
   sfx.init();
+  cheatRun = cheat === true;
+  cheatTaps = 0;
   gameState = 'PLAYING';
   lastFrameTime=null;
   frameTimeRemaining=0;
@@ -1347,7 +1365,7 @@ function startGame() {
   terrainRoute = [[0,0],[900,0]];
   terrainPhase = Math.random()*Math.PI*2;
   extendTerrainTo(width*2);
-  shield=0;immunity=0;shieldShake=0;renderHearts();
+  shield=cheatRun?MAX_HEARTS:0;immunity=0;shieldShake=0;renderHearts();
   runJumps = {motion:0, manual:0};
   player.reset();
   startPanel.classList.add('hidden');
@@ -1371,14 +1389,15 @@ function triggerGameOver() {
 
   // HI is the Firebase global score, never a device-local fallback.
   const globalBest=window.pinkyArcade?.globalBest?.();
-  if(globalBest!==null && globalBest!==undefined && finalVal>globalBest) {
+  document.getElementById('cheat-note').classList.toggle('hidden', !cheatRun);
+  if(!cheatRun && globalBest!==null && globalBest!==undefined && finalVal>globalBest) {
     newRecordBadge.classList.remove('hidden');
   } else {
     newRecordBadge.classList.add('hidden');
   }
 
   gameoverPanel.classList.remove('hidden');
-  window.pinkyArcade?.onGameOver(finalVal, runJumps.motion > 0 && runJumps.manual === 0);
+  window.pinkyArcade?.onGameOver(finalVal, runJumps.motion > 0 && runJumps.manual === 0, cheatRun);
 }
 
 const pauseControl = document.getElementById('pinky-pause');

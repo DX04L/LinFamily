@@ -735,9 +735,9 @@
         hideRecord();pendingScore=0;scoreSubmitting=false;
         hostSetPhase('playing',0);
       },
-      onGameOver(score,motion){
+      onGameOver(score,motion,cheat){
         pendingMotion=motion===true;
-        const qualified=newRecord(score);
+        const qualified=cheat!==true&&newRecord(score);
         hostSetPhase(qualified?'record':'gameover',score);
       },
       onPause(paused,points){hostSetPhase(paused?'ready':'playing',paused?points+1:0);},
