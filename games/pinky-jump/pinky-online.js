@@ -536,6 +536,10 @@
       globalConnected(){return remoteOnline;}
     };
     $('pinky-rank-btn')?.addEventListener('click',showBoard);
+    $('pinky-hi-open')?.addEventListener('click',showBoard);
+    $('pinky-hi-open')?.addEventListener('keydown',event=>{
+      if(event.key==='Enter'||event.key===' '){event.preventDefault();showBoard();}
+    });
     $('pinky-rank-close')?.addEventListener('click',()=>$('pinky-rank-dialog').close());
     $('pinky-rank-dialog')?.addEventListener('click',event=>{
       if(event.target===$('pinky-rank-dialog'))event.target.close();
