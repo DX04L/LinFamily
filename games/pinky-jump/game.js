@@ -92,60 +92,79 @@ class SoundFX {
 
 const sfx = new SoundFX();
 
-// Your uploaded SergeQuadrado recording is a looping soundtrack.
-// Place its MP3 next to game.js. The rest of the game works if it is missing.
-const MUSIC_FILE = 'sergequadrado-humorous-loop-275485.mp3';
+// Original user-provided soundtrack, renamed and tagged "Pinky Jump Music".
+const MUSIC_FILE = 'pinky-jump-music.mp3';
+const MUSIC_TITLE = 'Pinky Jump Music';
 const backgroundMusic = typeof Audio === 'function' ? new Audio(MUSIC_FILE) : null;
 if (backgroundMusic) {
+  backgroundMusic.title = MUSIC_TITLE;
   backgroundMusic.loop = true;
   backgroundMusic.preload = 'auto';
   backgroundMusic.volume = .28;
 }
-let useFallbackMusic = !backgroundMusic;
 let musicFadeTimer = null;
 let footstepDistance = 0;
+function updateMediaSession(state) {
+  if (typeof navigator === 'undefined' || !navigator.mediaSession) return;
+  try {
+    if (typeof MediaMetadata === 'function') {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: MUSIC_TITLE,
+        artist: 'Pinky Jump',
+        album: 'Pinky Jump',
+        artwork: [{src: new URL('pinky-icon.png', window.location.href).href,
+                   sizes: '128x128', type: 'image/png'}]
+      });
+    }
+    navigator.mediaSession.playbackState = state;
+  } catch (error) { console.warn('Pinky Jump media metadata:', error); }
+}
 function beginMusic() {
   if (musicFadeTimer) { clearInterval(musicFadeTimer); musicFadeTimer = null; }
-  if (!backgroundMusic || useFallbackMusic || sfx.muted) return;
+  if (!backgroundMusic || sfx.muted) return;
   backgroundMusic.pause();
   backgroundMusic.currentTime = 0;
   backgroundMusic.playbackRate = 1;
   backgroundMusic.volume = .28;
+  updateMediaSession('playing');
   const result = backgroundMusic.play();
   if (result && typeof result.catch === 'function') {
-    result.catch(() => { useFallbackMusic = true; });
+    result.catch(error => {
+      updateMediaSession('paused');
+      console.warn('Pinky Jump Music could not play:', error);
+    });
   }
 }
 if (backgroundMusic) {
   backgroundMusic.addEventListener('error', () => {
-    useFallbackMusic = true;
+    updateMediaSession('paused');
+    console.warn('Pinky Jump Music file unavailable:', MUSIC_FILE);
   });
 }
 function endMusic() {
-  if (!backgroundMusic || backgroundMusic.paused) return;
+  if (!backgroundMusic || backgroundMusic.paused) {
+    updateMediaSession('paused');
+    return;
+  }
   if (musicFadeTimer) clearInterval(musicFadeTimer);
   let volume = backgroundMusic.volume;
   musicFadeTimer = setInterval(() => {
     volume = Math.max(0, volume - .07);
     backgroundMusic.volume = volume;
     if (volume <= 0) {
-      clearInterval(musicFadeTimer); musicFadeTimer = null;
+      clearInterval(musicFadeTimer);
+      musicFadeTimer = null;
       backgroundMusic.pause();
       backgroundMusic.currentTime = 0;
+      updateMediaSession('paused');
     }
   }, 35);
 }
 function updateMusic() {
-  if (backgroundMusic && !backgroundMusic.paused)
-    backgroundMusic.playbackRate = Math.min(1.07, 1 + Math.max(0, gameSpeed-7)*.007);
-  // Backup tune only when the MP3 has not yet been deployed.
-  if (useFallbackMusic && !sfx.muted && frameCount % 17 === 0) {
-    const notes = [392,494,587,494,523,659,587,440,392,523,659,587,494,440,392,330];
-    const index = Math.floor(frameCount / 17) % notes.length;
-    sfx.playTone(notes[index], 'triangle', .115, null, .032);
+  if (backgroundMusic && !backgroundMusic.paused) {
+    backgroundMusic.playbackRate = Math.min(1.07, 1 + Math.max(0, gameSpeed - 7) * .007);
   }
 }
-
 
 // Gameplay state and canvas sizing.
 let width = window.innerWidth;
@@ -202,9 +221,18 @@ muteBtn.addEventListener('click', () => {
   sfx.muted = !sfx.muted;
   muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
   if (!backgroundMusic) return;
-  if (sfx.muted) backgroundMusic.pause();
-  else if (gameState === 'PLAYING') {
-    const p = backgroundMusic.play(); if (p && p.catch) p.catch(() => { useFallbackMusic = true; });
+  if (sfx.muted) {
+    backgroundMusic.pause();
+    updateMediaSession('paused');
+  } else if (gameState === 'PLAYING') {
+    updateMediaSession('playing');
+    const result = backgroundMusic.play();
+    if (result && typeof result.catch === 'function') {
+      result.catch(error => {
+        updateMediaSession('paused');
+        console.warn('Pinky Jump Music could not resume:', error);
+      });
+    }
   }
 });
 // Mild, occasional rolling terrain. The shape is shared by rendering and physics.
