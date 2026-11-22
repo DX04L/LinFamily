@@ -31,11 +31,22 @@ class SoundFX {
     this.muted = false;
   }
   init() {
-    if (!this.ctx) {
+    if (!this.ctx || this.ctx.state === 'closed') {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    // iPad/iPhone can leave the context 'suspended' or 'interrupted' after other
+    // audio, a notification or switching apps; resume it whenever it isn't running.
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+  }
+  // Called from real taps/keys: iOS only lets audio restart inside a user gesture.
+  unlock() {
+    if (!this.ctx || this.muted) return;
+    if (this.ctx.state !== 'running') {
+      this.ctx.resume().catch(() => {});
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.ctx.createBuffer(1, 1, 22050);
+      src.connect(this.ctx.destination);
+      src.start(0);
     }
   }
   playTone(freq, type, duration, slideTo = null, vol = 0.15) {
@@ -1519,3 +1530,12 @@ window.addEventListener('load', () => {
   }
 });
 requestAnimationFrame(update);
+
+// Re-arm game audio on every tap/key, so sound comes back after iOS interrupts it.
+for (const type of ['pointerdown', 'touchend', 'keydown']) {
+  document.addEventListener(type, () => {
+    sfx.unlock();
+    if (backgroundMusic && backgroundMusic.paused && gameState === 'PLAYING' && !sfx.muted)
+      backgroundMusic.play()?.catch(() => {});
+  }, {capture: true, passive: true});
+}
