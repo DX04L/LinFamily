@@ -13,6 +13,10 @@
   <link rel="apple-touch-icon" href="pinky-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="install.css?v=1" />
+  <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
+  <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
+  <script defer src="install.js?v=1"></script>
 </head>
 <body>
   <!-- 橫屏提示遮罩 (手機直向時顯示) -->
@@ -31,6 +35,7 @@
     <div id="hud">
       <div class="hud-left">
         <span class="badge-title"><img src="pinky-icon.png" alt="" /> Pinky Jump</span>
+        <button type="button" id="pinky-install-btn" class="icon-btn" title="安裝 Pinky Jump 到桌面" hidden>📲 安裝</button>
         <button id="fullscreen-btn" class="icon-btn" title="切換全螢幕">⛶ 全螢幕</button>
         <button id="mute-btn" class="icon-btn" title="音效開關">🔊</button>
       </div>
@@ -82,6 +87,13 @@
     </div>
   </div>
 
+  <dialog id="pinky-install-dialog" class="pinky-install-dialog" aria-labelledby="pinky-install-title">
+    <h2 id="pinky-install-title">安裝 Pinky Jump</h2>
+    <p id="pinky-install-reason">目前瀏覽器未提供直接安裝提示。</p>
+    <ol id="pinky-install-steps"></ol>
+    <p class="pinky-install-hint">若已經安裝，請從桌面或應用程式清單開啟 Pinky Jump。</p>
+    <div class="pinky-install-actions"><button type="button" id="pinky-install-close">知道了</button></div>
+  </dialog>
   <script src="game.js"></script>
 </body>
 </html>
