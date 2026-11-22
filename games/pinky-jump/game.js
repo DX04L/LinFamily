@@ -246,7 +246,7 @@ forceFullscreenBtn.addEventListener('click', async () => {
 });
 muteBtn.addEventListener('click', () => {
   sfx.muted = !sfx.muted;
-  muteBtn.textContent = sfx.muted ? '🔇 音效已關閉' : '🔊 音效已開啟';
+  muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
   muteBtn.setAttribute('aria-pressed', String(!sfx.muted));
   if (!backgroundMusic) return;
   if (sfx.muted) {
@@ -318,6 +318,7 @@ const player = {
   gravity: 0.78,
   isGrounded: true,
   jumpCameraLimit: Infinity,
+  keyboardJumpKey: null,
   runCycle: 0,
   blinkTimer: 0,
   hurt: false,
@@ -330,9 +331,10 @@ const player = {
     this.y = getGroundY();
     this.vy = 0;
     this.isGrounded = true;
+    this.keyboardJumpKey = null;
     this.hurt = false;
   },
-  jump() {
+  jump(key = null) {
     if (!this.isGrounded || gameState !== 'PLAYING') return;
     // One tap produces one fixed-height jump regardless of press duration.
     this.gravity = Math.max(0.65, Math.min(0.9, height * 0.00105));
@@ -345,6 +347,7 @@ const player = {
     this.jumpCameraLimit = this.y - rise - 100 * this.getScale();
     this.vy = -Math.sqrt(2 * this.gravity * rise) - this.gravity / 2;
     this.isGrounded = false;
+    this.keyboardJumpKey = key;
     sfx.jump();
     spawnDust(this.x, this.y, '#f784ba', 8);
   },
@@ -1027,6 +1030,10 @@ function drawParticles() {
 
 // 主迴圈更新
 function update() {
+  if (gameState === 'PAUSED') {
+    requestAnimationFrame(update);
+    return;
+  }
   frameCount++;
   if (gameState === 'PLAYING') terrainDistance += gameSpeed;
   player.update();
@@ -1131,6 +1138,7 @@ function update() {
 function startGame() {
   sfx.init();
   gameState = 'PLAYING';
+  syncPauseControl();
   document.dispatchEvent(new Event('pinky-play-start'));
   footstepDistance = 0;
   beginMusic();
@@ -1156,6 +1164,7 @@ function startGame() {
 
 function triggerGameOver() {
   gameState = 'GAMEOVER';
+  syncPauseControl();
   player.hurt = true;
   endMusic();
   sfx.hit();
@@ -1176,10 +1185,39 @@ function triggerGameOver() {
   window.pinkyArcade?.onGameOver(finalVal);
 }
 
-// Remote jump controls exposed only to this game's paired session.
-window.pinkyRemoteStart = function() {
-  if (document.getElementById('record-panel')?.classList.contains('hidden') === false) return;
-  if (gameState !== 'PLAYING') startGame();
+const pauseControl = document.getElementById('pinky-pause');
+function syncPauseControl() {
+  const paused = gameState === 'PAUSED';
+  pauseControl.hidden = !paused && gameState !== 'PLAYING';
+  pauseControl.classList.toggle('is-paused', paused);
+  const label = paused ? '繼續遊戲' : '暫停遊戲';
+  pauseControl.setAttribute('aria-label', label);
+  pauseControl.title = label;
+  document.getElementById('pinky-paused').hidden = !paused;
+}
+function setGamePaused(paused) {
+  if (paused ? gameState !== 'PLAYING' : gameState !== 'PAUSED') return;
+  gameState = paused ? 'PAUSED' : 'PLAYING';
+  syncPauseControl();
+  if (paused) {
+    backgroundMusic?.pause();
+    updateMediaSession('paused');
+  } else {
+    document.dispatchEvent(new Event('pinky-play-start'));
+    if (!sfx.muted) {
+      prepareMusicAudio();
+      backgroundMusic?.play()?.then(()=>updateMediaSession('playing'),()=>{});
+    }
+  }
+  window.pinkyArcade?.onPause(paused, Math.floor(score));
+}
+pauseControl.addEventListener('click', () => setGamePaused(gameState === 'PLAYING'));
+
+window.pinkyRemoteStart = function(pause = false) {
+  if (!document.getElementById('record-panel').classList.contains('hidden')) return;
+  if (pause) setGamePaused(true);
+  else if (gameState === 'PAUSED') setGamePaused(false);
+  else if (gameState !== 'PLAYING') startGame();
 };
 window.pinkyRemoteJump = function() {
   if (gameState !== 'PLAYING' || document.querySelector('dialog[open]')) return;
@@ -1194,9 +1232,10 @@ function isJumpKey(event) {
     (typeof event.key === 'string' && event.key.toLowerCase() === 'w');
 }
 document.addEventListener('keydown', event => {
-  if (!isJumpKey(event)) return;
+  if (!isJumpKey(event) || window.pinkyArcade?.isController()) return;
   const target = event.target;
   if (target?.closest?.('input,textarea,select,[contenteditable="true"],dialog,[role="menu"]')) return;
+  if (target === pauseControl || gameState === 'PAUSED') return;
   // Allow Space to start while the start/restart button is focused.
   if (gameState === 'PLAYING' && target?.closest?.('button,a,[role="button"]')) return;
   if (document.getElementById('pinky-rank-dialog')?.open ||
@@ -1206,8 +1245,17 @@ document.addEventListener('keydown', event => {
   event.preventDefault();
   if (event.repeat) return;
   if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
-  else if (gameState === 'PLAYING') player.jump();
+  else if (gameState === 'PLAYING') player.jump(event.code || event.key);
 }, true);
+document.addEventListener('keyup', event => {
+  if ((event.code || event.key) !== player.keyboardJumpKey) return;
+  player.keyboardJumpKey = null;
+  if (player.isGrounded || player.vy >= 0) return;
+  // Release trims the remaining ascent. Holding a key preserves the full arc.
+  player.vy = Math.max(player.vy, -Math.sqrt(2 * player.gravity * 42));
+  const remainingRise = player.vy ** 2 / (2 * player.gravity);
+  player.jumpCameraLimit = player.y - remainingRise - 100 * player.getScale();
+});
 const gameWrapper = document.getElementById('game-wrapper');
 const touchLock = document.getElementById('pinky-touch-lock');
 let touchLockTimer;
@@ -1223,10 +1271,6 @@ gameWrapper.addEventListener('pointerdown', event => {
   if (window.pinkyArcade?.isMotionEnabled()) {
     event.preventDefault();
     showTouchLock();
-    return;
-  }
-  if (window.pinkyArcade?.sendPairedJump()) {
-    event.preventDefault();
     return;
   }
   if (gameState !== 'PLAYING') return;

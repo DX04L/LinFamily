@@ -296,3 +296,5 @@ html, body {
   #hud .badge-title { display:none !important; }
   #hud .hud-left, #hud .hud-right { gap:3px; }
 }
+
+#game-wrapper[hidden] { display: none; }

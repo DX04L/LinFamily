@@ -147,7 +147,9 @@
 #pinky-pair-dialog {
   inset: var(--pinky-settings-top, 0px) 0 var(--pinky-settings-bottom, 0px) !important;
   width: min(460px, calc(100vw - 24px));
-  height: min(510px, 85dvh, calc(var(--pinky-settings-height, 100dvh) - 12px));
+  height: min(375px, calc(var(--pinky-settings-height, 100dvh) - 16px));
+  padding: 12px clamp(10px,4vw,20px);
+  overflow: hidden;
   max-height: none;
 }
 #pinky-pair-dialog button { white-space: nowrap; }
@@ -158,19 +160,21 @@
   gap: 8px;
   margin: 8px 0 14px;
 }
-.pinky-settings-controls, .pinky-settings-tabs {
+.pinky-settings-bar {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 8px 0 14px;
+  grid-template-columns: minmax(0,1fr) 40px 40px;
+  gap: 6px;
+  align-items: center;
+  margin: 6px 0 8px;
 }
-.pinky-settings-controls { gap: 0; }
-.pinky-settings-controls > button + button { border-left-width: 1px; }
-#pinky-pair-dialog :is(.pinky-settings-controls, .pinky-settings-tabs) > button {
-  height: 44px;
+.pinky-settings-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+#pinky-pair-dialog .pinky-settings-bar button, #controller-tabs button {
+  height: 40px;
   min-width: 0;
-  padding: 0 4px;
-  font-size: clamp(11px, 4vw, 16px);
+  padding: 0 3px;
+  font-size: clamp(12px, 4vw, 16px);
 }
+#pinky-pair-dialog .pinky-settings-bar > button { font-size: 21px; }
 .pinky-settings-tabs {
   position: relative;
   isolation: isolate;
@@ -189,11 +193,11 @@
   transition: transform .22s ease;
 }
 .pinky-settings-tabs[data-pane="motion"]::before { transform: translateX(100%); }
-#pinky-pair-dialog .pinky-settings-tabs > button {
+.pinky-settings-tabs > button {
   background: transparent;
   color: #a02a67;
 }
-#pinky-pair-dialog .pinky-settings-tabs > button[aria-pressed="true"] { color: #fff; }
+.pinky-settings-tabs > button[aria-pressed="true"] { color: #fff; }
 .pinky-settings-tabs > button:focus-visible { outline-offset: -4px; }
 @media (prefers-reduced-motion: reduce) {
   .pinky-settings-tabs::before { transition: none; }
@@ -247,8 +251,70 @@
   background: #fff;
   font: inherit;
 }
-#pinky-connect-form { margin-top: 12px; }
-#controller-disconnect { margin-top: 8px; }
 @media (max-width: 360px) {
   #pinky-pair-dialog button { padding-inline: 10px; }
 }
+
+#pinky-settings-view { height: 100%; display: flex; flex-direction: column; }
+#pinky-settings-view[hidden], #pinky-controller[hidden], #controller-tabs[hidden] { display: none; }
+.pinky-settings-body { flex: 1; min-height: 0; overflow: auto; }
+.pinky-settings-body .pinky-setting-row { margin: 0 0 5px; }
+.pinky-settings-body .pinky-setting-row input { padding: 7px 8px; min-height: 36px; }
+#pinky-pair-dialog .pinky-settings-body button { min-height: 36px; padding: 6px 10px; }
+#pinky-connect-form { margin-top: 0; }
+#pinky-pair-status { min-height: 0; }
+#pinky-pair-dialog .pinky-pair-code { margin: 0; font-size: clamp(17px, 5vw, 26px) !important; letter-spacing: 3px; }
+#pinky-settings-view .pinky-dialog-actions { flex: none; margin-top: 6px; }
+#pinky-help-view { height: 100%; overflow: auto; }
+#pinky-help-back { position: absolute; top: 9px; right: 12px; padding: 0; width: 40px; font-size: 24px; }
+@media (max-height: 345px) {
+  #pinky-pair-dialog { padding-block: 7px; }
+  #pinky-pair-title { font-size: 18px; margin-bottom: 0; }
+  .pinky-settings-bar { margin: 2px 0 4px; }
+  #pinky-pair-dialog .pinky-settings-bar button,
+  #pinky-pair-dialog .pinky-settings-body button,
+  #pinky-settings-view .pinky-dialog-actions button { height: 32px; min-height: 32px; padding-block: 2px; }
+  .pinky-settings-body .pinky-setting-row input { min-height: 32px; padding-block: 3px; }
+}
+#pinky-pause {
+  position: absolute;
+  z-index: 55;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  right: max(12px, env(safe-area-inset-right));
+  min-width: 64px;
+  min-height: 44px;
+  padding: 4px 10px;
+  border: 1px solid #fff9;
+  border-radius: 14px;
+  background: #742050a8;
+  color: white;
+  cursor: pointer;
+}
+#pinky-pause span { display: inline-block; margin: 0 1px; animation: pinky-forward 1s ease-in-out infinite alternate; }
+#pinky-pause span:nth-child(2) { animation-delay: .15s; }
+#pinky-pause span:nth-child(3) { animation-delay: .3s; }
+#pinky-pause.is-paused span { animation-play-state: paused; }
+@keyframes pinky-forward { from { opacity: .35; transform: translateX(-2px); } to { opacity: 1; transform: translateX(2px); } }
+@media (prefers-reduced-motion: reduce) { #pinky-pause span { animation: none; } }
+#pinky-paused {
+  position: absolute; z-index: 54; top: 48%; left: 50%; transform: translate(-50%,-50%);
+  padding: 10px 20px; border-radius: 14px; background: #742050cc; color: white; font-weight: 800;
+  pointer-events: none;
+}
+#pinky-controller {
+  height: 100dvh; overflow: auto; padding: max(16px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));
+  max-width: 500px; margin-inline: auto; color: #742050;
+}
+.pinky-controller-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.pinky-controller-heading h1 { flex: 1; font-size: 22px; }
+#pinky-controller button { min-height: 44px; font-weight: 800; cursor: pointer; }
+#pinky-controller button:disabled { opacity: .45; cursor: default; }
+#pinky-controller .pinky-light { padding: 7px 12px; border: 1px solid #efb2d0; border-radius: 10px; color: #a02a67; background: #fff6fb; }
+#controller-primary, #controller-jump { width: 100%; }
+#controller-tabs { margin: 14px 0; }
+#controller-tabs button { min-height: 44px; border: 0; font: inherit; font-weight: 800; }
+#controller-manual:not([hidden]) { display: grid; gap: 12px; }
+#controller-jump { min-height: 88px !important; }
+#controller-name { flex: 1; min-width: 0; min-height: 44px; font-size: 18px; border: 1px solid #efb2d0; border-radius: 10px; padding: 6px 10px; }
+#controller-submit { padding-inline: 14px; white-space: nowrap; }
+#controller-motion p, #controller-status { font-size: 14px; line-height: 1.5; margin-top: 8px; }
