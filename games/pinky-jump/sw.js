@@ -1,5 +1,5 @@
 /* Pinky Jump: per-game offline PWA (scoped to this folder only). */
-const CACHE = 'pinky-jump-v7';
+const CACHE = 'pinky-jump-v8';
 const ASSETS = ['./','./index.html','./style.css','./game.js?v=20261122-arcade-motion1','./install.css','./install.js','./manifest.webmanifest','./pinky-icon.png','./app-icon.svg','./pinky-online.js?v=1','./pinky-arcade.css?v=1','./controller.html'];
 self.addEventListener('install', event => {
   self.skipWaiting();
