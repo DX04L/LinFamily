@@ -54,3 +54,74 @@
   #pinky-rank-btn .pinky-hud-label,#pinky-pair-btn .pinky-hud-label{display:none}
   .pinky-arcade-dialog{padding:16px}
 }
+
+
+/* Global arcade board: centered, spacious, translucent pink-white with high contrast. */
+.pinky-arcade-dialog {
+  position: fixed !important;
+  inset: 0 !important;
+  margin: auto !important;
+  width: min(620px, calc(100vw - 28px));
+  max-width: none;
+  max-height: min(85dvh, 760px);
+  background: rgba(255,247,251,.965) !important;
+  color: #57213f !important;
+  overscroll-behavior: contain;
+  z-index: 100;
+}
+#pinky-rank-dialog { width: min(650px, calc(100vw - 28px)); }
+#pinky-rank-title { font-size: clamp(22px, 4vw, 32px); letter-spacing: .03em; }
+#pinky-rank-rows { margin: 16px 0 18px; }
+#pinky-rank-rows .pinky-score-row {
+  padding: 12px 8px;
+  font-size: clamp(16px, 2.1vw, 21px);
+  color: #59213d !important;
+}
+#pinky-rank-rows .pinky-score-row span:nth-child(2),
+#controller-rank-rows .pinky-score-row span:nth-child(2) {
+  color: #59213d !important;
+  font-weight: 800;
+}
+#pinky-rank-rows .pinky-score-row strong,
+#controller-rank-rows .pinky-score-row strong {
+  color: #80204d !important;
+}
+#controller-connected[hidden], #controller-setup[hidden],
+#controller-board[hidden], #controller-finish[hidden],
+#controller-record[hidden], #controller-actions[hidden],
+#controller-sensor[hidden] { display: none !important; }
+.pinky-controller-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pinky-controller-topline strong { color: #28784b; }
+.pinky-board-toggle { width: 100%; margin-top: 12px; }
+.pinky-controller-score { font-size: 18px !important; text-align: center; }
+.pinky-controller-score strong { color: #b32772; font-size: 27px; }
+#controller-board { max-height: min(70dvh, 550px); overflow-y: auto; }
+#controller-rank-rows { list-style: none; margin: 12px 0; padding: 0; }
+#controller-record-form input { font-size: 20px; letter-spacing: .02em; }
+#controller-record-form button { margin-top: 12px; }
+#controller-record .pinky-light { margin-top: 10px; width: 100%; }
+#pinky-record-message { color: #ac2668; font-size: 13px; min-height: 12px; }
+#record-panel {
+  box-sizing: border-box;
+  max-height: calc(100dvh - 24px);
+  max-width: min(450px, calc(100vw - 24px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: #6e2b4d !important;
+}
+#record-panel label, #record-panel p { color: #682849 !important; }
+#pinky-player-name { color: #5d2141 !important; background: white !important; }
+/* Landscape tablets with virtual keyboard keep the form readable. */
+@media (max-height: 480px) {
+  #record-panel { padding: 10px 16px !important; max-height: calc(100dvh - 12px); }
+  #record-panel h2 { font-size: 19px; margin: 0 0 6px; }
+  #record-panel p { margin: 2px 0 6px; }
+  #record-panel input { margin: 4px 0; font-size: 16px; padding: 5px 8px; }
+  #record-panel .pinky-record-actions button { padding: 5px 12px; }
+  .pinky-arcade-dialog { max-height: calc(100dvh - 14px); }
+}
