@@ -205,6 +205,11 @@ const shieldEl = document.getElementById('shield-count');
 let gameSpeed = 7;
 let frameCount = 0;
 let lastMilestone = 0;
+const SIMULATION_STEP = 1000 / 60;
+const MAX_CATCH_UP = 4 * SIMULATION_STEP;
+let lastFrameTime = null;
+let frameTimeRemaining = 0;
+let needsPaint = true;
 hiScoreEl.textContent = '-----';
 
 function resizeCanvas() {
@@ -214,6 +219,7 @@ function resizeCanvas() {
   canvas.width = width * dpr;
   canvas.height = height * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  needsPaint = true;
   checkOrientation();
 }
 function checkOrientation() {
@@ -819,13 +825,9 @@ function drawBackground() {
   }
 
   // 背景飛機（純裝飾，不碰撞）
-  planes.forEach(p=>{if(gameState==='PLAYING')p.x-=p.speed;if(p.x< -100)p.x=width+130;ctx.save();ctx.translate(p.x,p.y);ctx.fillStyle='#f4a6c9';ctx.beginPath();ctx.moveTo(-32,0);ctx.lineTo(25,-3);ctx.lineTo(38,2);ctx.lineTo(8,8);ctx.lineTo(-2,18);ctx.lineTo(-12,18);ctx.lineTo(-8,7);ctx.lineTo(-32,4);ctx.fill();ctx.restore();});
+  planes.forEach(p=>{ctx.save();ctx.translate(p.x,p.y);ctx.fillStyle='#f4a6c9';ctx.beginPath();ctx.moveTo(-32,0);ctx.lineTo(25,-3);ctx.lineTo(38,2);ctx.lineTo(8,8);ctx.lineTo(-2,18);ctx.lineTo(-12,18);ctx.lineTo(-8,7);ctx.lineTo(-32,4);ctx.fill();ctx.restore();});
   // 可愛棉花糖雲朵
   clouds.forEach(c => {
-    if (gameState === 'PLAYING') {
-      c.x -= c.speed;
-      if (c.x < -120) c.x = width + 120;
-    }
     ctx.save();
     ctx.translate(c.x, c.y);
     ctx.scale(c.scale, c.scale);
@@ -843,10 +845,6 @@ function drawBackground() {
   ctx.translate(0, -cameraY * 0.35);
   const horizon = baseGroundY();
   bgHills.forEach(h => {
-    if (gameState === 'PLAYING') {
-      h.x -= gameSpeed * 0.22;
-      if (h.x + h.w < 0) h.x += bgHills.length * 320;
-    }
     ctx.fillStyle = sceneColor(h.color,[114,68,131],darkness);
     ctx.beginPath();
     ctx.moveTo(h.x, horizon);
@@ -860,31 +858,31 @@ function drawBackground() {
   ctx.translate(0, -cameraY);
   // The ground itself curves up and down; ground physics uses this same curve.
   ctx.fillStyle = sceneColor(current.ground,next.ground,blend);
-  ctx.beginPath();
-  ctx.moveTo(-12, getGroundY(-12));
-  for (let x=0; x<=width+14; x+=12) ctx.lineTo(x,getGroundY(x));
-  ctx.lineTo(width+16,height*4);
-  ctx.lineTo(-16,height*4);
-  ctx.closePath();
-  ctx.fill();
+  const road = new Path2D();
+  road.moveTo(-12,getGroundY(-12));
+  for (let x=0; x<=width+14; x+=12) road.lineTo(x,getGroundY(x));
+  const ground = new Path2D(road);
+  ground.lineTo(width+16,height*4);
+  ground.lineTo(-16,height*4);
+  ground.closePath();
+  ctx.fill(ground);
 
   ctx.strokeStyle = sceneColor(current.edge,next.edge,blend);
   ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.moveTo(-12,getGroundY(-12));
-  for (let x=0; x<=width+14; x+=12) ctx.lineTo(x,getGroundY(x));
-  ctx.stroke();
+  ctx.stroke(road);
 
   // Small flowers/dots remain attached to the moving terrain.
   const scrollOffset = terrainDistance % 80;
   ctx.fillStyle='#ffffff';
+  ctx.beginPath();
   for (let x=-scrollOffset; x<width+40; x+=80) {
     const y=getGroundY(x);
-    ctx.beginPath();
+    ctx.moveTo(x+23,y+18);
     ctx.arc(x+20,y+18,3,0,Math.PI*2);
+    ctx.moveTo(x+57.5,y+32);
     ctx.arc(x+55,y+32,2.5,0,Math.PI*2);
-    ctx.fill();
   }
+  ctx.fill();
   ctx.restore();
 }
 
@@ -939,7 +937,6 @@ function drawObstacles(ctx, objects, groundAt = getGroundY) {
       }
     } else if (obs.type === 'bird') {
       // 飛天小惡魔翼球
-      obs.flap += 0.22;
       const wingY = Math.sin(obs.flap) * 10;
 
       ctx.save();
@@ -989,7 +986,6 @@ function drawObstacles(ctx, objects, groundAt = getGroundY) {
 function drawCoins(ctx, items) {
   items.forEach(c => {
     if (c.collected) return;
-    c.spin += 0.1;
     const scaleX = Math.max(0.25, Math.abs(Math.cos(c.spin)));
 
     ctx.save();
@@ -1025,7 +1021,7 @@ function drawCoins(ctx, items) {
 const guideObstacles = {
   mountain: {x:24,y:51,w:52,h:43},
   crystal: {x:22,y:51,h:42,count:2},
-  bird: {x:28,y:14,flap:-.22},
+  bird: {x:28,y:14,flap:0},
   airplane: {x:17,y:12,w:66,h:30},
   cloudGate: {x:0,y:38,h:44}
 };
@@ -1037,41 +1033,56 @@ for (const icon of document.querySelectorAll('[data-game-icon]')) {
     if (type === 'cloudGate') iconContext.scale(.99,.46);
     drawObstacles(iconContext, [{type,...obstacle}], () => obstacle.y);
   } else {
-    drawCoins(iconContext, [{type,x:50,y:30,r:19,spin:-.1}]);
+    drawCoins(iconContext, [{type,x:50,y:30,r:19,spin:0}]);
   }
 }
 
-// 繪製粒子特效
+function updateEffects() {
+  for (const obs of obstacles) {
+    if (obs.type==='bird') obs.flap+=.22;
+  }
+  for (const coin of coins) coin.spin+=.1;
+  for (let i=particles.length-1;i>=0;i--) {
+    const p=particles[i];
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.vy+=.15;
+    p.life-=.03;
+    if (p.life<=0) particles.splice(i,1);
+  }
+}
 function drawParticles() {
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.15;
-    p.life -= 0.03;
-
-    if (p.life <= 0) {
-      particles.splice(i, 1);
-      continue;
-    }
-
+  for (const p of particles) {
     ctx.globalAlpha = p.life;
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
     ctx.fill();
-    ctx.globalAlpha = 1;
+  }
+  ctx.globalAlpha=1;
+}
+
+function updateScenery() {
+  for (const plane of planes) {
+    plane.x-=plane.speed;
+    if (plane.x<-100) plane.x=width+130;
+  }
+  for (const cloud of clouds) {
+    cloud.x-=cloud.speed;
+    if (cloud.x<-120) cloud.x=width+120;
+  }
+  for (const hill of bgHills) {
+    hill.x-=gameSpeed*.22;
+    if (hill.x+hill.w<0) hill.x+=bgHills.length*320;
   }
 }
 
-// 主迴圈更新
-function update() {
-  if (gameState === 'PAUSED') {
-    requestAnimationFrame(update);
-    return;
-  }
+function simulateFrame() {
   frameCount++;
-  if (gameState === 'PLAYING') terrainDistance += gameSpeed;
+  if (gameState === 'PLAYING') {
+    terrainDistance += gameSpeed;
+    updateScenery();
+  }
   player.update();
   // Smooth vertical camera follows the road, not each individual jump.
   // Look ahead on downhill roads, placing the road farther up in the frame.
@@ -1082,16 +1093,11 @@ function update() {
   // Hold the highest useful camera position through the arc, without tracking the cat.
   const cameraTarget = player.isGrounded ? desiredCamera : Math.min(desiredCamera, player.jumpCameraLimit);
   cameraY += (cameraTarget-cameraY)*.16;
-  drawBackground();
-  ctx.save();
-  ctx.translate(0, -cameraY);
-
   if (gameState === 'PLAYING') {
     // 隨分數漸進加速
     gameSpeed = Math.min(16, 6.6 + score * 0.0022);
     if(immunity>0)immunity--;
     score += gameSpeed * 0.045;
-    updateMusic();
     if (player.isGrounded) {
       footstepDistance += gameSpeed;
       if (footstepDistance > 135) {
@@ -1100,7 +1106,6 @@ function update() {
       }
     }
     const displayScore = Math.floor(score);
-    currentScoreEl.textContent = String(displayScore).padStart(5, '0');
 
     // 每 500 分里程碑音效
     if (Math.floor(displayScore / 500) > lastMilestone) {
@@ -1162,18 +1167,57 @@ function update() {
     }
   }
 
-  drawCoins(ctx, coins);
-  drawObstacles(ctx, obstacles);
+  updateEffects();
+}
+
+function paintFrame() {
+  drawBackground();
+  ctx.save();
+  ctx.translate(0,-cameraY);
+  drawCoins(ctx,coins);
+  drawObstacles(ctx,obstacles);
   player.draw();
   drawParticles();
   ctx.restore();
+  needsPaint=false;
+}
 
+function update(timestamp = performance.now()) {
   requestAnimationFrame(update);
+  if (gameState==='PAUSED' || gameWrapper.hidden || document.hidden) {
+    lastFrameTime=null;
+    frameTimeRemaining=0;
+    if (needsPaint && !gameWrapper.hidden && !document.hidden) paintFrame();
+    return;
+  }
+
+  // Use 60 Hz physics at any display refresh rate. Drop excess time after a
+  // long stall so the game never advances several seconds in a single frame.
+  const elapsed=lastFrameTime===null ? SIMULATION_STEP : Math.max(0,timestamp-lastFrameTime);
+  lastFrameTime=timestamp;
+  frameTimeRemaining=Math.min(MAX_CATCH_UP,frameTimeRemaining+elapsed);
+  let stepped=false;
+  while (frameTimeRemaining+1e-6>=SIMULATION_STEP) {
+    frameTimeRemaining=Math.max(0,frameTimeRemaining-SIMULATION_STEP);
+    simulateFrame();
+    stepped=true;
+    if (gameState==='GAMEOVER') {
+      frameTimeRemaining=0;
+      break;
+    }
+  }
+  if (!stepped && !needsPaint) return;
+  if (gameState==='PLAYING') updateMusic();
+  const renderedScore=String(Math.floor(score)).padStart(5,'0');
+  if (currentScoreEl.textContent!==renderedScore) currentScoreEl.textContent=renderedScore;
+  paintFrame();
 }
 
 function startGame() {
   sfx.init();
   gameState = 'PLAYING';
+  lastFrameTime=null;
+  frameTimeRemaining=0;
   syncPauseControl();
   document.dispatchEvent(new Event('pinky-play-start'));
   footstepDistance = 0;
@@ -1231,6 +1275,8 @@ function setGamePaused(paused) {
   if (paused ? gameState !== 'PLAYING' : gameState !== 'PAUSED') return;
   if (!paused && (document.hidden || document.querySelector('dialog[open]'))) return;
   gameState = paused ? 'PAUSED' : 'PLAYING';
+  lastFrameTime=null;
+  frameTimeRemaining=0;
   syncPauseControl();
   if (paused) {
     document.getElementById('pinky-paused').focus({preventScroll:true});

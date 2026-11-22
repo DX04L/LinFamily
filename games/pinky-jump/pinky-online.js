@@ -352,9 +352,9 @@
     // so existing Firestore room rules also work with paused games.
     const phase=data.phase==='ready' && data.runScore>0 ? 'paused' : data.phase;
     const previous=pairedPhase;
+    if (phase===previous) return;
     pairedPhase=phase;
     renderPhoneView();
-    if (phase===previous) return;
     if (phase==='playing') document.dispatchEvent(new Event('pinky-play-start'));
     if (phase==='record' && previous!=='record_error') {
       const name=$('controller-name');
