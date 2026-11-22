@@ -1365,8 +1365,7 @@ function startGame(cheat) {
   shield=cheatRun?MAX_HEARTS:0;immunity=0;shieldShake=0;renderHearts();
   runJumps = {motion:0, manual:0};
   player.reset();
-  startPanel.classList.add('hidden');
-  gameoverPanel.classList.add('hidden');
+  pinkyUI.screen(null);
   window.pinkyArcade?.onStart();
   gameWrapper.focus({preventScroll:true});
 }
@@ -1392,7 +1391,7 @@ function triggerGameOver() {
     newRecordBadge.classList.add('hidden');
   }
 
-  gameoverPanel.classList.remove('hidden');
+  pinkyUI.screen('gameover');
   window.pinkyArcade?.onGameOver(finalVal, runJumps.motion > 0 && runJumps.manual === 0, cheatRun);
 }
 

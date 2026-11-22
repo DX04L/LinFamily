@@ -164,7 +164,6 @@
     overlay.classList.toggle('pinky-record-compact',height<=480);
   }
   function hideRecord() {
-    $('record-panel')?.classList.add('hidden');
     $('ui-overlay')?.classList.remove('pinky-record-open','pinky-record-compact');
   }
   function newRecord(score) {
@@ -172,8 +171,7 @@
     if (!panel || !qualifies(score)) return false;
     pendingScore=Math.floor(score);
     setText('pinky-new-score',String(pendingScore).padStart(6,'0'));
-    gameover?.classList.add('hidden');
-    panel.classList.remove('hidden');
+    pinkyUI.screen('record');
     panel.scrollTop=0;
     setText('pinky-record-message','');
     $('ui-overlay').classList.add('pinky-record-open');
@@ -199,7 +197,7 @@
     const final=pendingScore;
     pendingScore=0;
     hideRecord();
-    $('gameover-panel')?.classList.remove('hidden');
+    pinkyUI.screen('gameover');
     hostSetPhase('submitted',final);
   }
   async function saveGlobalScore(nameInput) {
@@ -227,7 +225,7 @@
       await writeBest(fs,db,auth.currentUser.uid,{name,key,score,motion});
       pendingScore=0;
       hideRecord();
-      $('gameover-panel')?.classList.remove('hidden');
+      pinkyUI.screen('gameover');
       hostSetPhase('submitted',score);
       return true;
     } catch(err) {
@@ -398,7 +396,7 @@
       const final=pendingScore;
       pendingScore=0;
       hideRecord();
-      $('gameover-panel')?.classList.remove('hidden');
+      pinkyUI.screen('gameover');
       hostSetPhase('submitted',final);
       return;
     }
@@ -811,7 +809,7 @@
       const final=pendingScore;
       pendingScore=0;
       hideRecord();
-      $('gameover-panel')?.classList.remove('hidden');
+      pinkyUI.screen('gameover');
       hostSetPhase('submitted',final);
     });
     const settings=$('pinky-pair-dialog');
