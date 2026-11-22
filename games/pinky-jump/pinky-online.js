@@ -179,9 +179,15 @@
       scoreUnsub=fs.onSnapshot(
         fs.query(fs.collection(db,'pinky_jump_scores'),fs.orderBy('score','desc'),fs.limit(10)),
         snap=>{
-          remoteBoard=normalizeScores(snap.docs.map(d=>d.data()));
-          remoteOnline=true;
-          globalError='';
+          // A cached snapshot may not reflect scores from other devices.
+          if(snap.metadata?.fromCache){
+            remoteOnline=false;
+            globalError='正在等待 Firebase 伺服器確認全球名次';
+          }else{
+            remoteBoard=normalizeScores(snap.docs.map(d=>d.data()));
+            remoteOnline=true;
+            globalError='';
+          }
           refreshScores();
         },
         err=>{
@@ -351,6 +357,8 @@
         updatePhonePhase(data);
       },err=>disconnectPhone(errorText(err)));
       updatePhonePhase(data);
+      if(motionEnabled)resetCalibration();
+      if(!remoteOnline)initSharedScores();
     } catch(err) {
       controllerConnected=false;
       roomRef=null;
