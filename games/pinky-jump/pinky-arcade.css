@@ -147,7 +147,8 @@
 #pinky-pair-dialog {
   inset: var(--pinky-settings-top, 0px) 0 var(--pinky-settings-bottom, 0px) !important;
   width: min(460px, calc(100vw - 24px));
-  max-height: min(85dvh, calc(var(--pinky-settings-height, 100dvh) - 12px), 760px);
+  height: min(510px, 85dvh, calc(var(--pinky-settings-height, 100dvh) - 12px));
+  max-height: none;
 }
 #pinky-pair-dialog button { white-space: nowrap; }
 #pinky-pair-dialog button:disabled { opacity: .55; cursor: wait; }
@@ -197,21 +198,39 @@
 @media (prefers-reduced-motion: reduce) {
   .pinky-settings-tabs::before { transition: none; }
 }
-.pinky-game-help {
-  margin-top: 12px;
+#pinky-help-view h3 { margin: 16px 0 8px; color: #a02a67; font-size: 16px; }
+.pinky-guide-items > div {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f4c6df;
+}
+.pinky-guide-items dt { text-align: center; font-size: 13px; font-weight: 800; }
+.pinky-guide-items canvas {
+  display: block;
+  width: 70px;
+  height: 42px;
+  margin: 0 auto 2px;
+  border-radius: 8px;
+  background: #ffe4f1;
+}
+.pinky-guide-items dd, .pinky-guide-controls { font-size: 14px; line-height: 1.55; }
+.pinky-guide-controls { padding-left: 1.3em; }
+.pinky-guide-controls li + li { margin-top: 4px; }
+#pinky-touch-lock {
+  position: absolute;
+  z-index: 65;
+  top: calc(max(12px, env(safe-area-inset-top)) + 49px);
+  left: max(12px, env(safe-area-inset-left));
   padding: 8px 12px;
-  border: 1px solid #efb2d0;
   border-radius: 10px;
-  background: #fff0f7;
-}
-.pinky-game-help summary {
-  padding: 3px 0;
-  color: #a02a67;
+  background: #742050;
+  color: white;
   font-weight: 800;
-  cursor: pointer;
+  pointer-events: none;
 }
-.pinky-game-help ul { padding: 6px 0 3px 1.3em; font-size: 14px; line-height: 1.6; }
-.pinky-game-help li + li { margin-top: 4px; }
 .pinky-setting-row input {
   flex: 1;
   min-width: 0;
@@ -227,18 +246,6 @@
   border-radius: 10px;
   background: #fff;
   font: inherit;
-}
-.pinky-motion-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  cursor: pointer;
-}
-.pinky-arcade-dialog .pinky-motion-toggle input {
-  width: 22px;
-  height: 22px;
-  accent-color: #bd3b7b;
 }
 #pinky-connect-form { margin-top: 12px; }
 #controller-disconnect { margin-top: 8px; }

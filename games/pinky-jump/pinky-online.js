@@ -296,6 +296,15 @@
       $('pinky-'+key+'-tab').setAttribute('aria-pressed',String(active));
     }
   }
+  function selectSettingsPane(pane) {
+    showSettingsPane(pane);
+    if (pane==='motion') {
+      if (!motionEnabled) enableSensor();
+    } else {
+      motionRequest++;
+      setMotionEnabled(false);
+    }
+  }
   function updatePairedPhase(phase) {
     if (phase === pairedPhase) return;
     pairedPhase = phase;
@@ -315,6 +324,7 @@
     setMotionEnabled(false);
     updateMotionMode();
     setText('pinky-motion-status',message);
+    renderRoomStatus(message);
   }
   async function connectPhone(event) {
     event.preventDefault();
@@ -387,7 +397,7 @@
   let lastJumpAt=-Infinity,armed=true;
   function setMotionEnabled(enabled) {
     motionEnabled=enabled;
-    $('pinky-motion-enabled').checked=enabled;
+    if (!enabled) $('pinky-touch-lock').hidden=true;
     baseline=null;
     samples=0;
     previousImpulse=0;
@@ -456,6 +466,7 @@
         hostSetPhase(qualified?'record':'gameover',score);
       },
       sendPairedJump,
+      isMotionEnabled:()=>motionEnabled,
       isPairedPlaying:()=>Boolean(pairedRoom && pairedPhase==='playing'),
       globalBest(){return remoteOnline?(remoteBoard[0]?.score||0):null;},
       globalConnected(){return remoteOnline;}
@@ -527,23 +538,30 @@
       tabSwipe=null;
       if(Math.abs(dx)<30 || Math.abs(dx)<Math.abs(dy)*1.5)return;
       suppressTabClick=true;
-      showSettingsPane(dx<0?'motion':'pair');
+      selectSettingsPane(dx<0?'motion':'pair');
     });
     settingsTabs.addEventListener('click',event=>{
       if(suppressTabClick && event.detail>0)return;
       const tab=event.target.closest('button');
-      if(tab)showSettingsPane(tab.id==='pinky-pair-tab'?'pair':'motion');
+      if(tab)selectSettingsPane(tab.id==='pinky-pair-tab'?'pair':'motion');
     });
     $('pinky-connect-form').addEventListener('submit',connectPhone);
     $('controller-disconnect').addEventListener('click',()=>disconnectPhone('已中斷配對。'));
-    $('pinky-motion-enabled').addEventListener('change',event=>{
-      if(event.target.checked)enableSensor();
-      else {
-        motionRequest++;
-        setMotionEnabled(false);
-        setText('pinky-motion-status','體感跳躍已關閉。');
-      }
+    const showHelp=visible=>{
+      $('pinky-settings-view').hidden=visible;
+      $('pinky-help-view').hidden=!visible;
+      settings.setAttribute('aria-labelledby',visible?'pinky-help-title':'pinky-pair-title');
+      settings.scrollTop=0;
+    };
+    $('pinky-help-open').addEventListener('click',()=>{
+      showHelp(true);
+      $('pinky-help-back').focus({preventScroll:true});
     });
+    $('pinky-help-back').addEventListener('click',()=>{
+      showHelp(false);
+      $('pinky-help-open').focus();
+    });
+    settings.addEventListener('close',()=>showHelp(false));
     window.addEventListener('devicemotion',motionFrame);
     window.addEventListener('offline',()=>{
       if(pairedRoom)disconnectPhone('網路已中斷，請重新配對。');

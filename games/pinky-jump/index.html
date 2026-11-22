@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css?v=3" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=5" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=6" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=1"></script>
@@ -58,6 +58,7 @@
 
     <!-- 遊戲畫布 -->
     <canvas id="game-canvas"></canvas>
+    <p id="pinky-touch-lock" role="status" hidden>請先關閉體感跳躍</p>
 
     <!-- 開始 / 結束 互動提示面板 -->
     <div id="ui-overlay" class="ui-overlay">
@@ -110,61 +111,82 @@
   </dialog>
 
   <dialog id="pinky-pair-dialog" class="pinky-arcade-dialog" aria-labelledby="pinky-pair-title">
-    <h2 id="pinky-pair-title">Pinky 設定</h2>
-    <div class="pinky-settings-controls">
-      <button id="fullscreen-btn" type="button" class="pinky-light">⛶ 全螢幕</button>
-      <button id="mute-btn" type="button" class="pinky-light" aria-pressed="true">🔊 音效已開啟</button>
-    </div>
-    <div id="pinky-settings-tabs" class="pinky-settings-tabs" data-pane="pair" role="group" aria-label="設定頁面">
-      <button id="pinky-pair-tab" type="button" aria-pressed="true" aria-controls="pinky-pair-pane">手機配對</button>
-      <button id="pinky-motion-tab" type="button" aria-pressed="false" aria-controls="pinky-motion-pane">體感跳躍</button>
-    </div>
-    <section id="pinky-pair-pane" aria-labelledby="pinky-pair-tab">
-      <button id="pinky-create-room" type="button" class="pinky-light">產生 6 碼配對碼</button>
-      <p id="pinky-room-code" class="pinky-pair-code" hidden></p>
-      <form id="pinky-connect-form">
-        <label for="controller-room-input">手機配對碼</label>
-        <div class="pinky-setting-row">
-          <input id="controller-room-input" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="6 碼配對碼">
-          <button id="controller-connect" type="submit">連線</button>
-        </div>
-      </form>
-      <div id="pinky-share-room" hidden>
-        <label for="pinky-room-link">手機控制器連結</label>
-        <div class="pinky-setting-row">
-          <input id="pinky-room-link" readonly>
-          <button id="pinky-copy-link" type="button" class="pinky-light">複製連結</button>
-        </div>
+    <div id="pinky-settings-view">
+      <h2 id="pinky-pair-title">Pinky 設定</h2>
+      <div class="pinky-settings-controls">
+        <button id="fullscreen-btn" type="button" class="pinky-light">⛶ 全螢幕</button>
+        <button id="mute-btn" type="button" class="pinky-light" aria-pressed="true">🔊 音效已開啟</button>
       </div>
-      <p id="pinky-pair-status" role="status"></p>
-    </section>
-    <section id="pinky-motion-pane" aria-labelledby="pinky-motion-tab" hidden>
-      <label class="pinky-motion-toggle"><input id="pinky-motion-enabled" type="checkbox"> 啟動體感跳躍</label>
-      <div class="pinky-setting-row">
-        <label for="controller-sensitivity">靈敏度</label>
-        <select id="controller-sensitivity">
-          <option value="low">低</option><option value="normal" selected>中</option><option value="high">高</option>
-        </select>
+      <div id="pinky-settings-tabs" class="pinky-settings-tabs" data-pane="pair" role="group" aria-label="設定頁面">
+        <button id="pinky-pair-tab" type="button" aria-pressed="true" aria-controls="pinky-pair-pane">手機配對</button>
+        <button id="pinky-motion-tab" type="button" aria-pressed="false" aria-controls="pinky-motion-pane">體感跳躍</button>
       </div>
-      <p id="pinky-motion-mode">本機模式可用手機或平板感應，無須配對。</p>
-      <p id="pinky-motion-status" role="status"></p>
-      <button id="controller-disconnect" type="button" class="pinky-light" hidden>中斷配對</button>
-    </section>
-    <details class="pinky-game-help">
-      <summary>遊戲說明</summary>
-      <ul>
-        <li>點一下遊戲畫面就會跳。電腦也可按空白鍵、↑ 或 W。</li>
-        <li>跳過障礙、閃避飛機和小鳥。收集金幣與星星加分，愛心護盾可抵擋一次撞擊。</li>
-        <li>手機或平板可在「體感跳躍」啟用感應，再向上抬起裝置跳躍。</li>
+      <section id="pinky-pair-pane" aria-labelledby="pinky-pair-tab">
+        <button id="pinky-create-room" type="button" class="pinky-light">產生 6 碼配對碼</button>
+        <p id="pinky-room-code" class="pinky-pair-code" hidden></p>
+        <form id="pinky-connect-form">
+          <label for="controller-room-input">手機配對碼</label>
+          <div class="pinky-setting-row">
+            <input id="controller-room-input" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="6 碼配對碼">
+            <button id="controller-connect" type="submit">連線</button>
+          </div>
+        </form>
+        <div id="pinky-share-room" hidden>
+          <label for="pinky-room-link">手機控制器連結</label>
+          <div class="pinky-setting-row">
+            <input id="pinky-room-link" readonly>
+            <button id="pinky-copy-link" type="button" class="pinky-light">複製連結</button>
+          </div>
+        </div>
+        <p id="pinky-pair-status" role="status"></p>
+      </section>
+      <section id="pinky-motion-pane" aria-labelledby="pinky-motion-tab" hidden>
+        <p>切回「手機配對」即可關閉體感跳躍。</p>
+        <div class="pinky-setting-row">
+          <label for="controller-sensitivity">靈敏度</label>
+          <select id="controller-sensitivity">
+            <option value="low">低</option><option value="normal" selected>中</option><option value="high">高</option>
+          </select>
+        </div>
+        <p id="pinky-motion-mode">本機模式可用手機或平板感應，無須配對。</p>
+        <p id="pinky-motion-status" role="status"></p>
+        <button id="controller-disconnect" type="button" class="pinky-light" hidden>中斷配對</button>
+      </section>
+      <div class="pinky-dialog-actions">
+        <button id="pinky-help-open" type="button" class="pinky-light">遊戲說明</button>
+        <button id="pinky-pair-close" type="button">完成</button>
+      </div>
+    </div>
+    <section id="pinky-help-view" hidden>
+      <h2 id="pinky-help-title">遊戲說明</h2>
+      <button id="pinky-help-back" type="button" class="pinky-light">← 返回設定</button>
+      <h3>收集道具</h3>
+      <dl class="pinky-guide-items">
+        <div><dt><canvas data-game-icon="coin" width="100" height="60" aria-hidden="true"></canvas>金幣</dt><dd>碰到就加 50 分。</dd></div>
+        <div><dt><canvas data-game-icon="star" width="100" height="60" aria-hidden="true"></canvas>星星</dt><dd>碰到就加 100 分。</dd></div>
+        <div><dt><canvas data-game-icon="heart" width="100" height="60" aria-hidden="true"></canvas>愛心</dt><dd>獲得一層護盾，可抵擋一次撞擊。最多兩層。</dd></div>
+      </dl>
+      <h3>路上的東西</h3>
+      <dl class="pinky-guide-items">
+        <div><dt><canvas data-game-icon="mountain" width="100" height="60" aria-hidden="true"></canvas>山峰</dt><dd>小山峰和高山峰都要跳過。連續起伏的地面可以直接跑過。</dd></div>
+        <div><dt><canvas data-game-icon="crystal" width="100" height="60" aria-hidden="true"></canvas>水晶柱</dt><dd>藍色和粉色水晶都要跳過。有時會連著出現兩根。</dd></div>
+        <div><dt><canvas data-game-icon="bird" width="100" height="60" aria-hidden="true"></canvas>小鳥</dt><dd>在較低的位置飛過，抓準起跳時機避開。</dd></div>
+        <div><dt><canvas data-game-icon="airplane" width="100" height="60" aria-hidden="true"></canvas>飛機</dt><dd>在較高的位置飛過。飛機經過時，可從下方跑過。</dd></div>
+        <div><dt><canvas data-game-icon="cloudGate" width="100" height="60" aria-hidden="true"></canvas>雲朵通道</dt><dd>雲朵不會造成撞擊，通道中央有星星可以收集。</dd></div>
+      </dl>
+      <h3>怎麼跳</h3>
+      <p>點一下遊戲畫面。電腦也可按空白鍵、↑ 或 W。選「體感跳躍」後，向上抬起手機或平板就能跳。切回「手機配對」可恢復點畫面跳躍。</p>
+      <h3>畫面上的按鈕</h3>
+      <ul class="pinky-guide-controls">
+        <li>🏆 TOP 10 或 HI 可開啟排行榜，SCORE 顯示本局分數。</li>
+        <li>🛡️ 顯示剩餘護盾。貓咪齒輪可開啟設定與遊戲說明。</li>
+        <li>⛶ 切換全螢幕，🔊 開關聲音，📲 安裝可將遊戲加到裝置。</li>
       </ul>
-    </details>
-    <div class="pinky-dialog-actions">
-      <button id="pinky-pair-close" type="button">完成</button>
-    </div>
+    </section>
   </dialog>
 
-  <script src="game.js?v=20261122-music-settings"></script>
-  <script src="pinky-online.js?v=8"></script>
+  <script src="game.js?v=20261122-motion-guide"></script>
+  <script src="pinky-online.js?v=9"></script>
   <script src="lf-menu.js?v=2"></script>
 </body>
 </html>

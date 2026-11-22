@@ -850,17 +850,17 @@ function drawBackground() {
 }
 
 // 繪製障礙物
-function drawObstacles() {
-  obstacles.forEach(obs => {
+function drawObstacles(ctx, objects, groundAt = getGroundY) {
+  objects.forEach(obs => {
     if(obs.type==='airplane'){
       ctx.save();ctx.translate(obs.x,obs.y+14);ctx.scale(obs.w/70,obs.h/30);ctx.fillStyle='#7bbae5';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(57,-7);ctx.lineTo(70,0);ctx.lineTo(53,10);ctx.lineTo(22,10);ctx.lineTo(11,18);ctx.lineTo(3,16);ctx.lineTo(10,8);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(25,0,6,4);ctx.fillRect(36,0,6,4);ctx.restore();
     }else if(obs.type==='mountain'){
       const cx=obs.x+obs.w*.5, peak=obs.y-obs.h;
       ctx.fillStyle=obs.tall?'#a9c8b5':'#9ac6ab';
       ctx.beginPath();
-      ctx.moveTo(obs.x,getGroundY(obs.x));
+      ctx.moveTo(obs.x,groundAt(obs.x));
       ctx.lineTo(cx,peak);
-      ctx.lineTo(obs.x+obs.w,getGroundY(obs.x+obs.w));
+      ctx.lineTo(obs.x+obs.w,groundAt(obs.x+obs.w));
       ctx.closePath();ctx.fill();
       ctx.fillStyle='#fff5f9';ctx.beginPath();
       ctx.moveTo(cx-obs.w*.15,peak+obs.h*.28);
@@ -947,8 +947,8 @@ function drawObstacles() {
 }
 
 // 繪製金色魔法幣
-function drawCoins() {
-  coins.forEach(c => {
+function drawCoins(ctx, items) {
+  items.forEach(c => {
     if (c.collected) return;
     c.spin += 0.1;
     const scaleX = Math.max(0.25, Math.abs(Math.cos(c.spin)));
@@ -980,6 +980,26 @@ function drawCoins() {
 
     ctx.restore();
   });
+}
+
+// Reuse the game artwork for the guide without touching the active obstacles.
+const guideObstacles = {
+  mountain: {x:24,y:51,w:52,h:43},
+  crystal: {x:22,y:51,h:42,count:2},
+  bird: {x:28,y:14,flap:-.22},
+  airplane: {x:17,y:12,w:66,h:30},
+  cloudGate: {x:0,y:38,h:44}
+};
+for (const icon of document.querySelectorAll('[data-game-icon]')) {
+  const iconContext = icon.getContext('2d');
+  const type = icon.dataset.gameIcon;
+  const obstacle = guideObstacles[type];
+  if (obstacle) {
+    if (type === 'cloudGate') iconContext.scale(.99,.46);
+    drawObstacles(iconContext, [{type,...obstacle}], () => obstacle.y);
+  } else {
+    drawCoins(iconContext, [{type,x:50,y:30,r:19,spin:-.1}]);
+  }
 }
 
 // 繪製粒子特效
@@ -1099,8 +1119,8 @@ function update() {
     }
   }
 
-  drawCoins();
-  drawObstacles();
+  drawCoins(ctx, coins);
+  drawObstacles(ctx, obstacles);
   player.draw();
   drawParticles();
   ctx.restore();
@@ -1189,10 +1209,22 @@ document.addEventListener('keydown', event => {
   else if (gameState === 'PLAYING') player.jump();
 }, true);
 const gameWrapper = document.getElementById('game-wrapper');
+const touchLock = document.getElementById('pinky-touch-lock');
+let touchLockTimer;
+function showTouchLock() {
+  touchLock.hidden = false;
+  clearTimeout(touchLockTimer);
+  touchLockTimer = setTimeout(() => { touchLock.hidden = true; }, 2000);
+}
 gameWrapper.addEventListener('pointerdown', event => {
   if (event.isPrimary === false || event.button !== 0) return;
   // The entire game canvas responds; HUD actions and dialogs are excluded.
   if (event.target.closest('button, a, dialog, .panel, #hud, input, textarea, select, [role="button"]')) return;
+  if (window.pinkyArcade?.isMotionEnabled()) {
+    event.preventDefault();
+    showTouchLock();
+    return;
+  }
   if (window.pinkyArcade?.sendPairedJump()) {
     event.preventDefault();
     return;
