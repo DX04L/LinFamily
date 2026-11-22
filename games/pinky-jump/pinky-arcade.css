@@ -151,18 +151,67 @@
 }
 #pinky-pair-dialog button { white-space: nowrap; }
 #pinky-pair-dialog button:disabled { opacity: .55; cursor: wait; }
-.pinky-settings-controls, .pinky-setting-row {
+.pinky-setting-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 8px 0 14px;
 }
-.pinky-settings-controls { flex-wrap: wrap; }
-.pinky-settings-controls > button { flex: 1 1 auto; }
-.pinky-settings-controls > button[aria-pressed="false"]:not(#mute-btn) {
-  background: #fff0f7;
+.pinky-settings-controls, .pinky-settings-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 8px 0 14px;
+}
+.pinky-settings-controls { gap: 0; }
+.pinky-settings-controls > button + button { border-left-width: 1px; }
+#pinky-pair-dialog :is(.pinky-settings-controls, .pinky-settings-tabs) > button {
+  height: 44px;
+  min-width: 0;
+  padding: 0 4px;
+  font-size: clamp(11px, 4vw, 16px);
+}
+.pinky-settings-tabs {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #fce5f1;
+  touch-action: pan-y;
+}
+.pinky-settings-tabs::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 50% 0 0;
+  border-radius: 10px;
+  background: #e95396;
+  transition: transform .22s ease;
+}
+.pinky-settings-tabs[data-pane="motion"]::before { transform: translateX(100%); }
+#pinky-pair-dialog .pinky-settings-tabs > button {
+  background: transparent;
   color: #a02a67;
 }
+#pinky-pair-dialog .pinky-settings-tabs > button[aria-pressed="true"] { color: #fff; }
+.pinky-settings-tabs > button:focus-visible { outline-offset: -4px; }
+@media (prefers-reduced-motion: reduce) {
+  .pinky-settings-tabs::before { transition: none; }
+}
+.pinky-game-help {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #efb2d0;
+  border-radius: 10px;
+  background: #fff0f7;
+}
+.pinky-game-help summary {
+  padding: 3px 0;
+  color: #a02a67;
+  font-weight: 800;
+  cursor: pointer;
+}
+.pinky-game-help ul { padding: 6px 0 3px 1.3em; font-size: 14px; line-height: 1.6; }
+.pinky-game-help li + li { margin-top: 4px; }
 .pinky-setting-row input {
   flex: 1;
   min-width: 0;

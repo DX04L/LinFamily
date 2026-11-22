@@ -95,14 +95,40 @@ const sfx = new SoundFX();
 // Original user-provided soundtrack, renamed and tagged "Pinky Jump Music".
 const MUSIC_FILE = 'pinky-jump-music.mp3';
 const MUSIC_TITLE = 'Pinky Jump Music';
+const MUSIC_VOLUME = .16;
 const backgroundMusic = typeof Audio === 'function' ? new Audio(MUSIC_FILE) : null;
 if (backgroundMusic) {
   backgroundMusic.title = MUSIC_TITLE;
   backgroundMusic.loop = true;
   backgroundMusic.preload = 'auto';
-  backgroundMusic.volume = .28;
+  backgroundMusic.volume = MUSIC_VOLUME;
 }
+let musicGain = null;
 let musicFadeTimer = null;
+function setMusicVolume(volume) {
+  if (musicGain) musicGain.gain.value = volume;
+  else backgroundMusic.volume = volume;
+}
+function prepareMusicAudio() {
+  if (musicGain) return;
+  try {
+    sfx.init();
+    const shelf = sfx.ctx.createBiquadFilter();
+    shelf.type = 'highshelf';
+    shelf.frequency.value = 3000;
+    shelf.gain.value = -5;
+    const gain = sfx.ctx.createGain();
+    gain.gain.value = MUSIC_VOLUME;
+    shelf.connect(gain);
+    gain.connect(sfx.ctx.destination);
+    // Only the background track goes through this EQ.
+    sfx.ctx.createMediaElementSource(backgroundMusic).connect(shelf);
+    backgroundMusic.volume = 1;
+    musicGain = gain;
+  } catch (error) {
+    console.warn('Pinky Jump Music EQ unavailable:', error);
+  }
+}
 let footstepDistance = 0;
 function updateMediaSession(state) {
   if (typeof navigator === 'undefined' || !navigator.mediaSession) return;
@@ -125,7 +151,8 @@ function beginMusic() {
   backgroundMusic.pause();
   backgroundMusic.currentTime = 0;
   backgroundMusic.playbackRate = 1;
-  backgroundMusic.volume = .28;
+  prepareMusicAudio();
+  setMusicVolume(MUSIC_VOLUME);
   updateMediaSession('playing');
   const result = backgroundMusic.play();
   if (result && typeof result.catch === 'function') {
@@ -147,10 +174,10 @@ function endMusic() {
     return;
   }
   if (musicFadeTimer) clearInterval(musicFadeTimer);
-  let volume = backgroundMusic.volume;
+  let volume = musicGain ? musicGain.gain.value : backgroundMusic.volume;
   musicFadeTimer = setInterval(() => {
-    volume = Math.max(0, volume - .07);
-    backgroundMusic.volume = volume;
+    volume = Math.max(0, volume - MUSIC_VOLUME / 4);
+    setMusicVolume(volume);
     if (volume <= 0) {
       clearInterval(musicFadeTimer);
       musicFadeTimer = null;
@@ -226,6 +253,8 @@ muteBtn.addEventListener('click', () => {
     backgroundMusic.pause();
     updateMediaSession('paused');
   } else if (gameState === 'PLAYING') {
+    prepareMusicAudio();
+    setMusicVolume(MUSIC_VOLUME);
     updateMediaSession('playing');
     const result = backgroundMusic.play();
     if (result && typeof result.catch === 'function') {

@@ -289,6 +289,7 @@
     } finally {if(btn)btn.disabled=false;}
   }
   function showSettingsPane(pane) {
+    $('pinky-settings-tabs').dataset.pane=pane;
     for (const key of ['pair','motion']) {
       const active=key===pane;
       $('pinky-'+key+'-pane').hidden=!active;
@@ -512,8 +513,27 @@
       settings.showModal();
       syncOverlayViewport();
     });
-    $('pinky-pair-tab').addEventListener('click',()=>showSettingsPane('pair'));
-    $('pinky-motion-tab').addEventListener('click',()=>showSettingsPane('motion'));
+    const settingsTabs=$('pinky-settings-tabs');
+    let tabSwipe=null, suppressTabClick=false;
+    settingsTabs.addEventListener('pointerdown',event=>{
+      suppressTabClick=false;
+      if(event.isPrimary && event.button===0)
+        tabSwipe={id:event.pointerId,x:event.clientX,y:event.clientY};
+    });
+    settingsTabs.addEventListener('pointercancel',()=>{tabSwipe=null;});
+    settingsTabs.addEventListener('pointerup',event=>{
+      if(tabSwipe?.id!==event.pointerId)return;
+      const dx=event.clientX-tabSwipe.x, dy=event.clientY-tabSwipe.y;
+      tabSwipe=null;
+      if(Math.abs(dx)<30 || Math.abs(dx)<Math.abs(dy)*1.5)return;
+      suppressTabClick=true;
+      showSettingsPane(dx<0?'motion':'pair');
+    });
+    settingsTabs.addEventListener('click',event=>{
+      if(suppressTabClick && event.detail>0)return;
+      const tab=event.target.closest('button');
+      if(tab)showSettingsPane(tab.id==='pinky-pair-tab'?'pair':'motion');
+    });
     $('pinky-connect-form').addEventListener('submit',connectPhone);
     $('controller-disconnect').addEventListener('click',()=>disconnectPhone('已中斷配對。'));
     $('pinky-motion-enabled').addEventListener('change',event=>{

@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css?v=3" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=4" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=5" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=1"></script>
@@ -115,7 +115,7 @@
       <button id="fullscreen-btn" type="button" class="pinky-light">⛶ 全螢幕</button>
       <button id="mute-btn" type="button" class="pinky-light" aria-pressed="true">🔊 音效已開啟</button>
     </div>
-    <div class="pinky-settings-controls" role="group" aria-label="設定頁面">
+    <div id="pinky-settings-tabs" class="pinky-settings-tabs" data-pane="pair" role="group" aria-label="設定頁面">
       <button id="pinky-pair-tab" type="button" aria-pressed="true" aria-controls="pinky-pair-pane">手機配對</button>
       <button id="pinky-motion-tab" type="button" aria-pressed="false" aria-controls="pinky-motion-pane">體感跳躍</button>
     </div>
@@ -150,13 +150,21 @@
       <p id="pinky-motion-status" role="status"></p>
       <button id="controller-disconnect" type="button" class="pinky-light" hidden>中斷配對</button>
     </section>
+    <details class="pinky-game-help">
+      <summary>遊戲說明</summary>
+      <ul>
+        <li>點一下遊戲畫面就會跳。電腦也可按空白鍵、↑ 或 W。</li>
+        <li>跳過障礙、閃避飛機和小鳥。收集金幣與星星加分，愛心護盾可抵擋一次撞擊。</li>
+        <li>手機或平板可在「體感跳躍」啟用感應，再向上抬起裝置跳躍。</li>
+      </ul>
+    </details>
     <div class="pinky-dialog-actions">
       <button id="pinky-pair-close" type="button">完成</button>
     </div>
   </dialog>
 
-  <script src="game.js?v=20261122-idle-gestures"></script>
-  <script src="pinky-online.js?v=7"></script>
+  <script src="game.js?v=20261122-music-settings"></script>
+  <script src="pinky-online.js?v=8"></script>
   <script src="lf-menu.js?v=2"></script>
 </body>
 </html>
