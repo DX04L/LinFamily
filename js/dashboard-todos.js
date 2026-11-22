@@ -365,6 +365,67 @@ window.clcMountTodos = function (dashboard, {
         },
         error: err => setStatus(err.code ? errText(err) : '無法移動或保存排序，請稍後再試。')
       });
+      // ---------- 清單太長：底部淡出漸層＋小圓 ⌄ 鈕（不寫字），點了暫時展開整張卡片（浮在上面，不改排列），再點或點外面收回 ----------
+      (() => {
+        const host = widget.parentElement;
+        if (!host || !window.ResizeObserver) return;
+        if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+        const fade = document.createElement('div');
+        fade.className = 'todo-more';
+        fade.hidden = true;
+        fade.innerHTML = '<button type="button" class="todo-more-btn" aria-label="展開全部待辦" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
+        host.append(fade);
+        const btn = fade.firstChild;
+        if (!document.getElementById('todoMoreCss')) {
+          const st = document.createElement('style'); st.id = 'todoMoreCss';
+          st.textContent = `.todo-more{position:absolute;left:1px;right:1px;bottom:1px;height:52px;border-radius:0 0 17px 17px;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;background:linear-gradient(to bottom,transparent,var(--todo-more-bg,#fff) 78%);z-index:2}
+.todo-more[hidden]{display:none}
+.todo-more.is-open{background:none}
+.todo-more-btn{pointer-events:auto;width:30px;height:30px;border-radius:999px;display:grid;place-items:center;border:1px solid rgba(148,163,184,.28);background:var(--todo-more-bg,#fff);color:#64748b;box-shadow:0 2px 8px rgba(15,23,42,.12);cursor:pointer;transition:transform .2s}
+.dark .todo-more-btn{color:#a3acc0;border-color:rgba(255,255,255,.14);box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.todo-more.is-open .todo-more-btn{transform:rotate(180deg)}
+.todo-more-btn:active{transform:scale(.92)}
+.todo-more.is-open .todo-more-btn:active{transform:rotate(180deg) scale(.92)}`;
+          document.head.append(st);
+        }
+        let open = false;
+        const scroller = () => [scroll, widget].find(el => el.scrollHeight > el.clientHeight + 2);
+        const update = () => {
+          if (open) return;
+          const bg = getComputedStyle(widget).backgroundColor;
+          if (bg && bg !== 'rgba(0, 0, 0, 0)') fade.style.setProperty('--todo-more-bg', bg);
+          const el = scroller();
+          fade.hidden = !el || el.scrollTop + el.clientHeight >= el.scrollHeight - 4;
+        };
+        const keep = [];
+        const set = (el, prop, val) => { keep.push([el, prop, el.style[prop]]); el.style[prop] = val; };
+        const item = widget.closest('.grid-stack-item');
+        const close = () => {
+          if (!open) return;
+          open = false; fade.classList.remove('is-open'); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', '展開全部待辦');
+          while (keep.length) { const [el, prop, val] = keep.pop(); el.style[prop] = val; }
+          update();
+        };
+        const expand = () => {
+          const r = widget.getBoundingClientRect();
+          open = true; fade.classList.add('is-open'); btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', '收回');
+          if (item) set(item, 'zIndex', '60');
+          set(host, 'bottom', 'auto'); set(host, 'height', 'auto'); set(host, 'overflow', 'visible');
+          set(widget, 'height', 'auto'); set(widget, 'minHeight', r.height + 'px'); set(widget, 'maxHeight', (innerHeight - 16) + 'px');
+          set(widget, 'overflow', 'auto'); set(widget, 'paddingBottom', '48px'); set(widget, 'boxShadow', '0 12px 32px rgba(15,23,42,.18)');
+          set(scroll, 'flex', 'none'); set(scroll, 'overflow', 'visible');
+          requestAnimationFrame(() => widget.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+        };
+        btn.addEventListener('click', e => { e.stopPropagation(); open ? close() : expand(); });
+        document.addEventListener('pointerdown', e => { if (open && !host.contains(e.target)) close(); }, { capture: true, signal });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); }, { signal });
+        scroll.addEventListener('scroll', update, { passive: true, signal });
+        widget.addEventListener('scroll', update, { passive: true, signal });
+        const ro = new ResizeObserver(update);
+        ro.observe(widget); ro.observe(body);
+        signal.addEventListener('abort', () => { ro.disconnect(); close(); fade.remove(); });
+        update();
+      })();
       const byNewest = (a, b) => b.created - a.created || b.id.localeCompare(a.id);
       // 刪除模式（手機）：長按任一項 → 每項右上角出現「−」（跟 App 一樣），點旁邊或 Esc 結束。
       function setTodoDeleteMode(on) {
