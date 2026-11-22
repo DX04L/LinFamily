@@ -100,5 +100,63 @@ service cloud.firestore {
         && request.resource.data.entry == resource.data.entry;
       allow delete: if ownsSgAnnotations();
     }
+
+    // ── Pinky Jump experimental controller: anonymous login, one-hour rooms.
+    // Room documents cannot be listed. Only the first paired controller can update it.
+    match /pinky_jump_rooms/{room} {
+      function validCode() { return room.matches('[A-HJ-NP-Z2-9]{6}'); }
+      function fresh() {
+        return resource.data.createdAt is timestamp
+          && resource.data.createdAt > request.time - duration.value(1, 'h');
+      }
+      allow get: if request.auth != null && validCode() && fresh();
+      allow list, delete: if false;
+      allow create: if request.auth != null && validCode()
+        && request.resource.data.keys().hasOnly([
+          'host', 'controller', 'action', 'seq', 'power', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'host', 'controller', 'action', 'seq', 'power', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.host == request.auth.uid
+        && request.resource.data.controller == ''
+        && request.resource.data.action == 'waiting'
+        && request.resource.data.seq == 0
+        && request.resource.data.power == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if request.auth != null && validCode() && fresh()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'controller', 'action', 'seq', 'power', 'updatedAt'
+        ])
+        && (resource.data.controller == '' ||
+            resource.data.controller == request.auth.uid)
+        && request.resource.data.controller == request.auth.uid
+        && request.resource.data.seq is int
+        && request.resource.data.seq == resource.data.seq + 1
+        && request.resource.data.action in ['ready', 'start', 'jump']
+        && request.resource.data.power is number
+        && request.resource.data.power >= 0
+        && request.resource.data.power <= 1
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // ── Pinky Jump experimental shared Top 10; submitted scores are not server-verified.
+    match /pinky_jump_scores/{entry} {
+      allow get: if true;
+      allow list: if request.query.limit != null && request.query.limit <= 10;
+      allow update, delete: if false;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['name','score','owner','createdAt'])
+        && request.resource.data.keys().hasAll(['name','score','owner','createdAt'])
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 12
+        && request.resource.data.score is int
+        && request.resource.data.score >= 1
+        && request.resource.data.score <= 9999999
+        && request.resource.data.createdAt == request.time;
+    }
   }
 }
