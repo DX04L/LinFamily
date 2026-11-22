@@ -153,7 +153,6 @@ let height = window.innerHeight;
 let dpr = Math.min(window.devicePixelRatio || 1, 2);
 let gameState = 'START';
 let score = 0;
-let hiScore = Number(localStorage.getItem('pinkyJumpHiScore') || 0) || 0;
 let shield = 0;
 let immunity = 0;
 const shieldEl = document.getElementById('shield-count');
@@ -161,7 +160,7 @@ let gameSpeed = 7;
 let frameCount = 0;
 let lastMilestone = 0;
 let dayNightFactor = 0;
-hiScoreEl.textContent = String(hiScore).padStart(5, '0');
+hiScoreEl.textContent = '-----';
 
 function resizeCanvas() {
   width = window.innerWidth;
@@ -1106,10 +1105,9 @@ function triggerGameOver() {
   const finalVal = Math.floor(score);
   finalScoreEl.textContent = finalVal;
 
-  if (finalVal > hiScore) {
-    hiScore = finalVal;
-    try {localStorage.setItem('pinkyJumpHiScore',String(hiScore));} catch (_) {}
-    hiScoreEl.textContent = String(hiScore).padStart(5, '0');
+  // HI is the Firebase global score, never a device-local fallback.
+  const globalBest=window.pinkyArcade?.globalBest?.();
+  if(globalBest!==null && globalBest!==undefined && finalVal>globalBest) {
     newRecordBadge.classList.remove('hidden');
   } else {
     newRecordBadge.classList.add('hidden');
@@ -1128,7 +1126,8 @@ window.pinkyRemoteJump = function(strength = .65) {
   if (gameState === 'START') startGame();
   if (gameState !== 'PLAYING' || !player.isGrounded) return;
   player.jump();
-  const hold = 110 + Math.round(Math.max(0,Math.min(1,strength)) * 650);
+  // Conservative motion jumps; only strong manual presses reach high.
+  const hold = 35 + Math.round(Math.max(0,Math.min(1,strength)) * 280);
   setTimeout(() => player.releaseJump(),hold);
 };
 
