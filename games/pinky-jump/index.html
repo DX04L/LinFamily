@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=3" />
   <link rel="stylesheet" href="style.css?v=5" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=16" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=17" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=2"></script>
@@ -113,7 +113,6 @@
     </div>
     <p id="pinky-rank-origin" class="pinky-rank-origin"></p>
     <ol id="pinky-rank-rows"></ol>
-    <div id="pinky-rank-admin" hidden><button id="pinky-rank-migrate" type="button" class="pinky-light" data-zh="整理舊紀錄（合併到新排行榜）">Merge old records</button></div>
     <div class="pinky-dialog-actions"><button id="pinky-rank-close" type="button" data-zh="關閉">Close</button></div>
   </dialog>
 
@@ -244,10 +243,10 @@
     <p id="controller-status" role="status"></p>
   </main>
 
-  <script src="locale.js?v=2"></script>
+  <script src="locale.js?v=3"></script>
   <script src="game.js?v=20261122-motion-board"></script>
   <script src="name-filter.js?v=1"></script>
-  <script src="pinky-online.js?v=18"></script>
+  <script src="pinky-online.js?v=19"></script>
   <script src="lf-menu.js?v=3"></script>
 </body>
 </html>

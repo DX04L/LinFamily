@@ -112,15 +112,17 @@
         del.type='button';del.className='pinky-rank-delete';del.textContent='🗑';
         del.title=PinkyLocale.translate('刪除這筆紀錄');
         del.addEventListener('click',()=>deleteEntry(motionTab?MOTION_BOARD:BOARD,entry));
-        li.append(del);
+        const edit=document.createElement('button');
+        edit.type='button';edit.className='pinky-rank-delete';edit.textContent='✏️';
+        edit.title=PinkyLocale.translate('更改名字');
+        edit.addEventListener('click',()=>renameEntry(entry));
+        li.append(edit,del);
       }
       rows.appendChild(li);
     });
     setText('pinky-rank-origin',remoteOnline ?
       (motionTab ? '🤸 只限全程體感跳躍的 Top 10（即時同步）' : '🌐 所有登記的玩家，每個名字一筆最高分（🤸＝體感紀錄）') :
-      PinkyLocale.message('⚠️ 全球排行榜未連線：{0}',globalError));
-    const tools=$('pinky-rank-admin');
-    if (tools) tools.hidden=!superDb;
+      '正在連接排行榜…');
     setText('hi-score',remoteOnline ? String(remoteBoard[0]?.score||0).padStart(5,'0') : '-----');
   }
   function openGameDialog(dialog) {
@@ -255,32 +257,34 @@
       await fs.deleteDoc(fs.doc(superDb,collection,entry.key));
     } catch(err) { alert(errorText(err)); }
   }
-  // Super user only: merge every old pinky_jump_scores entry into the new board.
-  async function migrateOldScores() {
+  // Super user only: rename an entry in both boards (keeps the best score if the new name exists).
+  async function renameEntry(entry) {
     if (!superDb) return;
-    const btn=$('pinky-rank-migrate');
-    btn.disabled=true;
+    const input=prompt(PinkyLocale.translate('輸入新的名字'),entry.name);
+    if (input===null) return;
+    if (PinkyNameFilter.check(input)) { alert(PinkyLocale.translate('這個名字不能使用，請換一個。')); return; }
+    const {name,key}=PinkyNameFilter.clean(input);
     try {
-      const {fs,auth}=await cloud();
-      const mainAuth=superAuth;
-      const snap=await fs.getDocs(fs.collection(superDb,'pinky_jump_scores'));
-      const best=new Map();
-      let skipped=0;
-      const rows=snap.docs.map(d=>d.data())
-        .sort((a,b)=>(a.createdAt?.toMillis?.()||0)-(b.createdAt?.toMillis?.()||0));
-      for (const row of rows) {
-        const score=Math.floor(Number(row.score));
-        if (PinkyNameFilter.check(row.name) || !(score>0)) { skipped++; continue; }
-        const {name,key}=PinkyNameFilter.clean(row.name);
-        const prev=best.get(key);
-        best.set(key,{name,key,score:Math.max(score,prev?.score||0),motion:false});
-      }
-      for (const entry of best.values())
-        await writeBest(fs,superDb,mainAuth.currentUser.uid,entry);
-      alert(PinkyLocale.message('已合併 {0} 個名字，略過 {1} 筆（PINKY、空白或不當名字）。',best.size,skipped));
-    } catch(err) {
-      alert(errorText(err));
-    } finally { btn.disabled=false; }
+      const {fs}=await cloud();
+      const uid=superAuth.currentUser.uid;
+      await fs.runTransaction(superDb,async tx=>{
+        const plan=[];
+        for (const col of [BOARD,MOTION_BOARD]) {
+          const oldRef=fs.doc(superDb,col,entry.key), newRef=fs.doc(superDb,col,key);
+          const oldSnap=await tx.get(oldRef);
+          const newSnap=key===entry.key?oldSnap:await tx.get(newRef);
+          plan.push({oldRef,newRef,old:oldSnap.exists()?oldSnap.data():null,target:newSnap.exists()?newSnap.data():null});
+        }
+        for (const {oldRef,newRef,old,target} of plan) {
+          if (!old) continue;
+          const keepTarget=target && key!==entry.key && target.score>=old.score;
+          tx.set(newRef,{name,key,owner:uid,updatedAt:fs.serverTimestamp(),
+            score:keepTarget?target.score:old.score,
+            motion:keepTarget?target.motion===true:old.motion===true});
+          if (key!==entry.key) tx.delete(oldRef);
+        }
+      });
+    } catch(err) { alert(errorText(err)); }
   }
   let superAuth=null;
   async function detectSuper() {
@@ -730,7 +734,6 @@
     };
     $('pinky-rank-btn')?.addEventListener('click',showBoard);
     bindSlidingTabs($('pinky-rank-tabs'),selectRankTab);
-    $('pinky-rank-migrate')?.addEventListener('click',migrateOldScores);
     detectSuper();
     $('pinky-hi-open')?.addEventListener('click',showBoard);
     $('pinky-hi-open')?.addEventListener('keydown',event=>{

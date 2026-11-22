@@ -439,7 +439,6 @@ html[lang="en"] #pinky-language span:first-child, html[lang="zh-Hant"] #pinky-la
 #pinky-rank-tabs[data-pane="motion"]::before { transform: none; }
 #pinky-rank-tabs[data-pane="all"]::before { transform: translateX(100%); }
 #pinky-rank-rows { max-height: min(52dvh, 460px); overflow-y: auto; }
-#pinky-rank-rows .pinky-score-row:has(.pinky-rank-delete) { grid-template-columns: 32px 1fr auto auto; }
+#pinky-rank-rows .pinky-score-row:has(.pinky-rank-delete) { grid-template-columns: 32px 1fr auto auto auto; }
 .pinky-motion-badge { font-style: normal; font-size: .9em; }
 .pinky-rank-delete { border: 0; background: transparent; cursor: pointer; font-size: 16px; padding: 0 4px; }
-#pinky-rank-admin { text-align: center; margin-bottom: 10px; }
