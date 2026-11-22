@@ -76,5 +76,9 @@ body:has(#lfApps .dk-card ~ .dk-card) .lf-todo-drawer .todo-move-area {
 
 .lf-todo-menu.is-card-popup > button:only-of-type { grid-column: 1 / -1; }
 
-/* 共用桌面：標題可拖 */
+/* 共用桌面：電腦版上方小橫槓可拖（手機隱藏，用長按）、標題也可拖 */
+#lfApps .lf-todo-card .drag-handle { z-index:2; cursor:grab; }
+#lfApps .lf-todo-card .drag-handle::before { content:''; width:36px; height:4px; border-radius:2px; background:currentColor; opacity:.35; }
+#lfApps .lf-todo-card .drag-handle:hover::before { opacity:.7; }
+@media (hover:none), (pointer:coarse) { #lfApps .lf-todo-card .drag-handle { display:none; } }
 #lfApps .lf-todo-card h2.dk-handle { cursor:grab; }

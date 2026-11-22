@@ -23,7 +23,7 @@ window.clcBuildTodoFields = function (area) {
 
           <div class="mt-auto pt-2 border-t border-slate-100 dark:border-white/[0.06]">
             <button type="button" id="todoDoneToggle" class="w-full h-11 flex items-center justify-start gap-1.5 text-sm text-slate-500 dark:text-brand-muted" aria-expanded="false" aria-controls="todoDoneList">
-              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
               <span>今天已完成 <span id="todoDoneCount">0</span> 項</span>
             </button>
             <ul id="todoDoneList" class="hidden"></ul>
@@ -423,8 +423,9 @@ window.clcMountTodos = function (dashboard, {
         document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); }, { signal });
         scroll.addEventListener('scroll', update, { passive: true, signal });
         widget.addEventListener('scroll', update, { passive: true, signal });
-        const ro = new ResizeObserver(update);
-        ro.observe(widget); ro.observe(body);
+        let later = 0; // 拉卡片大小時 gridstack 有動畫，結束後再算一次
+        const ro = new ResizeObserver(() => { update(); clearTimeout(later); later = setTimeout(update, 400); });
+        ro.observe(widget); ro.observe(body); ro.observe(host);
         signal.addEventListener('abort', () => { ro.disconnect(); close(); fade.remove(); });
         update();
       })();
@@ -451,7 +452,6 @@ window.clcMountTodos = function (dashboard, {
           input.disabled = true;
           input.placeholder = '以 Superuser 登入後可新增待辦';
           doneCount.textContent = '0';
-          doneToggle.parentElement.classList.add('hidden'); // 沒有已完成就不顯示這一行
           const p = document.createElement('p');
           p.className = 'todo-empty';
           p.textContent = '這是個人待辦，登入後顯示。';
@@ -477,7 +477,6 @@ window.clcMountTodos = function (dashboard, {
         const done = todos.filter(x => x.done && (x.doneMs || 0) >= weekAgo).sort((a, b) => (b.doneMs || 0) - (a.doneMs || 0));
         const doneToday = done.filter(x => x.doneMs && ymd(new Date(x.doneMs)) === t).length;
         doneCount.textContent = doneToday;
-        doneToggle.parentElement.classList.toggle('hidden', !done.length); // 沒有已完成就不顯示這一行
         done.forEach(x => doneList.append(row(x, { showDate: true })));
         doneList.classList.toggle('hidden', !showDone || !done.length);
         summary.textContent = open.length + ' 項未完成' + (overdue.length ? ' · ' : '');
