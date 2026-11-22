@@ -59,15 +59,123 @@ class SoundFX {
     osc.stop(now + duration);
   }
   jump() {
-    if(this.isGrounded && gameState==='PLAYING'){
-      this.vy=-Math.max(10.5,Math.min(16.8,height*.021));
-      this.isGrounded=false; this.isDucking=false; this.jumpHeld=true; this.holdCount=0;
-      sfx.jump(); spawnDust(this.x,this.y,'#f784ba',8);
+    this.playTone(360, 'sine', 0.18, 720, 0.18);
+  }
+  coin() {
+    this.playTone(880, 'triangle', 0.08, 1320, 0.15);
+    setTimeout(() => this.playTone(1320, 'triangle', 0.12, 1760, 0.12), 60);
+  }
+  milestone() {
+    [523.25, 659.25, 783.99, 1046.5].forEach((note, i) =>
+      setTimeout(() => this.playTone(note, 'sine', 0.12, null, 0.14), i * 70)
+    );
+  }
+  hit() {
+    this.playTone(220, 'sawtooth', 0.28, 70, 0.2);
+  }
+}
+
+const sfx = new SoundFX();
+
+// Gameplay state and canvas sizing.
+let width = window.innerWidth;
+let height = window.innerHeight;
+let dpr = Math.min(window.devicePixelRatio || 1, 2);
+let gameState = 'START';
+let score = 0;
+let hiScore = 0;
+let shield = 0;
+let immunity = 0;
+const shieldEl = document.getElementById('shield-count');
+let gameSpeed = 7;
+let frameCount = 0;
+let lastMilestone = 0;
+let dayNightFactor = 0;
+hiScoreEl.textContent = String(hiScore).padStart(5, '0');
+
+function resizeCanvas() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  checkOrientation();
+}
+function checkOrientation() {
+  // Both portrait and landscape are supported.
+  rotateOverlay.classList.add('hidden');
+}
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 150));
+
+async function enterLandscapeFullscreen() {
+  try {
+    const element = document.documentElement;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (element.requestFullscreen) await element.requestFullscreen();
+      else if (element.webkitRequestFullscreen) await element.webkitRequestFullscreen();
+    } else if (document.exitFullscreen) await document.exitFullscreen();
+    else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+    // Rotation lock is best-effort, not required for the game.
+    if (screen.orientation && screen.orientation.lock)
+      await screen.orientation.lock('landscape').catch(() => {});
+  } catch (error) {
+    console.info('Fullscreen is unavailable:', error);
+  }
+}
+fullscreenBtn.addEventListener('click', enterLandscapeFullscreen);
+forceFullscreenBtn.addEventListener('click', async () => {
+  await enterLandscapeFullscreen();
+  rotateOverlay.classList.add('hidden');
+});
+muteBtn.addEventListener('click', () => {
+  sfx.muted = !sfx.muted;
+  muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+});
+function getGroundY() { return Math.max(height * 0.78, height - 90); }
+
+// The player is separate from SoundFX; jump physics belongs here.
+const player = {
+  x: 90,
+  y: 0,
+  vy: 0,
+  gravity: 0.78,
+  isGrounded: true,
+  isDucking: false,
+  runCycle: 0,
+  blinkTimer: 0,
+  hurt: false,
+  jumpHeld: false,
+  holdCount: 0,
+
+  getScale() {
+    return Math.max(0.64, Math.min(1, width / 550, height / 510));
+  },
+  reset() {
+    this.x = Math.max(52, Math.min(110, width * 0.17));
+    this.y = getGroundY();
+    this.vy = 0;
+    this.isGrounded = true;
+    this.isDucking = false;
+    this.hurt = false;
+    this.jumpHeld = false;
+    this.holdCount = 0;
+  },
+  jump() {
+    if (this.isGrounded && gameState === 'PLAYING') {
+      this.vy = -Math.max(10.5, Math.min(16.8, height * 0.021));
+      this.isGrounded = false;
+      this.isDucking = false;
+      this.jumpHeld = true;
+      this.holdCount = 0;
+      sfx.jump();
+      spawnDust(this.x, this.y, '#f784ba', 8);
     }
   },
-  stopJump(){
-    this.jumpHeld=false;
-    if(this.vy < -3) this.vy *= .40;
+  stopJump() {
+    this.jumpHeld = false;
+    if (this.vy < -3) this.vy *= 0.4;
   },
 
   duck(active) {
