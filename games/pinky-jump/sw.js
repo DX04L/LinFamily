@@ -1,0 +1,22 @@
+/* Pinky Jump: per-game offline PWA (scoped to this folder only). */
+const CACHE = 'pinky-jump-v1';
+const ASSETS = ['./','./index.html','./style.css','./game.js','./install.css','./install.js','./manifest.webmanifest','./pinky-icon.png','./app-icon.svg'];
+self.addEventListener('install', event => {
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(ASSETS.map(path => cache.add(path)))));
+});
+self.addEventListener('activate', event => {
+  event.waitUntil(Promise.all([
+    caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('pinky-jump-') && key !== CACHE).map(key => caches.delete(key)))),
+    self.clients.claim()
+  ]));
+});
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope)) return;
+  event.respondWith(fetch(req).then(response => {
+    if (response.ok) event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, response.clone())).catch(() => {}));
+    return response;
+  }).catch(async () => (await caches.match(req)) || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())));
+});
