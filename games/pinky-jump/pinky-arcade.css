@@ -345,7 +345,7 @@
   height: 100dvh; overflow: auto; padding: max(16px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));
   max-width: 500px; margin-inline: auto; color: #742050;
 }
-.pinky-controller-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.pinky-controller-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .pinky-controller-heading h1 { flex: 1; font-size: 22px; }
 #pinky-controller button { min-height: 44px; font-weight: 800; cursor: pointer; }
 #pinky-controller button:disabled { opacity: .45; cursor: default; }
@@ -356,13 +356,14 @@
   border-radius: 21px;
   font-size: clamp(22px, 6vw, 32px);
 }
-#controller-tabs { margin: 18px 0; }
+#controller-tabs { margin: 24px 0; }
 #controller-tabs button { min-height: 44px; border: 0; font: inherit; font-weight: 800; }
-#controller-manual:not([hidden]) { display: grid; gap: 12px; }
+#controller-manual:not([hidden]) { display: grid; gap: 18px; }
 #controller-jump {
   justify-self: center;
   width: 100%;
-  min-height: clamp(118px, 37dvh, 260px);
+  margin-top: 12px;
+  min-height: clamp(150px, 45dvh, 320px);
   border-radius: 26px;
   padding: 8px;
   font-size: clamp(24px, 8vw, 44px);
