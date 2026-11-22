@@ -1,4 +1,4 @@
-#lfApps .lf-todo-card { height: 100%; box-sizing: border-box; margin: 0; }
+#lfApps .lf-todo-card { height: 100%; box-sizing: border-box; margin: 0; overflow: auto; } /* 內容超過卡片高度就在卡片內捲動 */
 :is(.lf-todo-card, .lf-todo-drawer) {
   min-width: 0;
   padding: 16px;

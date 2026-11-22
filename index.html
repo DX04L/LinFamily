@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
-  <link rel="stylesheet" href="css/lf-todos.css?v=5">
+  <link rel="stylesheet" href="css/lf-todos.css?v=6">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=2">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
@@ -165,7 +165,7 @@
 
     /* App 格子：手機 4 欄、平板 6 欄、電腦 8 欄 */
     /* 整個畫面都放 App：一行放得下幾個就放幾個，超過就換下一行 */
-    #lfApps { --dk-top:200px; max-width:calc(16 * 118px); margin:0 -11px; }
+    #lfApps { --dk-top:200px; margin:0 -11px; }
     @media (max-width:699px) { #lfApps { margin:0 -8px; } }
     #lfApps .lf-app { width:100%; }
     .lf-top { flex-wrap:wrap; }
@@ -508,7 +508,7 @@
   </dialog>
 
   <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script><!-- 只用 clcSlotGridNormalize（舊 pos 欄位） -->
-  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=3"></script>
+  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=4"></script>
   <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261116-menu2"></script>
   <script src="js/lf-menu.js?v=3"></script>
@@ -724,9 +724,9 @@
     // Superuser 永遠看、編預設桌面＝全部 App。之後要做「哪些 App 給哪些人」時，在預設桌面的 App 上加權限欄位即可。
     const DESK_COL = 'linfamily_desktops';
     // ---------- 桌面（共用格子引擎） ----------
-    // 比例沿用舊 LF：電腦格寬約 118px（圖示 96＋間距 22）、手機 4 欄（間距 16）；格高＝寬 × 1.3（圖示＋名稱）
+    // 電腦版格子固定 104px（圖示約 80＋間距 22），視窗變窄就少幾欄、放不下的暫時往下補（不存）；手機 4 欄平分（間距 16）；格高＝寬 × 1.3
     const desk = window.clcDesktop($('lfApps'), {
-      cols: { desktop: 16, phone: 4 }, ratio: 1.3, margin: { desktop: 11, phone: 8 },
+      cols: { desktop: 16, phone: 4 }, cell: { desktop: 104 }, ratio: 1.3, margin: { desktop: 11, phone: 8 },
       waitLayout: true,
       canEdit: () => !!role,
       label: id => (apps.find(a => a.id === id) || {}).name || '這個待辦區域',
