@@ -366,67 +366,99 @@
       });
     }).catch(err=>disconnectPhone(errorText(err)));
   }
-  // DeviceMotion (accelerometer) with gravity low-pass filtering.
+  // Vertical impulse sensor: conservative by default. No full-height jumps
+  // from small shakes or landing bounce. Sensor values are not real jump height.
   let motionEnabled=false;
   let stable=0,gx=0,gy=0,gz=0;
-  let lastFire=0, peak=0, pulseTimer=null;
-  let sensorEvents=0;
+  let sensorEvents=0,lastFire=0,armed=true,quietFrames=0,strongFrames=0;
+  let peak=0,pulseTimer=null;
   function resetCalibration() {
-    stable=0;gx=0;gy=0;gz=0;peak=0;lastFire=0;sensorEvents=0;
-    updateControllerStatus('請保持手機穩定約 1 秒，正在校準感應器…');
+    stable=0;gx=0;gy=0;gz=0;
+    peak=0;armed=true;quietFrames=0;strongFrames=0;lastFire=0;
+    if(pulseTimer){clearTimeout(pulseTimer);pulseTimer=null;}
+    setText('controller-meter-fill','');
+    updateControllerStatus('請握穩手機約 1 秒，正在校準感應器…');
   }
-  function motionFrame(e) {
-    const a=e.accelerationIncludingGravity || e.acceleration;
-    if(!a || ![a.x,a.y,a.z].every(Number.isFinite))return;
+  function motionFrame(event) {
+    if(!controllerConnected||controllerPhase!=='playing')return;
+    const withGravity=event.accelerationIncludingGravity;
+    const a=withGravity||event.acceleration;
+    if(!a||![a.x,a.y,a.z].every(Number.isFinite))return;
     sensorEvents++;
-    if(stable<35) {
-      const alpha=stable===0?1:.1;
+    if(stable<55) {
+      const alpha=stable===0?1:.06;
       gx+=alpha*(a.x-gx);gy+=alpha*(a.y-gy);gz+=alpha*(a.z-gz);
       stable++;
-      if(stable===35)updateControllerStatus('感應器已就緒，輕輕向上抬手機測試。');
+      if(stable===55)updateControllerStatus('✅ 感應器已校準。試著明顯向上抬手機。');
       return;
     }
     const dx=a.x-gx,dy=a.y-gy,dz=a.z-gz;
     const gravity=Math.max(1,Math.hypot(gx,gy,gz));
     const along=(dx*gx+dy*gy+dz*gz)/gravity;
-    const amplitude=Math.max(0,along,Math.hypot(dx,dy,dz)*.52);
-    // Slow orientation changes only; do not absorb a real jump immediately.
-    gx+=dx*.012;gy+=dy*.012;gz+=dz*.012;
-    const level=$('controller-sensitivity')?.value || 'normal';
-    const threshold=level==='high'?2.4:level==='low'?5.5:3.6;
+    // Use upward acceleration only, not arbitrary 3D shaking.
+    const amplitude=withGravity?Math.max(0,along):Math.max(0,Math.hypot(dx,dy,dz)-2);
+    // Freeze the baseline during actual movement to avoid false retriggers.
+    if(amplitude<2.2){gx+=dx*.008;gy+=dy*.008;gz+=dz*.008;}
+    const level=$('controller-sensitivity')?.value||'low';
+    const settings={
+      low:    {threshold:11.0,cap:.34,range:32,cooldown:1550},
+      normal: {threshold:7.2, cap:.55,range:26,cooldown:1250},
+      high:   {threshold:4.6, cap:.72,range:22,cooldown:1050}
+    };
+    const cfg=settings[level]||settings.low;
     const meter=$('controller-meter-fill');
-    if(meter)meter.style.width=Math.min(100,amplitude/13*100)+'%';
+    if(meter)meter.style.width=Math.min(100,amplitude/(cfg.threshold*2.2)*100)+'%';
     const now=performance.now();
-    if(now-lastFire<720)return; // landing bounce suppression
-    if(amplitude>threshold && !pulseTimer) {
-      peak=amplitude;
-      pulseTimer=setTimeout(()=>{
-        pulseTimer=null;
-        lastFire=performance.now();
-        const strength=Math.max(.25,Math.min(1,(peak-threshold)/10+.32));
-        setText('controller-last-power',Math.round(strength*100)+'%');
-        sendCommand('jump',strength);
-        peak=0;
-      },90);
-    } else if(pulseTimer) peak=Math.max(peak,amplitude);
+    if(!armed) {
+      if(amplitude<cfg.threshold*.38)quietFrames++;
+      else quietFrames=0;
+      if(quietFrames>=10 && now-lastFire>cfg.cooldown){
+        armed=true;quietFrames=0;strongFrames=0;
+      }
+      return;
+    }
+    if(now-lastFire<cfg.cooldown)return;
+    if(amplitude>cfg.threshold) {
+      strongFrames++;
+      peak=Math.max(peak,amplitude);
+      if(strongFrames>=3 && !pulseTimer) {
+        pulseTimer=setTimeout(()=>{
+          pulseTimer=null;
+          if(!controllerConnected||controllerPhase!=='playing')return;
+          const power=Math.min(cfg.cap,Math.max(.08,.08+(peak-cfg.threshold)/cfg.range));
+          setText('controller-last-power',Math.round(power*100)+'%');
+          sendCommand('jump',power);
+          lastFire=performance.now();
+          armed=false;quietFrames=0;peak=0;strongFrames=0;
+        },70);
+      }
+    } else if(pulseTimer) {
+      peak=Math.max(peak,amplitude);
+    } else {
+      strongFrames=0;peak=0;
+    }
   }
   async function enableSensor() {
-    if(typeof DeviceMotionEvent==='undefined') {
-      updateControllerStatus('這個裝置不支援動作感應；可以使用畫面上的跳躍按鈕。');
+    if(typeof DeviceMotionEvent==='undefined'){
+      updateControllerStatus('這個裝置不支援動作感應，請使用手動跳躍按鈕。');
       return;
     }
     try {
       if(typeof DeviceMotionEvent.requestPermission==='function'){
         const permission=await DeviceMotionEvent.requestPermission();
-        if(permission!=='granted')throw Error('未取得動作感應權限');
+        if(permission!=='granted')throw Error('沒有動作感應權限');
       }
       if(!motionEnabled)window.addEventListener('devicemotion',motionFrame);
       motionEnabled=true;
       resetCalibration();
-      setTimeout(()=>{if(sensorEvents===0)
-        updateControllerStatus('沒有收到感應器資料；請確認瀏覽器允許動作感應，或使用手動按鈕。');
-      },2500);
-    } catch(err){updateControllerStatus('無法使用動作感應：'+String(err.message||err));}
+      sensorEvents=0;
+      setTimeout(()=>{
+        if(!sensorEvents&&controllerConnected)
+          updateControllerStatus('感應器沒有回應，請檢查瀏覽器權限或改用手動跳躍。');
+      },2600);
+    }catch(err){
+      updateControllerStatus('無法啟用動作感應：'+String(err.message||err));
+    }
   }
   function initController() {
     $('controller-room-input').value=roomPattern.test(urlRoom)?urlRoom:'';
