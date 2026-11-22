@@ -227,7 +227,11 @@
     return Array.from(bytes,b=>alphabet[b%alphabet.length]).join('');
   }
   function receiveCommand(payload) {
-    if (!payload || !['jump','start','ready','submit','skip'].includes(payload.action))return;
+    if (!payload || !['jump','start','ready','submit','skip','leave'].includes(payload.action))return;
+    if (payload.action === 'leave') {
+      renderRoomStatus('手機已離開，可用其他裝置輸入同一組配對碼。');
+      return;
+    }
     if (payload.action === 'ready') {
       renderRoomStatus('手機已配對，可從手機開始遊戲。');
       const settings=$('pinky-pair-dialog');
@@ -375,7 +379,17 @@
       setMotionEnabled(false);
     }
   }
-  function disconnectPhone(message) {
+  // Release the room so another phone can join right away. Best effort only.
+  function releaseRoom() {
+    const ref=pairedRoom;
+    if(!ref)return;
+    cloud().then(({fs})=>fs.updateDoc(ref,{
+      controller:'',action:'leave',power:0,playerName:'',
+      seq:fs.increment(1),updatedAt:fs.serverTimestamp()
+    })).catch(()=>{});
+  }
+  function disconnectPhone(message, release=false) {
+    if(release)releaseRoom();
     motionRequest++;
     pairedRoom=null;
     pairedPhase='ready';
@@ -409,7 +423,8 @@
       if(data.host===auth.currentUser.uid)throw Error('請在另一台手機或平板輸入配對碼');
       if(data.createdAt?.toMillis && Date.now()-data.createdAt.toMillis()>3600000)
         throw Error('配對碼已過期');
-      if(data.controller && data.controller!==auth.currentUser.uid)
+      const idle=data.updatedAt?.toMillis && Date.now()-data.updatedAt.toMillis()>65000;
+      if(data.controller && data.controller!==auth.currentUser.uid && !idle)
         throw Error('這組配對碼已由另一台裝置使用');
       await fs.updateDoc(ref,{
         controller:auth.currentUser.uid,action:'ready',power:0,
@@ -671,7 +686,8 @@
       if (event.target===settings) settings.close();
     });
     $('pinky-connect-form').addEventListener('submit',connectPhone);
-    $('controller-disconnect').addEventListener('click',()=>disconnectPhone('已中斷配對。'));
+    $('controller-disconnect').addEventListener('click',()=>disconnectPhone('已中斷配對。',true));
+    window.addEventListener('pagehide',releaseRoom);
     const showHelp=visible=>{
       $('pinky-settings-view').hidden=visible;
       $('pinky-help-view').hidden=!visible;

@@ -146,16 +146,22 @@ service cloud.firestore {
             && request.resource.data.updatedAt == request.time)
           ||
           // First matching phone may claim the room; only that UID can send later.
+          // A room idle for 60s can be claimed by another phone (e.g. the old one was closed).
           ((resource.data.controller == '' ||
-              resource.data.controller == request.auth.uid)
+              resource.data.controller == request.auth.uid ||
+              resource.data.updatedAt < request.time - duration.value(60, 's'))
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'controller','action','seq','power','playerName','updatedAt'
             ])
-            && request.resource.data.controller == request.auth.uid
+            && (request.resource.data.controller == request.auth.uid
+              // The current phone may release the room when it leaves.
+              || (resource.data.controller == request.auth.uid
+                && request.resource.data.controller == ''
+                && request.resource.data.action == 'leave'))
             && request.resource.data.seq is int
             && request.resource.data.seq == resource.data.seq + 1
             && request.resource.data.action in [
-              'ready','start','jump','submit','skip'
+              'ready','start','jump','submit','skip','leave'
             ]
             && request.resource.data.power is number
             && request.resource.data.power >= 0
