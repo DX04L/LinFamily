@@ -1141,7 +1141,7 @@ function isJumpKey(event) {
 document.addEventListener('keydown', event => {
   if (!isJumpKey(event)) return;
   const target = event.target;
-  if (target && target.closest && target.closest('input,textarea,select,[contenteditable="true"],dialog')) return;
+  if (target && target.closest && target.closest('input,textarea,select,button,[role="button"],[contenteditable="true"],dialog')) return;
   if (document.getElementById('pinky-rank-dialog')?.open ||
       document.getElementById('pinky-pair-dialog')?.open ||
       document.getElementById('pinky-install-dialog')?.open ||
