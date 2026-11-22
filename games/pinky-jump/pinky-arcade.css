@@ -320,8 +320,8 @@
   min-height: 48px;
   border: 0;
   background: transparent;
-  color: #ffffffbb;
-  filter: drop-shadow(0 1px 2px #55244866);
+  color: #ffffff73;
+  filter: drop-shadow(0 1px 2px #55244840);
   cursor: pointer;
 }
 .pinky-forward { display: inline-flex; align-items: center; gap: 2px; }

@@ -77,16 +77,19 @@ class SoundFX {
     setTimeout(()=>this.playTone(780,'sine',.16,980,.07),100);
   }
   shieldHit() {
-    this.playTone(235,'triangle',.17,95,.13);
-    setTimeout(()=>this.playTone(520,'sine',.14,340,.08),70);
+    // Small, light "叮" so it reads clearly apart from the game-over sound.
+    this.playTone(880,'sine',.09,660,.05);
+    setTimeout(()=>this.playTone(620,'triangle',.08,520,.035),60);
   }
   footstep() {
     this.playTone(125,'sine',.035,90,.019);
   }
   hit() {
     // Soft, comical two-part "啾～噗" failure jingle.
-    this.playTone(680,'sine',.28,165,.15);
-    setTimeout(()=>this.playTone(145,'triangle',.17,70,.085),165);
+    // Stronger three-part descending game-over sound.
+    this.playTone(520,'square',.22,260,.16);
+    setTimeout(()=>this.playTone(330,'sawtooth',.26,140,.14),180);
+    setTimeout(()=>this.playTone(150,'triangle',.45,55,.2),400);
   }
 }
 
@@ -201,6 +204,7 @@ let gameState = 'START';
 let score = 0;
 let shield = 0;
 let immunity = 0;
+let shieldShake = 0;
 const shieldEl = document.getElementById('shield-count');
 let gameSpeed = 7;
 let frameCount = 0;
@@ -393,7 +397,9 @@ const player = {
 
   draw() {
     ctx.save();
-    ctx.translate(this.x, this.y);
+    // Brief shake after the shield absorbs a hit.
+    const shake = shieldShake > 0 ? Math.sin(shieldShake * 1.9) * shieldShake * .45 : 0;
+    ctx.translate(this.x + shake, this.y);
     ctx.scale(this.getScale(),this.getScale());
 
     const bounce = this.isGrounded ? Math.abs(Math.sin(this.runCycle)) * -5 : 0;
@@ -1097,6 +1103,7 @@ function simulateFrame() {
     // 隨分數漸進加速
     gameSpeed = Math.min(16, 6.6 + score * 0.0022);
     if(immunity>0)immunity--;
+    if(shieldShake>0)shieldShake--;
     score += gameSpeed * 0.045;
     if (player.isGrounded) {
       footstepDistance += gameSpeed;
@@ -1137,7 +1144,7 @@ function simulateFrame() {
       };
 
       if(obs.type!=='cloudGate' && immunity===0 && checkCollision(pBox,oBox)){
-        if(shield>0){shield--;shieldEl.textContent=shield;immunity=90;sfx.shieldHit();spawnDust(player.x,player.y-32,'#ffe27a',16);}
+        if(shield>0){shield--;shieldEl.textContent=shield;immunity=90;shieldShake=18;sfx.shieldHit();spawnDust(player.x,player.y-32,'#ffe27a',16);}
         else triggerGameOver();
       }
 
@@ -1234,7 +1241,7 @@ function startGame() {
   terrainRoute = [[0,0],[900,0]];
   terrainPhase = Math.random()*Math.PI*2;
   extendTerrainTo(width*2);
-  shield=0;immunity=0;shieldEl.textContent=0;
+  shield=0;immunity=0;shieldShake=0;shieldEl.textContent=0;
   player.reset();
   startPanel.classList.add('hidden');
   gameoverPanel.classList.add('hidden');
