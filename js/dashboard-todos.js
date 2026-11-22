@@ -373,7 +373,7 @@ window.clcMountTodos = function (dashboard, {
         const fade = document.createElement('div');
         fade.className = 'todo-more';
         fade.hidden = true;
-        fade.innerHTML = '<button type="button" class="todo-more-btn" aria-label="展開全部待辦" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
+        fade.innerHTML = '<button type="button" class="todo-more-btn" aria-label="展開全部待辦" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
         host.append(fade);
         const btn = fade.firstChild;
         if (!document.getElementById('todoMoreCss')) {
@@ -381,8 +381,8 @@ window.clcMountTodos = function (dashboard, {
           st.textContent = `.todo-more{position:absolute;left:1px;right:1px;bottom:1px;height:52px;border-radius:0 0 17px 17px;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;background:linear-gradient(to bottom,transparent,var(--todo-more-bg,#fff) 78%);z-index:2}
 .todo-more[hidden]{display:none}
 .todo-more.is-open{background:none}
-.todo-more-btn{pointer-events:auto;width:30px;height:30px;border-radius:999px;display:grid;place-items:center;border:1px solid rgba(148,163,184,.28);background:var(--todo-more-bg,#fff);color:#64748b;box-shadow:0 2px 8px rgba(15,23,42,.12);cursor:pointer;transition:transform .2s}
-.dark .todo-more-btn{color:#a3acc0;border-color:rgba(255,255,255,.14);box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.todo-more-btn{pointer-events:auto;width:44px;height:30px;display:grid;place-items:center;border:0;background:none;padding:0;color:#64748b;cursor:pointer;transition:transform .2s}
+.dark .todo-more-btn{color:#a3acc0}
 .todo-more.is-open .todo-more-btn{transform:rotate(180deg)}
 .todo-more-btn:active{transform:scale(.92)}
 .todo-more.is-open .todo-more-btn:active{transform:rotate(180deg) scale(.92)}`;
