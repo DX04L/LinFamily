@@ -79,9 +79,12 @@
   };
 
   const storageKey = 'pinky_jump_language';
-  let language = 'en';
+  // 預設依瀏覽器語言：中文 → 中文，其他語言 → 英文；使用者手動切換過則以記錄為準
+  const browserLangs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''];
+  let language = /^zh\b/i.test(browserLangs[0] || '') ? 'zh-Hant' : 'en';
   try {
-    if (localStorage.getItem(storageKey) === 'zh-Hant') language = 'zh-Hant';
+    const saved = localStorage.getItem(storageKey);
+    if (saved === 'zh-Hant' || saved === 'en') language = saved;
   } catch (_) {}
 
   const attributes = ['title', 'alt', 'aria-label', 'placeholder', 'content'];
