@@ -1119,7 +1119,9 @@ function isJumpKey(event) {
 document.addEventListener('keydown', event => {
   if (!isJumpKey(event)) return;
   const target = event.target;
-  if (target && target.closest && target.closest('input,textarea,select,button,[role="button"],[contenteditable="true"],dialog')) return;
+  if (target?.closest?.('input,textarea,select,[contenteditable="true"],dialog')) return;
+  // Allow Space to start while the start/restart button is focused.
+  if (gameState === 'PLAYING' && target?.closest?.('button,a,[role="button"]')) return;
   if (document.getElementById('pinky-rank-dialog')?.open ||
       document.getElementById('pinky-pair-dialog')?.open ||
       document.getElementById('pinky-install-dialog')?.open ||
@@ -1144,4 +1146,9 @@ restartBtn.addEventListener('click', startGame);
 resizeCanvas();
 initScenery();
 player.reset();
+window.addEventListener('load', () => {
+  if (document.activeElement === document.body) {
+    gameWrapper.focus({preventScroll:true});
+  }
+});
 requestAnimationFrame(update);
