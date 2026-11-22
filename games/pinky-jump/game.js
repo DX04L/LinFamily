@@ -1146,7 +1146,7 @@ function isJumpKey(event) {
 document.addEventListener('keydown', event => {
   if (!isJumpKey(event)) return;
   const target = event.target;
-  if (target?.closest?.('input,textarea,select,[contenteditable="true"],dialog')) return;
+  if (target?.closest?.('input,textarea,select,[contenteditable="true"],dialog,[role="menu"]')) return;
   // Allow Space to start while the start/restart button is focused.
   if (gameState === 'PLAYING' && target?.closest?.('button,a,[role="button"]')) return;
   if (document.getElementById('pinky-rank-dialog')?.open ||
@@ -1160,7 +1160,7 @@ document.addEventListener('keydown', event => {
 }, true);
 const gameWrapper = document.getElementById('game-wrapper');
 gameWrapper.addEventListener('pointerdown', event => {
-  if (event.isPrimary === false) return;
+  if (event.isPrimary === false || event.button !== 0) return;
   // The entire game canvas responds; HUD actions and dialogs are excluded.
   if (event.target.closest('button, a, dialog, .panel, #hud, input, textarea, select, [role="button"]')) return;
   if (window.pinkyArcade?.sendPairedJump()) {
