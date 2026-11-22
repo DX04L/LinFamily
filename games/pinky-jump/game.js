@@ -963,7 +963,7 @@ function update() {
   if (gameState === 'PLAYING') terrainDistance += gameSpeed;
   // Smooth vertical camera follows the road, not each individual jump.
   const desiredCamera = getGroundY(player.x) - baseGroundY();
-  cameraY += (desiredCamera - cameraY) * 0.10;
+  cameraY += (desiredCamera - cameraY) * 0.19;
   drawBackground();
   ctx.save();
   ctx.translate(0, -cameraY);
