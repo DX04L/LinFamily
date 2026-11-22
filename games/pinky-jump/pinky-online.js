@@ -371,10 +371,12 @@
   function receiveCommand(payload) {
     if (!payload || !['jump','start','ready','submit','skip','leave'].includes(payload.action))return;
     if (payload.action === 'leave') {
+      PinkyRTC.hostPeer(false);
       renderRoomStatus('手機已離開，可用其他裝置輸入同一組配對碼。');
       return;
     }
     if (payload.action === 'ready') {
+      PinkyRTC.hostPeer(true);
       renderRoomStatus('手機已配對，可從手機開始遊戲。');
       const settings=$('pinky-pair-dialog');
       if (settings.open) settings.close();
@@ -448,6 +450,7 @@
         createdAt:fs.serverTimestamp(),updatedAt:fs.serverTimestamp()
       });
       roomRef=ref;
+      PinkyRTC.host({fs,db,code,roomRef:ref,onCommand:receiveCommand});
       roomUnsub=fs.onSnapshot(ref,snap=>{
         if(roomRef!==ref || !snap.exists())return;
         const data=snap.data();
@@ -536,6 +539,7 @@
   function disconnectPhone(message, release=false) {
     if(release)releaseRoom();
     motionRequest++;
+    PinkyRTC.stop();
     pairedRoom=null;
     pairedPhase='ready';
     if(phoneRoomUnsub){phoneRoomUnsub();phoneRoomUnsub=null;}
@@ -589,6 +593,7 @@
         }
         updatePairedPhase(roomSnap.data());
       },err=>disconnectPhone(errorText(err)));
+      PinkyRTC.phone({fs,db,code,uid:auth.currentUser.uid});
       renderRoomStatus('已連線');
 
     } catch(err) {
@@ -599,6 +604,9 @@
     const ref=pairedRoom;
     const jumpEdge=action==='jump' && playerName!=='';
     if (!ref || (phoneCommandBusy && !jumpEdge)) return;
+    // Direct WebRTC link first; Firebase only when it isn't open.
+    if (action==='jump' && pairedPhase!=='playing') return;
+    if (PinkyRTC.send({action,power,playerName})) return;
     if (!jumpEdge) phoneCommandBusy=true;
     try {
       const {fs,auth}=await cloud();

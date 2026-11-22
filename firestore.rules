@@ -170,6 +170,22 @@ service cloud.firestore {
             && request.resource.data.playerName.size() <= 12
             && request.resource.data.updatedAt == request.time)
         );
+
+      // WebRTC signaling (pinky-rtc.js): the paired phone writes the offer, the game host writes the answer.
+      match /rtc/{side} {
+        function roomDoc() { return get(/databases/$(database)/documents/pinky_jump_rooms/$(room)).data; }
+        allow get: if request.auth != null && validCode()
+          && (roomDoc().host == request.auth.uid || roomDoc().controller == request.auth.uid);
+        allow list, delete: if false;
+        allow create, update: if request.auth != null && validCode()
+          && ((side == 'offer' && roomDoc().controller == request.auth.uid && request.resource.data.by == request.auth.uid)
+            || (side == 'answer' && roomDoc().host == request.auth.uid))
+          && request.resource.data.keys().hasOnly(['sdp','by','nonce','at'])
+          && request.resource.data.sdp is string && request.resource.data.sdp.size() <= 20000
+          && request.resource.data.by is string && request.resource.data.by.size() <= 128
+          && request.resource.data.nonce is string && request.resource.data.nonce.size() <= 32
+          && request.resource.data.at == request.time;
+      }
     }
 
 
