@@ -1345,8 +1345,10 @@ function startGame() {
   gameWrapper.focus({preventScroll:true});
 }
 
+let gameOverAt = 0;
 function triggerGameOver() {
   gameState = 'GAMEOVER';
+  gameOverAt = performance.now();
   syncPauseControl();
   player.hurt = true;
   endMusic();
@@ -1483,6 +1485,15 @@ gameWrapper.addEventListener('pointerdown', event => {
   if (gameState === 'PAUSED') {
     event.preventDefault();
     setGamePaused(false);
+    return;
+  }
+  // Tap anywhere to start or play again (not while the name entry is open,
+  // and not in the first moment after a crash so a jump tap doesn't restart).
+  if (gameState === 'START' || gameState === 'GAMEOVER') {
+    const recordOpen = !document.getElementById('record-panel').classList.contains('hidden');
+    if (recordOpen || (gameState === 'GAMEOVER' && performance.now() - gameOverAt < 700)) return;
+    event.preventDefault();
+    startGame();
     return;
   }
   if (window.pinkyArcade?.isMotionEnabled()) {
