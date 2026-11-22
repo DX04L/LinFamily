@@ -28,6 +28,7 @@
   let currentRoomScore = 0;
   let hostQueue = Promise.resolve();
   let pendingScore = 0;
+  let scoreSubmitting = false;
   let lastRemoteAt = 0;
   let commandQueue = Promise.resolve();
 
@@ -140,6 +141,8 @@
       if(!controllerPage) setText('pinky-record-message','全球排行榜未連線，請稍後重試。');
       return false;
     }
+    if(scoreSubmitting)return false;
+    scoreSubmitting=true;
     try {
       const {fs,db,auth}=await cloud();
       await fs.addDoc(fs.collection(db,'pinky_jump_scores'),{
@@ -156,6 +159,8 @@
       renderRoomStatus(message);
       hostSetPhase('record_error',score);
       return false;
+    } finally {
+      scoreSubmitting=false;
     }
   }
   async function submitScore(event) {
@@ -221,10 +226,11 @@
       return;
     }
     if (payload.action === 'skip') {
+      const final=pendingScore;
       pendingScore=0;
       hideRecord();
       $('gameover-panel')?.classList.remove('hidden');
-      hostSetPhase('submitted',Math.floor(Number(payload.runScore)||0));
+      hostSetPhase('submitted',final);
       return;
     }
     const now=Date.now();
@@ -356,7 +362,8 @@
   function sendCommand(action,power=.15,name='') {
     if(!controllerConnected||!roomRef){updateControllerStatus('已斷線，請重新配對');return;}
     const message={action,power,playerName:String(name||'').slice(0,12),at:Date.now()};
-    if(channel)channel.postMessage(message);
+    // Firebase is the single transport; avoid duplicate submit/start events from local channels.
+    if(channel && !roomRef)channel.postMessage(message);
     const ref=roomRef;
     commandQueue=commandQueue.catch(()=>{}).then(async()=>{
       const {fs,auth}=await cloud();
@@ -517,7 +524,7 @@
   function initGame() {
     window.pinkyArcade={
       onStart(){
-        hideRecord();pendingScore=0;
+        hideRecord();pendingScore=0;scoreSubmitting=false;
         hostSetPhase('playing',0);
       },
       onGameOver(score){
