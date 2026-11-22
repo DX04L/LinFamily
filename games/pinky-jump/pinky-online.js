@@ -123,6 +123,7 @@
     setText('pinky-rank-origin',remoteOnline ?
       (motionTab ? '🤸 只限全程體感跳躍的 Top 10（即時同步）' : '🌐 所有登記的玩家，每個名字一筆最高分（🤸＝體感紀錄）') :
       '正在連接排行榜…');
+    setText('pinky-top-mr',remoteOnline ? String(motionBoard[0]?.score||0).padStart(5,'0') : '-----');
     setText('hi-score',remoteOnline ? String(remoteBoard[0]?.score||0).padStart(5,'0') : '-----');
   }
   function openGameDialog(dialog) {

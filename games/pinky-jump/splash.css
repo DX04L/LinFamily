@@ -1,0 +1,47 @@
+/* Pinky Jump opening screen. */
+
+  #pinky-splash{
+    position:fixed;inset:0;z-index:1000;overflow:hidden;transition:opacity .5s ease;display:grid;place-items:center;
+    font-family:"PingFang TC","Microsoft JhengHei","Nunito",system-ui,sans-serif;
+    background:
+      radial-gradient(circle at 50% 42%, #fff7fb 0 18%, transparent 46%),
+      linear-gradient(180deg,#ffd6ea 0%,#ffe9f3 45%,#e9e3ff 100%);
+  }
+  .sp-star{position:absolute;color:#ffc93d;text-shadow:0 0 12px #fff3b0;font-size:clamp(14px,2.4vmin,30px);animation:sp-twinkle 1.8s ease-in-out infinite alternate;}
+  .sp-coin{position:absolute;width:clamp(18px,3.2vmin,40px);aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff6b8 0 18%,#ffd426 19% 62%,#e08e00 63%);box-shadow:0 2px 0 #c97f00;animation:sp-float 2.4s ease-in-out infinite alternate;}
+  .sp-heart{position:absolute;color:#ff65a1;font-size:clamp(18px,3.4vmin,42px);animation:sp-float 2.1s ease-in-out infinite alternate;}
+  .sp-hill{position:absolute;left:-10%;right:-10%;bottom:-6vmin;height:22vmin;border-radius:50% 50% 0 0;background:#ffb3d1;}
+  .sp-hill.back{bottom:-2vmin;height:26vmin;left:-30%;right:30%;background:#ffc9df;}
+  .sp-hill.back2{bottom:-3vmin;height:24vmin;left:35%;right:-35%;background:#f6c4ff;}
+  .sp-content{position:relative;z-index:2;display:flex;align-items:center;gap:4vmin;}
+  .sp-cat{height:min(56vmin,600px);filter:drop-shadow(0 1.4vmin 1.6vmin #c2407a40);animation:sp-bounce 1.1s cubic-bezier(.3,.6,.4,1) infinite alternate;transform-origin:50% 100%;}
+  .sp-shadow{width:60%;height:2.2vmin;margin:-1vmin auto 0;border-radius:50%;background:#c2407a2e;animation:sp-shadow 1.1s cubic-bezier(.3,.6,.4,1) infinite alternate;}
+  .sp-text{text-align:left;}
+  .sp-title{margin:0;font-weight:900;letter-spacing:.02em;line-height:.95;font-size:clamp(44px,11vmin,150px);
+    color:#fff;-webkit-text-stroke:.09em #e84b93;paint-order:stroke fill;text-shadow:0 .08em 0 #b8306f, 0 .2em .3em #c2407a40;}
+  .sp-title span{display:block;}
+  .sp-sub{margin:2.4vmin 0 0;font-weight:800;color:#a02a67;font-size:clamp(16px,3.4vmin,40px);letter-spacing:.12em;}
+  .sp-loading{margin-top:3vmin;display:flex;gap:1.4vmin;}
+  .sp-loading i{width:2vmin;height:2vmin;min-width:10px;min-height:10px;border-radius:50%;background:#f760a6;animation:sp-dot .9s ease-in-out infinite alternate;}
+  .sp-loading i:nth-child(2){animation-delay:.15s;background:#ffd426}
+  .sp-loading i:nth-child(3){animation-delay:.3s;background:#1a63e6}
+  @keyframes sp-bounce{from{transform:translateY(0) scale(1.02,.98)}to{transform:translateY(-5vmin) scale(.99,1.01)}}
+  @keyframes sp-shadow{from{transform:scaleX(1);opacity:1}to{transform:scaleX(.7);opacity:.6}}
+  @keyframes sp-twinkle{from{opacity:.35;transform:scale(.8)}to{opacity:1;transform:scale(1.15)}}
+  @keyframes sp-float{from{transform:translateY(0)}to{transform:translateY(-1.6vmin)}}
+  @keyframes sp-dot{from{transform:translateY(0);opacity:.5}to{transform:translateY(-1vmin);opacity:1}}
+  /* Portrait (phones): stack the cat above the title. */
+  @media (orientation:portrait){
+    .sp-content{flex-direction:column;gap:2vh;}
+    .sp-cat{height:min(44vh,80vw);}
+    .sp-text{text-align:center;}
+    .sp-title{font-size:clamp(44px,15vw,120px);}
+    .sp-title span{display:inline;}
+    .sp-sub{font-size:clamp(16px,4.6vw,32px);}
+    .sp-loading{justify-content:center;}
+    .sp-coin.c1{left:12%!important;top:80%!important}
+    .sp-coin.c2{left:82%!important;top:24%!important}
+  }
+  #pinky-splash.sp-done{opacity:0;pointer-events:none;}
+  @media (prefers-reduced-motion: reduce){#pinky-splash *{animation:none!important}}

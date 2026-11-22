@@ -15,12 +15,46 @@
   <link rel="manifest" href="manifest.webmanifest?v=3" />
   <link rel="stylesheet" href="style.css?v=5" />
   <link rel="stylesheet" href="install.css?v=1" />
+  <link rel="stylesheet" href="splash.css?v=1" />
   <link rel="stylesheet" href="pinky-arcade.css?v=17" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=2"></script>
 </head>
 <body>
+<div id="pinky-splash" aria-label="Pinky Jump">
+  <div class="sp-hill back"></div><div class="sp-hill back2"></div><div class="sp-hill"></div>
+  <span class="sp-star" style="left:9%;top:14%">✦</span>
+  <span class="sp-star" style="left:84%;top:10%;animation-delay:.6s">✦</span>
+  <span class="sp-star" style="left:72%;top:30%;animation-delay:1.1s">✧</span>
+  <span class="sp-star" style="left:20%;top:38%;animation-delay:.3s">✧</span>
+  <span class="sp-star" style="left:50%;top:7%;animation-delay:.9s">✦</span>
+  <span class="sp-coin c1" style="left:13%;top:64%"></span>
+  <span class="sp-coin c2" style="left:86%;top:58%;animation-delay:.7s"></span>
+  <span class="sp-coin" style="left:30%;top:18%;animation-delay:.4s"></span>
+  <span class="sp-heart" style="left:78%;top:72%;animation-delay:.2s">♥</span>
+  <span class="sp-heart" style="left:6%;top:44%;animation-delay:1s">♥</span>
+  <div class="sp-content">
+    <div><img class="sp-cat" src="splash-cat.png" alt=""></div>
+    <div class="sp-text">
+      <h1 class="sp-title"><span>Pinky</span> <span>Jump</span></h1>
+            <div class="sp-loading"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+</div>
+<script>
+  // Opening screen: show at least 1.5s, then fade out once the page has loaded.
+  (() => {
+    const splash = document.getElementById('pinky-splash');
+    const shownAt = Date.now();
+    const hide = () => setTimeout(() => {
+      splash.classList.add('sp-done');
+      setTimeout(() => splash.remove(), 600);
+    }, Math.max(0, 1500 - (Date.now() - shownAt)));
+    if (document.readyState === 'complete') hide(); else window.addEventListener('load', hide, {once:true});
+    setTimeout(() => splash.isConnected && splash.classList.add('sp-done'), 6000);
+  })();
+</script>
   <!-- 橫屏提示遮罩 (手機直向時顯示) -->
   <div id="rotate-overlay" class="overlay hidden">
     <div class="rotate-card">
@@ -37,7 +71,7 @@
     <div id="hud">
       <div class="hud-left">
         <span class="badge-title"><img src="pinky-icon.png" alt="" /> Pinky Jump</span>
-        <button type="button" id="pinky-rank-btn" class="icon-btn pinky-arcade-hud" title="Leaderboard" data-zh-title="排行榜">🏆 <span class="pinky-hud-label">TOP</span></button>
+        <button type="button" id="pinky-rank-btn" class="icon-btn pinky-arcade-hud" title="Leaderboard" data-zh-title="排行榜">🏆 <span class="pinky-hud-label">TOP MR</span> <span id="pinky-top-mr">-----</span></button>
         <button type="button" id="pinky-install-btn" class="icon-btn" title="Install Pinky Jump" hidden data-zh-title="安裝 Pinky Jump 到桌面" data-zh="📲 安裝">📲 Install</button>
       </div>
       <div class="hud-right">
@@ -108,7 +142,7 @@
   <dialog id="pinky-rank-dialog" class="pinky-arcade-dialog" aria-labelledby="pinky-rank-title">
     <h2 id="pinky-rank-title" data-zh="🏆 PINKY JUMP 排行榜">🏆 PINKY JUMP Leaderboard</h2>
     <div id="pinky-rank-tabs" class="pinky-settings-tabs" data-pane="motion" role="group" aria-label="Leaderboard" data-zh-aria-label="排行榜">
-      <button id="pinky-rank-motion-tab" type="button" data-pane="motion" aria-pressed="true" data-zh="🤸 體感挑戰榜">🤸 Motion Challenge</button>
+      <button id="pinky-rank-motion-tab" type="button" data-pane="motion" aria-pressed="true" data-zh="🤸 體感挑戰榜">🤸 Motion Run Challenge</button>
       <button id="pinky-rank-all-tab" type="button" data-pane="all" aria-pressed="false" data-zh="全部排名">All Players</button>
     </div>
     <p id="pinky-rank-origin" class="pinky-rank-origin"></p>
@@ -246,7 +280,7 @@
   <script src="locale.js?v=3"></script>
   <script src="game.js?v=20261122-motion-board"></script>
   <script src="name-filter.js?v=1"></script>
-  <script src="pinky-online.js?v=19"></script>
+  <script src="pinky-online.js?v=20"></script>
   <script src="lf-menu.js?v=3"></script>
 </body>
 </html>
