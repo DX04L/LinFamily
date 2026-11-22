@@ -97,7 +97,7 @@
 
     /* ---------- 頂部（沒有外框；左：日期＋標題，右：照 DX 的安裝與管理員按鈕） ---------- */
     .lf-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
-      padding:calc(16px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+      padding:calc(16px + env(safe-area-inset-top)) max(var(--lf-pad), env(safe-area-inset-right)) 0 max(var(--lf-pad), env(safe-area-inset-left));
       width:100%; margin:0 auto; }
     .lf-date { margin:0; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.02em; }
     .lf-title { margin:2px 0 0; font-size:clamp(24px, 6.6vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
@@ -148,8 +148,12 @@
     html.dark .lf-menu .lf-danger:hover { background:rgba(244,63,94,.1); }
 
     /* ---------- 主畫面 ---------- */
-    main { flex:1; width:100%; margin:0 auto; padding:18px max(20px, env(safe-area-inset-left)) 40px; }
-    @media (min-width:1024px) { .lf-top, main { padding-left:32px; padding-right:32px; } } /* 電腦版全寬，左右邊距跟右上角按鈕一樣 32px */
+    main { flex:1; width:100%; margin:0 auto; padding:18px max(var(--lf-pad), env(safe-area-inset-left)) 40px; }
+    /* 左右邊距跟 DX 主畫面一樣：手機 14px、≥640 20px、≥1024 24px、≥1440 32px */
+    :root { --lf-pad:14px; }
+    @media (min-width:640px) { :root { --lf-pad:20px; } }
+    @media (min-width:1024px) { :root { --lf-pad:24px; } .lf-top, main { padding-left:var(--lf-pad); padding-right:var(--lf-pad); } }
+    @media (min-width:1440px) { :root { --lf-pad:32px; } }
     .lf-tabs { display:inline-flex; gap:4px; padding:4px; margin:22px 0 24px; border-radius:9999px; background:var(--btn); border:1px solid var(--border); }
     .lf-tabs > button { border:0; background:none; padding:8px 16px; border-radius:9999px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; }
     .lf-tabs > button[aria-selected="true"] { background:var(--pine); color:#fff; }
