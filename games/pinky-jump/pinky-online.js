@@ -2,7 +2,6 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const controllerPage = document.body.dataset.pinkyPage === 'controller';
   const urlRoom = (new URLSearchParams(location.search).get('room') || '').trim().toUpperCase();
   const sdk = 'https://www.gstatic.com/firebasejs/11.10.0/';
   const firebaseConfig = {
@@ -15,22 +14,19 @@
   let cloudPromise = null;
   let roomUnsub = null;
   let scoreUnsub = null;
-  let channel = null;
-  let roomCode = '';
   let roomRef = null;
   let messageSeq = 0;
   let remoteBoard = [];
   let remoteOnline = false;
   let globalError = '正在連接全球排行榜…';
   let phoneRoomUnsub = null;
-  let controllerConnected = false;
-  let controllerPhase = 'ready';
-  let currentRoomScore = 0;
+  let pairedRoom = null;
+  let pairedPhase = 'ready';
+  let sendingJump = false;
   let hostQueue = Promise.resolve();
   let pendingScore = 0;
   let scoreSubmitting = false;
   let lastRemoteAt = 0;
-  let commandQueue = Promise.resolve();
 
   async function cloud() {
     if (!cloudPromise) {
@@ -72,43 +68,41 @@
   }
   function refreshScores() {
     const board = remoteOnline ? remoteBoard : [];
-    for (const [listId, statusId] of [
-      ['pinky-rank-rows','pinky-rank-origin'],
-      ['controller-rank-rows','controller-rank-status']
-    ]) {
-      const rows = $(listId);
-      if (!rows) continue;
-      rows.replaceChildren();
-      if (remoteOnline && !board.length) {
-        const li=document.createElement('li');
-        li.className='pinky-empty';
-        li.textContent='全球排行榜還沒有任何紀錄，歡迎成為第一位！';
-        rows.appendChild(li);
-      }
-      board.forEach((entry,index)=>{
-        const li=document.createElement('li');li.className='pinky-score-row';
-        const rank=document.createElement('span');rank.textContent=String(index+1).padStart(2,'0');
-        const name=document.createElement('span');name.textContent=entry.name;
-        const points=document.createElement('strong');points.textContent=String(entry.score).padStart(6,'0');
-        li.append(rank,name,points);rows.appendChild(li);
-      });
-      setText(statusId,remoteOnline ?
-        '🌐 全球共用 Top 10（即時同步）' :
-        '⚠️ 全球排行榜未連線：' + globalError);
+    const rows=$('pinky-rank-rows');
+    rows.replaceChildren();
+    if (remoteOnline && !board.length) {
+      const li=document.createElement('li');
+      li.className='pinky-empty';
+      li.textContent='全球排行榜還沒有任何紀錄，歡迎成為第一位！';
+      rows.appendChild(li);
     }
-    if (!controllerPage) {
-      setText('hi-score',remoteOnline ? String(board[0]?.score||0).padStart(5,'0') : '-----');
-    }
+    board.forEach((entry,index)=>{
+      const li=document.createElement('li');li.className='pinky-score-row';
+      const rank=document.createElement('span');rank.textContent=String(index+1).padStart(2,'0');
+      const name=document.createElement('span');name.textContent=entry.name;
+      const points=document.createElement('strong');points.textContent=String(entry.score).padStart(6,'0');
+      li.append(rank,name,points);rows.appendChild(li);
+    });
+    setText('pinky-rank-origin',remoteOnline ?
+      '🌐 全球共用 Top 10（即時同步）' :
+      '⚠️ 全球排行榜未連線：' + globalError);
+    setText('hi-score',remoteOnline ? String(board[0]?.score||0).padStart(5,'0') : '-----');
   }
   function showBoard() {
     refreshScores();
     const dialog=$('pinky-rank-dialog');
     if(dialog && !dialog.open)dialog.showModal();
   }
-  function syncRecordViewport() {
+  function syncOverlayViewport() {
+    const viewport=window.visualViewport;
+    const settings=$('pinky-pair-dialog');
+    if (settings.open && viewport) {
+      settings.style.setProperty('--pinky-settings-top',viewport.offsetTop+'px');
+      settings.style.setProperty('--pinky-settings-bottom',Math.max(0,window.innerHeight-viewport.offsetTop-viewport.height)+'px');
+      settings.style.setProperty('--pinky-settings-height',viewport.height+'px');
+    }
     const overlay=$('ui-overlay');
     if (!overlay.classList.contains('pinky-record-open')) return;
-    const viewport=window.visualViewport;
     const bounds=overlay.parentElement.getBoundingClientRect();
     const top=Math.max(0,(viewport?.offsetTop ?? 0)-bounds.top);
     const bottom=(viewport?.offsetTop ?? 0)+(viewport?.height ?? window.innerHeight);
@@ -131,23 +125,19 @@
     panel.scrollTop=0;
     setText('pinky-record-message','');
     $('ui-overlay').classList.add('pinky-record-open');
-    syncRecordViewport();
-    // On a paired game, the child enters a name on the phone. Desktop entry
-    // is available too, but should not steal keyboard focus from the phone.
-    if (!roomRef) {
-      const input=$('pinky-player-name');
-      if(input){
-        input.value='';
-        if (!window.matchMedia('(pointer: coarse)').matches) input.focus({preventScroll:true});
-      }
-    }
+    syncOverlayViewport();
+    const input=$('pinky-player-name');
+    input.value='';
+    if (!window.matchMedia('(pointer: coarse)').matches) input.focus({preventScroll:true});
     return true;
   }
   function hostSetPhase(phase,runScore=0) {
-    if(!roomRef || controllerPage)return;
+    if(!roomRef)return;
+    const ref=roomRef;
     hostQueue=hostQueue.catch(()=>{}).then(async()=>{
       const {fs}=await cloud();
-      await fs.updateDoc(roomRef,{
+      if(roomRef!==ref)return;
+      await fs.updateDoc(ref,{
         phase,runScore:Math.max(0,Math.floor(Number(runScore)||0)),
         updatedAt:fs.serverTimestamp()
       });
@@ -158,7 +148,7 @@
     const score=pendingScore;
     if(!score || !remoteOnline){
       renderRoomStatus('全球排行榜未連線，目前無法提交分數');
-      if(!controllerPage) setText('pinky-record-message','全球排行榜未連線，請稍後重試。');
+      setText('pinky-record-message','全球排行榜未連線，請稍後重試。');
       return false;
     }
     if(scoreSubmitting)return false;
@@ -190,7 +180,6 @@
     if(await saveGlobalScore(name)) showBoard();
   }
   async function saveFromPhone(name) {
-    if (controllerPage) return;
     await saveGlobalScore(name);
   }
   function initSharedScores() {
@@ -223,25 +212,17 @@
       refreshScores();
     });
   }
-  function renderRoomStatus(text) { setText(controllerPage?'controller-status':'pinky-pair-status',text); }
+  function renderRoomStatus(text) { setText('pinky-pair-status',text); }
   function makeCode() {
     const bytes=new Uint8Array(6);
     crypto.getRandomValues(bytes);
     const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     return Array.from(bytes,b=>alphabet[b%alphabet.length]).join('');
   }
-  function connectChannel(code) {
-    if(channel) channel.close();
-    channel=typeof BroadcastChannel === 'function' ?
-      new BroadcastChannel('pinky_room_' + code) : null;
-    if (channel && !controllerPage) {
-      channel.onmessage=event => receiveCommand(event.data);
-    }
-  }
   function receiveCommand(payload) {
     if (!payload || !['jump','start','ready','submit','skip'].includes(payload.action))return;
     if (payload.action === 'ready') {
-      renderRoomStatus('✅ 手機已配對，所有遊戲流程都能在手機操作。');
+      renderRoomStatus('手機已配對，可在遊戲中用手機控制跳躍。');
       return;
     }
     if (payload.action === 'start') {
@@ -253,6 +234,7 @@
       return;
     }
     if (payload.action === 'skip') {
+      if(!pendingScore || scoreSubmitting)return;
       const final=pendingScore;
       pendingScore=0;
       hideRecord();
@@ -270,13 +252,13 @@
     const btn=$('pinky-create-room');
     if(btn)btn.disabled=true;
     const code=makeCode();
-    roomCode=code;
     messageSeq=0;
     if(roomUnsub){roomUnsub();roomUnsub=null;}
     roomRef=null;
-    connectChannel(code);
     setText('pinky-room-code',code);
-    const link=new URL('controller.html',location.href);
+    $('pinky-room-code').hidden=false;
+    $('pinky-share-room').hidden=false;
+    const link=new URL('./',location.href);
     link.searchParams.set('room',code);
     const field=$('pinky-room-link');
     if(field)field.value=link.href;
@@ -295,252 +277,166 @@
       roomUnsub=fs.onSnapshot(ref,snap=>{
         if(!snap.exists())return;
         const data=snap.data();
-        if(data.seq<=messageSeq)return;
+        if(snap.metadata?.fromCache || data.seq<=messageSeq)return;
         messageSeq=data.seq;
         receiveCommand(data);
       },err=>renderRoomStatus(errorText(err)));
-      renderRoomStatus('✅ 配對碼已建立。手機連上後就可以操作整個遊戲。');
+      renderRoomStatus('在手機輸入上方配對碼，或直接開啟連結。');
     } catch(err) {
+      $('pinky-room-code').hidden=true;
+      $('pinky-share-room').hidden=true;
       renderRoomStatus(errorText(err));
     } finally {if(btn)btn.disabled=false;}
   }
-  function updateControllerStatus(text) {
-    setText(controllerConnected?'controller-live-status':'controller-status',text);
+  function showSettingsPane(pane) {
+    for (const key of ['pair','motion']) {
+      const active=key===pane;
+      $('pinky-'+key+'-pane').hidden=!active;
+      $('pinky-'+key+'-tab').setAttribute('aria-pressed',String(active));
+    }
   }
-  function updatePhonePhase(data) {
-    if(!controllerConnected)return;
-    const phase=String(data.phase||'ready'),score=Math.max(0,Math.floor(Number(data.runScore)||0));
-    currentRoomScore=score;
-    const phaseChanged=controllerPhase!==phase;
-    controllerPhase=phase;
-    const playing=phase==='ready'||phase==='playing'||phase==='submitted';
-    $('controller-actions').hidden=!playing;
-    $('controller-sensor').hidden=!playing;
-    $('controller-finish').hidden=phase!=='gameover';
-    $('controller-record').hidden=!['record','record_error'].includes(phase);
-    setText('controller-final-score',String(score).padStart(6,'0'));
-    setText('controller-record-score',String(score).padStart(6,'0'));
-    if(phase==='record' && phaseChanged && $('controller-player-name'))
-      $('controller-player-name').value='';
-    const messages={
-      ready:'✅ 已配對！按「開始」或等待電腦開始。',
-      playing:'🎮 遊戲進行中，開始跳躍吧！',
-      gameover:'💫 遊戲結束，可以直接在手機按「再玩一次」。',
-      record:'🏆 進入全球 Top 10！請在手機輸入名字登記。',
-      record_error:'⚠️ 成績提交失敗，請重新按「確認登記」。',
-      submitted:'✅ 登記完成／結束。可以直接按開始再玩！'
-    };
-    updateControllerStatus(messages[phase]||'已連線');
+  function updateMotionMode() {
+    $('controller-disconnect').hidden=!pairedRoom;
+    setText('pinky-motion-mode',pairedRoom
+      ? '已連線。請從電腦開始遊戲，再向上抬起手機讓 Pinky 跳。'
+      : '本機模式。開始遊戲後，向上抬起手機或平板即可跳躍，無須配對。');
   }
-  function disconnectPhone(message='已中斷連線。請重新輸入配對碼。') {
-    controllerConnected=false;
-    roomRef=null;
+  function disconnectPhone(message) {
+    motionRequest++;
+    pairedRoom=null;
+    pairedPhase='ready';
     if(phoneRoomUnsub){phoneRoomUnsub();phoneRoomUnsub=null;}
-    if(channel){channel.close();channel=null;}
-    $('controller-setup').hidden=false;
-    $('controller-connected').hidden=true;
-    setText('controller-status',message);
-    if(pulseTimer){clearTimeout(pulseTimer);pulseTimer=null;}
+    setMotionEnabled(false);
+    updateMotionMode();
+    setText('pinky-motion-status',message);
   }
-  async function connectPhone() {
+  async function connectPhone(event) {
+    event.preventDefault();
     const input=$('controller-room-input');
-    const code=(input?.value||'').trim().toUpperCase();
-    if(!roomPattern.test(code)){updateControllerStatus('請輸入有效的 6 碼配對碼。');return;}
+    const code=input.value.trim().toUpperCase();
+    if(!roomPattern.test(code)){renderRoomStatus('請輸入有效的 6 碼配對碼。');return;}
     const button=$('controller-connect');
-    if(button)button.disabled=true;
-    setText('controller-status','正在連線…');
+    if(button.disabled)return;
+    button.disabled=true;
+    renderRoomStatus('正在連線…');
+    // Start the permission request within the submit gesture on iOS.
+    const sensorPermission=requestMotionPermission();
     try {
       const {fs,db,auth}=await cloud();
       const ref=fs.doc(db,'pinky_jump_rooms',code);
       const snap=await fs.getDoc(ref);
       if(!snap.exists())throw Error('配對碼不存在，請在電腦重新建立');
       const data=snap.data();
+      if(data.host===auth.currentUser.uid)throw Error('請在另一台手機或平板輸入配對碼');
       if(data.createdAt?.toMillis && Date.now()-data.createdAt.toMillis()>3600000)
         throw Error('配對碼已過期');
       if(data.controller && data.controller!==auth.currentUser.uid)
-        throw Error('這組配對碼已由另一支手機使用；請重新建立新房間');
+        throw Error('這組配對碼已由另一台裝置使用');
       await fs.updateDoc(ref,{
         controller:auth.currentUser.uid,action:'ready',power:0,
         playerName:'',seq:fs.increment(1),updatedAt:fs.serverTimestamp()
       });
-      roomCode=code;
-      roomRef=ref;
-      controllerConnected=true;
-      connectChannel(code);
-      $('controller-setup').hidden=true;
-      $('controller-connected').hidden=false;
+      if(phoneRoomUnsub)phoneRoomUnsub();
+      pairedRoom=ref;
+      pairedPhase=data.phase;
       phoneRoomUnsub=fs.onSnapshot(ref,roomSnap=>{
-        if(!roomSnap.exists()) {disconnectPhone('配對房間已不存在，請重新連線');return;}
-        const data=roomSnap.data();
-        if(data.createdAt?.toMillis && Date.now()-data.createdAt.toMillis()>3600000){
-          disconnectPhone('配對碼已到期，請在電腦重新建立');return;
+        if(!roomSnap.exists() || roomSnap.data().controller!==auth.currentUser.uid){
+          disconnectPhone('配對已中斷，請重新連線。');
+          return;
         }
-        updatePhonePhase(data);
+        pairedPhase=roomSnap.data().phase;
       },err=>disconnectPhone(errorText(err)));
-      updatePhonePhase(data);
-      if(motionEnabled)resetCalibration();
-      if(!remoteOnline)initSharedScores();
+      renderRoomStatus('已連線');
+      updateMotionMode();
+      showSettingsPane('motion');
+      $('pinky-motion-tab').focus();
+      await enableSensor(sensorPermission);
     } catch(err) {
-      controllerConnected=false;
-      roomRef=null;
-      setText('controller-status',errorText(err));
-      $('controller-setup').hidden=false;
-      $('controller-connected').hidden=true;
-    } finally {if(button)button.disabled=false;}
+      renderRoomStatus(errorText(err));
+    } finally {button.disabled=false;}
   }
-  function sendCommand(action,power=.15,name='') {
-    if(!controllerConnected||!roomRef){updateControllerStatus('已斷線，請重新配對');return;}
-    const message={action,power,playerName:String(name||'').slice(0,12),at:Date.now()};
-    // Firebase is the single transport; avoid duplicate submit/start events from local channels.
-    if(channel && !roomRef)channel.postMessage(message);
-    const ref=roomRef;
-    commandQueue=commandQueue.catch(()=>{}).then(async()=>{
-      const {fs,auth}=await cloud();
-      if(!controllerConnected||roomRef!==ref)return;
-      await fs.updateDoc(ref,{
-        controller:auth.currentUser.uid,action,power,playerName:message.playerName,
+  function sendPairedJump() {
+    const ref=pairedRoom;
+    if(!ref || pairedPhase!=='playing')return false;
+    if (sendingJump) return true;
+    sendingJump=true;
+    cloud().then(({fs,auth})=>{
+      if (pairedRoom!==ref || pairedPhase!=='playing')return;
+      return fs.updateDoc(ref,{
+        controller:auth.currentUser.uid,action:'jump',power:.15,playerName:'',
         seq:fs.increment(1),updatedAt:fs.serverTimestamp()
       });
-    }).catch(err=>disconnectPhone(errorText(err)));
+    }).catch(err=>{
+      if(pairedRoom===ref)disconnectPhone(errorText(err));
+    }).finally(()=>{sendingJump=false;});
+    return true;
   }
-  // Vertical impulse sensor: conservative by default. No full-height jumps
-  // from small shakes or landing bounce. Sensor values are not real jump height.
-  let motionEnabled=false;
-  let stable=0,gx=0,gy=0,gz=0;
-  let sensorEvents=0,lastFire=0,armed=true,quietFrames=0,strongFrames=0;
-  let peak=0,pulseTimer=null;
-  function resetCalibration() {
-    stable=0;gx=0;gy=0;gz=0;
-    peak=0;armed=true;quietFrames=0;strongFrames=0;lastFire=0;
-    if(pulseTimer){clearTimeout(pulseTimer);pulseTimer=null;}
-    setText('controller-meter-fill','');
-    updateControllerStatus('請握穩手機約 1 秒，正在校準感應器…');
+  const sensitivities={
+    low:{threshold:10,cooldown:950},
+    normal:{threshold:7,cooldown:750},
+    high:{threshold:4.5,cooldown:600}
+  };
+  let motionEnabled=false,motionRequest=0;
+  let baseline=null,samples=0,previousImpulse=0;
+  let lastJumpAt=-Infinity,armed=true;
+  function setMotionEnabled(enabled) {
+    motionEnabled=enabled;
+    $('pinky-motion-enabled').checked=enabled;
+    baseline=null;
+    samples=0;
+    previousImpulse=0;
+    lastJumpAt=-Infinity;
+    armed=true;
+  }
+  async function requestMotionPermission() {
+    try {
+      if(typeof DeviceMotionEvent==='undefined')return '此裝置不支援體感，仍可點畫面跳躍。';
+      if(typeof DeviceMotionEvent.requestPermission==='function' &&
+         await DeviceMotionEvent.requestPermission()!=='granted')
+        return '需要動作感應權限，仍可點畫面跳躍。';
+      return '';
+    } catch(_) {
+      return '無法取得動作感應權限，仍可點畫面跳躍。';
+    }
+  }
+  async function enableSensor(permission=requestMotionPermission()) {
+    const request=++motionRequest;
+    const message=await permission;
+    if (request!==motionRequest)return;
+    setMotionEnabled(!message);
+    setText('pinky-motion-status',message||'請先握穩裝置，等待體感校準。');
+    if (!message) setTimeout(()=>{
+      if(request===motionRequest && motionEnabled && !samples)
+        setText('pinky-motion-status','未收到感應資料，請確認瀏覽器權限。');
+    },2600);
   }
   function motionFrame(event) {
-    if(!controllerConnected||controllerPhase!=='playing')return;
-    const withGravity=event.accelerationIncludingGravity;
-    const a=withGravity||event.acceleration;
+    if(!motionEnabled)return;
+    const a=event.accelerationIncludingGravity;
     if(!a||![a.x,a.y,a.z].every(Number.isFinite))return;
-    sensorEvents++;
-    if(stable<55) {
-      const alpha=stable===0?1:.06;
-      gx+=alpha*(a.x-gx);gy+=alpha*(a.y-gy);gz+=alpha*(a.z-gz);
-      stable++;
-      if(stable===55)updateControllerStatus('✅ 感應器已校準。試著明顯向上抬手機。');
+    if (!baseline) baseline={x:a.x,y:a.y,z:a.z};
+    const dx=a.x-baseline.x,dy=a.y-baseline.y,dz=a.z-baseline.z;
+    const length=Math.max(1,Math.hypot(baseline.x,baseline.y,baseline.z));
+    const impulse=(dx*baseline.x+dy*baseline.y+dz*baseline.z)/length;
+    if (samples<24 || Math.abs(impulse)<2) {
+      const weight=samples<24?.12:.025;
+      baseline.x+=dx*weight;baseline.y+=dy*weight;baseline.z+=dz*weight;
+    }
+    if (samples<24) {
+      if (++samples===24)setText('pinky-motion-status','體感跳躍已就緒。');
       return;
     }
-    const dx=a.x-gx,dy=a.y-gy,dz=a.z-gz;
-    const gravity=Math.max(1,Math.hypot(gx,gy,gz));
-    const along=(dx*gx+dy*gy+dz*gz)/gravity;
-    // Use upward acceleration only, not arbitrary 3D shaking.
-    const amplitude=withGravity?Math.max(0,along):Math.max(0,Math.hypot(dx,dy,dz)-2);
-    // Freeze the baseline during actual movement to avoid false retriggers.
-    if(amplitude<2.2){gx+=dx*.008;gy+=dy*.008;gz+=dz*.008;}
-    const level=$('controller-sensitivity')?.value||'low';
-    const settings={
-      low:    {threshold:11.0,cap:.34,range:32,cooldown:1550},
-      normal: {threshold:7.2, cap:.55,range:26,cooldown:1250},
-      high:   {threshold:4.6, cap:.72,range:22,cooldown:1050}
-    };
-    const cfg=settings[level]||settings.low;
-    const meter=$('controller-meter-fill');
-    if(meter)meter.style.width=Math.min(100,amplitude/(cfg.threshold*2.2)*100)+'%';
+    const cfg=sensitivities[$('controller-sensitivity').value]||sensitivities.normal;
     const now=performance.now();
-    if(!armed) {
-      if(amplitude<cfg.threshold*.38)quietFrames++;
-      else quietFrames=0;
-      if(quietFrames>=10 && now-lastFire>cfg.cooldown){
-        armed=true;quietFrames=0;strongFrames=0;
-      }
-      return;
+    if(!armed && Math.abs(impulse)<cfg.threshold*.35 && now-lastJumpAt>=cfg.cooldown)armed=true;
+    if(armed && impulse>cfg.threshold && previousImpulse>cfg.threshold*.7 &&
+       !document.hidden && !document.querySelector('dialog[open]')){
+      armed=false;
+      lastJumpAt=now;
+      if(pairedRoom)sendPairedJump();
+      else window.pinkyRemoteJump();
     }
-    if(now-lastFire<cfg.cooldown)return;
-    if(amplitude>cfg.threshold) {
-      strongFrames++;
-      peak=Math.max(peak,amplitude);
-      if(strongFrames>=3 && !pulseTimer) {
-        pulseTimer=setTimeout(()=>{
-          pulseTimer=null;
-          if(!controllerConnected||controllerPhase!=='playing')return;
-          const power=Math.min(cfg.cap,Math.max(.08,.08+(peak-cfg.threshold)/cfg.range));
-          setText('controller-last-power',Math.round(power*100)+'%');
-          sendCommand('jump',power);
-          lastFire=performance.now();
-          armed=false;quietFrames=0;peak=0;strongFrames=0;
-        },70);
-      }
-    } else if(pulseTimer) {
-      peak=Math.max(peak,amplitude);
-    } else {
-      strongFrames=0;peak=0;
-    }
-  }
-  async function enableSensor() {
-    if(typeof DeviceMotionEvent==='undefined'){
-      updateControllerStatus('這個裝置不支援動作感應，請使用手動跳躍按鈕。');
-      return;
-    }
-    try {
-      if(typeof DeviceMotionEvent.requestPermission==='function'){
-        const permission=await DeviceMotionEvent.requestPermission();
-        if(permission!=='granted')throw Error('沒有動作感應權限');
-      }
-      if(!motionEnabled)window.addEventListener('devicemotion',motionFrame);
-      motionEnabled=true;
-      resetCalibration();
-      sensorEvents=0;
-      setTimeout(()=>{
-        if(!sensorEvents&&controllerConnected)
-          updateControllerStatus('感應器沒有回應，請檢查瀏覽器權限或改用手動跳躍。');
-      },2600);
-    }catch(err){
-      updateControllerStatus('無法啟用動作感應：'+String(err.message||err));
-    }
-  }
-  function initController() {
-    $('controller-room-input').value=roomPattern.test(urlRoom)?urlRoom:'';
-    $('controller-connect')?.addEventListener('click',connectPhone);
-    $('controller-disconnect')?.addEventListener('click',()=>{
-      disconnectPhone('已斷開，請輸入原配對碼或在電腦重新建立配對碼。');
-    });
-    $('controller-activate-sensor')?.addEventListener('click',enableSensor);
-    $('controller-calibrate')?.addEventListener('click',resetCalibration);
-    $('controller-start-game')?.addEventListener('click',()=>sendCommand('start',0));
-    $('controller-restart')?.addEventListener('click',()=>sendCommand('start',0));
-    $('controller-board-toggle')?.addEventListener('click',()=>{
-      const board=$('controller-board');
-      board.hidden=!board.hidden;
-      refreshScores();
-      if(!board.hidden)board.scrollIntoView?.({block:'nearest',behavior:'smooth'});
-    });
-    $('controller-board-close')?.addEventListener('click',()=>{
-      $('controller-board').hidden=true;
-    });
-    $('controller-record-form')?.addEventListener('submit',event=>{
-      event.preventDefault();
-      if(!controllerConnected)return;
-      const name=String($('controller-player-name')?.value||'').trim().slice(0,12)||'PINKY';
-      sendCommand('submit',0,name);
-      updateControllerStatus('正在把成績送到全球排行榜…');
-    });
-    $('controller-skip-record')?.addEventListener('click',()=>{
-      sendCommand('skip',0);
-      updateControllerStatus('正在略過姓名登記…');
-    });
-    // Manual control sends one jump immediately, never based on press duration.
-    $('controller-jump')?.addEventListener('pointerdown',event=>{
-      if(!controllerConnected||event.isPrimary===false)return;
-      sendCommand('jump');
-    });
-    $('controller-jump')?.addEventListener('click',event=>{
-      // Keyboard or assistive technology click (no pointerdown).
-      if(event.detail===0&&controllerConnected)sendCommand('jump');
-    });
-    window.addEventListener('offline',()=>{
-      if(controllerConnected)
-        disconnectPhone('網路連線中斷，請恢復網路後重新連線。');
-    });
-    initSharedScores();
+    previousImpulse=impulse;
   }
 
   function initGame() {
@@ -553,7 +449,7 @@
         const qualified=newRecord(score);
         hostSetPhase(qualified?'record':'gameover',score);
       },
-      submitName:saveFromPhone,
+      sendPairedJump,
       globalBest(){return remoteOnline?(remoteBoard[0]?.score||0):null;},
       globalConnected(){return remoteOnline;}
     };
@@ -594,9 +490,9 @@
       event.preventDefault();
       next.focus();
     });
-    window.addEventListener('resize',syncRecordViewport);
-    window.visualViewport?.addEventListener('resize',syncRecordViewport);
-    window.visualViewport?.addEventListener('scroll',syncRecordViewport);
+    window.addEventListener('resize',syncOverlayViewport);
+    window.visualViewport?.addEventListener('resize',syncOverlayViewport);
+    window.visualViewport?.addEventListener('scroll',syncOverlayViewport);
     skipRecord.addEventListener('click',()=>{
       if (scoreSubmitting) return;
       const final=pendingScore;
@@ -605,10 +501,33 @@
       $('gameover-panel')?.classList.remove('hidden');
       hostSetPhase('submitted',final);
     });
-    $('pinky-pair-btn')?.addEventListener('click',()=>{
-      const modal=$('pinky-pair-dialog');
-      if(modal&&!modal.open)modal.showModal();
+    const settings=$('pinky-pair-dialog');
+    $('pinky-pair-btn').addEventListener('click',()=>{
+      settings.showModal();
+      syncOverlayViewport();
     });
+    $('pinky-pair-tab').addEventListener('click',()=>showSettingsPane('pair'));
+    $('pinky-motion-tab').addEventListener('click',()=>showSettingsPane('motion'));
+    $('pinky-connect-form').addEventListener('submit',connectPhone);
+    $('controller-disconnect').addEventListener('click',()=>disconnectPhone('已中斷配對。'));
+    $('pinky-motion-enabled').addEventListener('change',event=>{
+      if(event.target.checked)enableSensor();
+      else {
+        motionRequest++;
+        setMotionEnabled(false);
+        setText('pinky-motion-status','體感跳躍已關閉。');
+      }
+    });
+    window.addEventListener('devicemotion',motionFrame);
+    window.addEventListener('offline',()=>{
+      if(pairedRoom)disconnectPhone('網路已中斷，請重新配對。');
+    });
+    updateMotionMode();
+    if(roomPattern.test(urlRoom)){
+      $('controller-room-input').value=urlRoom;
+      settings.showModal();
+      syncOverlayViewport();
+    }
     $('pinky-create-room')?.addEventListener('click',createRoom);
     $('pinky-pair-close')?.addEventListener('click',()=>$('pinky-pair-dialog').close());
     $('pinky-copy-link')?.addEventListener('click',async()=>{
@@ -624,6 +543,5 @@
     });
     initSharedScores();
   }
-  if(controllerPage)initController();
-  else initGame();
+  initGame();
 })();

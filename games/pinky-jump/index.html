@@ -12,9 +12,9 @@
   <link rel="icon" type="image/png" href="pinky-icon.png" />
   <link rel="apple-touch-icon" href="pinky-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=2" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=3" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=4" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=1"></script>
@@ -37,10 +37,7 @@
       <div class="hud-left">
         <span class="badge-title"><img src="pinky-icon.png" alt="" /> Pinky Jump</span>
         <button type="button" id="pinky-rank-btn" class="icon-btn pinky-arcade-hud" title="Top 10 排行榜">🏆 <span class="pinky-hud-label">TOP 10</span></button>
-        <button type="button" id="pinky-pair-btn" class="icon-btn pinky-arcade-hud" title="連接手機體感控制器">🎮 <span class="pinky-hud-label">手機控制</span></button>
         <button type="button" id="pinky-install-btn" class="icon-btn" title="安裝 Pinky Jump 到桌面" hidden>📲 安裝</button>
-        <button id="fullscreen-btn" class="icon-btn" title="切換全螢幕">⛶ 全螢幕</button>
-        <button id="mute-btn" class="icon-btn" title="背景音樂與音效開關">🔊</button>
       </div>
       <div class="hud-right">
         <div class="score-box" id="pinky-hi-open" role="button" tabindex="0" aria-label="查看全球 Top 10 排行榜" title="點擊查看全球 Top 10">
@@ -52,6 +49,9 @@
           <span id="current-score">00000</span>
         </div>
         <div class="score-box shield-box" title="護盾：每個可以抵擋一次撞擊"><span>🛡️</span><span id="shield-count">0</span></div>
+        <button type="button" id="pinky-pair-btn" class="icon-btn" aria-label="遊戲設定" title="遊戲設定" aria-haspopup="dialog">
+          <img src="pinky-icon.png" alt=""><span aria-hidden="true">⚙</span>
+        </button>
       </div>
     </div>
 
@@ -109,21 +109,52 @@
   </dialog>
 
   <dialog id="pinky-pair-dialog" class="pinky-arcade-dialog" aria-labelledby="pinky-pair-title">
-    <h2 id="pinky-pair-title">🎮 手機體感控制器</h2>
-    <p>電腦開著 Pinky Jump，按下面按鈕產生配對碼；手機開啟遊戲的控制器頁並輸入代碼。</p>
-    <button id="pinky-create-room" type="button">產生 6 碼配對碼</button>
-    <p id="pinky-room-code" class="pinky-pair-code">— — — — — —</p>
-    <label for="pinky-room-link">手機控制器連結</label>
-    <input id="pinky-room-link" type="text" readonly placeholder="先產生配對碼">
+    <h2 id="pinky-pair-title">Pinky 設定</h2>
+    <div class="pinky-settings-controls">
+      <button id="fullscreen-btn" type="button" class="pinky-light">⛶ 全螢幕</button>
+      <button id="mute-btn" type="button" class="pinky-light" aria-pressed="true">🔊 音效已開啟</button>
+    </div>
+    <div class="pinky-settings-controls" role="group" aria-label="設定頁面">
+      <button id="pinky-pair-tab" type="button" aria-pressed="true" aria-controls="pinky-pair-pane">手機配對</button>
+      <button id="pinky-motion-tab" type="button" aria-pressed="false" aria-controls="pinky-motion-pane">體感跳躍</button>
+    </div>
+    <section id="pinky-pair-pane" aria-labelledby="pinky-pair-tab">
+      <button id="pinky-create-room" type="button" class="pinky-light">產生 6 碼配對碼</button>
+      <p id="pinky-room-code" class="pinky-pair-code" hidden></p>
+      <form id="pinky-connect-form">
+        <label for="controller-room-input">手機配對碼</label>
+        <div class="pinky-setting-row">
+          <input id="controller-room-input" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="6 碼配對碼">
+          <button id="controller-connect" type="submit">連線</button>
+        </div>
+      </form>
+      <div id="pinky-share-room" hidden>
+        <label for="pinky-room-link">手機控制器連結</label>
+        <div class="pinky-setting-row">
+          <input id="pinky-room-link" readonly>
+          <button id="pinky-copy-link" type="button" class="pinky-light">複製連結</button>
+        </div>
+      </div>
+      <p id="pinky-pair-status" role="status"></p>
+    </section>
+    <section id="pinky-motion-pane" aria-labelledby="pinky-motion-tab" hidden>
+      <label class="pinky-motion-toggle"><input id="pinky-motion-enabled" type="checkbox"> 啟動體感跳躍</label>
+      <div class="pinky-setting-row">
+        <label for="controller-sensitivity">靈敏度</label>
+        <select id="controller-sensitivity">
+          <option value="low">低</option><option value="normal" selected>中</option><option value="high">高</option>
+        </select>
+      </div>
+      <p id="pinky-motion-mode">本機模式可用手機或平板感應，無須配對。</p>
+      <p id="pinky-motion-status" role="status"></p>
+      <button id="controller-disconnect" type="button" class="pinky-light" hidden>中斷配對</button>
+    </section>
     <div class="pinky-dialog-actions">
-      <button id="pinky-copy-link" class="pinky-light" type="button">複製連結</button>
       <button id="pinky-pair-close" type="button">完成</button>
     </div>
-    <p id="pinky-pair-status" role="status">請先建立配對碼。</p>
-    <p class="pinky-rank-origin">手機也可以直接開啟 <a href="controller.html" target="_blank" rel="noopener">控制器頁面</a> 手動輸入配對碼。</p>
   </dialog>
 
-  <script src="game.js?v=20261122-record-camera"></script>
-  <script src="pinky-online.js?v=5"></script>
+  <script src="game.js?v=20261122-motion-jump"></script>
+  <script src="pinky-online.js?v=6"></script>
 </body>
 </html>

@@ -1,38 +1,10 @@
-/* Pinky Jump arcade overlay & standalone phone controller */
-.pinky-controller-body{margin:0;min-height:100dvh;box-sizing:border-box;background:linear-gradient(155deg,#ffe0ed,#fff8fb 65%,#e4f3ff);font-family:system-ui,"Noto Sans TC",sans-serif;color:#663b56}
-.pinky-controller{max-width:480px;margin:auto;padding:16px 20px max(28px,env(safe-area-inset-bottom));box-sizing:border-box}
-.pinky-back{display:inline-block;color:#ab2e70;text-decoration:none;font-size:14px;margin-bottom:12px}
-.pinky-controller-icon{display:block;margin:auto;width:75px;height:75px;border-radius:18px}
-.pinky-controller h1{text-align:center;font-size:23px;color:#b72d73;margin:12px 0 6px}
-.pinky-controller h2{margin:0 0 8px;color:#b72d73;font-size:18px}
-.pinky-muted{text-align:center;font-size:14px;line-height:1.65;margin:4px 0 12px}
-.pinky-controller-card{background:#fffefeee;border:2px solid #ffc1d8;border-radius:20px;padding:18px;margin:16px 0;box-shadow:0 5px 16px #d83f8530}
-.pinky-controller-card[hidden]{display:none}
-.pinky-controller-card label{display:block;font-weight:700;font-size:14px;margin-bottom:8px}
-.pinky-controller-card input{display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:24px;text-align:center;letter-spacing:6px;color:#b32f73;border:2px solid #f6a1c6;background:#fff;outline-offset:3px}
-.pinky-controller button,.pinky-arcade-dialog button,.pinky-arcade-btn{cursor:pointer;font:inherit}
-.pinky-primary{display:block;width:100%;border:0;border-radius:12px;padding:12px;font-weight:800;background:#e85298;color:#fff}
-.pinky-primary:disabled{opacity:.55;cursor:wait}
-.pinky-light{background:#fff0f7;color:#ae2e71;font-weight:800;border:2px solid #f6a4c8;border-radius:10px;padding:9px 14px}
-.pinky-status{margin:12px 0 0;border-radius:10px;padding:11px;background:#fff2f8;font-size:13px;line-height:1.55;min-height:38px;box-sizing:border-box}
-.pinky-big-jump{display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;user-select:none;width:min(100%,320px);height:200px;margin:16px auto 5px;border:5px solid #f8b5d1;border-radius:28px;background:linear-gradient(145deg,#f65fa5,#e03483);color:white;font-size:58px;font-weight:900;box-shadow:0 7px 0 #ae376e}
-.pinky-big-jump:active{transform:translateY(4px);box-shadow:0 3px 0 #ae376e}
-.pinky-big-jump span{font-size:21px}
-.pinky-big-jump small{font-size:13px;font-weight:500}
-.pinky-power{text-align:center;font-size:13px;color:#9b4379;margin:9px 0}
-.pinky-sensor-row{display:flex;align-items:center;gap:10px;margin:16px 0}
-.pinky-sensor-row label{margin:0;white-space:nowrap}
-.pinky-sensor-row select{font-size:16px;padding:9px;flex:1;min-width:0;border:1px solid #eeb4d0;border-radius:9px;background:#fff}
-.pinky-meter{height:16px;border-radius:20px;background:#f9dce9;overflow:hidden;margin:10px 0}
-.pinky-meter>div{width:0;height:100%;background:linear-gradient(90deg,#ef7fac,#f02b81);transition:width .1s}
-.pinky-small,.pinky-footnote{font-size:12px;color:#976f83;line-height:1.7}
-.pinky-footnote{padding:0 6px}
+/* Pinky Jump arcade overlays */
 .pinky-arcade-dialog{box-sizing:border-box;width:min(470px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;padding:22px;border:3px solid #f4a3c7;border-radius:21px;background:#fff9fc;color:#663b56;box-shadow:0 25px 75px #6a2e5566;font-family:system-ui,"Noto Sans TC",sans-serif}
 .pinky-arcade-dialog::backdrop{background:#2c1530ad}
 .pinky-arcade-dialog h2{margin:0 0 6px;color:#b42c73;text-align:center}
 .pinky-arcade-dialog p{font-size:13px;line-height:1.6}
 .pinky-arcade-dialog input{box-sizing:border-box;width:100%;font-size:18px;border:2px solid #f1aac9;border-radius:10px;padding:9px 12px;background:white;color:#753452}
-.pinky-arcade-dialog button{border:0;border-radius:10px;background:#e95396;color:white;font-weight:800;padding:10px 18px;min-height:40px}
+.pinky-arcade-dialog button{cursor:pointer;font:inherit;border:0;border-radius:10px;background:#e95396;color:white;font-weight:800;padding:10px 18px;min-height:40px}
 .pinky-arcade-dialog .pinky-light{background:#fff0f7;color:#a02a67;border:2px solid #efb2d0}
 .pinky-dialog-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:15px;flex-wrap:wrap}
 .pinky-arcade-dialog ol{padding-left:4px;list-style:none;margin:14px 0}
@@ -82,8 +54,8 @@
 @media(max-width:620px){
   #hud .badge-title{display:none!important}
   .pinky-arcade-hud{padding:4px 5px!important;font-size:11px!important}
-  #pinky-rank-btn,#pinky-pair-btn{font-size:16px!important;width:26px;min-width:26px;padding:4px 2px!important}
-  #pinky-rank-btn .pinky-hud-label,#pinky-pair-btn .pinky-hud-label{display:none}
+  #pinky-rank-btn{font-size:16px!important;width:26px;min-width:26px;padding:4px 2px!important}
+  #pinky-rank-btn .pinky-hud-label{display:none}
   .pinky-arcade-dialog{padding:16px}
 }
 
@@ -109,34 +81,13 @@
   font-size: clamp(16px, 2.1vw, 21px);
   color: #59213d !important;
 }
-#pinky-rank-rows .pinky-score-row span:nth-child(2),
-#controller-rank-rows .pinky-score-row span:nth-child(2) {
+#pinky-rank-rows .pinky-score-row span:nth-child(2) {
   color: #59213d !important;
   font-weight: 800;
 }
-#pinky-rank-rows .pinky-score-row strong,
-#controller-rank-rows .pinky-score-row strong {
+#pinky-rank-rows .pinky-score-row strong {
   color: #80204d !important;
 }
-#controller-connected[hidden], #controller-setup[hidden],
-#controller-board[hidden], #controller-finish[hidden],
-#controller-record[hidden], #controller-actions[hidden],
-#controller-sensor[hidden] { display: none !important; }
-.pinky-controller-topline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.pinky-controller-topline strong { color: #28784b; }
-.pinky-board-toggle { width: 100%; margin-top: 12px; }
-.pinky-controller-score { font-size: 18px !important; text-align: center; }
-.pinky-controller-score strong { color: #b32772; font-size: 27px; }
-#controller-board { max-height: min(70dvh, 550px); overflow-y: auto; }
-#controller-rank-rows { list-style: none; margin: 12px 0; padding: 0; }
-#controller-record-form input { font-size: 20px; letter-spacing: .02em; }
-#controller-record-form button { margin-top: 12px; }
-#controller-record .pinky-light { margin-top: 10px; width: 100%; }
 #pinky-record-message { color: #ac2668; font-size: 13px; }
 #ui-overlay.pinky-record-open {
   top: var(--pinky-visible-top, 0px);
@@ -169,3 +120,79 @@
 .pinky-record-compact #record-panel label { font-size: 14px; line-height: 1.2; }
 .pinky-record-compact #record-panel p { margin: 0; }
 .pinky-record-compact #pinky-player-name { font-size: 16px; }
+
+#pinky-pair-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border-color: #f19bc5;
+  border-radius: 16px;
+  background: #fff2f8;
+}
+#pinky-pair-btn img { width: 30px; height: 30px; object-fit: contain; }
+#pinky-pair-btn span {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #bd3b7b;
+  color: white;
+  font: 14px/17px system-ui, sans-serif;
+}
+#pinky-pair-dialog {
+  inset: var(--pinky-settings-top, 0px) 0 var(--pinky-settings-bottom, 0px) !important;
+  width: min(460px, calc(100vw - 24px));
+  max-height: min(85dvh, calc(var(--pinky-settings-height, 100dvh) - 12px), 760px);
+}
+#pinky-pair-dialog button { white-space: nowrap; }
+#pinky-pair-dialog button:disabled { opacity: .55; cursor: wait; }
+.pinky-settings-controls, .pinky-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+.pinky-settings-controls { flex-wrap: wrap; }
+.pinky-settings-controls > button { flex: 1 1 auto; }
+.pinky-settings-controls > button[aria-pressed="false"]:not(#mute-btn) {
+  background: #fff0f7;
+  color: #a02a67;
+}
+.pinky-setting-row input {
+  flex: 1;
+  min-width: 0;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.pinky-setting-row select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px;
+  color: #753452;
+  border: 2px solid #f1aac9;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+}
+.pinky-motion-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.pinky-arcade-dialog .pinky-motion-toggle input {
+  width: 22px;
+  height: 22px;
+  accent-color: #bd3b7b;
+}
+#pinky-connect-form { margin-top: 12px; }
+#controller-disconnect { margin-top: 8px; }
+@media (max-width: 360px) {
+  #pinky-pair-dialog button { padding-inline: 10px; }
+}

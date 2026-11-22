@@ -1,78 +1,12 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f760a6">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="icon" type="image/png" href="pinky-icon.png">
-<link rel="apple-touch-icon" href="pinky-icon.png">
-<link rel="stylesheet" href="pinky-arcade.css?v=3">
-<title>Pinky Jump｜手機體感控制器</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pinky Jump</title>
+  <script>location.replace('./' + location.search);</script>
 </head>
-<body data-pinky-page="controller" class="pinky-controller-body">
-<main class="pinky-controller">
-  <a class="pinky-back" href="./">‹ 返回 Pinky Jump</a>
-  <img src="pinky-icon.png" class="pinky-controller-icon" alt="Pinky Jump">
-  <h1>🎮 Pinky Jump 控制器</h1>
-  <div id="controller-setup" class="pinky-controller-card">
-    <p class="pinky-muted">輸入電腦畫面上的六碼配對碼。</p>
-    <label for="controller-room-input">遊戲配對碼</label>
-    <input id="controller-room-input" type="text" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="例如 A3K6M8" inputmode="text">
-    <button id="controller-connect" class="pinky-primary" type="button">連接電腦</button>
-    <p id="controller-status" role="status" class="pinky-status">連線成功後，這個頁面就會變成完整的遊戲控制器。</p>
-  </div>
-  <div id="controller-connected" hidden>
-    <section class="pinky-controller-card">
-      <div class="pinky-controller-topline">
-        <strong>🟢 已連線</strong>
-        <button type="button" id="controller-disconnect" class="pinky-light">重新連線</button>
-      </div>
-      <p id="controller-live-status" role="status" class="pinky-status">正在同步遊戲狀態…</p>
-      <button id="controller-board-toggle" class="pinky-light pinky-board-toggle" type="button">🏆 查看全球 Top 10</button>
-    </section>
-    <section id="controller-actions" class="pinky-controller-card">
-      <button id="controller-start-game" class="pinky-light" type="button">▶ 開始／再玩一次</button>
-      <button id="controller-jump" class="pinky-big-jump" type="button" aria-label="點一下跳躍">⬆<span>跳躍</span><small>點一下就跳</small></button>
-      <div class="pinky-power">最近一次感應動作強度：<strong id="controller-last-power">—</strong></div>
-    </section>
-    <section id="controller-finish" class="pinky-controller-card" hidden>
-      <h2>🎮 GAME OVER</h2>
-      <p class="pinky-controller-score">本次得分 <strong id="controller-final-score">0</strong></p>
-      <button id="controller-restart" class="pinky-primary" type="button">↻ 再玩一次</button>
-    </section>
-    <section id="controller-record" class="pinky-controller-card" hidden>
-      <h2>🏆 NEW HIGH SCORE!</h2>
-      <p class="pinky-controller-score">本次得分 <strong id="controller-record-score">0</strong></p>
-      <form id="controller-record-form">
-        <label for="controller-player-name">輸入名字（最多 12 字）</label>
-        <input id="controller-player-name" name="name" maxlength="12" autocomplete="nickname" placeholder="PINKY" spellcheck="false">
-        <button id="controller-submit-record" class="pinky-primary" type="submit">確認登記全球 Top 10</button>
-      </form>
-      <p class="pinky-small">登記成功後會回到這個控制器畫面。</p>
-      <button id="controller-skip-record" class="pinky-light" type="button">略過，直接再玩</button>
-    </section>
-    <section id="controller-sensor" class="pinky-controller-card">
-      <h2>📱 體感跳躍</h2>
-      <p class="pinky-muted">握穩手機後啟用感應。建議先選「低」，用明顯向上的動作測試，不需要真的跳高。</p>
-      <button id="controller-activate-sensor" class="pinky-primary" type="button">啟用動作感應</button>
-      <div class="pinky-sensor-row">
-        <label for="controller-sensitivity">靈敏度</label>
-        <select id="controller-sensitivity"><option value="low" selected>低（不易誤觸）</option><option value="normal">標準</option><option value="high">高</option></select>
-        <button id="controller-calibrate" class="pinky-light" type="button">重新校準</button>
-      </div>
-      <div class="pinky-meter"><div id="controller-meter-fill"></div></div>
-      <p class="pinky-small">感應到動作後會顯示強度。避免大幅甩動或拋接手機，建議握緊手機或使用腕繩。</p>
-    </section>
-    <section id="controller-board" class="pinky-controller-card" hidden>
-      <h2>🏆 全球 TOP 10</h2>
-      <p id="controller-rank-status" class="pinky-rank-origin">正在讀取全球分數…</p>
-      <ol id="controller-rank-rows"></ol>
-      <button id="controller-board-close" class="pinky-light" type="button">返回控制器</button>
-    </section>
-  </div>
-  <p class="pinky-footnote">測試版使用 Firebase 配對。若網路斷線或配對碼過期，可直接按「重新連線」，不用離開此頁。</p>
-</main>
-<script defer src="pinky-online.js?v=5"></script>
+<body>
+  <a href="./">開啟 Pinky Jump</a>
 </body>
 </html>

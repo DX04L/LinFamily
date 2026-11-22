@@ -219,7 +219,8 @@ forceFullscreenBtn.addEventListener('click', async () => {
 });
 muteBtn.addEventListener('click', () => {
   sfx.muted = !sfx.muted;
-  muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+  muteBtn.textContent = sfx.muted ? '🔇 音效已關閉' : '🔊 音效已開啟';
+  muteBtn.setAttribute('aria-pressed', String(!sfx.muted));
   if (!backgroundMusic) return;
   if (sfx.muted) {
     backgroundMusic.pause();
@@ -287,6 +288,7 @@ const player = {
   vy: 0,
   gravity: 0.78,
   isGrounded: true,
+  jumpCameraLimit: Infinity,
   runCycle: 0,
   blinkTimer: 0,
   hurt: false,
@@ -305,15 +307,20 @@ const player = {
     if (!this.isGrounded || gameState !== 'PLAYING') return;
     // One tap produces one fixed-height jump regardless of press duration.
     this.gravity = Math.max(0.65, Math.min(0.9, height * 0.00105));
-    const rise = Math.max(175, Math.min(330, height * 0.35));
-    this.vy = -Math.sqrt(2 * this.gravity * rise);
+    let rise = Math.max(175, Math.min(330, height * 0.35));
+    if (width > height) {
+      // Aim at the top as seen at takeoff. The camera never clamps the trajectory.
+      rise = Math.max(24, this.y - cameraY - 100 * this.getScale());
+      this.gravity = Math.max(this.gravity, 2 * rise / (25 * 25));
+    }
+    this.jumpCameraLimit = this.y - rise - 100 * this.getScale();
+    this.vy = -Math.sqrt(2 * this.gravity * rise) - this.gravity / 2;
     this.isGrounded = false;
     sfx.jump();
     spawnDust(this.x, this.y, '#f784ba', 8);
   },
   update() {
     const groundY = getGroundY(this.x);
-    this.gravity = Math.max(0.65, Math.min(0.9, height * 0.00105));
     if (this.isGrounded) {
       // Walk smoothly over the slope instead of running through the hill.
       this.y = groundY;
@@ -321,15 +328,6 @@ const player = {
     } else {
       this.vy += this.gravity;
       this.y += this.vy;
-      const s = this.getScale();
-      // Landscape: sprite reaches the top; portrait: well above mid-screen.
-      const ceiling = cameraY + (width > height
-        ? 93 * s
-        : Math.max(110 * s, height * 0.31 + 95 * s));
-      if (this.y <= ceiling) {
-        this.y = ceiling;
-        this.vy = 0;
-      }
       if (this.y >= groundY) {
         this.y = groundY;
         this.vy = 0;
@@ -982,13 +980,16 @@ function drawParticles() {
 function update() {
   frameCount++;
   if (gameState === 'PLAYING') terrainDistance += gameSpeed;
+  player.update();
   // Smooth vertical camera follows the road, not each individual jump.
   // Look ahead on downhill roads, placing the road farther up in the frame.
   const roadHere = getGroundY(player.x);
   const roadAhead = getGroundY(player.x + Math.min(width*.78,720));
   const downhillLookAhead = Math.min(height*.39,Math.max(0,roadAhead-roadHere)*.92);
   const desiredCamera = roadHere - baseGroundY() + downhillLookAhead;
-  cameraY += (desiredCamera-cameraY)*.16;
+  // Hold the highest useful camera position through the arc, without tracking the cat.
+  const cameraTarget = player.isGrounded ? desiredCamera : Math.min(desiredCamera, player.jumpCameraLimit);
+  cameraY += (cameraTarget-cameraY)*.16;
   drawBackground();
   ctx.save();
   ctx.translate(0, -cameraY);
@@ -1069,7 +1070,6 @@ function update() {
     }
   }
 
-  player.update();
   drawCoins();
   drawObstacles();
   player.draw();
@@ -1132,8 +1132,7 @@ window.pinkyRemoteStart = function() {
   if (gameState !== 'PLAYING') startGame();
 };
 window.pinkyRemoteJump = function() {
-  if (gameState === 'START') startGame();
-  if (gameState !== 'PLAYING' || !player.isGrounded) return;
+  if (gameState !== 'PLAYING' || document.querySelector('dialog[open]')) return;
   player.jump();
 };
 
@@ -1161,9 +1160,14 @@ document.addEventListener('keydown', event => {
 }, true);
 const gameWrapper = document.getElementById('game-wrapper');
 gameWrapper.addEventListener('pointerdown', event => {
-  if (gameState !== 'PLAYING' || event.isPrimary === false) return;
+  if (event.isPrimary === false) return;
   // The entire game canvas responds; HUD actions and dialogs are excluded.
   if (event.target.closest('button, a, dialog, .panel, #hud, input, textarea, select, [role="button"]')) return;
+  if (window.pinkyArcade?.sendPairedJump()) {
+    event.preventDefault();
+    return;
+  }
+  if (gameState !== 'PLAYING') return;
   event.preventDefault();
   player.jump();
 });

@@ -293,7 +293,5 @@ html, body {
 /* Installation button: keep game score controls usable on small phones. */
 @media (max-width:600px) {
   #hud .badge-title { display:none !important; }
-  #fullscreen-btn { font-size:0; min-width:26px; padding:3px 5px; }
-  #fullscreen-btn::before { content:'⛶'; font-size:16px; }
   #hud .hud-left, #hud .hud-right { gap:3px; }
 }
