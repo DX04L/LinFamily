@@ -75,3 +75,7 @@ body:has(#lfApps .dk-card ~ .dk-card) .lf-todo-drawer .todo-move-area {
 @media (min-width: 640px) { .lf-todo-menu > button { font-size: 15px; } }
 
 .lf-todo-menu.is-card-popup > button:only-of-type { grid-column: 1 / -1; }
+
+/* 共用桌面：卡片頂端拖曳把手看得到、標題可拖 */
+#lfApps .lf-todo-card .drag-handle::before { content:''; width:36px; height:4px; border-radius:2px; background:currentColor; opacity:.35; }
+#lfApps .lf-todo-card h2.dk-handle { cursor:grab; }

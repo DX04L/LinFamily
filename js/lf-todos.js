@@ -107,6 +107,7 @@ window.lfDesktopTodos = function (host, { db, toast, layout: deskLayout }) {
       handle.setAttribute('aria-label', '拖曳移動');
       el.append(handle, window.clcBuildTodoFields(id));
       el.querySelector('h2').textContent = area.title || '代辦事項';
+      el.querySelector('h2').classList.add('dk-handle'); // 標題也可以拖（共用桌面）
       layout.attach(el, id);
       cards.set(id, { el, dispose: mount(el, id) });
     }
