@@ -16,7 +16,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope)) return;
   event.respondWith(fetch(req).then(response => {
-    if (response.ok) event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, response.clone())).catch(() => {}));
+    if (response.ok) { const copy = response.clone(); event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => {})); }
     return response;
   }).catch(async () => (await caches.match(req)) || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())));
 });
