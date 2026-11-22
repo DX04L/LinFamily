@@ -16,8 +16,14 @@
   let scoreUnsub = null;
   let roomRef = null;
   let messageSeq = 0;
-  let remoteBoard = [];
+  let remoteBoard = [];      // all players, best score per name
+  let motionBoard = [];      // motion-only Top 10
   let remoteOnline = false;
+  let rankTab = 'motion';
+  let pendingMotion = false;
+  let superDb = null;        // set when an LF super user is signed in on this browser
+  const SUPERS = ['darren710404@gmail.com','darren.lin@twclc.org'];
+  const BOARD = 'pinky_jump_board', MOTION_BOARD = 'pinky_jump_motion_board';
   let globalError = '正在連接全球排行榜…';
   let phoneRoomUnsub = null;
   let pairedRoom = null;
@@ -41,7 +47,7 @@
           appMod.initializeApp(firebaseConfig, name);
         const auth = authMod.getAuth(app);
         if (!auth.currentUser) await authMod.signInAnonymously(auth);
-        return {fs, auth, db: fs.getFirestore(app)};
+        return {fs, auth, db: fs.getFirestore(app), appMod, authMod};
       })();
     }
     return cloudPromise.catch(err => { cloudPromise = null; throw err; });
@@ -54,40 +60,68 @@
     if (PinkyLocale.has(value)) return value;
     return PinkyLocale.message('無法連線 Firebase（{0}）。可先試本機模式。', value.slice(0,75));
   }
-  function normalizeScores(rows) {
+  function normalizeScores(rows, limit) {
     return (Array.isArray(rows) ? rows : [])
-      .filter(x => x && Number.isFinite(Number(x.score)) && Number(x.score) >= 0)
-      .map(x => ({name: String(x.name || 'PINKY').slice(0,12),
-        score: Math.floor(Number(x.score))}))
+      .filter(x => x && x.key && Number.isFinite(Number(x.score)) && Number(x.score) >= 0)
+      .map(x => ({name: String(x.name).slice(0,12), key: String(x.key),
+        score: Math.floor(Number(x.score)), motion: x.motion === true}))
       .sort((a,b)=> b.score - a.score)
-      .slice(0,10);
+      .slice(0,limit);
   }
   function qualifies(score) {
-    if (!remoteOnline) return false;
-    const board=remoteBoard, value=Math.floor(Number(score));
-    return value > 0 && (board.length < 10 || value > board[board.length-1].score);
+    // Every finished run with points may be registered in the all-players board.
+    return remoteOnline && Math.floor(Number(score)) > 0;
+  }
+  function selectRankTab(tab) {
+    rankTab = tab === 'all' ? 'all' : 'motion';
+    refreshScores();
   }
   function refreshScores() {
-    const board = remoteOnline ? remoteBoard : [];
+    const motionTab = rankTab === 'motion';
+    const board = remoteOnline ? (motionTab ? motionBoard : remoteBoard) : [];
+    const tabs=$('pinky-rank-tabs');
+    if (tabs) {
+      tabs.dataset.pane=rankTab;
+      $('pinky-rank-motion-tab').setAttribute('aria-pressed',String(motionTab));
+      $('pinky-rank-all-tab').setAttribute('aria-pressed',String(!motionTab));
+    }
     const rows=$('pinky-rank-rows');
     rows.replaceChildren();
     if (remoteOnline && !board.length) {
       const li=document.createElement('li');
       li.className='pinky-empty';
-      li.textContent=PinkyLocale.translate('全球排行榜還沒有任何紀錄，歡迎成為第一位！');
+      li.textContent=PinkyLocale.translate(motionTab ?
+        '還沒有人上榜，成為第一位體感高手！' : '排行榜還沒有任何紀錄，歡迎成為第一位！');
       rows.appendChild(li);
     }
     board.forEach((entry,index)=>{
       const li=document.createElement('li');li.className='pinky-score-row';
       const rank=document.createElement('span');rank.textContent=String(index+1).padStart(2,'0');
       const name=document.createElement('span');name.textContent=entry.name;
+      if (!motionTab && entry.motion) {
+        const badge=document.createElement('em');
+        badge.className='pinky-motion-badge';
+        badge.textContent='🤸';
+        badge.title=PinkyLocale.translate('體感紀錄');
+        name.append(' ',badge);
+      }
       const points=document.createElement('strong');points.textContent=String(entry.score).padStart(6,'0');
-      li.append(rank,name,points);rows.appendChild(li);
+      li.append(rank,name,points);
+      if (superDb) {
+        const del=document.createElement('button');
+        del.type='button';del.className='pinky-rank-delete';del.textContent='🗑';
+        del.title=PinkyLocale.translate('刪除這筆紀錄');
+        del.addEventListener('click',()=>deleteEntry(motionTab?MOTION_BOARD:BOARD,entry));
+        li.append(del);
+      }
+      rows.appendChild(li);
     });
     setText('pinky-rank-origin',remoteOnline ?
-      '🌐 全球共用 Top 10（即時同步）' :
+      (motionTab ? '🤸 只限全程體感跳躍的 Top 10（即時同步）' : '🌐 所有登記的玩家，每個名字一筆最高分（🤸＝體感紀錄）') :
       PinkyLocale.message('⚠️ 全球排行榜未連線：{0}',globalError));
-    setText('hi-score',remoteOnline ? String(board[0]?.score||0).padStart(5,'0') : '-----');
+    const tools=$('pinky-rank-admin');
+    if (tools) tools.hidden=!superDb;
+    setText('hi-score',remoteOnline ? String(remoteBoard[0]?.score||0).padStart(5,'0') : '-----');
   }
   function openGameDialog(dialog) {
     if (!dialog || dialog.open) return;
@@ -95,6 +129,7 @@
     dialog.showModal();
   }
   function showBoard() {
+    rankTab='motion';
     refreshScores();
     const dialog=$('pinky-rank-dialog');
     openGameDialog(dialog);
@@ -149,9 +184,24 @@
       });
     }).catch(err=>renderRoomStatus(errorText(err)));
   }
+  function skipRecord() {
+    const final=pendingScore;
+    pendingScore=0;
+    hideRecord();
+    $('gameover-panel')?.classList.remove('hidden');
+    hostSetPhase('submitted',final);
+  }
   async function saveGlobalScore(nameInput) {
-    const name=String(nameInput||'').trim().replace(/\s+/g,' ').slice(0,12)||'PINKY';
-    const score=pendingScore;
+    const problem=PinkyNameFilter.check(nameInput);
+    // Empty or default names are not registered.
+    if (problem==='empty' || problem==='default') { if(pendingScore && !scoreSubmitting) skipRecord(); return false; }
+    if (problem) {
+      setText('pinky-record-message','這個名字不能使用，請換一個。');
+      if (pendingScore) hostSetPhase('record_error',pendingScore);
+      return false;
+    }
+    const {name,key}=PinkyNameFilter.clean(nameInput);
+    const score=pendingScore, motion=pendingMotion;
     if(!score || !remoteOnline){
       renderRoomStatus('全球排行榜未連線，目前無法提交分數');
       setText('pinky-record-message','全球排行榜未連線，請稍後重試。');
@@ -163,9 +213,7 @@
     setText('pinky-record-message','正在登記…');
     try {
       const {fs,db,auth}=await cloud();
-      await fs.addDoc(fs.collection(db,'pinky_jump_scores'),{
-        name,score,owner:auth.currentUser.uid,createdAt:fs.serverTimestamp()
-      });
+      await writeBest(fs,db,auth.currentUser.uid,{name,key,score,motion});
       pendingScore=0;
       hideRecord();
       $('gameover-panel')?.classList.remove('hidden');
@@ -181,6 +229,73 @@
       scoreSubmitting=false;
     }
   }
+  // One entry per name (doc id = lowercased name). Keep the best score; the
+  // name's spelling follows the latest entry.
+  async function writeBest(fs,db,uid,{name,key,score,motion}) {
+    const refs=[fs.doc(db,BOARD,key)];
+    if (motion) refs.push(fs.doc(db,MOTION_BOARD,key));
+    await fs.runTransaction(db,async tx=>{
+      const snaps=[];
+      for (const ref of refs) snaps.push(await tx.get(ref));
+      snaps.forEach((snap,i)=>{
+        const old=snap.exists()?snap.data():null;
+        const better=!old || score>old.score;
+        tx.set(refs[i],{
+          name,key,owner:uid,updatedAt:fs.serverTimestamp(),
+          score:better?score:old.score,
+          motion:i===1 ? true : (better?motion:old.motion===true)
+        });
+      });
+    });
+  }
+  async function deleteEntry(collection,entry) {
+    if (!superDb || !confirm(PinkyLocale.message('確定要刪除「{0}」這筆紀錄嗎？',entry.name))) return;
+    try {
+      const {fs}=await cloud();
+      await fs.deleteDoc(fs.doc(superDb,collection,entry.key));
+    } catch(err) { alert(errorText(err)); }
+  }
+  // Super user only: merge every old pinky_jump_scores entry into the new board.
+  async function migrateOldScores() {
+    if (!superDb) return;
+    const btn=$('pinky-rank-migrate');
+    btn.disabled=true;
+    try {
+      const {fs,auth}=await cloud();
+      const mainAuth=superAuth;
+      const snap=await fs.getDocs(fs.collection(superDb,'pinky_jump_scores'));
+      const best=new Map();
+      let skipped=0;
+      const rows=snap.docs.map(d=>d.data())
+        .sort((a,b)=>(a.createdAt?.toMillis?.()||0)-(b.createdAt?.toMillis?.()||0));
+      for (const row of rows) {
+        const score=Math.floor(Number(row.score));
+        if (PinkyNameFilter.check(row.name) || !(score>0)) { skipped++; continue; }
+        const {name,key}=PinkyNameFilter.clean(row.name);
+        const prev=best.get(key);
+        best.set(key,{name,key,score:Math.max(score,prev?.score||0),motion:false});
+      }
+      for (const entry of best.values())
+        await writeBest(fs,superDb,mainAuth.currentUser.uid,entry);
+      alert(PinkyLocale.message('已合併 {0} 個名字，略過 {1} 筆（PINKY、空白或不當名字）。',best.size,skipped));
+    } catch(err) {
+      alert(errorText(err));
+    } finally { btn.disabled=false; }
+  }
+  let superAuth=null;
+  async function detectSuper() {
+    try {
+      const {appMod,authMod,fs}=await cloud();
+      const main=appMod.getApps().find(a=>a.name==='[DEFAULT]') || appMod.initializeApp(firebaseConfig);
+      const mainAuth=authMod.getAuth(main);
+      await mainAuth.authStateReady();
+      const email=String(mainAuth.currentUser?.email||'').toLowerCase();
+      if (!SUPERS.includes(email)) return;
+      superAuth=mainAuth;
+      superDb=fs.getFirestore(main);
+      refreshScores();
+    } catch(err) {}
+  }
   async function submitScore(event) {
     event.preventDefault();
     const name=$('pinky-player-name')?.value;
@@ -193,15 +308,24 @@
     refreshScores();
     cloud().then(({db,fs})=>{
       if(scoreUnsub)scoreUnsub();
-      scoreUnsub=fs.onSnapshot(
-        fs.query(fs.collection(db,'pinky_jump_scores'),fs.orderBy('score','desc'),fs.limit(10)),
+      const motionUnsub=fs.onSnapshot(
+        fs.query(fs.collection(db,MOTION_BOARD),fs.orderBy('score','desc'),fs.limit(10)),
+        snap=>{
+          if(snap.metadata?.fromCache)return;
+          motionBoard=normalizeScores(snap.docs.map(d=>d.data()),10);
+          refreshScores();
+        },
+        ()=>{}
+      );
+      const allUnsub=fs.onSnapshot(
+        fs.query(fs.collection(db,BOARD),fs.orderBy('score','desc'),fs.limit(100)),
         snap=>{
           // A cached snapshot may not reflect scores from other devices.
           if(snap.metadata?.fromCache){
             remoteOnline=false;
             globalError='正在等待 Firebase 伺服器確認全球名次';
           }else{
-            remoteBoard=normalizeScores(snap.docs.map(d=>d.data()));
+            remoteBoard=normalizeScores(snap.docs.map(d=>d.data()),100);
             remoteOnline=true;
             globalError='';
           }
@@ -213,6 +337,7 @@
           refreshScores();
         }
       );
+      scoreUnsub=()=>{motionUnsub();allUnsub();};
     }).catch(err=>{
       remoteOnline=false;
       globalError=errorText(err);
@@ -349,6 +474,7 @@
     $('controller-manual').hidden=record||phoneViewMode!=='manual';
     $('controller-motion').hidden=record||phoneViewMode!=='motion';
     $('controller-jump').disabled=pairedPhase!=='playing';
+    $('controller-manual-tab').disabled=phoneViewMode==='motion' && pairedPhase==='playing';
     setText('controller-status',pairedPhase==='record_error'?'登記失敗，請重新送出或略過。':'');
   }
   function updatePairedPhase(data) {
@@ -367,6 +493,8 @@
     }
   }
   function selectPhoneMode(mode, permission) {
+    // A run started in motion mode stays in motion mode until it ends.
+    if (mode==='manual' && phoneViewMode==='motion' && pairedPhase==='playing') return;
     phoneViewMode=mode;
     $('controller-tabs').dataset.pane=mode;
     for (const key of ['manual','motion'])
@@ -588,7 +716,8 @@
         hideRecord();pendingScore=0;scoreSubmitting=false;
         hostSetPhase('playing',0);
       },
-      onGameOver(score){
+      onGameOver(score,motion){
+        pendingMotion=motion===true;
         const qualified=newRecord(score);
         hostSetPhase(qualified?'record':'gameover',score);
       },
@@ -600,6 +729,9 @@
       globalConnected(){return remoteOnline;}
     };
     $('pinky-rank-btn')?.addEventListener('click',showBoard);
+    bindSlidingTabs($('pinky-rank-tabs'),selectRankTab);
+    $('pinky-rank-migrate')?.addEventListener('click',migrateOldScores);
+    detectSuper();
     $('pinky-hi-open')?.addEventListener('click',showBoard);
     $('pinky-hi-open')?.addEventListener('keydown',event=>{
       if(event.key==='Enter'||event.key===' '){event.preventDefault();showBoard();}
@@ -675,7 +807,9 @@
     for (const type of ['pointerup','pointercancel','lostpointercapture'])
       phoneJump.addEventListener(type,endPhoneJump);
     phoneJump.addEventListener('click',event=>{
-      if(event.detail===0)sendPairedJump(0);
+      // Keyboard activation: send as a button press so it never counts as motion.
+      if(event.detail===0 && pairedPhase==='playing')
+        sendPhoneCommand('jump',0,'u'+pressPrefix+'k'+(++jumpSequence).toString(36));
     });
     $('controller-record').addEventListener('submit',event=>{
       event.preventDefault();

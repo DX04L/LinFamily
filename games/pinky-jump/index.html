@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=2" />
   <link rel="stylesheet" href="style.css?v=5" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=15" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=16" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=2"></script>
@@ -37,7 +37,7 @@
     <div id="hud">
       <div class="hud-left">
         <span class="badge-title"><img src="pinky-icon.png" alt="" /> Pinky Jump</span>
-        <button type="button" id="pinky-rank-btn" class="icon-btn pinky-arcade-hud" title="Top 10 leaderboard" data-zh-title="Top 10 排行榜">🏆 <span class="pinky-hud-label">TOP 10</span></button>
+        <button type="button" id="pinky-rank-btn" class="icon-btn pinky-arcade-hud" title="Leaderboard" data-zh-title="排行榜">🏆 <span class="pinky-hud-label">TOP</span></button>
         <button type="button" id="pinky-install-btn" class="icon-btn" title="Install Pinky Jump" hidden data-zh-title="安裝 Pinky Jump 到桌面" data-zh="📲 安裝">📲 Install</button>
       </div>
       <div class="hud-right">
@@ -82,8 +82,8 @@
       </div>
 
       <div id="record-panel" class="panel hidden" aria-live="polite">
-        <h2 class="gameover-title">🏆 NEW HIGH SCORE!</h2>
-        <p><span data-zh="你的成績">Score:</span> <strong id="pinky-new-score">000000</strong> <span data-zh="進入 Top 10！">· Top 10!</span></p>
+        <h2 class="gameover-title" data-zh="🏆 登記排行榜">🏆 JOIN THE LEADERBOARD</h2>
+        <p><span data-zh="你的成績">Score:</span> <strong id="pinky-new-score">000000</strong> <span data-zh="登記上榜！">· Add to the leaderboard!</span></p>
         <form id="pinky-record-form">
           <label for="pinky-player-name" data-zh="請輸入名字（最多 12 字）">Name (12 characters max)</label>
           <div class="pinky-record-entry">
@@ -106,9 +106,14 @@
     <div class="pinky-install-actions"><button type="button" id="pinky-install-close" data-zh="知道了">Got It</button></div>
   </dialog>
   <dialog id="pinky-rank-dialog" class="pinky-arcade-dialog" aria-labelledby="pinky-rank-title">
-    <h2 id="pinky-rank-title">🏆 PINKY JUMP TOP 10</h2>
+    <h2 id="pinky-rank-title" data-zh="🏆 PINKY JUMP 排行榜">🏆 PINKY JUMP Leaderboard</h2>
+    <div id="pinky-rank-tabs" class="pinky-settings-tabs" data-pane="motion" role="group" aria-label="Leaderboard" data-zh-aria-label="排行榜">
+      <button id="pinky-rank-motion-tab" type="button" data-pane="motion" aria-pressed="true" data-zh="🤸 體感挑戰榜">🤸 Motion Challenge</button>
+      <button id="pinky-rank-all-tab" type="button" data-pane="all" aria-pressed="false" data-zh="全部排名">All Players</button>
+    </div>
     <p id="pinky-rank-origin" class="pinky-rank-origin"></p>
     <ol id="pinky-rank-rows"></ol>
+    <div id="pinky-rank-admin" hidden><button id="pinky-rank-migrate" type="button" class="pinky-light" data-zh="整理舊紀錄（合併到新排行榜）">Merge old records</button></div>
     <div class="pinky-dialog-actions"><button id="pinky-rank-close" type="button" data-zh="關閉">Close</button></div>
   </dialog>
 
@@ -197,7 +202,7 @@
       </dl>
       <h3 data-zh="畫面上的按鈕">HUD and Buttons</h3>
       <ul class="pinky-guide-controls">
-        <li data-zh="🏆 TOP 10 或 HI 可開啟排行榜，SCORE 顯示本局分數。">🏆 TOP 10 and HI open the leaderboard. SCORE tracks your current run.</li>
+        <li data-zh="🏆 TOP 或 HI 可開啟排行榜，SCORE 顯示本局分數。">🏆 TOP and HI open the leaderboard. SCORE tracks your current run.</li>
         <li data-zh="🛡️ 顯示剩餘護盾。貓掌齒輪可開啟設定與遊戲說明。">🛡️ Shows your remaining shield charges. Tap the paw gear for Settings and the Game Guide.</li>
         <li data-zh="⛶ 切換全螢幕，🔊 開關聲音，📲 安裝可將遊戲加到裝置。">⛶ Toggles fullscreen, 🔊 toggles sound, and 📲 installs the game on your device.</li>
       </ul>
@@ -212,7 +217,7 @@
     </div>
     <button id="controller-primary" type="button" class="btn-primary" data-zh="開始遊戲">Start Game</button>
     <form id="controller-record" hidden>
-      <label for="controller-name" data-zh="🏆 新紀錄，輸入姓名">🏆 New high score! Enter your name.</label>
+      <label for="controller-name" data-zh="🏆 輸入名字登記排行榜">🏆 Enter your name for the leaderboard.</label>
       <div class="pinky-setting-row">
         <input id="controller-name" maxlength="12" autocomplete="nickname" enterkeyhint="done" placeholder="PINKY">
         <button id="controller-submit" type="submit" class="btn-primary" data-zh="送出">Submit</button>
@@ -239,9 +244,10 @@
     <p id="controller-status" role="status"></p>
   </main>
 
-  <script src="locale.js?v=1"></script>
-  <script src="game.js?v=20261122-shield-blink"></script>
-  <script src="pinky-online.js?v=17"></script>
+  <script src="locale.js?v=2"></script>
+  <script src="game.js?v=20261122-motion-board"></script>
+  <script src="name-filter.js?v=1"></script>
+  <script src="pinky-online.js?v=18"></script>
   <script src="lf-menu.js?v=3"></script>
 </body>
 </html>

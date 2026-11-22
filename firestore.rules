@@ -172,10 +172,55 @@ service cloud.firestore {
         );
     }
 
-    // ── Pinky Jump experimental shared Top 10; submitted scores are not server-verified.
-    match /pinky_jump_scores/{entry} {
+
+    // ── Pinky Jump leaderboards: one entry per name (doc id = lowercased name), best score kept.
+    // Word list mirrors games/pinky-jump/name-filter.js.
+    function pinkySquash(key) {
+      return key.replace('[\\s._\\-]', '').replace('0', 'o').replace('1', 'i').replace('3', 'e')
+        .replace('4', 'a').replace('5', 's').replace('@', 'a').replace('\\$', 's');
+    }
+    function pinkyBlocked(key) {
+      let k = pinkySquash(key);
+      return k.matches('.*(fuck|fuk|fck|phuck|shit|bitch|biatch|cunt|pussy|asshole|bastard|slut|whore|nigger|nigga|faggot|retard|porn|penis|vagina|boob|tits|dildo|hitler|nazi|motherf|wtf|stfu|nmsl|wcnm|cnm|tmd|nmd|mlgb|sohai|幹你|幹妳|干你|干妳|幹林|幹拎|操你|操妳|肏|靠北|靠杯|靠腰|靠么|雞掰|机掰|鸡掰|雞巴|鸡巴|机巴|屌|婊|賤|贱|妓|淫|屄|傻逼|傻屄|煞筆|傻b|白癡|白痴|智障|腦殘|脑残|弱智|去死|死全家|王八|混蛋|垃圾|廢物|废物|他媽|他妈|你媽|你妈|媽的|妈的|尼瑪|尼玛|草泥馬|草泥马|幹恁|三小|屁眼|陰莖|阴茎|陰道|阴道|色情|做愛|做爱|性交|強姦|强奸|強暴|强暴|希特勒|納粹|纳粹|畜生|畜牲|人渣|狗娘|賤人|贱人|滾蛋|滚蛋).*') || k in ['sb', '2b', 'kys', 'fu', 'ass', 'fag', 'sex', 'cum', 'dick', 'cock', 'rape', 'dicks', 'cocks'];
+    }
+    function pinkyEntry(key) {
+      let d = request.resource.data;
+      return request.auth != null
+        && d.keys().hasOnly(['name','key','score','motion','owner','updatedAt'])
+        && d.keys().hasAll(['name','key','score','motion','owner','updatedAt'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 12
+        && !d.name.matches('.*[/\\\\].*')
+        && d.key == key && d.name.lower() == key && key != 'pinky'
+        && !pinkyBlocked(key)
+        && d.score is int && d.score >= 1 && d.score <= 9999999
+        && d.motion is bool
+        && d.owner == request.auth.uid
+        && d.updatedAt == request.time;
+    }
+    function pinkyKeepsBest() {
+      return request.resource.data.score > resource.data.score
+        || (request.resource.data.score == resource.data.score
+          && request.resource.data.motion == resource.data.motion);
+    }
+    match /pinky_jump_board/{key} {
+      allow get: if true;
+      allow list: if request.query.limit != null && request.query.limit <= 100;
+      allow create: if pinkyEntry(key);
+      allow update: if pinkyEntry(key) && pinkyKeepsBest();
+      allow delete: if isSuper();
+    }
+    match /pinky_jump_motion_board/{key} {
       allow get: if true;
       allow list: if request.query.limit != null && request.query.limit <= 10;
+      allow create: if pinkyEntry(key) && request.resource.data.motion == true;
+      allow update: if pinkyEntry(key) && request.resource.data.motion == true && pinkyKeepsBest();
+      allow delete: if isSuper();
+    }
+
+    // ── Old Pinky Jump Top 10 (replaced by the boards above; kept for the super user's merge).
+    match /pinky_jump_scores/{entry} {
+      allow get: if true;
+      allow list: if isSuper() || (request.query.limit != null && request.query.limit <= 10);
       allow update, delete: if false;
       allow create: if request.auth != null
         && request.resource.data.keys().hasOnly(['name','score','owner','createdAt'])

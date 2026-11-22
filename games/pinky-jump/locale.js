@@ -1,6 +1,15 @@
 /* Pinky Jump UI localization. */
 (() => {
   const messages = {
+    "還沒有人上榜，成為第一位體感高手！": "No motion scores yet. Be the first motion champion!",
+    "排行榜還沒有任何紀錄，歡迎成為第一位！": "No scores yet. Set the first record!",
+    "體感紀錄": "Motion score",
+    "刪除這筆紀錄": "Delete this entry",
+    "🤸 只限全程體感跳躍的 Top 10（即時同步）": "🤸 Top 10 runs played entirely with Motion Jump · Live",
+    "🌐 所有登記的玩家，每個名字一筆最高分（🤸＝體感紀錄）": "🌐 Every registered player, best score per name (🤸 = motion run)",
+    "這個名字不能使用，請換一個。": "That name isn't allowed. Please choose another.",
+    "確定要刪除「{0}」這筆紀錄嗎？": "Delete the entry for \u201c{0}\u201d?",
+    "已合併 {0} 個名字，略過 {1} 筆（PINKY、空白或不當名字）。": "Merged {0} names; skipped {1} (PINKY, blank or inappropriate).",
     "正在連接全球排行榜…": "Connecting to the global leaderboard…",
     "連線失敗": "Connection failed",
     "Firebase 尚未啟用遊戲權限／匿名登入。可先試本機操作；跨裝置要先完成 Firebase 設定。": "Online play is unavailable. You can still play on this device.",

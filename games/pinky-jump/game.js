@@ -205,6 +205,8 @@ let score = 0;
 let shield = 0;
 let immunity = 0;
 let shieldShake = 0;
+// Jump sources this run. A run counts as Motion only when every jump came from motion.
+let runJumps = {motion:0, manual:0};
 function bumpShieldIcon() {
   const box = document.querySelector('.shield-box');
   if (!box) return;
@@ -1255,6 +1257,7 @@ function startGame() {
   terrainPhase = Math.random()*Math.PI*2;
   extendTerrainTo(width*2);
   shield=0;immunity=0;shieldShake=0;shieldEl.textContent=0;
+  runJumps = {motion:0, manual:0};
   player.reset();
   startPanel.classList.add('hidden');
   gameoverPanel.classList.add('hidden');
@@ -1282,7 +1285,7 @@ function triggerGameOver() {
   }
 
   gameoverPanel.classList.remove('hidden');
-  window.pinkyArcade?.onGameOver(finalVal);
+  window.pinkyArcade?.onGameOver(finalVal, runJumps.motion > 0 && runJumps.manual === 0);
 }
 
 const pauseControl = document.getElementById('pinky-pause');
@@ -1327,6 +1330,8 @@ window.pinkyRemoteStart = function(pause = false) {
 };
 window.pinkyRemoteJump = function(power = 0, input = null) {
   if (gameState !== 'PLAYING' || document.querySelector('dialog[open]')) return;
+  // Phone button presses carry an input id; motion jumps (tablet or phone) do not.
+  if (input) runJumps.manual++; else runJumps.motion++;
   player.jump(input,power);
 };
 
@@ -1351,7 +1356,12 @@ document.addEventListener('keydown', event => {
   event.preventDefault();
   if (event.repeat) return;
   if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
-  else if (gameState === 'PLAYING') player.jump(event.code || event.key);
+  else if (gameState === 'PLAYING') {
+    // Motion runs are locked to motion until game over.
+    if (window.pinkyArcade?.isMotionEnabled()) { showTouchLock(); return; }
+    runJumps.manual++;
+    player.jump(event.code || event.key);
+  }
 }, true);
 function releaseJump(input, heldMs) {
   if (input !== player.jumpInput) return;
@@ -1372,7 +1382,7 @@ function releaseJump(input, heldMs) {
 }
 window.pinkyRemoteRelease = function(input, heldMs, missingPress) {
   if (gameState !== 'PLAYING' || document.querySelector('dialog[open]')) return;
-  if (missingPress && player.isGrounded) player.jump(input);
+  if (missingPress && player.isGrounded) { runJumps.manual++; player.jump(input); }
   releaseJump(input,heldMs);
 };
 document.addEventListener('keyup', event => releaseJump(event.code || event.key));
@@ -1402,6 +1412,7 @@ gameWrapper.addEventListener('pointerdown', event => {
   }
   if (gameState !== 'PLAYING') return;
   event.preventDefault();
+  runJumps.manual++;
   player.jump(event.pointerId);
 });
 startBtn.addEventListener('click', startGame);
