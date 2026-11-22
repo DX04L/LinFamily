@@ -1,5 +1,5 @@
 /**
- * 粉紅魔法貓跑酷 (Pink Cat Jump)
+ * Pinky Jump
  * 還原角色設計細節：
  * - 粉白雙色毛絨貓耳 + 尖端寶藍色雙絨球
  * - 粉色瀏海 + 額頭寶藍菱形寶石 + 兩側灰點眉飾
@@ -59,135 +59,15 @@ class SoundFX {
     osc.stop(now + duration);
   }
   jump() {
-    this.playTone(360, 'sine', 0.18, 720, 0.18);
-  }
-  coin() {
-    this.playTone(880, 'triangle', 0.08, 1320, 0.15);
-    setTimeout(() => this.playTone(1320, 'triangle', 0.12, 1760, 0.12), 60);
-  }
-  milestone() {
-    const notes = [523.25, 659.25, 783.99, 1046.5];
-    notes.forEach((n, i) => {
-      setTimeout(() => this.playTone(n, 'sine', 0.12, null, 0.14), i * 70);
-    });
-  }
-  hit() {
-    this.playTone(220, 'sawtooth', 0.28, 70, 0.2);
-  }
-}
-
-const sfx = new SoundFX();
-
-// 遊戲狀態與參數
-let width = window.innerWidth;
-let height = window.innerHeight;
-let dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-let gameState = 'START'; // START | PLAYING | GAMEOVER
-let score = 0;
-let hiScore = parseInt(localStorage.getItem('pinkCatHiScore') || '0', 10);
-let gameSpeed = 7;
-let frameCount = 0;
-let lastMilestone = 0;
-let dayNightFactor = 0; // 0 = 白天粉彩, 1 = 夢幻星空夜
-
-hiScoreEl.textContent = String(hiScore).padStart(5, '0');
-
-// 調整畫布解析度
-function resizeCanvas() {
-  width = window.innerWidth;
-  height = window.innerHeight;
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  checkOrientation();
-}
-
-// 檢查手機橫向提示
-function checkOrientation() {
-  const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-  if (isTouchDevice && height > width) {
-    rotateOverlay.classList.remove('hidden');
-  } else {
-    rotateOverlay.classList.add('hidden');
-  }
-}
-
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 150));
-
-// 全螢幕與橫向鎖定功能
-async function enterLandscapeFullscreen() {
-  try {
-    const elem = document.documentElement;
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-      if (elem.requestFullscreen) {
-        await elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        await elem.webkitRequestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        await document.webkitExitFullscreen();
-      }
+    if(this.isGrounded && gameState==='PLAYING'){
+      this.vy=-Math.max(10.5,Math.min(16.8,height*.021));
+      this.isGrounded=false; this.isDucking=false; this.jumpHeld=true; this.holdCount=0;
+      sfx.jump(); spawnDust(this.x,this.y,'#f784ba',8);
     }
-    if (screen.orientation && screen.orientation.lock) {
-      await screen.orientation.lock('landscape').catch(() => {});
-    }
-  } catch (err) {
-    console.log('Fullscreen/Orientation lock notice:', err);
-  }
-}
-
-fullscreenBtn.addEventListener('click', enterLandscapeFullscreen);
-forceFullscreenBtn.addEventListener('click', async () => {
-  await enterLandscapeFullscreen();
-  rotateOverlay.classList.add('hidden');
-});
-
-muteBtn.addEventListener('click', () => {
-  sfx.muted = !sfx.muted;
-  muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
-});
-
-// 地面高度計算
-function getGroundY() {
-  return Math.max(height * 0.78, height - 90);
-}
-
-// 角色物件 (粉紅魔法貓)
-const player = {
-  x: 90,
-  y: 0,
-  vy: 0,
-  gravity: 0.78,
-  jumpForce: -15.5,
-  isGrounded: true,
-  isDucking: false,
-  runCycle: 0,
-  blinkTimer: 0,
-  hurt: false,
-
-  reset() {
-    this.x = Math.min(110, width * 0.14);
-    this.y = getGroundY();
-    this.vy = 0;
-    this.isGrounded = true;
-    this.isDucking = false;
-    this.hurt = false;
   },
-
-  jump() {
-    if (this.isGrounded) {
-      this.vy = this.jumpForce;
-      this.isGrounded = false;
-      this.isDucking = false;
-      sfx.jump();
-      spawnDust(this.x, this.y, '#ff85c0', 8);
-    }
+  stopJump(){
+    this.jumpHeld=false;
+    if(this.vy < -3) this.vy *= .40;
   },
 
   duck(active) {
@@ -200,13 +80,18 @@ const player = {
 
   update() {
     const groundY = getGroundY();
-    this.vy += this.gravity;
-    this.y += this.vy;
+    this.gravity=Math.max(.65,Math.min(.9,height*.00105));
+    if(!this.isGrounded && this.jumpHeld && this.vy<0 && this.holdCount < 48){this.vy-=this.gravity*1.12;this.holdCount++;}
+    this.vy+=this.gravity;
+    this.y+=this.vy;
+    const ceiling=54+88*this.getScale();
+    if(this.y<ceiling){this.y=ceiling;this.vy=0;this.jumpHeld=false;}
 
     if (this.y >= groundY) {
       this.y = groundY;
       this.vy = 0;
       this.isGrounded = true;
+      this.jumpHeld = false;
     }
 
     if (this.isGrounded && gameState === 'PLAYING') {
@@ -236,6 +121,7 @@ const player = {
   draw() {
     ctx.save();
     ctx.translate(this.x, this.y);
+    ctx.scale(this.getScale(),this.getScale());
 
     const bounce = this.isGrounded ? Math.abs(Math.sin(this.runCycle)) * -5 : 0;
     const tilt = !this.isGrounded ? Math.max(-0.22, Math.min(0.22, this.vy * 0.015)) : (this.isDucking ? 0.12 : 0);
@@ -512,6 +398,7 @@ let particles = [];
 let clouds = [];
 let bgHills = [];
 let spawnTimer = 0;
+let planes=[];
 
 function initScenery() {
   clouds = [];
@@ -523,6 +410,7 @@ function initScenery() {
       speed: 0.4 + Math.random() * 0.6
     });
   }
+  planes=[{x:width*.9,y:Math.max(72,height*.17),speed:.55}];
   bgHills = [];
   for (let i = 0; i < 5; i++) {
     bgHills.push({
@@ -548,48 +436,27 @@ function spawnDust(x, y, color, count = 6) {
   }
 }
 
-function spawnEntity() {
-  const groundY = getGroundY();
-  const rand = Math.random();
-
-  if (score > 250 && rand < 0.32) {
-    // 空中飛天惡魔鈴鐺鳥 (可跳過或蹲下閃避)
-    const flyHeights = [groundY - 46, groundY - 82];
-    const fy = flyHeights[Math.floor(Math.random() * flyHeights.length)];
-    obstacles.push({
-      type: 'bird',
-      x: width + 50,
-      y: fy,
-      w: 44,
-      h: 32,
-      flap: 0
-    });
+function spawnEntity(){
+  const groundY=getGroundY(), r=Math.random(), x=width+60;
+  if(score>250 && r<.25){
+    const kinds=['robin','chick','butterfly'];
+    obstacles.push({type:'bird',kind:kinds[Math.floor(Math.random()*3)],x,y:groundY-(46+Math.random()*100),w:44,h:32,flap:0});
+  } else if(score>420 && r<.4){
+    obstacles.push({type:'airplane',x,y:groundY-(115+Math.random()*60),w:70,h:30});
+  } else if(score>360 && r<.55){
+    const gapY=Math.max(82,groundY*.28),gapH=Math.max(105,Math.min(165,height*.27));
+    obstacles.push({type:'cloudGate',x,y:gapY,w:100,h:gapH});
+    coins.push({type:'star',x:x+48,y:gapY+gapH/2,r:13,collected:false,spin:0});
+  } else if(score>160 && r<.65){
+    obstacles.push({type:'mountain',x,y:groundY,w:60,h:48});
   } else {
-    // 地面彩色魔法水晶 / 毛線仙人掌群 (1~3個組合)
-    const count = score > 400 ? Math.floor(Math.random() * 3) + 1 : (Math.random() < 0.65 ? 1 : 2);
-    const totalW = count * 30;
-    obstacles.push({
-      type: 'crystal',
-      x: width + 40,
-      y: groundY,
-      w: totalW,
-      h: 46 + (count === 1 ? 8 : 0),
-      count
-    });
+    const count=score>460&&Math.random()<.26?2:1;
+    obstacles.push({type:'crystal',x,y:groundY,w:count*30,h:45,count});
   }
-
-  // 機率生成金色魔法幣
-  if (Math.random() < 0.65) {
-    const coinY = rand < 0.32 ? groundY - 25 : groundY - 115;
-    for (let i = 0; i < 3; i++) {
-      coins.push({
-        x: width + 50 + i * 34,
-        y: coinY - Math.sin((i / 2) * Math.PI) * 18,
-        r: 12,
-        collected: false,
-        spin: i * 0.5
-      });
-    }
+  if(Math.random()<.85){
+    const roll=Math.random(),type=roll<.11?'heart':roll<.36?'star':'coin';
+    const cy=groundY-(type==='heart'?125:(Math.random()<.5?58:Math.min(180,height*.38)));
+    for(let i=0;i<(type==='coin'?3:1);i++) coins.push({type,x:x+70+i*34,y:cy-Math.sin(i*Math.PI/2)*15,r:12,collected:false,spin:i*.6});
   }
 }
 
@@ -635,6 +502,8 @@ function drawBackground() {
     }
   }
 
+  // 背景飛機（純裝飾，不碰撞）
+  planes.forEach(p=>{if(gameState==='PLAYING')p.x-=p.speed;if(p.x< -100)p.x=width+130;ctx.save();ctx.translate(p.x,p.y);ctx.fillStyle='#f4a6c9';ctx.beginPath();ctx.moveTo(-32,0);ctx.lineTo(25,-3);ctx.lineTo(38,2);ctx.lineTo(8,8);ctx.lineTo(-2,18);ctx.lineTo(-12,18);ctx.lineTo(-8,7);ctx.lineTo(-32,4);ctx.fill();ctx.restore();});
   // 可愛棉花糖雲朵
   clouds.forEach(c => {
     if (gameState === 'PLAYING') {
@@ -689,7 +558,14 @@ function drawBackground() {
 // 繪製障礙物
 function drawObstacles() {
   obstacles.forEach(obs => {
-    if (obs.type === 'crystal') {
+    if(obs.type==='airplane'){
+      ctx.save();ctx.translate(obs.x,obs.y+14);ctx.fillStyle='#7bbae5';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(57,-7);ctx.lineTo(70,0);ctx.lineTo(53,10);ctx.lineTo(22,10);ctx.lineTo(11,18);ctx.lineTo(3,16);ctx.lineTo(10,8);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(25,0,6,4);ctx.fillRect(36,0,6,4);ctx.restore();
+    }else if(obs.type==='mountain'){
+      ctx.fillStyle='#9ac6ab';ctx.beginPath();ctx.moveTo(obs.x,obs.y);ctx.lineTo(obs.x+28,obs.y-obs.h);ctx.lineTo(obs.x+obs.w,obs.y);ctx.closePath();ctx.fill();ctx.fillStyle='#fff5f9';ctx.beginPath();ctx.moveTo(obs.x+18,obs.y-obs.h*.62);ctx.lineTo(obs.x+28,obs.y-obs.h);ctx.lineTo(obs.x+38,obs.y-obs.h*.62);ctx.fill();
+    }else if(obs.type==='cloudGate'){
+      const cloud=(cy)=>{ctx.fillStyle='#fff';for(let j=0;j<4;j++){ctx.beginPath();ctx.arc(obs.x+17+j*23,cy+(j%2)*6,20,0,Math.PI*2);ctx.fill();}};
+      cloud(obs.y-15);cloud(obs.y+obs.h+15);
+    }else if (obs.type === 'crystal') {
       // 寶藍與洋紅魔法水晶柱 (呼應角色配色)
       for (let i = 0; i < obs.count; i++) {
         const cx = obs.x + i * 28 + 14;
@@ -778,14 +654,17 @@ function drawCoins() {
     ctx.translate(c.x, c.y);
     ctx.scale(scaleX, 1);
 
-    ctx.fillStyle = '#ffd426';
-    ctx.strokeStyle = '#e08e00';
+    ctx.fillStyle = c.type==='heart'?'#ff65a1':c.type==='star'?'#ffe27a':'#ffd426';
+    ctx.strokeStyle = c.type==='heart'?'#c82c68':'#e08e00';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, c.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
+    // 收集物圖樣：金幣／星星／愛心
+    if(c.type==='star'){ctx.fillStyle='#fff';ctx.font='20px sans-serif';ctx.textAlign='center';ctx.fillText('★',0,7);ctx.restore();return;}
+    if(c.type==='heart'){ctx.fillStyle='#fff';ctx.font='20px sans-serif';ctx.textAlign='center';ctx.fillText('♥',0,7);ctx.restore();return;}
     // 內嵌紅寶石菱形 (呼應角色項圈鈴鐺)
     ctx.fillStyle = '#e81e4a';
     ctx.beginPath();
@@ -830,7 +709,8 @@ function update() {
 
   if (gameState === 'PLAYING') {
     // 隨分數漸進加速
-    gameSpeed = Math.min(18, 7.2 + score * 0.0025);
+    gameSpeed = Math.min(16, 6.6 + score * 0.0022);
+    if(immunity>0)immunity--;
     score += gameSpeed * 0.045;
     const displayScore = Math.floor(score);
     currentScoreEl.textContent = String(displayScore).padStart(5, '0');
@@ -857,13 +737,14 @@ function update() {
 
       const oBox = {
         x: obs.x + 6,
-        y: obs.type === 'crystal' ? obs.y - obs.h + 8 : obs.y + 4,
+        y: (obs.type === 'crystal'||obs.type==='mountain') ? obs.y - obs.h + 8 : obs.y + 4,
         w: obs.w - 12,
         h: obs.h - 10
       };
 
-      if (checkCollision(pBox, oBox)) {
-        triggerGameOver();
+      if(obs.type!=='cloudGate' && immunity===0 && checkCollision(pBox,oBox)){
+        if(shield>0){shield--;shieldEl.textContent=shield;immunity=90;spawnDust(player.x,player.y-32,'#ffe27a',16);}
+        else triggerGameOver();
       }
 
       if (obs.x + obs.w < -60) {
@@ -879,7 +760,7 @@ function update() {
         const cBox = { x: c.x - c.r, y: c.y - c.r, w: c.r * 2, h: c.r * 2 };
         if (checkCollision(pBox, cBox)) {
           c.collected = true;
-          score += 50;
+          if(c.type==='heart'){shield=Math.min(2,shield+1);shieldEl.textContent=shield;}else score+=c.type==='star'?100:50;
           sfx.coin();
           spawnDust(c.x, c.y, '#ffd426', 10);
         }
@@ -909,6 +790,7 @@ function startGame() {
   coins = [];
   particles = [];
   spawnTimer = 120;
+  shield=0;immunity=0;shieldEl.textContent=0;
   player.reset();
   startPanel.classList.add('hidden');
   gameoverPanel.classList.add('hidden');
@@ -925,7 +807,7 @@ function triggerGameOver() {
 
   if (finalVal > hiScore) {
     hiScore = finalVal;
-    localStorage.setItem('pinkCatHiScore', hiScore);
+
     hiScoreEl.textContent = String(hiScore).padStart(5, '0');
     newRecordBadge.classList.remove('hidden');
   } else {
@@ -941,7 +823,7 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
     if (gameState === 'START' || gameState === 'GAMEOVER') {
       startGame();
-    } else if (gameState === 'PLAYING') {
+    } else if (gameState === 'PLAYING'&&!e.repeat) {
       player.jump();
     }
   } else if (['ArrowDown', 'KeyS'].includes(e.code)) {
@@ -953,6 +835,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('keyup', (e) => {
+  if(['Space','ArrowUp','KeyW'].includes(e.code))player.stopJump();
   if (['ArrowDown', 'KeyS'].includes(e.code)) {
     player.duck(false);
   }
@@ -964,6 +847,9 @@ touchJump.addEventListener('touchstart', (e) => {
   if (gameState === 'PLAYING') player.jump();
 }, { passive: false });
 
+touchJump.addEventListener('touchend',(e)=>{e.preventDefault();player.stopJump();},{passive:false});
+touchJump.addEventListener('touchcancel',()=>player.stopJump());
+
 touchDuck.addEventListener('touchstart', (e) => {
   e.preventDefault();
   if (gameState === 'PLAYING') player.duck(true);
@@ -974,9 +860,9 @@ touchDuck.addEventListener('touchend', (e) => {
   player.duck(false);
 });
 
-canvas.addEventListener('mousedown', () => {
-  if (gameState === 'PLAYING') player.jump();
-});
+canvas.addEventListener('pointerdown',(e)=>{if(gameState==='PLAYING'){player.jump();}});
+canvas.addEventListener('pointerup',()=>player.stopJump());
+canvas.addEventListener('pointercancel',()=>player.stopJump());
 
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);

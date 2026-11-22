@@ -6,7 +6,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>粉紅魔法貓跑酷 | Pink Cat Jump</title>
+  <title>Pinky Jump｜粉紅魔法貓跳跳冒險</title>
+  <meta name="theme-color" content="#f760a6" />
+  <meta name="description" content="Pinky Jump：長按跳得更高，穿越雲朵、收集星星與愛心！" />
+  <link rel="icon" type="image/png" href="pinky-icon.png" />
+  <link rel="apple-touch-icon" href="pinky-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -14,7 +19,7 @@
   <div id="rotate-overlay" class="overlay hidden">
     <div class="rotate-card">
       <div class="phone-icon">📱</div>
-      <h2>請將手機轉為橫向</h2>
+      <h2>Pinky Jump</h2>
       <p>橫向全螢幕遊玩體驗最佳！</p>
       <button id="force-fullscreen-btn" class="btn-primary">切換橫向全螢幕</button>
     </div>
@@ -25,7 +30,7 @@
     <!-- 頂部控制列 -->
     <div id="hud">
       <div class="hud-left">
-        <span class="badge-title">✨ 粉紅魔法貓跑酷</span>
+        <span class="badge-title"><img src="pinky-icon.png" alt="" /> Pinky Jump</span>
         <button id="fullscreen-btn" class="icon-btn" title="切換全螢幕">⛶ 全螢幕</button>
         <button id="mute-btn" class="icon-btn" title="音效開關">🔊</button>
       </div>
@@ -38,6 +43,7 @@
           <span class="label">SCORE</span>
           <span id="current-score">00000</span>
         </div>
+        <div class="score-box shield-box"><span>💗</span><span id="shield-count">0</span></div>
       </div>
     </div>
 
@@ -47,11 +53,12 @@
     <!-- 開始 / 結束 互動提示面板 -->
     <div id="ui-overlay" class="ui-overlay">
       <div id="start-panel" class="panel">
-        <h1>粉紅魔法貓衝刺！</h1>
-        <p class="subtitle">閃避毛線球仙人掌與飛天鈴鐺鳥，收集金色魔法幣！</p>
+        <img class="start-mascot" src="pinky-icon.png" alt="Pinky Jump 主角" />
+        <h1>Pinky Jump！</h1>
+        <p class="subtitle">跨越山峰、穿越棉花雲，閃避飛機與小鳥！收集金幣 🪙、星星 ⭐、愛心護盾 💗</p>
         <div class="controls-hint">
-          <span>💻 電腦：<b>空白鍵 / ↑</b> 跳躍、<b>↓</b> 蹲下</span>
-          <span>📱 手機：<b>點擊左側/螢幕</b> 跳躍、<b>長按右側</b> 蹲下</span>
+          <span>💻 電腦：<b>長按空白鍵 / ↑</b> 跳更高、<b>↓</b> 蹲下</span>
+          <span>📱 手機：<b>長按左側</b> 跳更高、<b>長按右側</b> 蹲下</span>
         </div>
         <button id="start-btn" class="btn-primary pulse">開始奔跑 ▶</button>
       </div>
@@ -67,7 +74,7 @@
     <!-- 手機觸控輔助按鈕 (觸控裝置顯示) -->
     <div id="touch-controls" class="touch-controls">
       <div id="touch-jump" class="touch-zone left-zone" aria-label="跳躍">
-        <span>▲ 跳躍</span>
+        <span>▲ 按住跳更高</span>
       </div>
       <div id="touch-duck" class="touch-zone right-zone" aria-label="蹲下">
         <span>▼ 蹲下</span>
