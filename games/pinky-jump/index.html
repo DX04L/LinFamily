@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=2" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=3" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=1"></script>
@@ -82,12 +82,12 @@
         <p>你的成績 <strong id="pinky-new-score">000000</strong> 進入 Top 10！</p>
         <form id="pinky-record-form">
           <label for="pinky-player-name">請輸入名字（最多 12 字）</label>
-          <input id="pinky-player-name" name="name" maxlength="12" autocomplete="nickname" placeholder="PINKY" spellcheck="false">
-          <p id="pinky-record-message" role="status"></p>
-          <div class="pinky-record-actions">
-            <button class="btn-primary" type="submit">登記排名 ★</button>
-            <button class="pinky-light" id="pinky-skip-record" type="button">略過</button>
+          <div class="pinky-record-entry">
+            <input id="pinky-player-name" name="name" maxlength="12" autocomplete="nickname" enterkeyhint="done" placeholder="PINKY" spellcheck="false">
+            <button class="btn-primary" id="pinky-confirm-record" type="submit">確認</button>
           </div>
+          <button id="pinky-skip-record" type="button">不用登記，略過</button>
+          <p id="pinky-record-message" role="status"></p>
         </form>
       </div>
     </div>
@@ -123,7 +123,7 @@
     <p class="pinky-rank-origin">手機也可以直接開啟 <a href="controller.html" target="_blank" rel="noopener">控制器頁面</a> 手動輸入配對碼。</p>
   </dialog>
 
-  <script src="game.js?v=20261122-pinky-music-space"></script>
-  <script src="pinky-online.js?v=4"></script>
+  <script src="game.js?v=20261122-record-camera"></script>
+  <script src="pinky-online.js?v=5"></script>
 </body>
 </html>

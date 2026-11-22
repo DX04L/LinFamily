@@ -986,7 +986,7 @@ function update() {
   // Look ahead on downhill roads, placing the road farther up in the frame.
   const roadHere = getGroundY(player.x);
   const roadAhead = getGroundY(player.x + Math.min(width*.78,720));
-  const downhillLookAhead = Math.min(height*.39,Math.max(0,roadAhead-roadHere)*.86);
+  const downhillLookAhead = Math.min(height*.39,Math.max(0,roadAhead-roadHere)*.92);
   const desiredCamera = roadHere - baseGroundY() + downhillLookAhead;
   cameraY += (desiredCamera-cameraY)*.16;
   drawBackground();

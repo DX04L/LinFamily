@@ -105,8 +105,21 @@
     const dialog=$('pinky-rank-dialog');
     if(dialog && !dialog.open)dialog.showModal();
   }
+  function syncRecordViewport() {
+    const overlay=$('ui-overlay');
+    if (!overlay.classList.contains('pinky-record-open')) return;
+    const viewport=window.visualViewport;
+    const bounds=overlay.parentElement.getBoundingClientRect();
+    const top=Math.max(0,(viewport?.offsetTop ?? 0)-bounds.top);
+    const bottom=(viewport?.offsetTop ?? 0)+(viewport?.height ?? window.innerHeight);
+    const height=Math.max(0,Math.min(bounds.bottom,bottom)-bounds.top-top);
+    overlay.style.setProperty('--pinky-visible-top',top+'px');
+    overlay.style.setProperty('--pinky-visible-height',height+'px');
+    overlay.classList.toggle('pinky-record-compact',height<=480);
+  }
   function hideRecord() {
     $('record-panel')?.classList.add('hidden');
+    $('ui-overlay')?.classList.remove('pinky-record-open','pinky-record-compact');
   }
   function newRecord(score) {
     const panel=$('record-panel'),gameover=$('gameover-panel');
@@ -115,11 +128,18 @@
     setText('pinky-new-score',String(pendingScore).padStart(6,'0'));
     gameover?.classList.add('hidden');
     panel.classList.remove('hidden');
+    panel.scrollTop=0;
+    setText('pinky-record-message','');
+    $('ui-overlay').classList.add('pinky-record-open');
+    syncRecordViewport();
     // On a paired game, the child enters a name on the phone. Desktop entry
     // is available too, but should not steal keyboard focus from the phone.
     if (!roomRef) {
       const input=$('pinky-player-name');
-      if(input){input.value='';input.focus({preventScroll:true});}
+      if(input){
+        input.value='';
+        if (!window.matchMedia('(pointer: coarse)').matches) input.focus({preventScroll:true});
+      }
     }
     return true;
   }
@@ -143,6 +163,7 @@
     }
     if(scoreSubmitting)return false;
     scoreSubmitting=true;
+    setText('pinky-record-message','正在登記…');
     try {
       const {fs,db,auth}=await cloud();
       await fs.addDoc(fs.collection(db,'pinky_jump_scores'),{
@@ -545,8 +566,39 @@
     $('pinky-rank-dialog')?.addEventListener('click',event=>{
       if(event.target===$('pinky-rank-dialog'))event.target.close();
     });
-    $('pinky-record-form')?.addEventListener('submit',submitScore);
-    $('pinky-skip-record')?.addEventListener('click',()=>{
+    const recordForm=$('pinky-record-form');
+    const recordInput=$('pinky-player-name');
+    const confirmRecord=$('pinky-confirm-record');
+    const skipRecord=$('pinky-skip-record');
+    let composingName=false;
+    recordInput.addEventListener('compositionstart',()=>{composingName=true;});
+    recordInput.addEventListener('compositionend',()=>{composingName=false;});
+    recordForm.addEventListener('submit',event=>{
+      if (composingName) {
+        event.preventDefault();
+        return;
+      }
+      submitScore(event);
+    });
+    recordForm.addEventListener('keydown',event=>{
+      if (event.isComposing || composingName || event.keyCode===229 ||
+          event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const {key,target}=event;
+      let next;
+      if (key==='ArrowDown' && (target===recordInput || target===confirmRecord)) next=skipRecord;
+      if (key==='ArrowUp' && target===skipRecord) next=confirmRecord;
+      if (key==='ArrowLeft' && target===confirmRecord) next=recordInput;
+      if (key==='ArrowRight' && target===skipRecord) next=confirmRecord;
+      if (key==='ArrowLeft' && target===skipRecord) next=recordInput;
+      if (!next) return;
+      event.preventDefault();
+      next.focus();
+    });
+    window.addEventListener('resize',syncRecordViewport);
+    window.visualViewport?.addEventListener('resize',syncRecordViewport);
+    window.visualViewport?.addEventListener('scroll',syncRecordViewport);
+    skipRecord.addEventListener('click',()=>{
+      if (scoreSubmitting) return;
       const final=pendingScore;
       pendingScore=0;
       hideRecord();

@@ -43,9 +43,41 @@
 .pinky-rank-origin{font-size:12px!important;color:#97708a;text-align:center}
 .pinky-pair-code{font-family:ui-monospace,monospace;font-size:35px!important;font-weight:900;letter-spacing:6px;text-align:center;color:#c72b7a;margin:15px 0}
 .pinky-arcade-hud{white-space:nowrap}
-#record-panel input{width:100%;box-sizing:border-box;border:2px solid #f59bc3;padding:10px;font-size:18px;border-radius:12px;text-align:center;margin:10px 0}
-#record-panel .pinky-record-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-#record-panel .pinky-record-actions button{padding:10px 18px}
+.pinky-record-entry {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin: 4px 0;
+}
+#pinky-player-name {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 2px solid #f59bc3;
+  padding: 6px 8px;
+  font-size: 18px;
+  border-radius: 12px;
+  text-align: center;
+  user-select: text;
+  -webkit-user-select: text;
+}
+#pinky-confirm-record {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  min-height: 44px;
+  padding: 6px 14px;
+  font-size: 18px;
+}
+#pinky-skip-record {
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: #a02a67;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
 #pinky-pair-status{font-size:13px;min-height:35px}
 @media(max-width:620px){
   #hud .badge-title{display:none!important}
@@ -105,23 +137,35 @@
 #controller-record-form input { font-size: 20px; letter-spacing: .02em; }
 #controller-record-form button { margin-top: 12px; }
 #controller-record .pinky-light { margin-top: 10px; width: 100%; }
-#pinky-record-message { color: #ac2668; font-size: 13px; min-height: 12px; }
+#pinky-record-message { color: #ac2668; font-size: 13px; }
+#ui-overlay.pinky-record-open {
+  top: var(--pinky-visible-top, 0px);
+  bottom: auto;
+  height: var(--pinky-visible-height, 100%);
+  padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
 #record-panel {
   box-sizing: border-box;
-  max-height: calc(100dvh - 24px);
-  max-width: min(450px, calc(100vw - 24px));
+  max-height: 100%;
+  width: min(100%, 450px);
+  max-width: 100%;
+  padding-inline: clamp(10px, 5vw, 34px);
   overflow-y: auto;
   overscroll-behavior: contain;
   color: #6e2b4d !important;
 }
 #record-panel label, #record-panel p { color: #682849 !important; }
 #pinky-player-name { color: #5d2141 !important; background: white !important; }
-/* Landscape tablets with virtual keyboard keep the form readable. */
+/* Keep dialogs within short viewports. */
 @media (max-height: 480px) {
-  #record-panel { padding: 10px 16px !important; max-height: calc(100dvh - 12px); }
-  #record-panel h2 { font-size: 19px; margin: 0 0 6px; }
-  #record-panel p { margin: 2px 0 6px; }
-  #record-panel input { margin: 4px 0; font-size: 16px; padding: 5px 8px; }
-  #record-panel .pinky-record-actions button { padding: 5px 12px; }
   .pinky-arcade-dialog { max-height: calc(100dvh - 14px); }
 }
+
+/* Use the visible height, including when the keyboard overlays the layout. */
+.pinky-record-compact #record-panel { padding-block: 8px; }
+.pinky-record-compact #record-panel h2 { font-size: clamp(15px, 6vw, 19px); margin: 0 0 4px; }
+.pinky-record-compact #record-panel p,
+.pinky-record-compact #record-panel label { font-size: 14px; line-height: 1.2; }
+.pinky-record-compact #record-panel p { margin: 0; }
+.pinky-record-compact #pinky-player-name { font-size: 16px; }
