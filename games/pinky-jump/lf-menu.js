@@ -36,7 +36,7 @@
   }
   function toast(msg) {
     document.querySelectorAll('.lf-toast').forEach(t => t.remove());
-    const t = document.createElement('div'); t.className = 'lf-toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    const t = document.createElement('div'); t.className = 'lf-toast'; t.setAttribute('role', 'status'); PinkyLocale.set(t, msg);
     document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
   }
 
@@ -81,12 +81,14 @@
     const url = canonicalUrl;
     menu = document.createElement('div');
     menu.className = 'lf-ctx'; menu.setAttribute('role', 'menu');
-    menu.innerHTML = '<button type="button" role="menuitem" data-m="copy" class="lf-ctx-copy"><span>Copy link</span><span class="lf-ctx-url"></span></button><button type="button" role="menuitem" data-m="open">Open in new window</button>';
+    menu.innerHTML = '<button type="button" role="menuitem" data-m="copy" class="lf-ctx-copy"><span data-label></span><span class="lf-ctx-url"></span></button><button type="button" role="menuitem" data-m="open"></button>';
+    PinkyLocale.set(menu.querySelector('[data-label]'), '複製網址');
+    PinkyLocale.set(menu.querySelector('[data-m="open"]'), '在新視窗開啟');
     menu.addEventListener('click', async e => {
       const b = e.target.closest('button[data-m]'); if (!b) return;
       close();
       if (duringPlay()) return;
-      if (b.dataset.m === 'copy') toast(await copy(url) ? 'Link copied' : 'Couldn\'t copy link');
+      if (b.dataset.m === 'copy') toast(await copy(url) ? '已複製網址' : '無法複製網址');
       else openNewTab(url);
     });
     document.body.appendChild(menu);

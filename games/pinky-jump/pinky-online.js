@@ -45,12 +45,13 @@
     }
     return cloudPromise.catch(err => { cloudPromise = null; throw err; });
   }
-  function setText(id, value) { if ($(id)) $(id).textContent = String(value); }
+  function setText(id, value) { if ($(id)) PinkyLocale.set($(id), value); }
   function errorText(err) {
     const value = String((err && (err.code || err.message)) || err || '連線失敗');
     if (/permission|unauthorized|operation-not-allowed|auth\/admin-restricted-operation/.test(value))
       return 'Firebase 尚未啟用遊戲權限／匿名登入。可先試本機操作；跨裝置要先完成 Firebase 設定。';
-    return '無法連線 Firebase（' + value.slice(0,75) + '）。可先試本機模式。';
+    if (PinkyLocale.has(value)) return value;
+    return PinkyLocale.message('無法連線 Firebase（{0}）。可先試本機模式。', value.slice(0,75));
   }
   function normalizeScores(rows) {
     return (Array.isArray(rows) ? rows : [])
@@ -72,7 +73,7 @@
     if (remoteOnline && !board.length) {
       const li=document.createElement('li');
       li.className='pinky-empty';
-      li.textContent='全球排行榜還沒有任何紀錄，歡迎成為第一位！';
+      li.textContent=PinkyLocale.translate('全球排行榜還沒有任何紀錄，歡迎成為第一位！');
       rows.appendChild(li);
     }
     board.forEach((entry,index)=>{
@@ -84,7 +85,7 @@
     });
     setText('pinky-rank-origin',remoteOnline ?
       '🌐 全球共用 Top 10（即時同步）' :
-      '⚠️ 全球排行榜未連線：' + globalError);
+      PinkyLocale.message('⚠️ 全球排行榜未連線：{0}',globalError));
     setText('hi-score',remoteOnline ? String(board[0]?.score||0).padStart(5,'0') : '-----');
   }
   function showBoard() {
@@ -318,7 +319,7 @@
     const record=pairedPhase==='record'||pairedPhase==='record_error';
     const primary=$('controller-primary');
     primary.hidden=record;
-    primary.textContent=labels[pairedPhase]||labels.ready;
+    PinkyLocale.set(primary,labels[pairedPhase]||labels.ready);
     $('controller-record').hidden=!record;
     $('controller-tabs').hidden=record;
     $('controller-manual').hidden=record||phoneViewMode!=='manual';
@@ -476,7 +477,7 @@
     if (request!==motionRequest)return;
     setMotionEnabled(!message);
     const fallback=pairedRoom?'可切到「手機控制」跳躍。':'仍可點畫面跳躍。';
-    setText(pairedRoom?'controller-motion-status':'pinky-motion-status',message?message+fallback:'請先握穩裝置，等待體感校準。');
+    setText(pairedRoom?'controller-motion-status':'pinky-motion-status',message?PinkyLocale.message('{0}{1}',message,fallback):'請先握穩裝置，等待體感校準。');
     if (!message) setTimeout(()=>{
       if(request===motionRequest && motionEnabled && !samples)
         setText(pairedRoom?'controller-motion-status':'pinky-motion-status','未收到感應資料，請確認瀏覽器權限。');
@@ -659,6 +660,7 @@
         renderRoomStatus('已選取網址，請手動複製。');
       }
     });
+    document.addEventListener('pinky-language-change',refreshScores);
     initSharedScores();
   }
   initGame();

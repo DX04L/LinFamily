@@ -1190,7 +1190,7 @@ function syncPauseControl() {
   const paused = gameState === 'PAUSED';
   pauseControl.hidden = !paused && gameState !== 'PLAYING';
   pauseControl.classList.toggle('is-paused', paused);
-  const label = paused ? '繼續遊戲' : '暫停遊戲';
+  const label = PinkyLocale.translate(paused ? '繼續遊戲' : '暫停遊戲');
   pauseControl.setAttribute('aria-label', label);
   pauseControl.title = label;
   document.getElementById('pinky-paused').hidden = !paused;
@@ -1211,6 +1211,7 @@ function setGamePaused(paused) {
   }
   window.pinkyArcade?.onPause(paused, Math.floor(score));
 }
+document.addEventListener('pinky-language-change', syncPauseControl);
 pauseControl.addEventListener('click', () => setGamePaused(gameState === 'PLAYING'));
 
 window.pinkyRemoteStart = function(pause = false) {

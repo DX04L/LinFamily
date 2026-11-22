@@ -92,10 +92,10 @@
     stepsElement.replaceChildren();
     for (const item of items) {
       const li = document.createElement('li');
-      li.textContent = item;
+      PinkyLocale.set(li, item);
       stepsElement.appendChild(li);
     }
-    reasonElement.textContent = reason || '目前瀏覽器未提供直接安裝提示。';
+    PinkyLocale.set(reasonElement, reason || '目前瀏覽器未提供直接安裝提示。');
     if (!dialog.open) dialog.showModal();
     close.focus();
   }

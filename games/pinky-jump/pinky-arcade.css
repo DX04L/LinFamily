@@ -289,21 +289,38 @@
   z-index: 55;
   bottom: max(12px, env(safe-area-inset-bottom));
   right: max(12px, env(safe-area-inset-right));
-  min-width: 64px;
-  min-height: 44px;
-  padding: 4px 10px;
-  border: 1px solid #fff9;
-  border-radius: 14px;
-  background: #742050a8;
-  color: white;
+  min-width: 84px;
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  color: #89265daa;
   cursor: pointer;
 }
-#pinky-pause span { display: inline-block; margin: 0 1px; animation: pinky-forward 1s ease-in-out infinite alternate; }
-#pinky-pause span:nth-child(2) { animation-delay: .15s; }
-#pinky-pause span:nth-child(3) { animation-delay: .3s; }
-#pinky-pause.is-paused span { animation-play-state: paused; }
+.pinky-forward { display: inline-flex; align-items: center; gap: 2px; }
+.pinky-forward i {
+  width: clamp(20px, 5vw, 30px);
+  height: clamp(27px, 6vw, 36px);
+  background: currentColor;
+  clip-path: polygon(0 0, 42% 0, 100% 50%, 42% 100%, 0 100%, 56% 50%);
+  animation: pinky-forward 1s ease-in-out infinite alternate;
+}
+.pinky-forward i:nth-child(2) { animation-delay: .15s; }
+.pinky-forward i:nth-child(3) { animation-delay: .3s; }
+.pinky-stop {
+  display: none;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-inline: auto;
+  clip-path: polygon(29% 0, 71% 0, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0 71%, 0 29%);
+  background: #a02a67db;
+  color: white;
+  font: 800 14px/1 system-ui, sans-serif;
+}
+#pinky-pause.is-paused .pinky-forward { display: none; }
+#pinky-pause.is-paused .pinky-stop { display: grid; }
 @keyframes pinky-forward { from { opacity: .35; transform: translateX(-2px); } to { opacity: 1; transform: translateX(2px); } }
-@media (prefers-reduced-motion: reduce) { #pinky-pause span { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pinky-forward i { animation: none; } }
 #pinky-paused {
   position: absolute; z-index: 54; top: 48%; left: 50%; transform: translate(-50%,-50%);
   padding: 10px 20px; border-radius: 14px; background: #742050cc; color: white; font-weight: 800;
@@ -318,11 +335,24 @@
 #pinky-controller button { min-height: 44px; font-weight: 800; cursor: pointer; }
 #pinky-controller button:disabled { opacity: .45; cursor: default; }
 #pinky-controller .pinky-light { padding: 7px 12px; border: 1px solid #efb2d0; border-radius: 10px; color: #a02a67; background: #fff6fb; }
-#controller-primary, #controller-jump { width: 100%; }
+#pinky-controller #controller-primary {
+  width: 100%;
+  min-height: clamp(58px, 12dvh, 92px);
+  border-radius: 21px;
+  font-size: clamp(22px, 6vw, 32px);
+}
 #controller-tabs { margin: 14px 0; }
 #controller-tabs button { min-height: 44px; border: 0; font: inherit; font-weight: 800; }
 #controller-manual:not([hidden]) { display: grid; gap: 12px; }
-#controller-jump { min-height: 88px !important; }
+#controller-jump {
+  justify-self: center;
+  width: min(100%, 264px, 44dvh);
+  aspect-ratio: 1;
+  border-radius: 26px;
+  padding: 8px;
+  font-size: clamp(24px, 8vw, 44px);
+}
+#controller-pause { justify-self: center; min-width: min(100%, 180px); }
 #controller-name { flex: 1; min-width: 0; min-height: 44px; font-size: 18px; border: 1px solid #efb2d0; border-radius: 10px; padding: 6px 10px; }
 #controller-submit { padding-inline: 14px; white-space: nowrap; }
 #controller-motion p, #controller-status { font-size: 14px; line-height: 1.5; margin-top: 8px; }
@@ -330,7 +360,7 @@
 #pinky-settings-tabs { grid-template-columns: repeat(3,minmax(0,1fr)); }
 #pinky-settings-tabs::before { right: 66.6667%; }
 #pinky-settings-tabs[data-pane="pair"]::before { transform: translateX(200%); }
-#pinky-pair-dialog #pinky-settings-tabs button { font-size: clamp(9px, 3.35vw, 14px); }
+#pinky-pair-dialog #pinky-settings-tabs button { font-size: clamp(9px, 3.35vw, 14px); white-space: normal; line-height: 1.1; }
 @media (max-width: 280px) {
   .pinky-settings-bar { grid-template-columns: minmax(0,1fr) 30px 30px; gap: 4px; }
   #pinky-pair-dialog .pinky-settings-bar > button { font-size: 17px; }
@@ -366,4 +396,19 @@
   #pinky-pair-dialog { padding-block: 7px; }
   #pinky-share-room:not([hidden]) { gap: 4px; padding-top: 4px; }
   #pinky-pair-dialog .pinky-pair-code { font-size: clamp(25px, 7vw, 34px) !important; }
+}
+
+#pinky-pair-dialog #pinky-language { margin-inline-end: auto; padding-inline: 7px; font-size: 12px; }
+#pinky-language span { opacity: .55; }
+html[lang="en"] #pinky-language span:first-child, html[lang="zh-Hant"] #pinky-language span:last-child { opacity: 1; }
+@media (max-width: 300px) {
+  #pinky-settings-view .pinky-dialog-actions { gap: 4px; }
+  #pinky-settings-view .pinky-dialog-actions button { padding-inline: 7px; }
+}
+
+.pinky-pair-actions { width: 100%; }
+@media (max-height: 345px) {
+  .pinky-pair-actions { display: flex; align-items: flex-start; gap: 5px; }
+  .pinky-pair-actions form { flex: 1; min-width: 0; }
+  .pinky-pair-actions .pinky-setting-row { gap: 4px; }
 }

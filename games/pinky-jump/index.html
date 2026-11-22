@@ -1,24 +1,24 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Pinky Jump｜粉紅魔法貓跳跳冒險</title>
+  <title data-zh="Pinky Jump｜粉紅魔法貓跳跳冒險">Pinky Jump</title>
   <meta name="theme-color" content="#f760a6" />
-  <meta name="description" content="Pinky Jump：點一下畫面就跳躍，翻越山峰、穿越雲朵、收集星星與愛心！" />
+  <meta name="description" content="Leap over peaks, dash through clouds, and collect coins, stars, and hearts in Pinky Jump!" data-zh-content="Pinky Jump：點一下畫面就跳躍，翻越山峰、穿越雲朵、收集星星與愛心！" />
   <link rel="icon" type="image/png" href="pinky-icon.png" />
   <link rel="apple-touch-icon" href="pinky-icon.png" />
   <link rel="canonical" href="https://linfamily.pages.dev/games/pinky-jump/" />
-  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="manifest" href="manifest.webmanifest?v=2" />
   <link rel="stylesheet" href="style.css?v=4" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=8" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=9" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
-  <script defer src="install.js?v=1"></script>
+  <script defer src="install.js?v=2"></script>
 </head>
 <body>
   <!-- 橫屏提示遮罩 (手機直向時顯示) -->
@@ -26,22 +26,22 @@
     <div class="rotate-card">
       <div class="phone-icon">📱</div>
       <h2>Pinky Jump</h2>
-      <p>橫向全螢幕遊玩體驗最佳！</p>
-      <button id="force-fullscreen-btn" class="btn-primary">切換橫向全螢幕</button>
+      <p data-zh="橫向全螢幕遊玩體驗最佳！">Best played in landscape!</p>
+      <button id="force-fullscreen-btn" class="btn-primary" data-zh="切換橫向全螢幕">Play fullscreen</button>
     </div>
   </div>
 
   <!-- 遊戲主容器 -->
-  <div id="game-wrapper" tabindex="0" aria-label="Pinky Jump 遊戲；按空白鍵開始或跳躍">
+  <div id="game-wrapper" tabindex="0" aria-label="Pinky Jump. Press Space to start or jump." data-zh-aria-label="Pinky Jump 遊戲；按空白鍵開始或跳躍">
     <!-- 頂部控制列 -->
     <div id="hud">
       <div class="hud-left">
         <span class="badge-title"><img src="pinky-icon.png" alt="" /> Pinky Jump</span>
-        <button type="button" id="pinky-rank-btn" class="icon-btn pinky-arcade-hud" title="Top 10 排行榜">🏆 <span class="pinky-hud-label">TOP 10</span></button>
-        <button type="button" id="pinky-install-btn" class="icon-btn" title="安裝 Pinky Jump 到桌面" hidden>📲 安裝</button>
+        <button type="button" id="pinky-rank-btn" class="icon-btn pinky-arcade-hud" title="Top 10 leaderboard" data-zh-title="Top 10 排行榜">🏆 <span class="pinky-hud-label">TOP 10</span></button>
+        <button type="button" id="pinky-install-btn" class="icon-btn" title="Install Pinky Jump" hidden data-zh-title="安裝 Pinky Jump 到桌面" data-zh="📲 安裝">📲 Install</button>
       </div>
       <div class="hud-right">
-        <div class="score-box" id="pinky-hi-open" role="button" tabindex="0" aria-label="查看全球 Top 10 排行榜" title="點擊查看全球 Top 10">
+        <div class="score-box" id="pinky-hi-open" role="button" tabindex="0" aria-label="View the global Top 10" title="View the global Top 10" data-zh-aria-label="查看全球 Top 10 排行榜" data-zh-title="點擊查看全球 Top 10">
           <span class="label">HI</span>
           <span id="hi-score">00000</span>
         </div>
@@ -49,8 +49,8 @@
           <span class="label">SCORE</span>
           <span id="current-score">00000</span>
         </div>
-        <div class="score-box shield-box" title="護盾：每個可以抵擋一次撞擊"><span>🛡️</span><span id="shield-count">0</span></div>
-        <button type="button" id="pinky-pair-btn" class="icon-btn" aria-label="遊戲設定" title="遊戲設定" aria-haspopup="dialog">
+        <div class="score-box shield-box" title="Shields absorb one hit each" data-zh-title="護盾：每個可以抵擋一次撞擊"><span>🛡️</span><span id="shield-count">0</span></div>
+        <button type="button" id="pinky-pair-btn" class="icon-btn" aria-label="Settings" title="Settings" aria-haspopup="dialog" data-zh-aria-label="遊戲設定" data-zh-title="遊戲設定">
           <img src="pinky-icon.png" alt=""><span aria-hidden="true">⚙</span>
         </button>
       </div>
@@ -58,39 +58,39 @@
 
     <!-- 遊戲畫布 -->
     <canvas id="game-canvas"></canvas>
-    <button id="pinky-pause" type="button" aria-label="暫停遊戲" title="暫停遊戲" hidden><span aria-hidden="true">❯</span><span aria-hidden="true">❯</span><span aria-hidden="true">❯</span></button>
-    <p id="pinky-paused" role="status" hidden>遊戲暫停</p>
-    <p id="pinky-touch-lock" role="status" hidden>請先關閉體感跳躍</p>
+    <button id="pinky-pause" type="button" aria-label="Pause" title="Pause" hidden data-zh-aria-label="暫停遊戲" data-zh-title="暫停遊戲"><span class="pinky-forward" aria-hidden="true"><i></i><i></i><i></i></span><span class="pinky-stop" aria-hidden="true">STOP</span></button>
+    <p id="pinky-paused" role="status" hidden data-zh="遊戲暫停">Paused</p>
+    <p id="pinky-touch-lock" role="status" hidden data-zh="請先關閉體感跳躍">Turn off Motion Jump to use touch controls.</p>
 
     <!-- 開始 / 結束 互動提示面板 -->
     <div id="ui-overlay" class="ui-overlay">
       <div id="start-panel" class="panel">
-        <img class="start-mascot" src="pinky-icon.png" alt="Pinky Jump 主角" />
+        <img class="start-mascot" src="pinky-icon.png" alt="Pinky the cat" data-zh-alt="Pinky Jump 主角" />
         <h1>Pinky Jump！</h1>
-        <p class="subtitle">跨越山峰、穿越棉花雲，閃避飛機與小鳥！收集金幣 🪙、星星 ⭐、愛心護盾 💗</p>
+        <p class="subtitle" data-zh="跨越山峰、穿越棉花雲，閃避飛機與小鳥！收集金幣 🪙、星星 ⭐、愛心護盾 💗">Leap over peaks, dodge birds and planes, and grab coins 🪙, stars ⭐, and shield hearts 💗!</p>
         <div class="controls-hint">
-          <span>👆 點一下畫面就跳（電腦可按空白鍵）</span>
+          <span data-zh="👆 點一下畫面就跳（電腦可按空白鍵）">👆 Tap the screen or press Space to jump</span>
         </div>
-        <button id="start-btn" class="btn-primary pulse">開始奔跑 ▶</button>
+        <button id="start-btn" class="btn-primary pulse" data-zh="開始奔跑 ▶">Play ▶</button>
       </div>
 
       <div id="gameover-panel" class="panel hidden">
-        <h2 class="gameover-title">哎呀！撞到了！</h2>
-        <p class="final-score-text">本次得分：<span id="final-score">0</span></p>
-        <p id="new-record-badge" class="new-record hidden">🎉 刷新最高紀錄！</p>
-        <button id="restart-btn" class="btn-primary">再玩一次 ↻</button>
+        <h2 class="gameover-title" data-zh="哎呀！撞到了！">Ouch! You crashed!</h2>
+        <p class="final-score-text"><span data-zh="本次得分：">Score:</span> <span id="final-score">0</span></p>
+        <p id="new-record-badge" class="new-record hidden" data-zh="🎉 刷新最高紀錄！">🎉 New high score!</p>
+        <button id="restart-btn" class="btn-primary" data-zh="再玩一次 ↻">Play Again ↻</button>
       </div>
 
       <div id="record-panel" class="panel hidden" aria-live="polite">
         <h2 class="gameover-title">🏆 NEW HIGH SCORE!</h2>
-        <p>你的成績 <strong id="pinky-new-score">000000</strong> 進入 Top 10！</p>
+        <p><span data-zh="你的成績">Score:</span> <strong id="pinky-new-score">000000</strong> <span data-zh="進入 Top 10！">· Top 10!</span></p>
         <form id="pinky-record-form">
-          <label for="pinky-player-name">請輸入名字（最多 12 字）</label>
+          <label for="pinky-player-name" data-zh="請輸入名字（最多 12 字）">Name (12 characters max)</label>
           <div class="pinky-record-entry">
             <input id="pinky-player-name" name="name" maxlength="12" autocomplete="nickname" enterkeyhint="done" placeholder="PINKY" spellcheck="false">
-            <button class="btn-primary" id="pinky-confirm-record" type="submit">確認</button>
+            <button class="btn-primary" id="pinky-confirm-record" type="submit" data-zh="確認">Save</button>
           </div>
-          <button id="pinky-skip-record" type="button">不用登記，略過</button>
+          <button id="pinky-skip-record" type="button" data-zh="不用登記，略過">Skip</button>
           <p id="pinky-record-message" role="status"></p>
         </form>
       </div>
@@ -99,136 +99,139 @@
   </div>
 
   <dialog id="pinky-install-dialog" class="pinky-install-dialog" aria-labelledby="pinky-install-title">
-    <h2 id="pinky-install-title">安裝 Pinky Jump</h2>
-    <p id="pinky-install-reason">目前瀏覽器未提供直接安裝提示。</p>
+    <h2 id="pinky-install-title" data-zh="安裝 Pinky Jump">Install Pinky Jump</h2>
+    <p id="pinky-install-reason" data-zh="目前瀏覽器未提供直接安裝提示。">Your browser didn't show an install prompt.</p>
     <ol id="pinky-install-steps"></ol>
-    <p class="pinky-install-hint">若已經安裝，請從桌面或應用程式清單開啟 Pinky Jump。</p>
-    <div class="pinky-install-actions"><button type="button" id="pinky-install-close">知道了</button></div>
+    <p class="pinky-install-hint" data-zh="若已經安裝，請從桌面或應用程式清單開啟 Pinky Jump。">Already installed? Open Pinky Jump from your home screen or app list.</p>
+    <div class="pinky-install-actions"><button type="button" id="pinky-install-close" data-zh="知道了">Got It</button></div>
   </dialog>
   <dialog id="pinky-rank-dialog" class="pinky-arcade-dialog" aria-labelledby="pinky-rank-title">
     <h2 id="pinky-rank-title">🏆 PINKY JUMP TOP 10</h2>
     <p id="pinky-rank-origin" class="pinky-rank-origin"></p>
     <ol id="pinky-rank-rows"></ol>
-    <div class="pinky-dialog-actions"><button id="pinky-rank-close" type="button">關閉</button></div>
+    <div class="pinky-dialog-actions"><button id="pinky-rank-close" type="button" data-zh="關閉">Close</button></div>
   </dialog>
 
   <dialog id="pinky-pair-dialog" class="pinky-arcade-dialog" aria-labelledby="pinky-pair-title">
     <div id="pinky-settings-view">
-      <h2 id="pinky-pair-title">Pinky 設定</h2>
+      <h2 id="pinky-pair-title" data-zh="Pinky 設定">Settings</h2>
       <div class="pinky-settings-bar">
-        <div id="pinky-settings-tabs" class="pinky-settings-tabs" data-pane="general" role="group" aria-label="設定頁面">
-          <button id="pinky-general-tab" type="button" data-pane="general" aria-pressed="true" aria-controls="pinky-general-pane">一般控制</button>
-          <button id="pinky-motion-tab" type="button" data-pane="motion" aria-pressed="false" aria-controls="pinky-motion-pane">體感跳躍</button>
-          <button id="pinky-pair-tab" type="button" data-pane="pair" aria-pressed="false" aria-controls="pinky-pair-pane">手機控制</button>
+        <div id="pinky-settings-tabs" class="pinky-settings-tabs" data-pane="general" role="group" aria-label="Settings tabs" data-zh-aria-label="設定頁面">
+          <button id="pinky-general-tab" type="button" data-pane="general" aria-pressed="true" aria-controls="pinky-general-pane" data-zh="一般控制">Controls</button>
+          <button id="pinky-motion-tab" type="button" data-pane="motion" aria-pressed="false" aria-controls="pinky-motion-pane" data-zh="體感跳躍">Motion Jump</button>
+          <button id="pinky-pair-tab" type="button" data-pane="pair" aria-pressed="false" aria-controls="pinky-pair-pane" data-zh="手機控制">Phone Control</button>
         </div>
-        <button id="fullscreen-btn" type="button" class="pinky-light" aria-label="全螢幕" title="全螢幕">⛶</button>
-        <button id="mute-btn" type="button" class="pinky-light" aria-label="聲音" title="聲音" aria-pressed="true">🔊</button>
+        <button id="fullscreen-btn" type="button" class="pinky-light" aria-label="Fullscreen" title="Fullscreen" data-zh-aria-label="全螢幕" data-zh-title="全螢幕">⛶</button>
+        <button id="mute-btn" type="button" class="pinky-light" aria-label="Sound" title="Sound" aria-pressed="true" data-zh-aria-label="聲音" data-zh-title="聲音">🔊</button>
       </div>
       <div class="pinky-settings-body">
         <section id="pinky-general-pane" aria-labelledby="pinky-general-tab">
-          <h3>怎麼跳</h3>
-          <p>手機點一下遊戲畫面即可跳。鍵盤可用空白鍵、↑ 或 W 控制高度。</p>
+          <h3 data-zh="怎麼跳">How to Jump</h3>
+          <p data-zh="手機點一下遊戲畫面即可跳。鍵盤可用空白鍵、↑ 或 W 控制高度。">Tap the screen for a full jump. On a keyboard, use Space, ↑, or W to control your jump height.</p>
           <div class="pinky-jump-examples">
             <div>
               <span class="pinky-jump-arc" aria-hidden="true"></span>
-              <strong>輕點 · 短跳</strong>
-              <p>很快放開，適合跨過低障礙。</p>
+              <strong data-zh="輕點 · 短跳">Tap for a Short Hop</strong>
+              <p data-zh="很快放開，適合跨過低障礙。">Release quickly to clear low obstacles.</p>
             </div>
             <div>
               <span class="pinky-jump-arc is-high" aria-hidden="true"></span>
-              <strong>按住 · 高跳</strong>
-              <p>多按一會兒，跳得更高。</p>
+              <strong data-zh="按住 · 高跳">Hold for a High Jump</strong>
+              <p data-zh="多按一會兒，跳得更高。">Hold the key longer to jump higher.</p>
             </div>
           </div>
         </section>
         <section id="pinky-motion-pane" aria-labelledby="pinky-motion-tab" hidden>
-          <p>開始遊戲後，向上抬起手機或平板即可跳躍。切回「一般控制」可恢復點畫面跳躍。</p>
+          <p data-zh="開始遊戲後，向上抬起手機或平板即可跳躍。切回「一般控制」可恢復點畫面跳躍。">Lift your phone or tablet to jump during a run. Switch back to Controls to tap to jump.</p>
           <div class="pinky-setting-row">
-            <label for="controller-sensitivity">靈敏度</label>
+            <label for="controller-sensitivity" data-zh="靈敏度">Sensitivity</label>
             <select id="controller-sensitivity">
-              <option value="low">低</option><option value="normal" selected>中</option><option value="high">高</option>
+              <option value="low" data-zh="低">Low</option><option value="normal" selected data-zh="中">Medium</option><option value="high" data-zh="高">High</option>
             </select>
           </div>
           <p id="pinky-motion-status" role="status"></p>
         </section>
         <section id="pinky-pair-pane" aria-labelledby="pinky-pair-tab" hidden>
-          <form id="pinky-connect-form">
-            <div class="pinky-setting-row">
-              <input id="controller-room-input" aria-label="手機配對碼" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="6 碼配對碼">
-              <button id="controller-connect" type="submit">連線</button>
-            </div>
-          </form>
-          <button id="pinky-create-room" type="button" class="pinky-light">產生 6 碼配對碼</button>
+          <div class="pinky-pair-actions">
+            <form id="pinky-connect-form">
+              <div class="pinky-setting-row">
+                <input id="controller-room-input" aria-label="Pairing code" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="6-character code" data-zh-aria-label="手機配對碼" data-zh-placeholder="6 碼配對碼">
+                <button id="controller-connect" type="submit" data-zh="連線">Connect</button>
+              </div>
+            </form>
+            <button id="pinky-create-room" type="button" class="pinky-light" data-zh="產生 6 碼配對碼">Get Code</button>
+          </div>
           <div id="pinky-share-room" hidden>
             <p id="pinky-room-code" class="pinky-pair-code" hidden></p>
             <div class="pinky-setting-row">
-              <input id="pinky-room-link" aria-label="手機控制器連結" readonly>
-              <button id="pinky-copy-link" type="button" class="pinky-light">複製連結</button>
+              <input id="pinky-room-link" aria-label="Controller link" readonly data-zh-aria-label="手機控制器連結">
+              <button id="pinky-copy-link" type="button" class="pinky-light" data-zh="複製連結">Copy Link</button>
             </div>
           </div>
           <p id="pinky-pair-status" role="status"></p>
         </section>
       </div>
       <div class="pinky-dialog-actions">
-        <button id="pinky-help-open" type="button" class="pinky-light">遊戲說明</button>
-        <button id="pinky-pair-close" type="button">完成</button>
+        <button id="pinky-language" type="button" class="pinky-light"><span>EN</span> / <span lang="zh-Hant">中文</span></button>
+        <button id="pinky-help-open" type="button" class="pinky-light" data-zh="遊戲說明">Game Guide</button>
+        <button id="pinky-pair-close" type="button" data-zh="完成">Done</button>
       </div>
     </div>
     <section id="pinky-help-view" hidden>
-      <h2 id="pinky-help-title">遊戲說明</h2>
-      <button id="pinky-help-back" type="button" class="pinky-light" aria-label="返回設定" title="返回設定">↩</button>
-      <h3>收集道具</h3>
+      <h2 id="pinky-help-title" data-zh="遊戲說明">Game Guide</h2>
+      <button id="pinky-help-back" type="button" class="pinky-light" aria-label="Back to Settings" title="Back to Settings" data-zh-aria-label="返回設定" data-zh-title="返回設定">↩</button>
+      <h3 data-zh="收集道具">Pickups</h3>
       <dl class="pinky-guide-items">
-        <div><dt><canvas data-game-icon="coin" width="100" height="60" aria-hidden="true"></canvas>金幣</dt><dd>碰到就加 50 分。</dd></div>
-        <div><dt><canvas data-game-icon="star" width="100" height="60" aria-hidden="true"></canvas>星星</dt><dd>碰到就加 100 分。</dd></div>
-        <div><dt><canvas data-game-icon="heart" width="100" height="60" aria-hidden="true"></canvas>愛心</dt><dd>獲得一層護盾，可抵擋一次撞擊。最多兩層。</dd></div>
+        <div><dt><canvas data-game-icon="coin" width="100" height="60" aria-hidden="true"></canvas><span data-zh="金幣">Coin</span></dt><dd data-zh="碰到就加 50 分。">Pick it up for 50 points.</dd></div>
+        <div><dt><canvas data-game-icon="star" width="100" height="60" aria-hidden="true"></canvas><span data-zh="星星">Star</span></dt><dd data-zh="碰到就加 100 分。">Pick it up for 100 points.</dd></div>
+        <div><dt><canvas data-game-icon="heart" width="100" height="60" aria-hidden="true"></canvas><span data-zh="愛心">Shield Heart</span></dt><dd data-zh="獲得一層護盾，可抵擋一次撞擊。最多兩層。">Gain one shield charge, which absorbs one hit. Carry up to two.</dd></div>
       </dl>
-      <h3>路上的東西</h3>
+      <h3 data-zh="路上的東西">On the Course</h3>
       <dl class="pinky-guide-items">
-        <div><dt><canvas data-game-icon="mountain" width="100" height="60" aria-hidden="true"></canvas>山峰</dt><dd>小山峰和高山峰都要跳過。連續起伏的地面可以直接跑過。</dd></div>
-        <div><dt><canvas data-game-icon="crystal" width="100" height="60" aria-hidden="true"></canvas>水晶柱</dt><dd>藍色和粉色水晶都要跳過。有時會連著出現兩根。</dd></div>
-        <div><dt><canvas data-game-icon="bird" width="100" height="60" aria-hidden="true"></canvas>小鳥</dt><dd>在較低的位置飛過，抓準起跳時機避開。</dd></div>
-        <div><dt><canvas data-game-icon="airplane" width="100" height="60" aria-hidden="true"></canvas>飛機</dt><dd>在較高的位置飛過。飛機經過時，可從下方跑過。</dd></div>
-        <div><dt><canvas data-game-icon="cloudGate" width="100" height="60" aria-hidden="true"></canvas>雲朵通道</dt><dd>雲朵不會造成撞擊，通道中央有星星可以收集。</dd></div>
+        <div><dt><canvas data-game-icon="mountain" width="100" height="60" aria-hidden="true"></canvas><span data-zh="山峰">Peaks</span></dt><dd data-zh="小山峰和高山峰都要跳過。連續起伏的地面可以直接跑過。">Jump over both short and tall peaks. You can run straight over rolling terrain.</dd></div>
+        <div><dt><canvas data-game-icon="crystal" width="100" height="60" aria-hidden="true"></canvas><span data-zh="水晶柱">Crystals</span></dt><dd data-zh="藍色和粉色水晶都要跳過。有時會連著出現兩根。">Jump over blue and pink crystals. Sometimes they come in pairs.</dd></div>
+        <div><dt><canvas data-game-icon="bird" width="100" height="60" aria-hidden="true"></canvas><span data-zh="小鳥">Bird</span></dt><dd data-zh="在較低的位置飛過，抓準起跳時機避開。">Birds fly low. Time your jump to avoid them.</dd></div>
+        <div><dt><canvas data-game-icon="airplane" width="100" height="60" aria-hidden="true"></canvas><span data-zh="飛機">Plane</span></dt><dd data-zh="在較高的位置飛過。飛機經過時，可從下方跑過。">Planes fly high. Stay low and run underneath.</dd></div>
+        <div><dt><canvas data-game-icon="cloudGate" width="100" height="60" aria-hidden="true"></canvas><span data-zh="雲朵通道">Cloud Gap</span></dt><dd data-zh="雲朵不會造成撞擊，通道中央有星星可以收集。">Clouds won't hurt you. Aim for the star in the gap.</dd></div>
       </dl>
-      <h3>畫面上的按鈕</h3>
+      <h3 data-zh="畫面上的按鈕">HUD and Buttons</h3>
       <ul class="pinky-guide-controls">
-        <li>🏆 TOP 10 或 HI 可開啟排行榜，SCORE 顯示本局分數。</li>
-        <li>🛡️ 顯示剩餘護盾。貓咪齒輪可開啟設定與遊戲說明。</li>
-        <li>⛶ 切換全螢幕，🔊 開關聲音，📲 安裝可將遊戲加到裝置。</li>
+        <li data-zh="🏆 TOP 10 或 HI 可開啟排行榜，SCORE 顯示本局分數。">🏆 TOP 10 and HI open the leaderboard. SCORE tracks your current run.</li>
+        <li data-zh="🛡️ 顯示剩餘護盾。貓咪齒輪可開啟設定與遊戲說明。">🛡️ Shows your remaining shield charges. Tap the cat gear for Settings and the Game Guide.</li>
+        <li data-zh="⛶ 切換全螢幕，🔊 開關聲音，📲 安裝可將遊戲加到裝置。">⛶ Toggles fullscreen, 🔊 toggles sound, and 📲 installs the game on your device.</li>
       </ul>
     </section>
   </dialog>
 
-  <main id="pinky-controller" hidden aria-label="Pinky Jump 手機控制器">
+  <main id="pinky-controller" hidden aria-label="Pinky Jump phone controller" data-zh-aria-label="Pinky Jump 手機控制器">
     <div class="pinky-controller-heading">
       <img src="pinky-icon.png" alt="" width="44" height="44">
       <h1>Pinky Jump</h1>
-      <button id="controller-disconnect" type="button" class="pinky-light">離開</button>
+      <button id="controller-disconnect" type="button" class="pinky-light" data-zh="離開">Disconnect</button>
     </div>
-    <button id="controller-primary" type="button" class="btn-primary">開始遊戲</button>
+    <button id="controller-primary" type="button" class="btn-primary" data-zh="開始遊戲">Start Game</button>
     <form id="controller-record" hidden>
-      <label for="controller-name">🏆 新紀錄，輸入姓名</label>
+      <label for="controller-name" data-zh="🏆 新紀錄，輸入姓名">🏆 New high score! Enter your name.</label>
       <div class="pinky-setting-row">
         <input id="controller-name" maxlength="12" autocomplete="nickname" enterkeyhint="done" placeholder="PINKY">
-        <button id="controller-submit" type="submit" class="btn-primary">送出</button>
+        <button id="controller-submit" type="submit" class="btn-primary" data-zh="送出">Submit</button>
       </div>
-      <button id="controller-skip" type="button" class="pinky-light">不用登記，略過</button>
+      <button id="controller-skip" type="button" class="pinky-light" data-zh="不用登記，略過">Skip</button>
     </form>
-    <div id="controller-tabs" class="pinky-settings-tabs" data-pane="motion" role="group" aria-label="控制方式">
-      <button id="controller-manual-tab" type="button" data-pane="manual" aria-controls="controller-manual" aria-pressed="false">手機控制</button>
-      <button id="controller-motion-tab" type="button" data-pane="motion" aria-controls="controller-motion" aria-pressed="true">體感跳躍</button>
+    <div id="controller-tabs" class="pinky-settings-tabs" data-pane="motion" role="group" aria-label="Control mode" data-zh-aria-label="控制方式">
+      <button id="controller-manual-tab" type="button" data-pane="manual" aria-controls="controller-manual" aria-pressed="false" data-zh="手機控制">Phone Control</button>
+      <button id="controller-motion-tab" type="button" data-pane="motion" aria-controls="controller-motion" aria-pressed="true" data-zh="體感跳躍">Motion Jump</button>
     </div>
     <section id="controller-manual" hidden>
-      <button id="controller-jump" type="button" class="btn-primary">跳躍</button>
-      <button id="controller-pause" type="button" class="pinky-light">暫停遊戲</button>
+      <button id="controller-jump" type="button" class="btn-primary" data-zh="跳躍">Jump</button>
+      <button id="controller-pause" type="button" class="pinky-light" data-zh="暫停遊戲">Pause</button>
     </section>
     <section id="controller-motion">
-      <p>先握穩手機，遊戲開始後向上抬起手機即可跳躍。</p>
+      <p data-zh="先握穩手機，遊戲開始後向上抬起手機即可跳躍。">Hold your phone steady to calibrate. Once the run starts, lift it to jump.</p>
       <div class="pinky-setting-row">
-        <label for="controller-remote-sensitivity">靈敏度</label>
+        <label for="controller-remote-sensitivity" data-zh="靈敏度">Sensitivity</label>
         <select id="controller-remote-sensitivity">
-          <option value="low">低</option><option value="normal" selected>中</option><option value="high">高</option>
+          <option value="low" data-zh="低">Low</option><option value="normal" selected data-zh="中">Medium</option><option value="high" data-zh="高">High</option>
         </select>
       </div>
       <p id="controller-motion-status" role="status"></p>
@@ -236,8 +239,9 @@
     <p id="controller-status" role="status"></p>
   </main>
 
-  <script src="game.js?v=20261122-controller"></script>
-  <script src="pinky-online.js?v=11"></script>
-  <script src="lf-menu.js?v=2"></script>
+  <script src="locale.js?v=1"></script>
+  <script src="game.js?v=20261122-bilingual"></script>
+  <script src="pinky-online.js?v=12"></script>
+  <script src="lf-menu.js?v=3"></script>
 </body>
 </html>
