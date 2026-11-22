@@ -749,10 +749,13 @@
       error: err => toast('排列儲存失敗：' + errText(err))
     });
     const layoutKey = mode => 'linfamily_layout_' + mode + '_' + (user ? user.uid : '');
+    // 開頁面時（還沒登入完成）先用上次登入者存在這台裝置的排列，loading 畫面就是最新排列，不會進去再跳一下
+    try { const u = localStorage.getItem('linfamily_last_uid'); if (u) ['desktop', 'phone'].forEach(m => { const c = JSON.parse(localStorage.getItem('linfamily_layout_' + m + '_' + u) || 'null'); if (c) desk.setLayout(m, c); }); } catch (_) {}
     let layoutUnsubs = [];
     function watchLayouts() {
       layoutUnsubs.forEach(f => f()); layoutUnsubs = [];
       if (!user || !db || !role) return;
+      try { localStorage.setItem('linfamily_last_uid', user.uid); } catch (_) {}
       ['desktop', 'phone'].forEach(mode => {
         let cached = null; try { cached = JSON.parse(localStorage.getItem(layoutKey(mode)) || 'null'); } catch (_) {}
         if (cached) desk.setLayout(mode, cached);
