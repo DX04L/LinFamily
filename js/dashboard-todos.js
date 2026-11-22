@@ -20,14 +20,14 @@ window.clcBuildTodoFields = function (area) {
 
         <div class="todo-scroll">
           <div id="todoBody" class="flex flex-col gap-1"></div>
+          <ul id="todoDoneList" class="hidden pt-2 border-t border-slate-100 dark:border-white/[0.06]"></ul>
+        </div>
 
-          <div class="mt-auto pt-2 border-t border-slate-100 dark:border-white/[0.06]">
-            <button type="button" id="todoDoneToggle" class="w-full h-11 flex items-center justify-start gap-1.5 text-sm text-slate-500 dark:text-brand-muted" aria-expanded="false" aria-controls="todoDoneList">
-              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-              <span>今天已完成 <span id="todoDoneCount">0</span> 項</span>
-            </button>
-            <ul id="todoDoneList" class="hidden"></ul>
-          </div>
+        <div class="todo-done-bar shrink-0 border-t border-slate-100 dark:border-white/[0.06]">
+          <button type="button" id="todoDoneToggle" class="w-full h-8 flex items-center justify-start gap-1.5 text-xs text-slate-500 dark:text-brand-muted" aria-expanded="false" aria-controls="todoDoneList">
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            <span>今天已完成 <span id="todoDoneCount">0</span> 項</span>
+          </button>
         </div>`;
   if (area) {
     for (const node of template.content.querySelectorAll('[id]')) {
@@ -41,6 +41,37 @@ window.clcBuildTodoFields = function (area) {
     }
   }
   return template.content;
+};
+// 卡片標題可改名：電腦點兩下、手機點一下 → 直接在標題上修改；Enter 或離開＝儲存，Esc＝取消。
+window.clcTodoTitleEdit = function (h, { canEdit, save, fallback = '代辦事項' }) {
+  const touch = matchMedia('(pointer:coarse)').matches;
+  h.addEventListener(touch ? 'click' : 'dblclick', e => {
+    if (h.isContentEditable || !canEdit()) return;
+    e.preventDefault(); e.stopPropagation();
+    const before = h.textContent, handle = h.classList.contains('dk-handle');
+    h.classList.remove('dk-handle'); // 修改時不要被當成拖曳把手
+    h.contentEditable = 'true';
+    h.focus();
+    const r = document.createRange(); r.selectNodeContents(h);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    let done = false;
+    const finish = ok => {
+      if (done) return; done = true;
+      h.contentEditable = 'false'; h.removeAttribute('contenteditable');
+      if (handle) h.classList.add('dk-handle');
+      const t = h.textContent.replace(/\s+/g, ' ').trim().slice(0, 30);
+      if (!ok || !t || t === before) { h.textContent = before; return; }
+      h.textContent = t;
+      Promise.resolve(save(t)).catch(() => { h.textContent = before; });
+    };
+    h.addEventListener('keydown', function key(ev) {
+      if (ev.isComposing) return;
+      if (ev.key === 'Enter') { ev.preventDefault(); h.removeEventListener('keydown', key); finish(true); h.blur(); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); h.removeEventListener('keydown', key); finish(false); h.blur(); }
+    });
+    h.addEventListener('blur', () => finish(true), { once: true });
+  });
+  if (!h.title) h.title = touch ? '點一下修改名稱' : '點兩下修改名稱';
 };
 window.clcMountTodos = function (dashboard, {
   store, access = () => !!window.isSuperuser && !!window.db,
@@ -378,7 +409,7 @@ window.clcMountTodos = function (dashboard, {
         const btn = fade.firstChild;
         if (!document.getElementById('todoMoreCss')) {
           const st = document.createElement('style'); st.id = 'todoMoreCss';
-          st.textContent = `.todo-more{position:absolute;left:1px;right:1px;bottom:1px;height:52px;border-radius:0 0 17px 17px;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;background:linear-gradient(to bottom,transparent,var(--todo-more-bg,#fff) 78%);z-index:2}
+          st.textContent = `.todo-more{position:absolute;left:1px;right:1px;bottom:1px;height:52px;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;background:linear-gradient(to bottom,transparent,var(--todo-more-bg,#fff) 78%);z-index:2}
 .todo-more[hidden]{display:none}
 .todo-more.is-open{background:none}
 .todo-more-btn{pointer-events:auto;width:44px;height:30px;display:grid;place-items:center;border:0;background:none;padding:0;color:#64748b;cursor:pointer;transition:transform .2s}
@@ -398,6 +429,8 @@ window.clcMountTodos = function (dashboard, {
           // 只有真的有待辦項目被藏起來（在卡片底部以下）才出現；只切到「今天已完成」那行不算
           const rows = widget.querySelectorAll('.todo-row'), last = rows[rows.length - 1];
           fade.hidden = !el || !last || last.getBoundingClientRect().bottom <= el.getBoundingClientRect().bottom - 8;
+          const bar = widget.querySelector('.todo-done-bar'); // 漸層放在「今天已完成」那行上面，不蓋住它
+          fade.style.bottom = bar ? Math.max(1, host.getBoundingClientRect().bottom - bar.getBoundingClientRect().top) + 'px' : '';
         };
         const keep = [];
         const set = (el, prop, val) => { keep.push([el, prop, el.style[prop]]); el.style[prop] = val; };
@@ -410,7 +443,7 @@ window.clcMountTodos = function (dashboard, {
         };
         const expand = () => {
           const r = widget.getBoundingClientRect();
-          open = true; fade.classList.add('is-open'); btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', '收回');
+          open = true; fade.classList.add('is-open'); fade.style.bottom = '1px'; btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', '收回');
           if (item) set(item, 'zIndex', '60');
           set(host, 'bottom', 'auto'); set(host, 'height', 'auto'); set(host, 'overflow', 'visible');
           set(widget, 'height', 'auto'); set(widget, 'minHeight', r.height + 'px'); set(widget, 'maxHeight', (innerHeight - 16) + 'px');
@@ -466,7 +499,7 @@ window.clcMountTodos = function (dashboard, {
         const byOrder = (a, b) => (rank.get(a.id) ?? -1) - (rank.get(b.id) ?? -1) || byNewest(a, b);
         const open = todos.filter(x => !x.done);
         const overdue = open.filter(x => x.due && x.due < t).sort(byOrder);
-        group('待辦', '', open.sort(byOrder), { showDate: true });
+        if (open.length) { const ul = document.createElement('ul'); ul.className = 'todo-list'; open.sort(byOrder).forEach(t => ul.append(row(t, { showDate: true }))); body.append(ul); } // 不顯示「待辦」小標
         if (!open.length) {
           const p = document.createElement('p');
           p.className = 'todo-empty';
@@ -492,6 +525,7 @@ window.clcMountTodos = function (dashboard, {
         doneToggle.setAttribute('aria-expanded', String(showDone));
         doneToggle.classList.toggle('is-open', showDone);
         render();
+        if (showDone) requestAnimationFrame(() => doneList.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
       });
       // 跨過午夜時重新分組
       let lastDay = today();

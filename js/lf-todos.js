@@ -91,6 +91,8 @@ window.lfDesktopTodos = function (host, { db, toast, layout: deskLayout }) {
       const area = areas[id];
       if (!/^area-[a-f0-9-]+$/.test(id) || !area) continue;
       if (cards.has(id)) {
+        const h = cards.get(id).el.querySelector('h2');
+        if (!h.isContentEditable) h.textContent = area.title || '代辦事項';
         if (JSON.stringify(previous[id]?.items) !== JSON.stringify(area.items)) {
           listeners.get(id)?.(documents(area));
         }
@@ -108,6 +110,7 @@ window.lfDesktopTodos = function (host, { db, toast, layout: deskLayout }) {
       el.append(handle, window.clcBuildTodoFields(id));
       el.querySelector('h2').textContent = area.title || '代辦事項';
       el.querySelector('h2').classList.add('dk-handle'); // 標題也可以拖（共用桌面）
+      window.clcTodoTitleEdit(el.querySelector('h2'), { canEdit: () => !!owner, save: t => change(next => { if (!next[id]) return false; next[id].title = t; }) });
       layout.attach(el, id);
       cards.set(id, { el, dispose: mount(el, id) });
     }
