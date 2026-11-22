@@ -205,6 +205,13 @@ let score = 0;
 let shield = 0;
 let immunity = 0;
 let shieldShake = 0;
+function bumpShieldIcon() {
+  const box = document.querySelector('.shield-box');
+  if (!box) return;
+  box.classList.remove('shield-hit');
+  void box.offsetWidth;
+  box.classList.add('shield-hit');
+}
 const shieldEl = document.getElementById('shield-count');
 let gameSpeed = 7;
 let frameCount = 0;
@@ -399,6 +406,8 @@ const player = {
     ctx.save();
     // Brief shake after the shield absorbs a hit.
     const shake = shieldShake > 0 ? Math.sin(shieldShake * 1.9) * shieldShake * .45 : 0;
+    // Blink during the 1.5s of invincibility after losing a shield.
+    if (immunity > 0 && Math.floor(immunity / 6) % 2) ctx.globalAlpha = .35;
     ctx.translate(this.x + shake, this.y);
     ctx.scale(this.getScale(),this.getScale());
 
@@ -1144,7 +1153,7 @@ function simulateFrame() {
       };
 
       if(obs.type!=='cloudGate' && immunity===0 && checkCollision(pBox,oBox)){
-        if(shield>0){shield--;shieldEl.textContent=shield;immunity=90;shieldShake=18;sfx.shieldHit();spawnDust(player.x,player.y-32,'#ffe27a',16);}
+        if(shield>0){shield--;shieldEl.textContent=shield;immunity=90;shieldShake=18;sfx.shieldHit();bumpShieldIcon();spawnDust(player.x,player.y-32,'#ffe27a',16);}
         else triggerGameOver();
       }
 
@@ -1178,6 +1187,9 @@ function simulateFrame() {
 }
 
 function paintFrame() {
+  ctx.save();
+  // Light screen shake while the shield breaks.
+  if (shieldShake > 0) ctx.translate(Math.sin(shieldShake*2.3)*shieldShake*.3, Math.cos(shieldShake*1.7)*shieldShake*.2);
   drawBackground();
   ctx.save();
   ctx.translate(0,-cameraY);
@@ -1185,6 +1197,7 @@ function paintFrame() {
   drawObstacles(ctx,obstacles);
   player.draw();
   drawParticles();
+  ctx.restore();
   ctx.restore();
   needsPaint=false;
 }
