@@ -8,9 +8,12 @@ window.clcBuildTodoFields = function (area) {
 
         <form id="todoAddForm" class="flex items-center gap-2 min-h-12 shrink-0 pl-4 pr-1.5 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 focus-within:border-[#007E8A]">
           <label for="todoAddInput" class="sr-only">新增待辦</label>
-          <textarea id="todoAddInput" rows="2" autocomplete="off" enterkeyhint="done" maxlength="200" placeholder="新增待辦… 例如「明天下午3點 回覆新朋友 #SR」" class="todo-add-input flex-1 min-w-0 bg-transparent outline-none text-[15px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"></textarea>
+          <textarea id="todoAddInput" rows="2" style="resize:none" autocomplete="off" enterkeyhint="done" maxlength="200" placeholder="新增待辦… 例如「明天下午3點 回覆新朋友 #SR」" class="todo-add-input flex-1 min-w-0 bg-transparent outline-none text-[15px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"></textarea>
           <button type="button" id="todoMicBtn" class="todo-mic hidden" aria-label="語音輸入" title="語音輸入">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          </button>
+          <button type="submit" id="todoSendBtn" class="hidden shrink-0 w-9 h-9 rounded-full bg-[#007E8A] text-white grid place-items-center" aria-label="新增" title="新增">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
           </button>
         </form>
         <p id="todoStatus" class="hidden text-sm text-slate-500 dark:text-brand-muted"></p>
@@ -587,8 +590,22 @@ window.clcMountTodos = function (dashboard, {
         catch (err) { console.warn('待辦新增失敗', err); setStatus(errText(err)); }
       });
 
+      // 手機（觸控）：Enter＝換行，用 ↑ 鈕新增；電腦：Enter＝新增、Shift＋Enter＝換行
+      const touch = matchMedia('(pointer:coarse)').matches;
+      const send = find('todoSendBtn');
+      if (touch) input.setAttribute('enterkeyhint', 'enter');
+      // 固定大小；內容換行才變高，送出或離開回原大小
+      const grow = () => {
+        input.style.height = '';
+        if (input.scrollHeight > input.clientHeight) input.style.height = input.scrollHeight + 'px';
+        if (touch) send.classList.toggle('hidden', !input.value.trim());
+      };
+      const shrink = () => { input.style.height = ''; if (touch) send.classList.toggle('hidden', !input.value.trim()); };
+      input.addEventListener('input', grow);
+      input.addEventListener('focus', grow);
+      input.addEventListener('blur', () => setTimeout(shrink, 150));
       input.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !touch) {
           e.preventDefault();
           form.requestSubmit();
         }
@@ -598,6 +615,7 @@ window.clcMountTodos = function (dashboard, {
         const text = input.value.trim();
         if (!text || !canUse()) return;
         input.value = '';
+        shrink();
         try { await addTodo(text); }
         catch (err) { console.warn('待辦新增失敗', err); if (!input.value) input.value = text; setStatus(errText(err)); }
       });
