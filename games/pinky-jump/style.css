@@ -329,3 +329,11 @@ html, body {
 .panel h1{color:#be3471;text-shadow:none}
 .btn-primary{background:linear-gradient(180deg,#ff84b6,#e35395);outline-color:#e35395;box-shadow:0 5px 0 #af376e}
 @media(max-width:600px){#hud{top:max(6px,env(safe-area-inset-top));left:7px;right:7px;gap:3px}.hud-left,.hud-right{gap:4px}.badge-title{padding:4px 7px;font-size:11px}.badge-title img{width:19px;height:19px}.icon-btn{padding:4px 6px;font-size:11px}.score-box{padding:4px 6px;font-size:12px;gap:3px}.score-box .label{font-size:9px}.panel{padding:14px 19px}.controls-hint{padding:8px;font-size:11px}}
+
+/* Installation button: keep game score controls usable on small phones. */
+@media (max-width:600px) {
+  #hud .badge-title { display:none !important; }
+  #fullscreen-btn { font-size:0; min-width:26px; padding:3px 5px; }
+  #fullscreen-btn::before { content:'⛶'; font-size:16px; }
+  #hud .hud-left, #hud .hud-right { gap:3px; }
+}
