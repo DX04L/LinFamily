@@ -9,7 +9,7 @@
  */
 (function () {
   'use strict';
-  const OBJECT = 'a, button, input, textarea, select, label, img, svg, video, audio, iframe, canvas, dialog, summary, [contenteditable], [role="button"], [data-slot], [role="menu"], [data-lf-menu-ignore], #lfHomeBtn, .slot-cell, .slot-empty, .lf-menu, .lf-ctx';
+  const OBJECT = 'a, button, input, textarea, select, label, img, svg, video, audio, iframe, canvas, dialog, summary, [contenteditable], [role="button"], [data-slot], [role="menu"], [data-lf-menu-ignore], #lfHomeBtn, .slot-cell, .slot-empty, .lf-menu, .lf-ctx, .dk-item, .dk-menu, .todo-more';
   const ua = navigator.userAgent || '';
   const isAndroid = /Android/i.test(ua);
   const isLine = /\bLine\//i.test(ua);
@@ -100,7 +100,7 @@
     menu.querySelector('button').focus({ preventScroll: true });
   }
   function canOpen(target) {
-    if (!(target instanceof Element) || document.querySelector('dialog[open]') || String(getSelection() || '').trim()) return false;
+    if (!(target instanceof Element) || document.querySelector('dialog[open], .dk-menu') || String(getSelection() || '').trim()) return false;
     const control = target.closest(OBJECT);
     return !control || Boolean(control.closest('[data-lf-menu-trigger]'));
   }
@@ -119,7 +119,7 @@
     clearTimeout(lp && lp.timer); lp = null;
     if (e.touches.length !== 1 || !canOpen(e.target)) return;
     const t = e.touches[0];
-    lp = { x: t.clientX, y: t.clientY, timer: setTimeout(() => { if (lp) { show(lp.x, lp.y); try { getSelection().removeAllRanges(); } catch (_) {} } }, 550) };
+    lp = { x: t.clientX, y: t.clientY, timer: setTimeout(() => { if (lp && !document.querySelector('.dk-menu')) { show(lp.x, lp.y); try { getSelection().removeAllRanges(); } catch (_) {} } }, 550) };
   }, { passive: true });
   document.addEventListener('touchmove', e => {
     if (!lp) return; const t = e.touches[0];
