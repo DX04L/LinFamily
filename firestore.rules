@@ -1,5 +1,5 @@
 rules_version = '2';
-// LinFamily｜Firestore 規則（備份；只提交 GitHub 不會自動生效，請到 Firebase Console → Firestore → 規則 貼上並發布）
+// LinFamily｜Firestore 規則（請到 Firebase Console → Firestore → 規則 貼上並發布）
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -50,6 +50,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Daily QT 每日靈修：大家可讀（免登入）；只有 Superuser 或後端自動化腳本可寫入
+    match /devotionals/{date} {
+      allow read: if true;
+      allow write: if isSuper();
+    }
+
     // QT marks are private to the UID in the path. Each document holds one mark.
     match /qt_readers/{uid}/annotations/{annotationId} {
       function ownsAnnotations() {
@@ -67,6 +73,32 @@ service cloud.firestore {
       allow create: if ownsAnnotations() && validAnnotation();
       allow update: if ownsAnnotations() && validAnnotation()
         && request.resource.data.entry == resource.data.entry;
+    }
+
+    // 小組牧養教材：所有人可讀取；僅後端 Python 腳本 (Admin SDK) 或 Superuser 可寫入與刪除過期教材
+    match /sg_discussions/{date} {
+      allow read: if true;
+      allow write: if isSuper();
+    }
+
+    // 小組教材個人反白與註記：僅登入本人可讀寫與刪除自己的標記
+    match /sg_readers/{uid}/annotations/{annotationId} {
+      function ownsSgAnnotations() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      function validSgAnnotation() {
+        let data = request.resource.data;
+        return data.keys().hasAll(['entry', 'payload'])
+          && data.keys().hasOnly(['entry', 'payload'])
+          && data.entry is string && data.entry.size() > 0 && data.entry.size() <= 300
+          && data.payload is string && data.payload.size() > 0 && data.payload.size() <= 40000
+          && annotationId.matches('[0-9a-f-]{36}');
+      }
+      allow get, list: if ownsSgAnnotations();
+      allow create: if ownsSgAnnotations() && validSgAnnotation();
+      allow update: if ownsSgAnnotations() && validSgAnnotation()
+        && request.resource.data.entry == resource.data.entry;
+      allow delete: if ownsSgAnnotations();
     }
   }
 }
