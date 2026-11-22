@@ -76,6 +76,7 @@
     if (restoreFocus) document.getElementById('game-wrapper').focus({preventScroll:true});
   }
   function show(x, y) {
+    if (duringPlay()) return;
     close();
     const url = canonicalUrl;
     menu = document.createElement('div');
@@ -84,6 +85,7 @@
     menu.addEventListener('click', async e => {
       const b = e.target.closest('button[data-m]'); if (!b) return;
       close();
+      if (duringPlay()) return;
       if (b.dataset.m === 'copy') toast(await copy(url) ? 'Link copied' : 'Couldn\'t copy link');
       else openNewTab(url);
     });
@@ -94,23 +96,88 @@
     menu.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
     menu.querySelector('button').focus({ preventScroll: true });
   }
+  function duringPlay() {
+    return gameState === 'PLAYING' || window.pinkyArcade?.isPairedPlaying();
+  }
   function canOpen(target) {
     if (!(target instanceof Element) || document.querySelector('dialog[open]') || String(getSelection() || '').trim()) return false;
     const control = target.closest(OBJECT);
     return Boolean(target.closest('#game-wrapper')) && !control;
   }
 
-  // 右鍵使用 LinFamily 選單，觸控仍保留遊戲的單次跳躍操作。
   document.addEventListener('contextmenu', e => {
-    if (menu && menu.contains(e.target)) { e.preventDefault(); return; }
+    if (duringPlay() || menu?.contains(e.target)) {
+      e.preventDefault();
+      return;
+    }
     if (!canOpen(e.target)) return;
     e.preventDefault();
-    show(e.clientX, e.clientY);
+    if (e.pointerType !== 'touch' || !menu) show(e.clientX, e.clientY);
+  });
+
+  // Share one gesture between the idle long press and pull-to-refresh.
+  let gesture = null;
+  function cancelGesture() {
+    clearTimeout(gesture?.timer);
+    gesture = null;
+  }
+  document.addEventListener('touchstart', e => {
+    cancelGesture();
+    if (duringPlay() || e.touches.length !== 1 || !canOpen(e.target) ||
+        e.target.closest('#record-panel')) return;
+    const panel = e.target.closest('.panel');
+    if (panel && panel.scrollHeight > panel.clientHeight) return;
+    const {identifier, clientX, clientY} = e.touches[0];
+    gesture = {
+      identifier, x: clientX, y: clientY, opened: false,
+      timer: setTimeout(() => {
+        if (duringPlay() || !canOpen(e.target)) return;
+        gesture.opened = true;
+        show(clientX, clientY);
+      }, 550)
+    };
+  }, {passive:true});
+  document.addEventListener('touchmove', e => {
+    if (!gesture) return;
+    if (duringPlay() || e.touches.length !== 1) {
+      cancelGesture();
+      return;
+    }
+    const touch = e.touches[0];
+    const dx = touch.clientX - gesture.x;
+    const dy = touch.clientY - gesture.y;
+    if (Math.hypot(dx, dy) > 10) clearTimeout(gesture.timer);
+    if (!gesture.opened && dy > 10 && dy > Math.abs(dx) * 1.5 && e.cancelable) e.preventDefault();
+  }, {passive:false});
+  document.addEventListener('touchend', e => {
+    if (!gesture) return;
+    const {identifier, x, y, opened} = gesture;
+    cancelGesture();
+    if (duringPlay()) return;
+    if (opened) {
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+    if (!canOpen(e.target)) return;
+    const touch = Array.from(e.changedTouches).find(item => item.identifier === identifier);
+    if (!touch) return;
+    const dx = touch.clientX - x;
+    const dy = touch.clientY - y;
+    if (dy >= 85 && dy > Math.abs(dx) * 1.5) {
+      if (e.cancelable) e.preventDefault();
+      location.reload();
+    }
+  }, {passive:false});
+  document.addEventListener('touchcancel', cancelGesture);
+  document.addEventListener('pinky-play-start', () => {
+    cancelGesture();
+    close();
+    document.querySelector('.lf-toast')?.remove();
   });
   // 點旁邊、捲動、Esc、切換視窗 → 關閉
   document.addEventListener('pointerdown', e => { if (menu && !menu.contains(e.target)) close(); }, true);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
   addEventListener('scroll', close, true);
-  addEventListener('blur', close);
+  addEventListener('blur', () => { cancelGesture(); close(); });
   addEventListener('resize', close);
 })();

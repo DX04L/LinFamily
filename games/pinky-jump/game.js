@@ -1082,6 +1082,7 @@ function update() {
 function startGame() {
   sfx.init();
   gameState = 'PLAYING';
+  document.dispatchEvent(new Event('pinky-play-start'));
   footstepDistance = 0;
   beginMusic();
   score = 0;

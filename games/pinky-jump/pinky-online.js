@@ -295,6 +295,11 @@
       $('pinky-'+key+'-tab').setAttribute('aria-pressed',String(active));
     }
   }
+  function updatePairedPhase(phase) {
+    if (phase === pairedPhase) return;
+    pairedPhase = phase;
+    if (phase === 'playing') document.dispatchEvent(new Event('pinky-play-start'));
+  }
   function updateMotionMode() {
     $('controller-disconnect').hidden=!pairedRoom;
     setText('pinky-motion-mode',pairedRoom
@@ -338,13 +343,13 @@
       });
       if(phoneRoomUnsub)phoneRoomUnsub();
       pairedRoom=ref;
-      pairedPhase=data.phase;
+      updatePairedPhase(data.phase);
       phoneRoomUnsub=fs.onSnapshot(ref,roomSnap=>{
         if(!roomSnap.exists() || roomSnap.data().controller!==auth.currentUser.uid){
           disconnectPhone('配對已中斷，請重新連線。');
           return;
         }
-        pairedPhase=roomSnap.data().phase;
+        updatePairedPhase(roomSnap.data().phase);
       },err=>disconnectPhone(errorText(err)));
       renderRoomStatus('已連線');
       updateMotionMode();
@@ -450,6 +455,7 @@
         hostSetPhase(qualified?'record':'gameover',score);
       },
       sendPairedJump,
+      isPairedPlaying:()=>Boolean(pairedRoom && pairedPhase==='playing'),
       globalBest(){return remoteOnline?(remoteBoard[0]?.score||0):null;},
       globalConnected(){return remoteOnline;}
     };
