@@ -33,6 +33,7 @@ html, body {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none; /* 手機點擊遊戲畫面立即跳躍 */
 }
 
 /* HUD 頂部資訊列 */
@@ -263,47 +264,6 @@ html, body {
   color: #555;
   margin-bottom: 18px;
   font-size: 14px;
-}
-
-/* 觸控分區 */
-.touch-controls {
-  position: absolute;
-  inset: 0;
-  display: none;
-  z-index: 15;
-}
-
-@media (pointer: coarse) {
-  .touch-controls {
-    display: flex;
-  }
-}
-
-.touch-zone {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  padding: 20px 28px;
-}
-
-.left-zone {
-  justify-content: flex-start;
-}
-
-.right-zone {
-  justify-content: flex-end;
-}
-
-.touch-zone span {
-  background: rgba(255, 255, 255, 0.55);
-  border: 2px solid rgba(255, 102, 173, 0.5);
-  color: #d62872;
-  font-weight: 800;
-  font-size: 13px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  pointer-events: none;
 }
 
 @media (max-height: 460px) {
