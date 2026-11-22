@@ -207,24 +207,40 @@
     }
   }
   function receiveCommand(payload) {
-    if(!payload || !['jump','start','ready'].includes(payload.action))return;
-    if(payload.action === 'ready') {renderRoomStatus('手機控制器已配對，可以開始跳躍！');return;}
-    if(payload.action === 'start') {
-      if(typeof window.pinkyRemoteStart==='function') window.pinkyRemoteStart();
+    if (!payload || !['jump','start','ready','submit','skip'].includes(payload.action))return;
+    if (payload.action === 'ready') {
+      renderRoomStatus('✅ 手機已配對，所有遊戲流程都能在手機操作。');
+      return;
+    }
+    if (payload.action === 'start') {
+      window.pinkyRemoteStart?.();
+      return;
+    }
+    if (payload.action === 'submit') {
+      saveFromPhone(payload.playerName || 'PINKY');
+      return;
+    }
+    if (payload.action === 'skip') {
+      pendingScore=0;
+      hideRecord();
+      $('gameover-panel')?.classList.remove('hidden');
+      hostSetPhase('submitted',Math.floor(Number(payload.runScore)||0));
       return;
     }
     const now=Date.now();
-    if(now-lastRemoteAt<260)return;
+    if(now-lastRemoteAt<340)return;
     lastRemoteAt=now;
-    if(typeof window.pinkyRemoteJump==='function')
-      window.pinkyRemoteJump(Math.max(.1,Math.min(1,Number(payload.power)||.6)));
+    window.pinkyRemoteJump?.(Math.max(.05,Math.min(1,Number(payload.power)||.15)));
   }
+
   async function createRoom() {
     const btn=$('pinky-create-room');
-    if (btn) btn.disabled=true;
+    if(btn)btn.disabled=true;
     const code=makeCode();
     roomCode=code;
     messageSeq=0;
+    if(roomUnsub){roomUnsub();roomUnsub=null;}
+    roomRef=null;
     connectChannel(code);
     setText('pinky-room-code',code);
     const link=new URL('controller.html',location.href);
@@ -236,69 +252,119 @@
     if(dialog && !dialog.open)dialog.showModal();
     try {
       const {db,fs,auth}=await cloud();
-      roomRef=fs.doc(db,'pinky_jump_rooms',code);
-      await fs.setDoc(roomRef,{
-        host:auth.currentUser.uid,controller:'',action:'waiting',seq:0,power:0,
+      const ref=fs.doc(db,'pinky_jump_rooms',code);
+      await fs.setDoc(ref,{
+        host:auth.currentUser.uid,controller:'',action:'waiting',seq:0,power:0,playerName:'',
+        phase:'ready',runScore:0,
         createdAt:fs.serverTimestamp(),updatedAt:fs.serverTimestamp()
       });
-      if(roomUnsub)roomUnsub();
-      roomUnsub=fs.onSnapshot(roomRef,snap=>{
+      roomRef=ref;
+      roomUnsub=fs.onSnapshot(ref,snap=>{
         if(!snap.exists())return;
         const data=snap.data();
         if(data.seq<=messageSeq)return;
         messageSeq=data.seq;
         receiveCommand(data);
       },err=>renderRoomStatus(errorText(err)));
-      renderRoomStatus('配對碼已建立。用手機開啟連結或輸入代碼。');
+      renderRoomStatus('✅ 配對碼已建立。手機連上後就可以操作整個遊戲。');
     } catch(err) {
-      renderRoomStatus(errorText(err)+'（同瀏覽器兩分頁仍可測試）');
+      renderRoomStatus(errorText(err));
     } finally {if(btn)btn.disabled=false;}
   }
-  function updateControllerStatus(text) { setText('controller-status',text); }
+  function updateControllerStatus(text) {
+    setText(controllerConnected?'controller-live-status':'controller-status',text);
+  }
+  function updatePhonePhase(data) {
+    if(!controllerConnected)return;
+    const phase=String(data.phase||'ready'),score=Math.max(0,Math.floor(Number(data.runScore)||0));
+    currentRoomScore=score;
+    controllerPhase=phase;
+    const playing=phase==='ready'||phase==='playing'||phase==='submitted';
+    $('controller-actions').hidden=!playing;
+    $('controller-sensor').hidden=!playing;
+    $('controller-finish').hidden=phase!=='gameover';
+    $('controller-record').hidden=!['record','record_error'].includes(phase);
+    setText('controller-final-score',String(score).padStart(6,'0'));
+    setText('controller-record-score',String(score).padStart(6,'0'));
+    if(phase==='record' && $('controller-player-name'))
+      $('controller-player-name').value='';
+    const messages={
+      ready:'✅ 已配對！按「開始」或等待電腦開始。',
+      playing:'🎮 遊戲進行中，開始跳躍吧！',
+      gameover:'💫 遊戲結束，可以直接在手機按「再玩一次」。',
+      record:'🏆 進入全球 Top 10！請在手機輸入名字登記。',
+      record_error:'⚠️ 成績提交失敗，請重新按「確認登記」。',
+      submitted:'✅ 登記完成／結束。可以直接按開始再玩！'
+    };
+    updateControllerStatus(messages[phase]||'已連線');
+  }
+  function disconnectPhone(message='已中斷連線。請重新輸入配對碼。') {
+    controllerConnected=false;
+    roomRef=null;
+    if(phoneRoomUnsub){phoneRoomUnsub();phoneRoomUnsub=null;}
+    if(channel){channel.close();channel=null;}
+    $('controller-setup').hidden=false;
+    $('controller-connected').hidden=true;
+    setText('controller-status',message);
+    if(pulseTimer){clearTimeout(pulseTimer);pulseTimer=null;}
+  }
   async function connectPhone() {
     const input=$('controller-room-input');
-    const code=(input ? input.value : '').trim().toUpperCase();
-    if(!roomPattern.test(code)) {updateControllerStatus('請輸入 6 碼配對代碼。');return;}
-    roomCode=code;
-    connectChannel(code);
+    const code=(input?.value||'').trim().toUpperCase();
+    if(!roomPattern.test(code)){updateControllerStatus('請輸入有效的 6 碼配對碼。');return;}
     const button=$('controller-connect');
     if(button)button.disabled=true;
-    updateControllerStatus('正在連線…');
+    setText('controller-status','正在連線…');
     try {
       const {fs,db,auth}=await cloud();
       const ref=fs.doc(db,'pinky_jump_rooms',code);
       const snap=await fs.getDoc(ref);
-      if(!snap.exists())throw Error('配對碼不存在，請從電腦重新建立');
+      if(!snap.exists())throw Error('配對碼不存在，請在電腦重新建立');
       const data=snap.data();
-      if(data.createdAt && data.createdAt.toMillis && Date.now()-data.createdAt.toMillis()>3600000)
+      if(data.createdAt?.toMillis && Date.now()-data.createdAt.toMillis()>3600000)
         throw Error('配對碼已過期');
-      roomRef=ref;
-      // Only the first paired controller can send commands.
+      if(data.controller && data.controller!==auth.currentUser.uid)
+        throw Error('這組配對碼已由另一支手機使用；請重新建立新房間');
       await fs.updateDoc(ref,{
-        controller:auth.currentUser.uid,action:'ready',power:0,seq:fs.increment(1),
-        updatedAt:fs.serverTimestamp()
+        controller:auth.currentUser.uid,action:'ready',power:0,
+        playerName:'',seq:fs.increment(1),updatedAt:fs.serverTimestamp()
       });
-      updateControllerStatus('✅ 已連線！手機抬起或點跳躍按鈕試試。');
+      roomCode=code;
+      roomRef=ref;
+      controllerConnected=true;
+      connectChannel(code);
+      $('controller-setup').hidden=true;
+      $('controller-connected').hidden=false;
+      phoneRoomUnsub=fs.onSnapshot(ref,roomSnap=>{
+        if(!roomSnap.exists()) {disconnectPhone('配對房間已不存在，請重新連線');return;}
+        const data=roomSnap.data();
+        if(data.createdAt?.toMillis && Date.now()-data.createdAt.toMillis()>3600000){
+          disconnectPhone('配對碼已到期，請在電腦重新建立');return;
+        }
+        updatePhonePhase(data);
+      },err=>disconnectPhone(errorText(err)));
+      updatePhonePhase(data);
     } catch(err) {
-      updateControllerStatus(errorText(err)+' 同一個瀏覽器可使用兩分頁測試。');
+      controllerConnected=false;
+      roomRef=null;
+      setText('controller-status',errorText(err));
+      $('controller-setup').hidden=false;
+      $('controller-connected').hidden=true;
     } finally {if(button)button.disabled=false;}
-    const area=$('controller-actions');
-    if(area)area.hidden=false;
-    const sensor=$('controller-sensor');
-    if(sensor)sensor.hidden=false;
   }
-  function sendCommand(action,power=.6) {
-    if(!roomCode) {updateControllerStatus('請先輸入配對碼並連接。');return;}
-    const message={action,power,at:Date.now()};
+  function sendCommand(action,power=.15,name='') {
+    if(!controllerConnected||!roomRef){updateControllerStatus('已斷線，請重新配對');return;}
+    const message={action,power,playerName:String(name||'').slice(0,12),at:Date.now()};
     if(channel)channel.postMessage(message);
-    if(!roomRef)return;
+    const ref=roomRef;
     commandQueue=commandQueue.catch(()=>{}).then(async()=>{
       const {fs,auth}=await cloud();
-      await fs.updateDoc(roomRef,{
-        controller:auth.currentUser.uid,action,power,
+      if(!controllerConnected||roomRef!==ref)return;
+      await fs.updateDoc(ref,{
+        controller:auth.currentUser.uid,action,power,playerName:message.playerName,
         seq:fs.increment(1),updatedAt:fs.serverTimestamp()
       });
-    }).catch(err=>updateControllerStatus(errorText(err)));
+    }).catch(err=>disconnectPhone(errorText(err)));
   }
   // DeviceMotion (accelerometer) with gravity low-pass filtering.
   let motionEnabled=false;
