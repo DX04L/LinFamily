@@ -310,7 +310,10 @@ html, body {
 }
 
 /* Heart slots (replaces the shield counter). */
-#shield-hearts { display: inline-flex; gap: 1px; font-family: system-ui, sans-serif; line-height: 1; }
-#shield-hearts i { font-style: normal; color: #f2a9c8; font-size: 15px; }
+#shield-hearts { display: inline-flex; gap: 2px; font-family: system-ui, sans-serif; line-height: 1; }
+#shield-hearts i { font-style: normal; color: #f2a9c8; font-size: 18px; }
 #shield-hearts i.on { color: #ff2d6f; }
-@media (max-width: 900px) { #shield-hearts i { font-size: 11px; } #shield-hearts { gap: 0; } }
+/* Same height as the neighbouring HUD boxes. */
+.score-box.shield-box { display: inline-flex; align-items: center; }
+@media (max-width: 900px) { #shield-hearts i { font-size: 15px; } #shield-hearts { gap: 0; } }
+.score-box { white-space: nowrap; }
