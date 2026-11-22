@@ -251,7 +251,7 @@
     const now=Date.now();
     if(now-lastRemoteAt<340)return;
     lastRemoteAt=now;
-    window.pinkyRemoteJump?.(Math.max(.05,Math.min(1,Number(payload.power)||.15)));
+    window.pinkyRemoteJump?.(Math.max(0,Math.min(1,Number(payload.power)||0)));
   }
 
   async function createRoom() {
@@ -435,8 +435,8 @@
       phoneCommandBusy=false;
     }
   }
-  function sendPairedJump() {
-    if(pairedRoom && pairedPhase==='playing') sendPhoneCommand('jump',.15);
+  function sendPairedJump(power) {
+    if(pairedRoom && pairedPhase==='playing') sendPhoneCommand('jump',power);
   }
   function usePhonePrimary() {
     if (pairedPhase==='record'||pairedPhase==='record_error') return;
@@ -450,9 +450,12 @@
   };
   let motionEnabled=false,motionRequest=0;
   let baseline=null,samples=0,previousImpulse=0;
+  let motionPeak=0,motionTimer;
   let lastJumpAt=-Infinity,armed=true;
   function setMotionEnabled(enabled) {
     motionEnabled=enabled;
+    clearTimeout(motionTimer);
+    motionTimer=undefined;
     if (!enabled) $('pinky-touch-lock').hidden=true;
     baseline=null;
     samples=0;
@@ -502,12 +505,20 @@
     const cfg=sensitivities[$(pairedRoom?'controller-remote-sensitivity':'controller-sensitivity').value]||sensitivities.normal;
     const now=performance.now();
     if(!armed && Math.abs(impulse)<cfg.threshold*.35 && now-lastJumpAt>=cfg.cooldown)armed=true;
+    if(motionTimer!==undefined) motionPeak=Math.max(motionPeak,impulse);
     if(armed && impulse>cfg.threshold && previousImpulse>cfg.threshold*.7 &&
        !document.hidden && !document.querySelector('dialog[open]')){
       armed=false;
       lastJumpAt=now;
-      if(pairedRoom)sendPairedJump();
-      else window.pinkyRemoteJump();
+      motionPeak=Math.max(impulse,previousImpulse);
+      motionTimer=setTimeout(()=>{
+        motionTimer=undefined;
+        if (!motionEnabled || document.hidden || document.querySelector('dialog[open]')) return;
+        const strength=motionPeak/cfg.threshold;
+        const power=strength>=1.85?1:strength>=1.4?.45:0;
+        if(pairedRoom)sendPairedJump(power);
+        else window.pinkyRemoteJump(power);
+      },65);
     }
     previousImpulse=impulse;
   }
@@ -611,7 +622,31 @@
     bindSlidingTabs($('controller-tabs'),selectPhoneMode);
     $('controller-primary').addEventListener('click',usePhonePrimary);
     $('controller-pause').addEventListener('click',usePhonePrimary);
-    $('controller-jump').addEventListener('click',sendPairedJump);
+    const phoneJump=$('controller-jump');
+    let jumpPress=null;
+    phoneJump.addEventListener('pointerdown',event=>{
+      if (!event.isPrimary || event.button!==0 || phoneJump.disabled) return;
+      const press={id:event.pointerId};
+      jumpPress=press;
+      phoneJump.setPointerCapture(event.pointerId);
+      press.timer=setTimeout(()=>{
+        if(jumpPress!==press)return;
+        press.sent=true;
+        sendPairedJump(1);
+      },175);
+    });
+    function endPhoneJump(event) {
+      if(jumpPress?.id!==event.pointerId)return;
+      const press=jumpPress;
+      jumpPress=null;
+      clearTimeout(press.timer);
+      if(event.type==='pointerup' && !press.sent)sendPairedJump(0);
+    }
+    for (const type of ['pointerup','pointercancel','lostpointercapture'])
+      phoneJump.addEventListener(type,endPhoneJump);
+    phoneJump.addEventListener('click',event=>{
+      if(event.detail===0)sendPairedJump(0);
+    });
     $('controller-record').addEventListener('submit',event=>{
       event.preventDefault();
       sendPhoneCommand('submit',0,$('controller-name').value.trim().slice(0,12));

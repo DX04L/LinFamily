@@ -205,7 +205,6 @@ const shieldEl = document.getElementById('shield-count');
 let gameSpeed = 7;
 let frameCount = 0;
 let lastMilestone = 0;
-let dayNightFactor = 0;
 hiScoreEl.textContent = '-----';
 
 function resizeCanvas() {
@@ -311,6 +310,7 @@ function getGroundY(x=width*.17) {
 }
 
 // The player is separate from SoundFX; jump physics belongs here.
+const SHORT_JUMP_RISE = 42;
 const player = {
   x: 90,
   y: 0,
@@ -318,7 +318,7 @@ const player = {
   gravity: 0.78,
   isGrounded: true,
   jumpCameraLimit: Infinity,
-  keyboardJumpKey: null,
+  jumpInput: null,
   runCycle: 0,
   blinkTimer: 0,
   hurt: false,
@@ -331,12 +331,12 @@ const player = {
     this.y = getGroundY();
     this.vy = 0;
     this.isGrounded = true;
-    this.keyboardJumpKey = null;
+    this.jumpInput = null;
     this.hurt = false;
   },
-  jump(key = null) {
+  jump(input = null, power = 1) {
     if (!this.isGrounded || gameState !== 'PLAYING') return;
-    // One tap produces one fixed-height jump regardless of press duration.
+    // Keyboard and canvas input can trim an ascent; remote input supplies the chosen power.
     this.gravity = Math.max(0.65, Math.min(0.9, height * 0.00105));
     let rise = Math.max(175, Math.min(330, height * 0.35));
     if (width > height) {
@@ -344,10 +344,12 @@ const player = {
       rise = Math.max(24, this.y - cameraY - 100 * this.getScale());
       this.gravity = Math.max(this.gravity, 2 * rise / (25 * 25));
     }
+    const shortRise = Math.min(SHORT_JUMP_RISE,rise);
+    rise = shortRise + (rise - shortRise) * power;
     this.jumpCameraLimit = this.y - rise - 100 * this.getScale();
     this.vy = -Math.sqrt(2 * this.gravity * rise) - this.gravity / 2;
     this.isGrounded = false;
-    this.keyboardJumpKey = key;
+    this.jumpInput = input;
     sfx.jump();
     spawnDust(this.x, this.y, '#f784ba', 8);
   },
@@ -674,7 +676,7 @@ function initScenery() {
       x: i * 320,
       w: 360,
       h: 70 + (i % 3) * 35,
-      color: i % 2 === 0 ? '#ffc2e0' : '#ffd9ec'
+      color: i % 2 === 0 ? [255,194,224] : [255,217,236]
     });
   }
 }
@@ -750,28 +752,51 @@ function checkCollision(a, b) {
   );
 }
 
-// 繪製背景 (支援白天粉彩與夜間星空平滑過渡)
+// Each phase covers one stretch of the course, with a blend at the end.
+const SCENE_LENGTH = 4500;
+const scenes = [
+  {sky:[[139,162,226],[255,181,179],[255,232,175]], ground:[245,145,169], edge:[230,80,125], sun:1, sunY:.46, night:0},
+  {sky:[[108,184,244],[204,237,255],[253,248,249]], ground:[247,164,202], edge:[243,86,158], sun:.9, sunY:.22, night:0},
+  {sky:[[103,89,177],[242,139,164],[255,210,153]], ground:[213,115,159], edge:[223,73,134], sun:1, sunY:.52, night:0},
+  {sky:[[23,24,67],[65,37,112],[116,53,118]], ground:[66,28,101], edge:[193,99,184], sun:0, sunY:.62, night:1}
+];
+const lerp = (a,b,t) => a + (b-a)*t;
+function sceneColor(from, to, blend) {
+  return 'rgb('+from.map((channel,i)=>Math.round(lerp(channel,to[i],blend))).join(',')+')';
+}
+function sceneAt(distance) {
+  const progress = distance / SCENE_LENGTH;
+  const index = Math.floor(progress) % scenes.length;
+  const t = Math.max(0, ((progress % 1)-.78)/.22);
+  return {current:scenes[index], next:scenes[(index+1)%scenes.length], blend:t*t*(3-2*t)};
+}
 function drawBackground() {
-  // 隨分數切換日夜夢幻色調
-  const targetNight = Math.floor(score / 800) % 2 === 1 ? 1 : 0;
-  dayNightFactor += (targetNight - dayNightFactor) * 0.015;
-
+  const {current,next,blend} = sceneAt(terrainDistance);
+  const darkness = lerp(current.night,next.night,blend);
   const grad = ctx.createLinearGradient(0, 0, 0, height);
-  if (dayNightFactor < 0.5) {
-    grad.addColorStop(0, '#ffd1e8');
-    grad.addColorStop(0.65, '#fff5fa');
-    grad.addColorStop(1, '#dff2ff');
-  } else {
-    grad.addColorStop(0, '#1e1b4b');
-    grad.addColorStop(0.65, '#4c1d95');
-    grad.addColorStop(1, '#831843');
-  }
+  for (const [i,stop] of [0,.65,1].entries())
+    grad.addColorStop(stop, sceneColor(current.sky[i],next.sky[i],blend));
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, width, height);
 
+  const sun = lerp(current.sun,next.sun,blend);
+  const radius = Math.max(14,Math.min(38,height*.08));
+  if (sun > 0) {
+    ctx.fillStyle = `rgba(255,244,190,${sun*.85})`;
+    ctx.beginPath();
+    ctx.arc(width*.78,height*lerp(current.sunY,next.sunY,blend),radius,0,Math.PI*2);
+    ctx.fill();
+  }
+  if (darkness > 0) {
+    ctx.fillStyle = `rgba(246,239,255,${darkness*.88})`;
+    ctx.beginPath();
+    ctx.arc(width*.78,height*.22,radius*.7,0,Math.PI*2);
+    ctx.fill();
+  }
+
   // 夜間星星閃爍
-  if (dayNightFactor > 0.2) {
-    ctx.fillStyle = `rgba(255, 245, 180, ${dayNightFactor * 0.85})`;
+  if (darkness > 0) {
+    ctx.fillStyle = `rgba(255, 245, 180, ${darkness * 0.85})`;
     for (let i = 0; i < 24; i++) {
       const sx = ((i * 197 + frameCount * 0.1) % width);
       const sy = (i * 83) % (height * 0.63);
@@ -793,7 +818,7 @@ function drawBackground() {
     ctx.save();
     ctx.translate(c.x, c.y);
     ctx.scale(c.scale, c.scale);
-    ctx.fillStyle = dayNightFactor > 0.5 ? 'rgba(255, 214, 238, 0.25)' : 'rgba(255, 255, 255, 0.9)';
+    ctx.fillStyle = `rgba(255, ${255-41*darkness}, ${255-17*darkness}, ${.9-.65*darkness})`;
     ctx.beginPath();
     ctx.arc(0, 0, 24, 0, Math.PI * 2);
     ctx.arc(22, -6, 28, 0, Math.PI * 2);
@@ -811,7 +836,7 @@ function drawBackground() {
       h.x -= gameSpeed * 0.22;
       if (h.x + h.w < 0) h.x += bgHills.length * 320;
     }
-    ctx.fillStyle = dayNightFactor > 0.5 ? 'rgba(131,24,67,.45)' : h.color;
+    ctx.fillStyle = sceneColor(h.color,[114,68,131],darkness);
     ctx.beginPath();
     ctx.moveTo(h.x, horizon);
     ctx.quadraticCurveTo(h.x+h.w/2, horizon-h.h, h.x+h.w, horizon);
@@ -823,7 +848,7 @@ function drawBackground() {
   ctx.save();
   ctx.translate(0, -cameraY);
   // The ground itself curves up and down; ground physics uses this same curve.
-  ctx.fillStyle = dayNightFactor > 0.5 ? '#3b0764' : '#ff9ecb';
+  ctx.fillStyle = sceneColor(current.ground,next.ground,blend);
   ctx.beginPath();
   ctx.moveTo(-12, getGroundY(-12));
   for (let x=0; x<=width+14; x+=12) ctx.lineTo(x,getGroundY(x));
@@ -832,7 +857,7 @@ function drawBackground() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.strokeStyle = '#ff5ca8';
+  ctx.strokeStyle = sceneColor(current.edge,next.edge,blend);
   ctx.lineWidth = 6;
   ctx.beginPath();
   ctx.moveTo(-12,getGroundY(-12));
@@ -1220,9 +1245,9 @@ window.pinkyRemoteStart = function(pause = false) {
   else if (gameState === 'PAUSED') setGamePaused(false);
   else if (gameState !== 'PLAYING') startGame();
 };
-window.pinkyRemoteJump = function() {
+window.pinkyRemoteJump = function(power = 0) {
   if (gameState !== 'PLAYING' || document.querySelector('dialog[open]')) return;
-  player.jump();
+  player.jump(null,power);
 };
 
 // Capture Space even when the start button still has keyboard focus.
@@ -1248,15 +1273,18 @@ document.addEventListener('keydown', event => {
   if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
   else if (gameState === 'PLAYING') player.jump(event.code || event.key);
 }, true);
-document.addEventListener('keyup', event => {
-  if ((event.code || event.key) !== player.keyboardJumpKey) return;
-  player.keyboardJumpKey = null;
+function releaseJump(input) {
+  if (input !== player.jumpInput) return;
+  player.jumpInput = null;
   if (player.isGrounded || player.vy >= 0) return;
   // Release trims the remaining ascent. Holding a key preserves the full arc.
-  player.vy = Math.max(player.vy, -Math.sqrt(2 * player.gravity * 42));
+  player.vy = Math.max(player.vy, -Math.sqrt(2 * player.gravity * SHORT_JUMP_RISE));
   const remainingRise = player.vy ** 2 / (2 * player.gravity);
   player.jumpCameraLimit = player.y - remainingRise - 100 * player.getScale();
-});
+}
+document.addEventListener('keyup', event => releaseJump(event.code || event.key));
+for (const type of ['pointerup','pointercancel'])
+  document.addEventListener(type, event => releaseJump(event.pointerId));
 const gameWrapper = document.getElementById('game-wrapper');
 const touchLock = document.getElementById('pinky-touch-lock');
 let touchLockTimer;
@@ -1276,7 +1304,7 @@ gameWrapper.addEventListener('pointerdown', event => {
   }
   if (gameState !== 'PLAYING') return;
   event.preventDefault();
-  player.jump();
+  player.jump(event.pointerId);
 });
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);

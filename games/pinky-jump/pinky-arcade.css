@@ -132,8 +132,35 @@
   border-radius: 16px;
   background: #fff2f8;
 }
-#pinky-pair-btn img { width: 30px; height: 30px; object-fit: contain; }
-#pinky-pair-btn span {
+#pinky-pair-btn .pinky-settings-paw {
+  position: relative;
+  width: 31px;
+  height: 31px;
+  color: #bd3b7b;
+  transform: rotate(-14deg);
+}
+.pinky-settings-paw::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 2px;
+  width: 6px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 6px -6px currentColor, 14px -6px currentColor, 20px 0 currentColor;
+}
+.pinky-settings-paw::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 15px;
+  width: 20px;
+  height: 12px;
+  border-radius: 58% 58% 43% 43%;
+  background: currentColor;
+}
+#pinky-pair-btn .pinky-settings-gear {
   position: absolute;
   right: 1px;
   bottom: 1px;
@@ -351,7 +378,9 @@
   border-radius: 26px;
   padding: 8px;
   font-size: clamp(24px, 8vw, 44px);
+  touch-action: none;
 }
+#controller-jump small { display: block; margin-top: 4px; font-size: clamp(10px, 2.9vw, 15px); }
 #controller-pause { justify-self: center; min-width: min(100%, 180px); }
 #controller-name { flex: 1; min-width: 0; min-height: 44px; font-size: 18px; border: 1px solid #efb2d0; border-radius: 10px; padding: 6px 10px; }
 #controller-submit { padding-inline: 14px; white-space: nowrap; }
