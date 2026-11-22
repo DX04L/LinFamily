@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
-  <link rel="stylesheet" href="css/lf-todos.css?v=3">
+  <link rel="stylesheet" href="css/lf-todos.css?v=4">
+  <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=1">
+  <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
   <script>
     (function () {
@@ -163,8 +165,13 @@
 
     /* App 格子：手機 4 欄、平板 6 欄、電腦 8 欄 */
     /* 整個畫面都放 App：一行放得下幾個就放幾個，超過就換下一行 */
-    #lfApps { display:grid; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:22px 16px; }
-    @media (min-width:640px) { #lfApps { grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:26px 22px; } }
+    #lfApps { --dk-top:200px; margin:0 -6px; }
+    #lfApps .lf-app { width:100%; }
+    .lf-top { flex-wrap:wrap; }
+    #lfToolbar { margin:0; }
+    @media (max-width:639px) { #lfToolbar { order:3; flex-basis:100%; margin-top:14px; } }
+    @media (min-width:640px) { .lf-top { align-items:flex-end; padding-top:calc(30px + env(safe-area-inset-top)); } .lf-top > :first-child { flex:1; min-width:0; } }
+    html.lf-has-wall .clc-tb-tabs, html.lf-has-wall .clc-tb-btn { background:color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
     #lfApps .slot-cell { aspect-ratio:auto; }
     .lf-app { display:flex; flex-direction:column; align-items:center; gap:7px; text-decoration:none; color:var(--text); -webkit-tap-highlight-color:transparent; }
     .lf-icon { width:100%; aspect-ratio:1; border-radius:22%; display:grid; place-items:center; overflow:hidden; transition:transform .2s; }
@@ -348,6 +355,7 @@
       <p class="lf-date" id="lfDate">&nbsp;</p>
       <h1 class="lf-title" id="lfGreeting">Welcome home</h1>
     </div>
+    <div class="lf-tabbar" id="lfToolbar"></div><!-- 共用工具列 shared/toolbar -->
     <div class="lf-right">
       <button type="button" id="lfInstallBtn" class="lf-btn lf-install" hidden><span>📲</span><span>安裝</span></button>
       <button type="button" id="lfAuthBtn" class="lf-btn" title="管理員登入 / 狀態" aria-haspopup="menu" aria-expanded="false"><span id="lfAuthIcon">🔐</span><span id="lfAuthDot" class="lf-dot" hidden></span></button>
@@ -363,33 +371,12 @@
 
   <main>
 
-    <div class="lf-tabbar">
-    <div class="lf-tabs" role="tablist" aria-label="切換">
-      <button type="button" role="tab" aria-selected="true" data-tab="apps">Home</button>
-      <button type="button" role="tab" aria-selected="false" data-tab="family">Family</button>
-      <button type="button" role="tab" aria-selected="false" data-tab="all">Apps<i class="lf-newdot" id="lfAppsDot" hidden></i></button>
-      <button type="button" class="lf-tab-icon" id="lfSearchBtn" aria-label="搜尋 App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg></button>
-    </div>
-    <div class="lf-add-wrap">
-      <button type="button" class="lf-search-btn" id="lfAddBtn" aria-label="新增" aria-controls="lfAddMenu" aria-expanded="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-      <div id="lfAddMenu" class="lf-menu" aria-label="新增項目" hidden>
-        <button type="button" id="lfAddApp">新增 APP</button>
-        <button type="button" id="lfAddTodo" hidden>新增待辦事項區域</button>
-      </div>
-    </div>
-    </div>
-    <label class="lf-search" for="lfSearch" id="lfSearchBox" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
-      <input type="search" id="lfSearch" placeholder="搜尋 App…" autocomplete="off" enterkeyhint="go" aria-label="搜尋 App">
-      <button type="button" id="lfSearchClear" aria-label="清除搜尋" hidden>✕</button>
-    </label>
 
     <section id="panelApps" aria-label="主畫面">
-      <div id="lfTodoAreas"></div>
-      <!-- App 清單存在 Firestore linfamily_settings/apps。格子邏輯與 DX、YA、SR 共用 js/clc-slot-grid.js：
-           登入者長按晃動（各自的桌面；Superuser 新增的 App 同時放進 App 櫃）→ 拖到任何位置（空位編輯時才看得到）或和別的 App 互換、「−」移除、點 App 修改、＋ 圓鈕新增、按「完成」結束。 -->
-      <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的 App</p>
-      <nav id="lfApps" aria-label="App"></nav>
+      <!-- 桌面：共用格子引擎 shared/desktop（App 1×1、待辦卡片可調大小，留空格也行）。App 清單仍在 linfamily_desktops/{email}；
+           排列存 users/{uid}/desktop/{desktop|phone}，手機電腦各一份。電腦按住拖、右鍵選單；手機長按 0.5 秒。 -->
+      <p class="lf-noresult" id="lfNoResult" hidden>找不到符合的項目</p>
+      <div id="lfApps" aria-label="主畫面"></div>
     </section>
 
     <section id="panelAll" aria-label="所有 App" hidden>
@@ -519,13 +506,15 @@
     </div>
   </dialog>
 
-  <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script>
+  <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script><!-- 只用 clcSlotGridNormalize（舊 pos 欄位） -->
+  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=1"></script>
+  <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261116-menu2"></script>
   <script src="js/lf-menu.js?v=3"></script>
   <script src="https://clc-dx04.pages.dev/reorder.js?v=shared-todo-2"></script>
   <script src="js/dashboard-todos.js"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
-  <script src="js/lf-todos.js?v=3"></script>
+  <script src="js/lf-todos.js?v=4"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -733,7 +722,52 @@
     // 個人桌面：linfamily_desktops/{email}（每人自己排列、新增、移除）。沒有個人桌面時顯示預設桌面（Superuser 編的全部 App）。
     // Superuser 永遠看、編預設桌面＝全部 App。之後要做「哪些 App 給哪些人」時，在預設桌面的 App 上加權限欄位即可。
     const DESK_COL = 'linfamily_desktops';
-    const desktopTodos = window.lfDesktopTodos($('lfTodoAreas'), { db, toast });
+    // ---------- 桌面（共用格子引擎） ----------
+    const desk = window.clcDesktop($('lfApps'), {
+      waitLayout: true,
+      canEdit: () => !!role,
+      label: id => (apps.find(a => a.id === id) || {}).name || '這個待辦區域',
+      menu: ({ id, type }) => {
+        if (!role) return [];
+        const m = [];
+        if (type === 'app') m.push({ label: '編輯 App', run: () => openApp(id) });
+        return m.concat(addMenu('apps'));
+      },
+      onDelete: (id, type) => type === 'card' ? desktopTodos.removeArea(id) : removeApp(id),
+      saveLayout: (mode, map) => {
+        if (!user || !db) return;
+        try { localStorage.setItem(layoutKey(mode), JSON.stringify(map)); } catch (_) {}
+        return db.collection('users').doc(user.uid).collection('desktop').doc(mode).set({ layout: map, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      },
+      error: err => toast('排列儲存失敗：' + errText(err))
+    });
+    const layoutKey = mode => 'linfamily_layout_' + mode + '_' + (user ? user.uid : '');
+    let layoutUnsubs = [];
+    function watchLayouts() {
+      layoutUnsubs.forEach(f => f()); layoutUnsubs = [];
+      if (!user || !db || !role) return;
+      ['desktop', 'phone'].forEach(mode => {
+        let cached = null; try { cached = JSON.parse(localStorage.getItem(layoutKey(mode)) || 'null'); } catch (_) {}
+        if (cached) desk.setLayout(mode, cached);
+        layoutUnsubs.push(db.collection('users').doc(user.uid).collection('desktop').doc(mode).onSnapshot(snap => {
+          if (snap.metadata.hasPendingWrites) return;
+          const map = snap.exists ? snap.data().layout || null : null;
+          try { if (map) localStorage.setItem(layoutKey(mode), JSON.stringify(map)); } catch (_) {}
+          desk.setLayout(mode, map);
+        }, err => { console.warn('桌面排列讀取失敗（沿用這台裝置的排列）', err); if (!cached) desk.setLayout(mode, null); }));
+      });
+    }
+    // 把目前 App 放上桌面（舊資料沒有座標時依 pos 順序自動排）
+    function syncDesk() {
+      const list = window.clcSlotGridNormalize(apps).slice().sort((a, b) => a.pos - b.pos), keep = new Set(list.map(a => a.id));
+      desk.ids().forEach(id => { if (!/^area-/.test(id) && !keep.has(id)) desk.drop(id); });
+      list.forEach(a => desk.put(a.id, renderTile(a, false), { type: 'app', searchText: () => a.name + ' ' + (a.url || '') }));
+      if (tb.value()) applySearch();
+    }
+    const desktopTodos = window.lfDesktopTodos($('lfApps'), { db, toast, layout: {
+      attach: (el, id) => desk.put(id, el, { type: 'card', w: 4, h: 3, searchText: () => el.textContent + ' ' + Array.from(el.querySelectorAll('textarea,input')).map(x => x.value).join(' ') }),
+      detach: id => desk.drop(id)
+    } });
     let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '', finishDeskWait;
     const deskKey = () => 'linfamily_desk_' + deskEmail;
     function showApps() {
@@ -746,6 +780,7 @@
       finishDeskWait?.();
       if (deskUnsub) { deskUnsub(); deskUnsub = null; }
       deskEmail = email; myDesk = null;
+      watchLayouts();
       desktopTodos.sync(email);
       if (email) try { const c = JSON.parse(localStorage.getItem('linfamily_look_' + email) || 'null'); if (c) applyLook(c); } catch (_) {} // 先用上次的主題，不閃預設色
       if (email) {
@@ -868,40 +903,29 @@
       }
       return a;
     }
-    let addPos = null;
-    let curTab = 'apps', cabinetOnly = false; // cabinetOnly：Superuser 在 Apps 分頁按 ＋，只加到 App 櫃（不放自己的主畫面）
-    // ＋ 只在用得到的地方出現：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）；Family 等其他分頁收起來
-    function setAddMenu(open) {
-      $('lfAddMenu').hidden = !open;
-      $('lfAddBtn').setAttribute('aria-expanded', String(open));
-    }
-    function syncAddBtn() {
-      $('lfAddBtn').hidden = !role || !(curTab === 'apps' || (curTab === 'all' && isSuper()));
-      $('lfAddTodo').hidden = !role || curTab !== 'apps';
-      setAddMenu(false);
-    }
-    // 整個 App 區都可以放 App（含最底部）：格數＝畫面放得下的行數 × 每行個數；放滿才多一行（只有 App 區捲動）
-    function fitSlots() {
-      const p = $('panelApps'), gr = $('lfApps'), cs = getComputedStyle(gr);
-      const cols = cs.gridTemplateColumns.split(' ').filter(Boolean).length || 1;
-      const c = gr.querySelector('.slot-cell') || gr.querySelector('.slot-empty');
-      const h = c ? c.offsetHeight : 96, gap = parseFloat(cs.rowGap) || 22;
-      const avail = p.clientHeight - 24 - ($('lfApps').nextElementSibling && !$('lfApps').nextElementSibling.hidden ? 50 : 0);
-      return Math.max(1, Math.floor((avail + gap) / (h + gap))) * cols;
-    }
-    let fitT = null;
-    window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(() => slots.render(), 150); });
-    slots = window.clcSlotGrid($('lfApps'), {
-      minSlots: fitSlots, cellClass: 'lf-cell', emptyClass: 'lf-slot', removeClass: 'lf-remove',
-      canEdit: () => !!role, // 登入者都能編自己的桌面
-      getItems: () => apps,
-      renderTile,
-      save: persist,
-      error: err => toast('排列儲存失敗：' + errText(err)),
-      onAdd: pos => { addPos = pos; openApp(null); },
-      onEdit: id => openApp(id),
-      onRemove: id => removeApp(id)
+    let addPos = null; // 舊格子用；新桌面由右鍵/長按的格子位置決定
+    let curTab = 'apps', cabinetOnly = false;
+    const tb = window.clcToolbar($('lfToolbar'), {
+      tabs: [{ id: 'apps', label: 'Home' }, { id: 'family', label: 'Family' }, { id: 'all', label: 'Apps' }],
+      active: 'apps', onTab: t => onTab(t), placeholder: '搜尋 App 或卡片內容…', searchHost: document.querySelector('main'),
+      addItems: t => addMenu(t),
+      onSearch: () => applySearch(),
+      onEnter: () => { const id = applySearch().find(x => apps.some(a => a.id === x)); const a = id && desk.element(id) && desk.element(id).querySelector('a[href]'); if (a) location.href = a.href; }
     });
+ // cabinetOnly：Superuser 在 Apps 分頁按 ＋，只加到 App 櫃（不放自己的主畫面）
+    // ＋ 只在用得到的地方出現：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）；Family 等其他分頁收起來
+    // ＋ 和長按選單共用：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）
+    function addMenu(tab) {
+      if (!role) return [];
+      if (tab === 'apps') return [
+        { label: '新增 APP', run: () => { addPos = null; cabinetOnly = false; openApp(null); } },
+        { label: '新增待辦事項區域', run: () => desktopTodos.add() }
+      ];
+      if (tab === 'all' && isSuper()) return [{ label: '新增 APP', run: () => { addPos = null; cabinetOnly = true; openApp(null); $('lfAppTitle').textContent = '新增 App 到 App 櫃'; } }];
+      return [];
+    }
+    function syncAddBtn() { tb.refresh(); }
+    slots = { render: syncDesk, setEditing: () => desk.closeMenu() };
     const withPos = () => window.clcSlotGridNormalize(apps);
     function errText(err) { return err && err.code === 'permission-denied' ? '權限不足（請確認已登入，以及 Firestore 規則）。' : '請稍後再試。'; }
     // 主畫面＝個人桌面（每人一份，含 Superuser）；App 櫃＝linfamily_settings/apps（全部 App，只有 Superuser 改）
@@ -926,7 +950,7 @@
     }
     async function removeApp(id) {
       const app = apps.find(a => a.id === id);
-      if (!app || !confirm('從主畫面移除「' + app.name + '」？')) return;
+      if (!app) return; // 已在刪除確認框確認過
       try { await persist(withPos().filter(a => a.id !== id)); } catch (err) { toast('移除失敗：' + errText(err)); }
     }
     // 預設 App 只自動加一次（記在雲端 seeded 清單；之後刪掉也不會再跑回來）：
@@ -1101,7 +1125,7 @@
         box.append(row);
       });
     }
-    function renderNews() { $('lfAppsDot').hidden = !newApps().length; } // 有新 App → Apps 分頁紅點
+    function renderNews() { tb.setDot('all', newApps().length > 0); } // 有新 App → Apps 分頁紅點
     function clearNews() { const n = newApps(); if (n.length) persist(withPos(), n.map(a => a.id)).catch(() => {}); } // 打開 Apps 就算看過
 
 
@@ -1286,15 +1310,12 @@
     })();
 
     // ---------- 分頁：主畫面／家庭空間配置 ----------
-    document.querySelectorAll('.lf-tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
-      const tab = b.dataset.tab;
+    function onTab(tab) {
       curTab = tab; syncAddBtn();
-      document.querySelectorAll('.lf-tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
       $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family'; $('panelAll').hidden = tab !== 'all';
       if (tab === 'all') { renderAll(); clearNews(); }
-      if (tab === 'apps') slots.render();
-      if (tab !== 'apps') slots.setEditing(false);
-    }));
+      if (tab !== 'apps') desk.closeMenu();
+    }
     // 平面圖：點區域 → 列出這個區域的 App（App 的 zoneId 沿用舊資料）
     let activeZone = '';
     function renderZone() {
@@ -1319,65 +1340,15 @@
     });
 
     // ---------- 搜尋：符合的 App 保持清楚，其他變淡；Enter 開第一個符合的 App ----------
-    const search = $('lfSearch');
+    // ---------- 搜尋：App ＋ 卡片內容；符合的保持清楚，其他變淡；Enter 開第一個符合的 App ----------
     function applySearch() {
-      const q = search.value.trim().toLowerCase();
-      const grid = $('lfApps');
-      $('lfSearchClear').hidden = !q;
-      grid.classList.toggle('is-searching', !!q);
-      let hits = 0;
-      grid.querySelectorAll(':scope > [data-slot]').forEach(el => {
-        const app = el.dataset.id && apps.find(a => a.id === el.dataset.id);
-        const match = !q || (app && (String(app.name).toLowerCase().includes(q) || String(app.url || '').toLowerCase().includes(q)));
-        el.classList.toggle('lf-dim', !!q && !match);
-        if (q && match && app) hits++;
-      });
-      $('lfNoResult').hidden = !q || hits > 0;
-      if (q) { document.querySelector('.lf-tabs [data-tab="apps"]').click(); slots.setEditing(false); }
+      const q = tb.value();
+      if (q && tb.tab() !== 'apps') tb.setTab('apps', true);
+      const hits = desk.search(q);
+      $('lfNoResult').hidden = !q || hits.length > 0;
+      return hits;
     }
-    search.addEventListener('input', applySearch);
-    search.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { search.value = ''; applySearch(); showSearch(false); }
-      if (e.key === 'Enter') {
-        const first = $('lfApps').querySelector(':scope > .slot-cell:not(.lf-dim) a');
-        if (search.value.trim() && first) location.href = first.href;
-      }
-    });
-    // 放大鏡：點了才出現搜尋列；清空或離開（沒有字）就收起來，不占版面
-    $('lfAddBtn').addEventListener('click', () => {
-      const open = $('lfAddMenu').hidden;
-      if (open) setMenu(false);
-      setAddMenu(open);
-      if (open) $('lfAddApp').focus({ preventScroll: true });
-    });
-    document.addEventListener('pointerdown', e => {
-      if (!e.target.closest('.lf-add-wrap')) setAddMenu(false);
-    });
-    document.addEventListener('keydown', e => {
-      if (e.key !== 'Escape' || $('lfAddMenu').hidden) return;
-      setAddMenu(false);
-      $('lfAddBtn').focus();
-    });
-    $('lfAddApp').addEventListener('click', () => {
-      setAddMenu(false);
-      addPos = null; cabinetOnly = curTab === 'all' && isSuper();
-      openApp(null);
-      if (cabinetOnly) $('lfAppTitle').textContent = '新增 App 到 App 櫃';
-    });
-    $('lfAddTodo').addEventListener('click', () => {
-      if (!role || curTab !== 'apps') return;
-      setAddMenu(false);
-      desktopTodos.add();
-    });
-    const sBox = $('lfSearchBox'), sBtn = $('lfSearchBtn');
-    function showSearch(on) { sBox.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) search.focus(); }
-    sBtn.addEventListener('click', () => { if (sBox.hidden) showSearch(true); else { search.value = ''; applySearch(); showSearch(false); } });
-    search.addEventListener('blur', () => setTimeout(() => { if (!search.value.trim() && document.activeElement !== search) showSearch(false); }, 150));
-    $('lfSearchClear').addEventListener('mousedown', e => e.preventDefault());
-    $('lfSearchClear').addEventListener('click', () => { search.value = ''; applySearch(); showSearch(false); });
-    new MutationObserver(() => { if (search.value.trim()) applySearch(); }).observe($('lfApps'), { childList: true });
-
-    slots.render(); requestAnimationFrame(() => slots.render()); // 第二次依實際格子高度補滿畫面
+    syncDesk();
   });
   </script>
   <script src="js/lf-pull-refresh.js?v=confirm-drag-1" defer></script>

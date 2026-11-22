@@ -1,4 +1,4 @@
-#lfTodoAreas:not(:empty) { margin-bottom: 18px; }
+#lfApps .lf-todo-card { height: 100%; box-sizing: border-box; margin: 0; }
 :is(.lf-todo-card, .lf-todo-drawer) {
   min-width: 0;
   padding: 16px;
@@ -55,8 +55,8 @@
 :is(.lf-todo-card, .lf-todo-drawer) [data-todo-field="todoDoneToggle"] { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; font-size: calc(.875 * var(--todo-font)); color: var(--muted); }
 
 .lf-todo-drawer { border: 0; max-width: none; }
-#lfTodoAreas ~ [role="status"]:empty { display: none; }
-body:has(#lfTodoAreas > .lf-todo-card ~ .lf-todo-card) .lf-todo-drawer .todo-move-area {
+#lfApps ~ [role="status"]:empty { display: none; }
+body:has(#lfApps .dk-card ~ .dk-card) .lf-todo-drawer .todo-move-area {
   display: block !important; flex: none; max-width: 6em;
 }
 .lf-todo-menu {

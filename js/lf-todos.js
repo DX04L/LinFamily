@@ -1,8 +1,9 @@
 // LF 的待辦區域和待辦存於目前登入者的私人桌面文件。
-window.lfDesktopTodos = function (host, { db, toast }) {
+window.lfDesktopTodos = function (host, { db, toast, layout: deskLayout }) {
   const cards = new Map(), listeners = new Map();
   let owner = '', areas = {};
-  const layout = window.clcDashboardWidgets(host, {
+  // layout：共用桌面（shared/desktop）傳進來就用它放卡片；沒有就用舊的 dashboard-widgets
+  const layout = deskLayout || window.clcDashboardWidgets(host, {
     key: () => 'linfamily_todo_layout:' + owner,
     canEdit: () => !!owner,
     async remove(id) {
@@ -102,7 +103,8 @@ window.lfDesktopTodos = function (host, { db, toast }) {
       el.setAttribute('aria-labelledby', 'todoTitle-' + id);
       const handle = document.createElement('button');
       handle.type = 'button';
-      handle.className = 'drag-handle';
+      handle.className = 'drag-handle dk-handle';
+      handle.setAttribute('aria-label', '拖曳移動');
       el.append(handle, window.clcBuildTodoFields(id));
       el.querySelector('h2').textContent = area.title || '代辦事項';
       layout.attach(el, id);
@@ -112,6 +114,11 @@ window.lfDesktopTodos = function (host, { db, toast }) {
 
   return {
     sync,
+    // 共用桌面刪除（已在確認框確認過）
+    async removeArea(id) {
+      try { await change(next => { delete next[id]; }); }
+      catch (_) { toast('待辦區塊更新失敗，請稍後再試。'); }
+    },
     async add() {
       if (!owner) return;
       const email = owner;

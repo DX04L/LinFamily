@@ -38,6 +38,12 @@ service cloud.firestore {
       allow read, write: if isSuper() || (isMember() && myEmail() == email);
     }
 
+    // 共用桌面排列（shared/desktop）：users/{uid}/desktop/{desktop|phone}，只有本人可讀寫
+    match /users/{uid}/desktop/{device} {
+      allow read, write: if signedIn() && request.auth.uid == uid && device in ['desktop', 'phone']
+        && (isSuper() || isMember());
+    }
+
     // Hannah's Studio 作品：大家可看；Superuser、Admin 可新增、修改、刪除
     match /hannah_artworks/{id} {
       allow read: if true;
