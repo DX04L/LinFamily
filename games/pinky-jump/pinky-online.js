@@ -278,6 +278,7 @@
     if(!controllerConnected)return;
     const phase=String(data.phase||'ready'),score=Math.max(0,Math.floor(Number(data.runScore)||0));
     currentRoomScore=score;
+    const phaseChanged=controllerPhase!==phase;
     controllerPhase=phase;
     const playing=phase==='ready'||phase==='playing'||phase==='submitted';
     $('controller-actions').hidden=!playing;
@@ -286,7 +287,7 @@
     $('controller-record').hidden=!['record','record_error'].includes(phase);
     setText('controller-final-score',String(score).padStart(6,'0'));
     setText('controller-record-score',String(score).padStart(6,'0'));
-    if(phase==='record' && $('controller-player-name'))
+    if(phase==='record' && phaseChanged && $('controller-player-name'))
       $('controller-player-name').value='';
     const messages={
       ready:'✅ 已配對！按「開始」或等待電腦開始。',
@@ -463,67 +464,102 @@
   function initController() {
     $('controller-room-input').value=roomPattern.test(urlRoom)?urlRoom:'';
     $('controller-connect')?.addEventListener('click',connectPhone);
+    $('controller-disconnect')?.addEventListener('click',()=>{
+      disconnectPhone('已斷開，請輸入原配對碼或在電腦重新建立配對碼。');
+    });
     $('controller-activate-sensor')?.addEventListener('click',enableSensor);
     $('controller-calibrate')?.addEventListener('click',resetCalibration);
     $('controller-start-game')?.addEventListener('click',()=>sendCommand('start',0));
+    $('controller-restart')?.addEventListener('click',()=>sendCommand('start',0));
+    $('controller-board-toggle')?.addEventListener('click',()=>{
+      const board=$('controller-board');
+      board.hidden=!board.hidden;
+      refreshScores();
+      if(!board.hidden)board.scrollIntoView?.({block:'nearest',behavior:'smooth'});
+    });
+    $('controller-board-close')?.addEventListener('click',()=>{
+      $('controller-board').hidden=true;
+    });
+    $('controller-record-form')?.addEventListener('submit',event=>{
+      event.preventDefault();
+      if(!controllerConnected)return;
+      const name=String($('controller-player-name')?.value||'').trim().slice(0,12)||'PINKY';
+      sendCommand('submit',0,name);
+      updateControllerStatus('正在把成績送到全球排行榜…');
+    });
+    $('controller-skip-record')?.addEventListener('click',()=>{
+      sendCommand('skip',0);
+      updateControllerStatus('正在略過姓名登記…');
+    });
     let pressedAt=0;
-    $('controller-jump')?.addEventListener('pointerdown',e=>{
-      pressedAt=performance.now(); if(e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+    $('controller-jump')?.addEventListener('pointerdown',event=>{
+      if(!controllerConnected)return;
+      pressedAt=performance.now();
+      event.currentTarget.setPointerCapture?.(event.pointerId);
     });
     $('controller-jump')?.addEventListener('pointerup',()=>{
+      if(!controllerConnected)return;
       const ms=performance.now()-pressedAt;
-      sendCommand('jump',Math.max(.25,Math.min(1,ms/600)));
-      setText('controller-last-power',Math.round(Math.max(.25,Math.min(1,ms/600))*100)+'%');
+      const strength=Math.max(.10,Math.min(1,ms/750));
+      sendCommand('jump',strength);
+      setText('controller-last-power',Math.round(strength*100)+'%');
     });
-    $('controller-jump')?.addEventListener('click',e=>{
-      if(e.detail===0)sendCommand('jump',.65); // keyboard accessibility
+    $('controller-jump')?.addEventListener('click',event=>{
+      if(event.detail===0&&controllerConnected)sendCommand('jump',.28);
     });
+    window.addEventListener('offline',()=>{
+      if(controllerConnected)
+        disconnectPhone('網路連線中斷，請恢復網路後重新連線。');
+    });
+    initSharedScores();
   }
+
   function initGame() {
     window.pinkyArcade={
-      onStart(){hideRecord();pendingScore=0;},
-      onGameOver(score){newRecord(score);},
-      localBest(){return localScores()[0]?.score || 0;}
+      onStart(){
+        hideRecord();pendingScore=0;
+        hostSetPhase('playing',0);
+      },
+      onGameOver(score){
+        const qualified=newRecord(score);
+        hostSetPhase(qualified?'record':'gameover',score);
+      },
+      submitName:saveFromPhone,
+      globalBest(){return remoteOnline?(remoteBoard[0]?.score||0):null;},
+      globalConnected(){return remoteOnline;}
     };
     $('pinky-rank-btn')?.addEventListener('click',showBoard);
     $('pinky-rank-close')?.addEventListener('click',()=>$('pinky-rank-dialog').close());
-    $('pinky-rank-dialog')?.addEventListener('click',e=>{
-      if(e.target===$('pinky-rank-dialog'))e.target.close();
+    $('pinky-rank-dialog')?.addEventListener('click',event=>{
+      if(event.target===$('pinky-rank-dialog'))event.target.close();
     });
     $('pinky-record-form')?.addEventListener('submit',submitScore);
     $('pinky-skip-record')?.addEventListener('click',()=>{
-      pendingScore=0;hideRecord();$('gameover-panel')?.classList.remove('hidden');
+      const final=pendingScore;
+      pendingScore=0;
+      hideRecord();
+      $('gameover-panel')?.classList.remove('hidden');
+      hostSetPhase('submitted',final);
     });
     $('pinky-pair-btn')?.addEventListener('click',()=>{
-      const modal=$('pinky-pair-dialog');if(modal && !modal.open)modal.showModal();
+      const modal=$('pinky-pair-dialog');
+      if(modal&&!modal.open)modal.showModal();
     });
     $('pinky-create-room')?.addEventListener('click',createRoom);
     $('pinky-pair-close')?.addEventListener('click',()=>$('pinky-pair-dialog').close());
     $('pinky-copy-link')?.addEventListener('click',async()=>{
       const link=$('pinky-room-link')?.value;
       if(!link)return;
-      try{await navigator.clipboard.writeText(link);renderRoomStatus('✅ 已複製連線網址，傳到手機即可。');}
-      catch(_) { $('pinky-room-link')?.select();renderRoomStatus('已選取網址，請手動複製。');}
+      try{
+        await navigator.clipboard.writeText(link);
+        renderRoomStatus('✅ 已複製網址，傳到手機即可。');
+      }catch(_){
+        $('pinky-room-link')?.select();
+        renderRoomStatus('已選取網址，請手動複製。');
+      }
     });
-    refreshScores();
-    cloud().then(({db,fs})=>{
-      scoreUnsub=fs.onSnapshot(
-        fs.query(fs.collection(db,'pinky_jump_scores'),fs.orderBy('score','desc'),fs.limit(10)),
-        snap=>{
-          remoteBoard=normalizeScores(snap.docs.map(d=>d.data()));
-          remoteOnline=true;
-          refreshScores();
-          const best=Math.max(localScores()[0]?.score||0,remoteBoard[0]?.score||0);
-          setText('hi-score',String(best).padStart(5,'0'));
-        },
-        err=>{
-          remoteOnline=false;
-          refreshScores();
-          setText('pinky-rank-origin',errorText(err)+' 本機成績仍可使用。');
-        }
-      );
-    }).catch(()=>{refreshScores();});
+    initSharedScores();
   }
-  if(controllerPage) initController();
+  if(controllerPage)initController();
   else initGame();
 })();
