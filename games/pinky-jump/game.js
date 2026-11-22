@@ -262,9 +262,6 @@ const player = {
   runCycle: 0,
   blinkTimer: 0,
   hurt: false,
-  jumpHeld: false,
-  holdFrames: 0,
-  jumpCeilingReached: false,
 
   getScale() {
     return Math.max(0.64, Math.min(1, width / 550, height / 510));
@@ -275,25 +272,15 @@ const player = {
     this.vy = 0;
     this.isGrounded = true;
     this.hurt = false;
-    this.jumpHeld = false;
-    this.holdFrames = 0;
-    this.jumpCeilingReached = false;
   },
   jump() {
     if (!this.isGrounded || gameState !== 'PLAYING') return;
-    // Quick tap = a little hop; hold = a much higher jump.
-    this.vy = -Math.max(11, Math.min(16.5, height * 0.0205));
+    // Single tap = one consistent jump; holding longer never changes its height.
+    const rise = Math.max(175, Math.min(330, height * 0.35));
+    this.vy = -Math.sqrt(2 * this.gravity * rise);
     this.isGrounded = false;
-    this.jumpHeld = true;
-    this.holdFrames = 0;
-    this.jumpCeilingReached = false;
     sfx.jump();
     spawnDust(this.x, this.y, '#f784ba', 8);
-  },
-  releaseJump() {
-    this.jumpHeld = false;
-    // Releasing early gently cuts the ascent, without an abrupt stop.
-    if (!this.isGrounded && this.vy < -4) this.vy *= 0.55;
   },
   update() {
     const groundY = getGroundY(this.x);
@@ -303,10 +290,6 @@ const player = {
       this.y = groundY;
       this.vy = 0;
     } else {
-      if (this.jumpHeld && !this.jumpCeilingReached && this.vy < 0 && this.holdFrames < 58) {
-        this.vy -= this.gravity * 1.24;
-        this.holdFrames++;
-      }
       this.vy += this.gravity;
       this.y += this.vy;
       const s = this.getScale();
@@ -317,14 +300,11 @@ const player = {
       if (this.y <= ceiling) {
         this.y = ceiling;
         this.vy = 0;
-        this.jumpHeld = false;
-        this.jumpCeilingReached = true;
       }
       if (this.y >= groundY) {
         this.y = groundY;
         this.vy = 0;
         this.isGrounded = true;
-        this.jumpHeld = false;
       }
     }
     if (this.isGrounded && gameState === 'PLAYING') this.runCycle += gameSpeed * 0.032;
@@ -678,11 +658,11 @@ function spawnEntity() {
     obstacles.push({type:'cloudGate',x,y:gapY,w:100,h:gapH});
     coins.push({type:'star',x:x+48,y:gapY+gapH/2,r:13,collected:false,spin:0});
   } else if (score > 90 && r < 0.70) {
-    // Mostly small slopes/mountains; only ~6% of mountains reach half-screen.
+    // A few slightly higher mountains; rare tall peaks remain jumpable with one tap.
     const tall = Math.random() < 0.06;
-    const ordinary = [48,56,66,78,Math.min(108,height*0.20)];
+    const ordinary = [48,56,66,78,Math.min(108,height*0.20),Math.min(122,height*0.235)];
     const h = tall
-      ? Math.max(110, height * .46)
+      ? Math.min(285, Math.max(125, height * 0.29))
       : ordinary[Math.floor(Math.random()*ordinary.length)];
     const w = tall ? Math.min(136, Math.max(76,h*0.34)) : 64;
     obstacles.push({type:'mountain',x,y:groundY,w,h,tall});
@@ -1122,13 +1102,10 @@ window.pinkyRemoteStart = function() {
   if (document.getElementById('record-panel')?.classList.contains('hidden') === false) return;
   if (gameState !== 'PLAYING') startGame();
 };
-window.pinkyRemoteJump = function(strength = .65) {
+window.pinkyRemoteJump = function() {
   if (gameState === 'START') startGame();
   if (gameState !== 'PLAYING' || !player.isGrounded) return;
   player.jump();
-  // Conservative motion jumps; only strong manual presses reach high.
-  const hold = 35 + Math.round(Math.max(0,Math.min(1,strength)) * 280);
-  setTimeout(() => player.releaseJump(),hold);
 };
 
 // Capture Space even when the start button still has keyboard focus.
@@ -1151,28 +1128,14 @@ document.addEventListener('keydown', event => {
   if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
   else if (gameState === 'PLAYING') player.jump();
 }, true);
-document.addEventListener('keyup', event => {
-  if (!isJumpKey(event)) return;
-  event.preventDefault();
-  player.releaseJump();
-}, true);
-let jumpPointerId = null;
 const gameWrapper = document.getElementById('game-wrapper');
 gameWrapper.addEventListener('pointerdown', event => {
   if (gameState !== 'PLAYING' || event.isPrimary === false) return;
-  if (event.target.closest('button, a, dialog, .panel')) return;
+  // The entire game canvas responds; HUD actions and dialogs are excluded.
+  if (event.target.closest('button, a, dialog, .panel, #hud, input, textarea, select, [role="button"]')) return;
   event.preventDefault();
-  jumpPointerId = event.pointerId;
   player.jump();
 });
-function endPointerJump(event) {
-  if (jumpPointerId === event.pointerId) {
-    jumpPointerId = null;
-    player.releaseJump();
-  }
-}
-window.addEventListener('pointerup',endPointerJump);
-window.addEventListener('pointercancel',endPointerJump);
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 
