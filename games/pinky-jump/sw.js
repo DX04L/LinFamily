@@ -1,6 +1,6 @@
 /* Pinky Jump: per-game offline PWA (scoped to this folder only). */
-const CACHE = 'pinky-jump-v6';
-const ASSETS = ['./','./index.html','./style.css','./game.js?v=20261122-space-lookahead-random','./install.css','./install.js','./manifest.webmanifest','./pinky-icon.png','./app-icon.svg','./sergequadrado-humorous-loop-275485.mp3'];
+const CACHE = 'pinky-jump-v7';
+const ASSETS = ['./','./index.html','./style.css','./game.js?v=20261122-arcade-motion1','./install.css','./install.js','./manifest.webmanifest','./pinky-icon.png','./app-icon.svg','./pinky-online.js?v=1','./pinky-arcade.css?v=1','./controller.html'];
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(ASSETS.map(path => cache.add(path)))));
@@ -18,5 +18,5 @@ self.addEventListener('fetch', event => {
   event.respondWith(fetch(req).then(response => {
     if (response.ok) { const copy = response.clone(); event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => {})); }
     return response;
-  }).catch(async () => (await caches.match(req)) || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())));
+  }).catch(async () => (await caches.match(req)) || (req.mode === 'navigate' ? caches.match(url.pathname.endsWith('/controller.html') ? './controller.html' : './index.html') : Response.error())));
 });
