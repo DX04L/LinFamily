@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sg-discussion-v10';
+const CACHE_NAME = 'sg-discussion-v11';
 const ASSETS = [
   './',
   './index.html',
