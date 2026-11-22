@@ -1,6 +1,6 @@
 /* Pinky Jump: per-game offline PWA (scoped to this folder only). */
-const CACHE = 'pinky-jump-v22';
-const ASSETS = ['./','./index.html','./style.css?v=4','./locale.js?v=1','./game.js?v=20261122-jump-scenes','./install.css','./install.js?v=2','./manifest.webmanifest?v=2','./pinky-icon.png','./app-icon.svg','./pinky-online.js?v=13','./pinky-arcade.css?v=10','./lf-menu.js?v=3','./controller.html','./pinky-jump-music.mp3'];
+const CACHE = 'pinky-jump-v23';
+const ASSETS = ['./','./index.html','./style.css?v=4','./locale.js?v=1','./game.js?v=20261122-touch-response','./install.css','./install.js?v=2','./manifest.webmanifest?v=2','./pinky-icon.png','./app-icon.svg','./pinky-online.js?v=14','./pinky-arcade.css?v=11','./lf-menu.js?v=3','./controller.html','./pinky-jump-music.mp3'];
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(ASSETS.map(path => cache.add(path)))));

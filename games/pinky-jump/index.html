@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=2" />
   <link rel="stylesheet" href="style.css?v=4" />
   <link rel="stylesheet" href="install.css?v=1" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=10" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=11" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=2"></script>
@@ -58,8 +58,8 @@
 
     <!-- 遊戲畫布 -->
     <canvas id="game-canvas"></canvas>
-    <button id="pinky-pause" type="button" aria-label="Pause" title="Pause" hidden data-zh-aria-label="暫停遊戲" data-zh-title="暫停遊戲"><span class="pinky-forward" aria-hidden="true"><i></i><i></i><i></i></span><span class="pinky-stop" aria-hidden="true">STOP</span></button>
-    <p id="pinky-paused" role="status" hidden data-zh="遊戲暫停">Paused</p>
+    <button id="pinky-pause" type="button" aria-label="Pause" title="Pause" hidden data-zh-aria-label="暫停遊戲" data-zh-title="暫停遊戲"><span class="pinky-forward" aria-hidden="true"><i></i><i></i><i></i></span></button>
+    <button id="pinky-paused" type="button" aria-label="Resume game" hidden data-zh="遊戲暫停" data-zh-aria-label="繼續遊戲">Paused</button>
     <p id="pinky-touch-lock" role="status" hidden data-zh="請先關閉體感跳躍">Turn off Motion Jump to use touch controls.</p>
 
     <!-- 開始 / 結束 互動提示面板 -->
@@ -224,7 +224,6 @@
     </div>
     <section id="controller-manual" hidden>
       <button id="controller-jump" type="button" class="btn-primary" data-zh-title="輕點短跳，按住高跳" title="Tap to hop. Hold to jump higher."><span data-zh="跳躍">Jump</span><small data-zh="輕點短跳 · 按住高跳">Tap to hop · Hold to jump high</small></button>
-      <button id="controller-pause" type="button" class="pinky-light" data-zh="暫停遊戲">Pause</button>
     </section>
     <section id="controller-motion">
       <p data-zh="先握穩手機等體感就緒。遊戲開始後，輕抬可短跳，抬快一點就會跳得更高。">Hold your phone steady to calibrate. Once the run starts, lift it gently to hop or faster to jump higher.</p>
@@ -240,8 +239,8 @@
   </main>
 
   <script src="locale.js?v=1"></script>
-  <script src="game.js?v=20261122-jump-scenes"></script>
-  <script src="pinky-online.js?v=13"></script>
+  <script src="game.js?v=20261122-touch-response"></script>
+  <script src="pinky-online.js?v=14"></script>
   <script src="lf-menu.js?v=3"></script>
 </body>
 </html>

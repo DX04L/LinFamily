@@ -25,6 +25,7 @@
   let hostQueue = Promise.resolve();
   let pendingScore = 0;
   let scoreSubmitting = false;
+  let lastPhonePress = null;
   let lastRemoteAt = 0;
 
   async function cloud() {
@@ -248,6 +249,19 @@
       hostSetPhase('submitted',final);
       return;
     }
+    const edge=/^([du])([a-z0-9]{1,11})$/.exec(payload.playerName || '');
+    if (edge) {
+      const input='phone:'+edge[2];
+      if (edge[1]==='d') {
+        lastPhonePress=input;
+        window.pinkyRemoteJump?.(1,input);
+      } else {
+        const duration=Math.max(0,Math.min(1,Number(payload.power)||0))*500;
+        window.pinkyRemoteRelease?.(input,duration,lastPhonePress!==input);
+        lastPhonePress=input;
+      }
+      return;
+    }
     const now=Date.now();
     if(now-lastRemoteAt<340)return;
     lastRemoteAt=now;
@@ -261,6 +275,7 @@
     if(btn)btn.disabled=true;
     const code=makeCode();
     messageSeq=0;
+    lastPhonePress=null;
     if(roomUnsub){roomUnsub();roomUnsub=null;}
     roomRef=null;
     setText('pinky-room-code',code);
@@ -325,8 +340,6 @@
     $('controller-manual').hidden=record||phoneViewMode!=='manual';
     $('controller-motion').hidden=record||phoneViewMode!=='motion';
     $('controller-jump').disabled=pairedPhase!=='playing';
-    $('controller-pause').disabled=!['playing','paused'].includes(pairedPhase);
-    setText('controller-pause',pairedPhase==='paused'?'繼續遊戲':'暫停遊戲');
     setText('controller-status',pairedPhase==='record_error'?'登記失敗，請重新送出或略過。':'');
   }
   function updatePairedPhase(data) {
@@ -419,8 +432,9 @@
   }
   async function sendPhoneCommand(action, power=0, playerName='') {
     const ref=pairedRoom;
-    if (!ref || phoneCommandBusy) return;
-    phoneCommandBusy=true;
+    const jumpEdge=action==='jump' && playerName!=='';
+    if (!ref || (phoneCommandBusy && !jumpEdge)) return;
+    if (!jumpEdge) phoneCommandBusy=true;
     try {
       const {fs,auth}=await cloud();
       if (pairedRoom!==ref) return;
@@ -432,7 +446,7 @@
     } catch(err) {
       if(pairedRoom===ref) setText('controller-status',errorText(err));
     } finally {
-      phoneCommandBusy=false;
+      if (!jumpEdge) phoneCommandBusy=false;
     }
   }
   function sendPairedJump(power) {
@@ -621,26 +635,22 @@
     bindSlidingTabs($('pinky-settings-tabs'),selectSettingsPane);
     bindSlidingTabs($('controller-tabs'),selectPhoneMode);
     $('controller-primary').addEventListener('click',usePhonePrimary);
-    $('controller-pause').addEventListener('click',usePhonePrimary);
     const phoneJump=$('controller-jump');
-    let jumpPress=null;
+    let jumpPress=null, jumpSequence=0;
+    const pressPrefix=Date.now().toString(36);
     phoneJump.addEventListener('pointerdown',event=>{
-      if (!event.isPrimary || event.button!==0 || phoneJump.disabled) return;
-      const press={id:event.pointerId};
-      jumpPress=press;
+      if (!event.isPrimary || event.button!==0 || phoneJump.disabled || jumpPress) return;
+      const token=pressPrefix+(++jumpSequence).toString(36);
+      jumpPress={id:event.pointerId,token,started:performance.now()};
       phoneJump.setPointerCapture(event.pointerId);
-      press.timer=setTimeout(()=>{
-        if(jumpPress!==press)return;
-        press.sent=true;
-        sendPairedJump(1);
-      },175);
+      sendPhoneCommand('jump',1,'d'+token);
     });
     function endPhoneJump(event) {
       if(jumpPress?.id!==event.pointerId)return;
-      const press=jumpPress;
+      const {token,started}=jumpPress;
       jumpPress=null;
-      clearTimeout(press.timer);
-      if(event.type==='pointerup' && !press.sent)sendPairedJump(0);
+      const duration=Math.min(500,performance.now()-started);
+      sendPhoneCommand('jump',duration/500,'u'+token);
     }
     for (const type of ['pointerup','pointercancel','lostpointercapture'])
       phoneJump.addEventListener(type,endPhoneJump);
