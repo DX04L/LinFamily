@@ -758,6 +758,23 @@
     let composingName=false;
     recordInput.addEventListener('compositionstart',()=>{composingName=true;});
     recordInput.addEventListener('compositionend',()=>{composingName=false;});
+    // Escape closes any popup: open dialogs (help view goes back first), the record panel (= skip), the splash.
+    document.addEventListener('keydown',event=>{
+      if (event.key!=='Escape' || event.isComposing || composingName) return;
+      const open=document.querySelector('dialog[open]');
+      if (open) {
+        event.preventDefault();
+        if (open.id==='pinky-pair-dialog' && !$('pinky-help-view').hidden) $('pinky-help-back').click();
+        else open.close();
+        return;
+      }
+      if ($('record-panel') && !$('record-panel').classList.contains('hidden')) {
+        event.preventDefault();
+        skipRecord.click();
+        return;
+      }
+      $('pinky-splash')?.classList.add('sp-done');
+    });
     recordForm.addEventListener('submit',event=>{
       if (composingName) {
         event.preventDefault();
