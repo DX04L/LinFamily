@@ -23,6 +23,13 @@
   let pendingMotion = false;
   let superDb = null;        // set when an LF super user is signed in on this browser
   const SUPERS = ['darren710404@gmail.com','darren.lin@twclc.org'];
+  // Plain line icons for the super user's edit/delete buttons.
+  const ICON_PEN = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+  const ICON_TRASH = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
+  function adminError(err) {
+    // Show the raw Firebase code so problems can be reported exactly.
+    return String((err && (err.code || err.name)) || 'error') + ': ' + String((err && err.message) || err);
+  }
   const BOARD = 'pinky_jump_board', MOTION_BOARD = 'pinky_jump_motion_board';
   let globalError = '正在連接全球排行榜…';
   let phoneRoomUnsub = null;
@@ -109,11 +116,11 @@
       li.append(rank,name,points);
       if (superDb) {
         const del=document.createElement('button');
-        del.type='button';del.className='pinky-rank-delete';del.textContent='🗑';
+        del.type='button';del.className='pinky-rank-delete';del.innerHTML=ICON_TRASH;
         del.title=PinkyLocale.translate('刪除這筆紀錄');
         del.addEventListener('click',()=>deleteEntry(motionTab?MOTION_BOARD:BOARD,entry));
         const edit=document.createElement('button');
-        edit.type='button';edit.className='pinky-rank-delete';edit.textContent='✏️';
+        edit.type='button';edit.className='pinky-rank-delete';edit.innerHTML=ICON_PEN;
         edit.title=PinkyLocale.translate('更改名字');
         edit.addEventListener('click',()=>renameEntry(entry));
         li.append(edit,del);
@@ -256,7 +263,7 @@
     try {
       const {fs}=await cloud();
       await fs.deleteDoc(fs.doc(superDb,collection,entry.key));
-    } catch(err) { alert(errorText(err)); }
+    } catch(err) { alert(adminError(err)); }
   }
   // Super user only: rename an entry in both boards (keeps the best score if the new name exists).
   async function renameEntry(entry) {
@@ -285,7 +292,7 @@
           if (key!==entry.key) tx.delete(oldRef);
         }
       });
-    } catch(err) { alert(errorText(err)); }
+    } catch(err) { alert(adminError(err)); }
   }
   let superAuth=null;
   async function detectSuper() {

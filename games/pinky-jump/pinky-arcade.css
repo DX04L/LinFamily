@@ -441,4 +441,5 @@ html[lang="en"] #pinky-language span:first-child, html[lang="zh-Hant"] #pinky-la
 #pinky-rank-rows { max-height: min(52dvh, 460px); overflow-y: auto; }
 #pinky-rank-rows .pinky-score-row:has(.pinky-rank-delete) { grid-template-columns: 32px 1fr auto auto auto; }
 .pinky-motion-badge { font-style: normal; font-size: .9em; }
-.pinky-rank-delete { border: 0; background: transparent; cursor: pointer; font-size: 16px; padding: 0 4px; }
+.pinky-rank-delete { border: 0; background: transparent; cursor: pointer; padding: 0 4px; color: #b08aa0; opacity: .55; display: inline-flex; align-items: center; }
+.pinky-rank-delete:hover, .pinky-rank-delete:focus-visible { opacity: 1; }
