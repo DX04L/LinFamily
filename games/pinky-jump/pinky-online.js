@@ -1,11 +1,9 @@
-/* Pinky Jump Arcade + phone motion controller prototype.
-   Firestore is optional: offline Top 10 and same-browser BroadcastChannel continue to work. */
+/* Pinky Jump: Firebase global Top 10 and complete single-page phone controller. */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
   const controllerPage = document.body.dataset.pinkyPage === 'controller';
   const urlRoom = (new URLSearchParams(location.search).get('room') || '').trim().toUpperCase();
-  const STORE = 'pinky_jump_arcade_top10_v1';
   const sdk = 'https://www.gstatic.com/firebasejs/11.10.0/';
   const firebaseConfig = {
     apiKey: 'AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs',
@@ -21,8 +19,14 @@
   let roomCode = '';
   let roomRef = null;
   let messageSeq = 0;
-  let remoteBoard = null;
+  let remoteBoard = [];
   let remoteOnline = false;
+  let globalError = '正在連接全球排行榜…';
+  let phoneRoomUnsub = null;
+  let controllerConnected = false;
+  let controllerPhase = 'ready';
+  let currentRoomScore = 0;
+  let hostQueue = Promise.resolve();
   let pendingScore = 0;
   let lastRemoteAt = 0;
   let commandQueue = Promise.resolve();
@@ -43,7 +47,7 @@
         return {fs, auth, db: fs.getFirestore(app)};
       })();
     }
-    return cloudPromise;
+    return cloudPromise.catch(err => { cloudPromise = null; throw err; });
   }
   function setText(id, value) { if ($(id)) $(id).textContent = String(value); }
   function errorText(err) {
@@ -60,79 +64,132 @@
       .sort((a,b)=> b.score - a.score)
       .slice(0,10);
   }
-  function localScores() {
-    try { return normalizeScores(JSON.parse(localStorage.getItem(STORE) || '[]')); }
-    catch (_) { return []; }
-  }
-  function saveLocal(row) {
-    const next = normalizeScores([...localScores(), row]);
-    try { localStorage.setItem(STORE,JSON.stringify(next)); } catch (_) {}
-    return next;
-  }
-  function currentBoard() { return remoteOnline && remoteBoard ? remoteBoard : localScores(); }
   function qualifies(score) {
-    const board=currentBoard(), value=Math.floor(Number(score));
-    return value > 0 && (board.length < 10 || value > board[board.length - 1].score);
+    if (!remoteOnline) return false;
+    const board=remoteBoard, value=Math.floor(Number(score));
+    return value > 0 && (board.length < 10 || value > board[board.length-1].score);
   }
   function refreshScores() {
-    const rows = $('pinky-rank-rows');
-    if (!rows) return;
-    rows.replaceChildren();
-    const board=currentBoard();
-    if (!board.length) {
-      const item=document.createElement('li');
-      item.textContent='還沒有紀錄，第一位挑戰者就是你！';
-      item.className='pinky-empty';
-      rows.appendChild(item);
+    const board = remoteOnline ? remoteBoard : [];
+    for (const [listId, statusId] of [
+      ['pinky-rank-rows','pinky-rank-origin'],
+      ['controller-rank-rows','controller-rank-status']
+    ]) {
+      const rows = $(listId);
+      if (!rows) continue;
+      rows.replaceChildren();
+      if (remoteOnline && !board.length) {
+        const li=document.createElement('li');
+        li.className='pinky-empty';
+        li.textContent='全球排行榜還沒有任何紀錄，歡迎成為第一位！';
+        rows.appendChild(li);
+      }
+      board.forEach((entry,index)=>{
+        const li=document.createElement('li');li.className='pinky-score-row';
+        const rank=document.createElement('span');rank.textContent=String(index+1).padStart(2,'0');
+        const name=document.createElement('span');name.textContent=entry.name;
+        const points=document.createElement('strong');points.textContent=String(entry.score).padStart(6,'0');
+        li.append(rank,name,points);rows.appendChild(li);
+      });
+      setText(statusId,remoteOnline ?
+        '🌐 全球共用 Top 10（即時同步）' :
+        '⚠️ 全球排行榜未連線：' + globalError);
     }
-    board.forEach((entry,index)=>{
-      const row=document.createElement('li'); row.className='pinky-score-row';
-      const rank=document.createElement('span'); rank.textContent=String(index+1).padStart(2,'0');
-      const name=document.createElement('span'); name.textContent=entry.name;
-      const points=document.createElement('strong'); points.textContent=String(entry.score).padStart(6,'0');
-      row.append(rank,name,points); rows.appendChild(row);
-    });
-    setText('pinky-rank-origin',remoteOnline ? '🌐 Firebase 共用排行榜（測試版）' : '📱 本機 Top 10（目前瀏覽器）');
+    if (!controllerPage) {
+      setText('hi-score',remoteOnline ? String(board[0]?.score||0).padStart(5,'0') : '-----');
+    }
   }
   function showBoard() {
     refreshScores();
     const dialog=$('pinky-rank-dialog');
-    if (dialog && !dialog.open) dialog.showModal();
+    if(dialog && !dialog.open)dialog.showModal();
   }
   function hideRecord() {
-    const p=$('record-panel'); if(p) p.classList.add('hidden');
+    $('record-panel')?.classList.add('hidden');
   }
   function newRecord(score) {
-    const gameover=$('gameover-panel'),panel=$('record-panel');
-    if (!panel || !qualifies(score)) return;
+    const panel=$('record-panel'),gameover=$('gameover-panel');
+    if (!panel || !qualifies(score)) return false;
     pendingScore=Math.floor(score);
     setText('pinky-new-score',String(pendingScore).padStart(6,'0'));
-    if (gameover) gameover.classList.add('hidden');
+    gameover?.classList.add('hidden');
     panel.classList.remove('hidden');
-    const input=$('pinky-player-name');
-    if (input) {input.value='';input.focus({preventScroll:true});}
+    // On a paired game, the child enters a name on the phone. Desktop entry
+    // is available too, but should not steal keyboard focus from the phone.
+    if (!roomRef) {
+      const input=$('pinky-player-name');
+      if(input){input.value='';input.focus({preventScroll:true});}
+    }
+    return true;
   }
-  async function submitScore(event) {
-    event.preventDefault();
-    const input=$('pinky-player-name');
-    const raw=(input && input.value || '').trim().replace(/\s+/g,' ');
-    const name=raw.slice(0,12) || 'PINKY';
-    const score=pendingScore; if (!score) return;
-    pendingScore=0;
-    saveLocal({name,score});
-    hideRecord();
-    const gameover=$('gameover-panel');
-    if(gameover) gameover.classList.remove('hidden');
-    showBoard();
+  function hostSetPhase(phase,runScore=0) {
+    if(!roomRef || controllerPage)return;
+    hostQueue=hostQueue.catch(()=>{}).then(async()=>{
+      const {fs}=await cloud();
+      await fs.updateDoc(roomRef,{
+        phase,runScore:Math.max(0,Math.floor(Number(runScore)||0)),
+        updatedAt:fs.serverTimestamp()
+      });
+    }).catch(err=>renderRoomStatus(errorText(err)));
+  }
+  async function saveGlobalScore(nameInput) {
+    const name=String(nameInput||'').trim().replace(/\s+/g,' ').slice(0,12)||'PINKY';
+    const score=pendingScore;
+    if(!score || !remoteOnline){
+      renderRoomStatus('全球排行榜未連線，目前無法提交分數');
+      if(!controllerPage) setText('pinky-record-message','全球排行榜未連線，請稍後重試。');
+      return false;
+    }
     try {
       const {fs,db,auth}=await cloud();
       await fs.addDoc(fs.collection(db,'pinky_jump_scores'),{
         name,score,owner:auth.currentUser.uid,createdAt:fs.serverTimestamp()
       });
-      // Snapshot refreshes the shared board after the write.
-    } catch (err) {
-      setText('pinky-rank-origin',errorText(err)+' 目前保留本機成績。');
+      pendingScore=0;
+      hideRecord();
+      $('gameover-panel')?.classList.remove('hidden');
+      hostSetPhase('submitted',score);
+      return true;
+    } catch(err) {
+      const message=errorText(err);
+      setText('pinky-record-message',message);
+      renderRoomStatus(message);
+      hostSetPhase('record_error',score);
+      return false;
     }
+  }
+  async function submitScore(event) {
+    event.preventDefault();
+    const name=$('pinky-player-name')?.value;
+    if(await saveGlobalScore(name)) showBoard();
+  }
+  async function saveFromPhone(name) {
+    if (controllerPage) return;
+    await saveGlobalScore(name);
+  }
+  function initSharedScores() {
+    refreshScores();
+    cloud().then(({db,fs})=>{
+      if(scoreUnsub)scoreUnsub();
+      scoreUnsub=fs.onSnapshot(
+        fs.query(fs.collection(db,'pinky_jump_scores'),fs.orderBy('score','desc'),fs.limit(10)),
+        snap=>{
+          remoteBoard=normalizeScores(snap.docs.map(d=>d.data()));
+          remoteOnline=true;
+          globalError='';
+          refreshScores();
+        },
+        err=>{
+          remoteOnline=false;
+          globalError=errorText(err);
+          refreshScores();
+        }
+      );
+    }).catch(err=>{
+      remoteOnline=false;
+      globalError=errorText(err);
+      refreshScores();
+    });
   }
   function renderRoomStatus(text) { setText(controllerPage?'controller-status':'pinky-pair-status',text); }
   function makeCode() {
