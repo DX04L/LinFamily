@@ -275,7 +275,8 @@ const player = {
   },
   jump() {
     if (!this.isGrounded || gameState !== 'PLAYING') return;
-    // Single tap = one consistent jump; holding longer never changes its height.
+    // One tap produces one fixed-height jump regardless of press duration.
+    this.gravity = Math.max(0.65, Math.min(0.9, height * 0.00105));
     const rise = Math.max(175, Math.min(330, height * 0.35));
     this.vy = -Math.sqrt(2 * this.gravity * rise);
     this.isGrounded = false;
