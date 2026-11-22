@@ -68,12 +68,84 @@ class SoundFX {
       setTimeout(() => this.playTone(note, 'sine', 0.12, null, 0.14), i * 70)
     );
   }
+  star() {
+    [880,1174,1568].forEach((note,i)=>
+      setTimeout(()=>this.playTone(note,'sine',.11,note*1.05,.085),i*56));
+  }
+  heart() {
+    this.playTone(420,'sine',.18,680,.12);
+    setTimeout(()=>this.playTone(780,'sine',.16,980,.07),100);
+  }
+  shieldHit() {
+    this.playTone(235,'triangle',.17,95,.13);
+    setTimeout(()=>this.playTone(520,'sine',.14,340,.08),70);
+  }
+  footstep() {
+    this.playTone(125,'sine',.035,90,.019);
+  }
   hit() {
-    this.playTone(220, 'sawtooth', 0.28, 70, 0.2);
+    // Soft, comical two-part "啾～噗" failure jingle.
+    this.playTone(680,'sine',.28,165,.15);
+    setTimeout(()=>this.playTone(145,'triangle',.17,70,.085),165);
   }
 }
 
 const sfx = new SoundFX();
+
+// Your uploaded SergeQuadrado recording is a looping soundtrack.
+// Place its MP3 next to game.js. The rest of the game works if it is missing.
+const MUSIC_FILE = 'sergequadrado-humorous-loop-275485.mp3';
+const backgroundMusic = typeof Audio === 'function' ? new Audio(MUSIC_FILE) : null;
+if (backgroundMusic) {
+  backgroundMusic.loop = true;
+  backgroundMusic.preload = 'auto';
+  backgroundMusic.volume = .28;
+}
+let useFallbackMusic = !backgroundMusic;
+let musicFadeTimer = null;
+let footstepDistance = 0;
+function beginMusic() {
+  if (musicFadeTimer) { clearInterval(musicFadeTimer); musicFadeTimer = null; }
+  if (!backgroundMusic || useFallbackMusic || sfx.muted) return;
+  backgroundMusic.pause();
+  backgroundMusic.currentTime = 0;
+  backgroundMusic.playbackRate = 1;
+  backgroundMusic.volume = .28;
+  const result = backgroundMusic.play();
+  if (result && typeof result.catch === 'function') {
+    result.catch(() => { useFallbackMusic = true; });
+  }
+}
+if (backgroundMusic) {
+  backgroundMusic.addEventListener('error', () => {
+    useFallbackMusic = true;
+  });
+}
+function endMusic() {
+  if (!backgroundMusic || backgroundMusic.paused) return;
+  if (musicFadeTimer) clearInterval(musicFadeTimer);
+  let volume = backgroundMusic.volume;
+  musicFadeTimer = setInterval(() => {
+    volume = Math.max(0, volume - .07);
+    backgroundMusic.volume = volume;
+    if (volume <= 0) {
+      clearInterval(musicFadeTimer); musicFadeTimer = null;
+      backgroundMusic.pause();
+      backgroundMusic.currentTime = 0;
+    }
+  }, 35);
+}
+function updateMusic() {
+  if (backgroundMusic && !backgroundMusic.paused)
+    backgroundMusic.playbackRate = Math.min(1.07, 1 + Math.max(0, gameSpeed-7)*.007);
+  // Backup tune only when the MP3 has not yet been deployed.
+  if (useFallbackMusic && !sfx.muted && frameCount % 17 === 0) {
+    const notes = [392,494,587,494,523,659,587,440,392,523,659,587,494,440,392,330];
+    const index = Math.floor(frameCount / 17) % notes.length;
+    sfx.playTone(notes[index], 'triangle', .115, null, .032);
+  }
+}
+
 
 // Gameplay state and canvas sizing.
 let width = window.innerWidth;
@@ -130,6 +202,11 @@ forceFullscreenBtn.addEventListener('click', async () => {
 muteBtn.addEventListener('click', () => {
   sfx.muted = !sfx.muted;
   muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+  if (!backgroundMusic) return;
+  if (sfx.muted) backgroundMusic.pause();
+  else if (gameState === 'PLAYING') {
+    const p = backgroundMusic.play(); if (p && p.catch) p.catch(() => { useFallbackMusic = true; });
+  }
 });
 // Mild, occasional rolling terrain. The shape is shared by rendering and physics.
 let terrainDistance = 0;
@@ -896,6 +973,14 @@ function update() {
     gameSpeed = Math.min(16, 6.6 + score * 0.0022);
     if(immunity>0)immunity--;
     score += gameSpeed * 0.045;
+    updateMusic();
+    if (player.isGrounded) {
+      footstepDistance += gameSpeed;
+      if (footstepDistance > 135) {
+        footstepDistance = 0;
+        if (!sfx.muted) sfx.footstep();
+      }
+    }
     const displayScore = Math.floor(score);
     currentScoreEl.textContent = String(displayScore).padStart(5, '0');
 
@@ -929,7 +1014,7 @@ function update() {
       };
 
       if(obs.type!=='cloudGate' && immunity===0 && checkCollision(pBox,oBox)){
-        if(shield>0){shield--;shieldEl.textContent=shield;immunity=90;spawnDust(player.x,player.y-32,'#ffe27a',16);}
+        if(shield>0){shield--;shieldEl.textContent=shield;immunity=90;sfx.shieldHit();spawnDust(player.x,player.y-32,'#ffe27a',16);}
         else triggerGameOver();
       }
 
@@ -947,8 +1032,9 @@ function update() {
         const cBox = { x: c.x - c.r, y: c.y - c.r, w: c.r * 2, h: c.r * 2 };
         if (checkCollision(pBox, cBox)) {
           c.collected = true;
-          if(c.type==='heart'){shield=Math.min(2,shield+1);shieldEl.textContent=shield;}else score+=c.type==='star'?100:50;
-          sfx.coin();
+          if(c.type==='heart'){shield=Math.min(2,shield+1);shieldEl.textContent=shield;sfx.heart();}
+          else if(c.type==='star'){score+=100;sfx.star();}
+          else {score+=50;sfx.coin();}
           spawnDust(c.x, c.y, '#ffd426', 10);
         }
       }
@@ -971,6 +1057,8 @@ function update() {
 function startGame() {
   sfx.init();
   gameState = 'PLAYING';
+  footstepDistance = 0;
+  beginMusic();
   score = 0;
   lastMilestone = 0;
   gameSpeed = 7.2;
@@ -989,6 +1077,7 @@ function startGame() {
 function triggerGameOver() {
   gameState = 'GAMEOVER';
   player.hurt = true;
+  endMusic();
   sfx.hit();
   spawnDust(player.x, player.y - 30, '#ff4794', 18);
 
