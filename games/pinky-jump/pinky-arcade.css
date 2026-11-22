@@ -359,7 +359,7 @@
 #controller-tabs { margin: 24px 0; }
 #controller-tabs button { min-height: 44px; border: 0; font: inherit; font-weight: 800; }
 #controller-manual:not([hidden]) { display: grid; gap: 18px; }
-#controller-jump {
+#pinky-controller #controller-jump {
   justify-self: center;
   width: 100%;
   margin-top: 12px;
