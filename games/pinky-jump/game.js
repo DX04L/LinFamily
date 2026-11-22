@@ -211,33 +211,46 @@ muteBtn.addEventListener('click', () => {
 // Mild, occasional rolling terrain. The shape is shared by rendering and physics.
 let terrainDistance = 0;
 let cameraY = 0;
-// Long, rare mountain-road climbs and descents. Values are in screen heights.
-const terrainRoute = [
-  [0,0], [1250,0], [1900,-.06], [2400,-.06],
-  [4100,-1.2], [5100,-1.2],
-  [6800,.48], [7700,.48], [9250,0], [10900,0]
-];
-function baseGroundY() { return Math.max(height * 0.78, height - 90); }
-function getGroundY(x = width * 0.17) {
-  const period = terrainRoute[terrainRoute.length - 1][0];
-  const worldX = Math.max(0, terrainDistance + x);
-  const progress = worldX % period;
-  let offset = 0;
-  for (let i = 1; i < terrainRoute.length; i++) {
-    const [endX, endV] = terrainRoute[i];
-    const [startX, startV] = terrainRoute[i - 1];
-    if (progress <= endX) {
-      const t = (progress - startX) / (endX - startX);
-      // A smooth road that levels off at the start and end of each hill.
-      const eased = t * t * (3 - 2 * t);
-      offset = (startV + (endV - startV) * eased) * height;
-      break;
-    }
+// Build a different endless road at the start of every run.
+let terrainRoute = [[0,0],[900,0]];
+let terrainPhase = 0;
+function extendTerrainTo(worldX) {
+  while (terrainRoute[terrainRoute.length - 1][0] < worldX) {
+    const [lastX,lastY] = terrainRoute[terrainRoute.length-1];
+    const roll=Math.random();
+    let nextY,length;
+    if (lastY < -.5) {
+      if (roll < .42) { nextY=lastY; length=500+Math.random()*850; }
+      else { nextY=Math.random()*.43; length=1400+Math.random()*1100; }
+    } else if (lastY > .24) {
+      if (roll < .4) { nextY=lastY; length=520+Math.random()*800; }
+      else { nextY=Math.random()<.3?-.72:0; length=1050+Math.random()*850; }
+    } else if (roll < .15) {
+      nextY=-.78-Math.random()*.44; length=1450+Math.random()*1100;
+    } else if (roll < .27) {
+      nextY=.29+Math.random()*.16; length=1150+Math.random()*900;
+    } else if (roll < .52) {
+      nextY=(Math.random()-.5)*.18; length=550+Math.random()*850;
+    } else { nextY=lastY; length=600+Math.random()*950; }
+    terrainRoute.push([lastX+length,nextY]);
   }
-  // Keep gentle small undulations between the large slopes.
-  return baseGroundY() + offset + height * (
-    Math.sin(worldX / 290) * .012 + Math.sin(worldX / 117) * .005
-  );
+}
+function baseGroundY() { return Math.max(height*.78,height-90); }
+function getGroundY(x=width*.17) {
+  const worldX=Math.max(0,terrainDistance+x);
+  extendTerrainTo(worldX+width+100);
+  let left=1,right=terrainRoute.length-1;
+  while(left<right) {
+    const mid=Math.floor((left+right)/2);
+    if(worldX<=terrainRoute[mid][0])right=mid;else left=mid+1;
+  }
+  const [startX,startY]=terrainRoute[left-1];
+  const [endX,endY]=terrainRoute[left];
+  const t=Math.max(0,Math.min(1,(worldX-startX)/(endX-startX)));
+  const ease=t*t*(3-2*t);
+  return baseGroundY()+(startY+(endY-startY)*ease)*height+
+    height*(Math.sin(worldX/290+terrainPhase)*.012+
+            Math.sin(worldX/117+terrainPhase*.68)*.005);
 }
 
 // The player is separate from SoundFX; jump physics belongs here.
@@ -962,8 +975,12 @@ function update() {
   frameCount++;
   if (gameState === 'PLAYING') terrainDistance += gameSpeed;
   // Smooth vertical camera follows the road, not each individual jump.
-  const desiredCamera = getGroundY(player.x) - baseGroundY();
-  cameraY += (desiredCamera - cameraY) * 0.19;
+  // Look ahead on downhill roads, placing the road farther up in the frame.
+  const roadHere = getGroundY(player.x);
+  const roadAhead = getGroundY(player.x + Math.min(width*.78,720));
+  const downhillLookAhead = Math.min(height*.39,Math.max(0,roadAhead-roadHere)*.86);
+  const desiredCamera = roadHere - baseGroundY() + downhillLookAhead;
+  cameraY += (desiredCamera-cameraY)*.16;
   drawBackground();
   ctx.save();
   ctx.translate(0, -cameraY);
@@ -1068,10 +1085,14 @@ function startGame() {
   spawnTimer = 120;
   terrainDistance = 0;
   cameraY = 0;
+  terrainRoute = [[0,0],[900,0]];
+  terrainPhase = Math.random()*Math.PI*2;
+  extendTerrainTo(width*2);
   shield=0;immunity=0;shieldEl.textContent=0;
   player.reset();
   startPanel.classList.add('hidden');
   gameoverPanel.classList.add('hidden');
+  gameWrapper.focus({preventScroll:true});
 }
 
 function triggerGameOver() {
@@ -1096,18 +1117,27 @@ function triggerGameOver() {
   gameoverPanel.classList.remove('hidden');
 }
 
-// Tap anywhere to jump; holding longer produces a taller jump.
+// Capture Space even when the start button still has keyboard focus.
 const jumpKeys = ['Space','ArrowUp','KeyW'];
-window.addEventListener('keydown', event => {
-  if (!jumpKeys.includes(event.code)) return;
+function isJumpKey(event) {
+  return jumpKeys.includes(event.code) || event.key === ' ' ||
+    event.key === 'Spacebar' || event.key === 'ArrowUp' ||
+    (typeof event.key === 'string' && event.key.toLowerCase() === 'w');
+}
+document.addEventListener('keydown', event => {
+  if (!isJumpKey(event)) return;
+  const installDialog = document.getElementById('pinky-install-dialog');
+  if (installDialog && installDialog.open) return;
   event.preventDefault();
   if (event.repeat) return;
   if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
   else if (gameState === 'PLAYING') player.jump();
-});
-window.addEventListener('keyup', event => {
-  if (jumpKeys.includes(event.code)) player.releaseJump();
-});
+}, true);
+document.addEventListener('keyup', event => {
+  if (!isJumpKey(event)) return;
+  event.preventDefault();
+  player.releaseJump();
+}, true);
 let jumpPointerId = null;
 const gameWrapper = document.getElementById('game-wrapper');
 gameWrapper.addEventListener('pointerdown', event => {
