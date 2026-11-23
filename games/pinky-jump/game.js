@@ -537,7 +537,7 @@ const player = {
 
   // Pinky's artwork around the ground anchor (also used by the character previews).
   drawBody() {
-    const idle = PinkyIdle.tick(this.idle);
+    const idle = PinkyIdle.tick(this.idle, 'pinky');
     // 1. 粉白尾巴 (擺動)
     const tailWag = Math.sin(this.runCycle * 1.2) * 0.35;
     ctx.save();
@@ -668,13 +668,30 @@ const player = {
     ctx.closePath();
     ctx.fill();
 
-    // 灰色點狀眉飾（從寶石往兩側微微上揚）
-    ctx.fillStyle = '#6e737b';
+    // 灰色點狀眉飾（從寶石往兩側微微上揚）；偶爾有一道光從左掃到右，經過寶石時閃一下
+    const sweep = idle.shine >= 0 ? -34 + idle.shine * 68 : null;
     for (const [dx, dy] of [[7, -21], [11, -22.5], [15, -23.6], [19, -24.2], [23, -24.2]]) {
+      for (const x of [-dx, dx]) {
+        const glow = sweep === null ? 0 : Math.max(0, 1 - Math.abs(x - sweep) / 7);
+        ctx.fillStyle = glow > 0 ? `rgb(${110 + 145 * glow | 0},${115 + 140 * glow | 0},${123 + 132 * glow | 0})` : '#6e737b';
+        ctx.beginPath();
+        ctx.arc(x, dy, 1.25 + glow * .5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    if (sweep !== null && Math.abs(sweep) < 9) {
+      // Twinkle on the sapphire.
+      const a = 1 - Math.abs(sweep) / 9;
+      ctx.save();
+      ctx.translate(0, -18.5);
+      ctx.globalAlpha *= a;
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(dx, dy, 1.25, 0, Math.PI * 2);
-      ctx.arc(-dx, dy, 1.25, 0, Math.PI * 2);
+      ctx.moveTo(0, -6 * a); ctx.lineTo(1.1, -1.1); ctx.lineTo(6 * a, 0); ctx.lineTo(1.1, 1.1);
+      ctx.lineTo(0, 6 * a); ctx.lineTo(-1.1, 1.1); ctx.lineTo(-6 * a, 0); ctx.lineTo(-1.1, -1.1);
+      ctx.closePath();
       ctx.fill();
+      ctx.restore();
     }
 
     // 粉紅細鬍鬚

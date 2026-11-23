@@ -700,7 +700,6 @@
   // Lift measurement (11/24): jump height follows the speed gained by the lift (Δv = Σ upward accel × dt),
   // so a tiny quick shake stays a hop and only a big, strong lift reaches full height.
   let lastSampleAt=0,riseDv=0,lift=null;
-  const motionTestLog=[];
   let lastJumpAt=-Infinity,armed=true;
   // Flashing warning when the browser gives no motion data (sensor permission blocked).
   function setMotionWarning(text) {
@@ -754,43 +753,15 @@
     const {peak,dv}=lift;
     lift=null;
     clearTimeout(motionTimer);motionTimer=undefined;
-    if (!motionEnabled || document.hidden) return;
-    // Test mode measures even with Settings open (no jump then).
-    const dialogOpen=Boolean(document.querySelector('dialog[open]'));
-    if (dialogOpen && !motionTest) return;
+    if (!motionEnabled || document.hidden || document.querySelector('dialog[open]')) return;
     // Δv range scales with the sensitivity threshold (Medium: 0.5 m/s hop → 3 m/s full jump).
     // Curve stays flat at first and climbs late, so ordinary arm movement stays a modest jump.
-    // Tune with test mode: too easy to jump high → raise `full`; too hard → lower it.
+    // Too easy to jump high → raise `full`; too hard → lower it. (Old peak rule: see handoff.)
     const k=cfg.threshold/7, low=.5*k, full=3*k;
     const t=Math.max(0,Math.min(1,(dv-low)/(full-low)));
     const power=Math.pow(t,2.2);
-    if (motionTest) {
-      // Old rule (peak, cubic) shown for comparison.
-      const strength=peak/cfg.threshold;
-      const old=Math.pow(Math.max(0,Math.min(1,(strength-1)/1.6)),3);
-      motionTestLog.unshift(PinkyLocale.message('峰值 {0}× ｜ 速度 {1} m/s → 跳 {2}%（舊算法 {3}%）',
-        strength.toFixed(2),dv.toFixed(2),String(Math.round(power*100)),String(Math.round(old*100))));
-      motionTestLog.length=Math.min(motionTestLog.length,6);
-      renderMotionTest();
-    }
-    if (dialogOpen) return;
     if(pairedRoom)sendPairedJump(power);
     else window.pinkyRemoteJump(power);
-  }
-  // ===== Test mode: show each lift's numbers so the thresholds can be tuned from real data =====
-  let motionTest=false;
-  function renderMotionTest() {
-    for (const id of ['controller-motion-test','pinky-motion-test']) {
-      const el=$(id);
-      if(!el)continue;
-      el.hidden=!motionTest;
-      el.textContent=motionTestLog.length?motionTestLog.map(PinkyLocale.translate).join('\n'):PinkyLocale.translate('測試模式：輕抬、一般舉手、用力抬各做幾次，數值會列在這裡。');
-    }
-  }
-  function setMotionTest(on) {
-    motionTest=on;
-    for (const id of ['controller-motion-test-toggle','pinky-motion-test-toggle']) if($(id))$(id).checked=on;
-    renderMotionTest();
   }
   // ===== Tilt the phone left/right to change character (paired phone, Motion Jump, before a run) =====
   let tiltArmed=true,lastOrientationAt=0;
@@ -847,7 +818,7 @@
       if((age>=60 && impulse<=0) || age>=170) finishLift(cfg);
     }
     else if(armed && impulse>cfg.threshold && previousImpulse>cfg.threshold*.7 &&
-       !document.hidden && (motionTest || !document.querySelector('dialog[open]'))){
+       !document.hidden && !document.querySelector('dialog[open]')){
       armed=false;
       lastJumpAt=now;
       lift={start:now,peak:Math.max(impulse,previousImpulse),dv:riseDv};
@@ -1034,14 +1005,6 @@
       requestAnimationFrame(animate);
     }
     window.addEventListener('deviceorientation',orientationFrame);
-    // Motion test mode is a developer tool: the checkbox only shows with ?motiontest=1 in the address.
-    const devMotionTest=new URLSearchParams(location.search).has('motiontest');
-    for (const id of ['controller-motion-test-toggle','pinky-motion-test-toggle']) {
-      const box=$(id);
-      if(!box)continue;
-      box.closest('label').hidden=!devMotionTest;
-      box.addEventListener('change',event=>setMotionTest(event.target.checked));
-    }
     // Phone fullscreen (the phone's own screen; browsers can't fullscreen the computer remotely).
     {
       const fsBtn=$('controller-fullscreen'),el=document.documentElement;

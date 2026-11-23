@@ -153,7 +153,7 @@ const drawBlues = (() => {
     const stride=Math.sin(state.runCycle);
     const step=state.isGrounded ? stride*8 : 5;
     const earMotion=state.isGrounded ? stride*.055 : -.09;
-    const idle=state.idle ? PinkyIdle.tick(state.idle) : {earL:0,earR:0,blink:state.blinkTimer%180>173?1:0,lookX:0};
+    const idle=state.idle ? PinkyIdle.tick(state.idle,'blues') : {earL:0,earR:0,blink:state.blinkTimer%180>173?1:0,lookX:0,prop:0};
     ctx.save();
     ctx.lineJoin='round';
     ctx.lineCap='round';
@@ -172,7 +172,7 @@ const drawBlues = (() => {
     ear(ctx,-16,-67,-.09+earMotion-idle.earL,1);
     ear(ctx,16,-67,.09-earMotion+idle.earR,-1);
     fill(ctx,head,blue,outline);
-    hat(ctx,state.runCycle);
+    hat(ctx,state.runCycle+idle.prop);
     face(ctx,state.hurt,idle.blink>.5,idle.lookX);
     ctx.restore();
   };

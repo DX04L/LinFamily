@@ -1,8 +1,6 @@
 /* Pinky Jump UI localization. */
 (() => {
   const messages = {
-    "峰值 {0}× ｜ 速度 {1} m/s → 跳 {2}%（舊算法 {3}%）": "Peak {0}× | speed {1} m/s → jump {2}% (old rule {3}%)",
-    "測試模式：輕抬、一般舉手、用力抬各做幾次，數值會列在這裡。": "Test mode: do a few gentle, normal and strong lifts. The numbers appear here.",
     "粉紅魔法貓，額頭有藍寶石，最愛在棉花雲上奔跑。": "A pink magic cat with a sapphire on her forehead who loves running over cotton clouds.",
     "戴竹蜻蜓帽的藍兔子，肚子上有最愛的紅蘿蔔。": "A blue bunny in a propeller cap, with his favorite carrot on his tummy.",
     "還沒有人上榜，成為第一位體感高手！": "No motion scores yet. Be the first motion champion!",

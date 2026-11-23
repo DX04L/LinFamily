@@ -528,10 +528,3 @@ body.pinky-popup-open .panel { visibility: hidden; }
 .pinky-ctl-char.is-locked .pinky-ctl-char-hint,
 .pinky-ctl-char.is-locked .pinky-char-dots { visibility: hidden; opacity: 0; }
 #pinky-controller .pinky-char-arrow { min-height: 44px; }
-/* 體感測試模式 */
-.pinky-test-toggle[hidden] { display: none; }
-.pinky-test-toggle { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; cursor: pointer; }
-.pinky-motion-test {
-  margin: 6px 0 0; padding: 8px 10px; border-radius: 10px; background: #fff; border: 1px solid #efb2d0;
-  font: 12px/1.5 ui-monospace, Menlo, monospace; white-space: pre-line; color: #742050;
-}
