@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
   <link rel="stylesheet" href="css/lf-todos.css?v=9">
-  <link rel="stylesheet" href="css/lf-chat.css?v=3">
+  <link rel="stylesheet" href="css/lf-chat.css?v=4">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
@@ -381,7 +381,6 @@
     </section>
   </main>
 
-  <footer>© 2026 LinFamily</footer>
 
   <!-- 新增／修改 App -->
   <dialog class="lf-dialog" id="lfAppDialog">
@@ -435,7 +434,7 @@
   <script src="js/dashboard-todos.js"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=5"></script>
+  <script src="js/lf-chat.js?v=6"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -847,6 +846,7 @@
       if (!on && d) d.remove();
     } }) : null;
     if (window.lfChatApi && role) window.lfChatApi.auth(user, role);
+    { const t0 = { '#family': 'family', '#apps': 'all' }[location.hash]; if (t0) { tb.setTab(t0, true); if (curTab !== t0) onTab(t0); } }
  // cabinetOnly：Superuser 在 Apps 分頁按 ＋，只加到 App 櫃（不放自己的主畫面）
     // ＋ 只在用得到的地方出現：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）；Family 等其他分頁收起來
     // ＋ 和長按選單共用：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）
@@ -1251,6 +1251,7 @@
       if (tab === 'all') { renderAll(); clearNews(); }
       if (tab !== 'apps') desk.closeMenu();
       if (window.lfChatApi) window.lfChatApi.show(tab === 'family');
+      try { history.replaceState(history.state, '', tab === 'apps' ? location.pathname + location.search : '#' + (tab === 'all' ? 'apps' : tab)); } catch (_) {} // 重新整理時停在同一個分頁
     }
     // ---------- 搜尋：符合的 App 保持清楚，其他變淡；Enter 開第一個符合的 App ----------
     // ---------- 搜尋：App ＋ 卡片內容；符合的保持清楚，其他變淡；Enter 開第一個符合的 App ----------
