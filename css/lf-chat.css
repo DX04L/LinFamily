@@ -1,11 +1,18 @@
 /* LF 家庭留言板（Family 分頁）：操作照 LINE，外觀用 LF 色系變數（--pine、--sage、--surface…），主題切換會跟著變 */
-.lfc { display:flex; flex-direction:column; border-radius:18px; background:var(--surface); border:1px solid var(--border); overflow:hidden; min-height:420px; }
-.lfc-head { display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid var(--border); }
+.lfc { display:flex; flex-direction:column; border-radius:18px 18px 0 0; background:var(--surface); border-top:1px solid var(--border); overflow:hidden; min-height:360px;
+  margin:0 calc(-1 * max(var(--lf-pad), env(safe-area-inset-right))) 0 calc(-1 * max(var(--lf-pad), env(safe-area-inset-left))); }
+/* Family 分頁：聊天框左右、下方貼齊畫面，頁尾收起 */
+body.lf-tab-family main { padding-bottom:0; }
+body.lf-tab-family footer { display:none; }
+.lfc-head { display:flex; align-items:center; gap:4px; padding:8px 8px 8px 4px; border-bottom:1px solid var(--border); }
 .lfc-title { flex:1; margin:0; font-size:16px; font-weight:800; }
 .lfc-title small { font-weight:600; color:var(--muted); font-size:13px; margin-left:4px; }
-.lfc-hbtn { border:0; background:var(--btn); border-radius:9px; height:32px; min-width:32px; padding:0 9px; cursor:pointer; font-size:14px; display:inline-flex; align-items:center; gap:5px; }
+.lfc-hbtn { border:0; background:none; border-radius:10px; height:40px; width:40px; padding:0; cursor:pointer; color:var(--text); display:inline-flex; align-items:center; justify-content:center; flex:none; }
 .lfc-hbtn:hover { background:var(--btn-h); }
-.lfc-me-av { width:22px; height:22px; border-radius:50%; overflow:hidden; display:inline-block; }
+.lfc-findbar { display:flex; align-items:center; gap:8px; padding:6px 12px; border-bottom:1px solid var(--border); font-size:12.5px; color:var(--muted); }
+.lfc-findbar[hidden], .lfc-tools[hidden], .lfc-ibtn[hidden] { display:none; }
+.lfc-findbar input { flex:1; min-width:0; border:1px solid var(--border); background:var(--btn); border-radius:16px; padding:6px 12px; font-size:14px; outline:none; }
+.lfc-findbar button { border:0; background:none; cursor:pointer; color:var(--muted); font-size:15px; }
 .lfc-pin { display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:13px; background:color-mix(in srgb, var(--sage) 18%, transparent); border-bottom:1px solid var(--border); cursor:pointer; }
 .lfc-pin[hidden] { display:none; }
 .lfc-pin span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -52,13 +59,15 @@ html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 5%, var(--surfac
 .lfc-stks { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; padding:10px 14px; border-top:1px solid var(--border); max-height:220px; overflow-y:auto; }
 .lfc-stks button { border:0; background:none; cursor:pointer; padding:4px; border-radius:12px; aspect-ratio:1; }
 .lfc-stks button:hover { background:var(--btn); }
-.lfc-bar { display:flex; align-items:flex-end; gap:6px; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
-.lfc-ibtn { border:0; background:none; cursor:pointer; width:34px; height:36px; border-radius:9px; font-size:19px; color:var(--muted); flex:none; display:inline-flex; align-items:center; justify-content:center; }
+.lfc-bar { display:flex; align-items:flex-end; gap:4px; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
+.lfc-tools { display:flex; gap:2px; }
+.lfc-ibtn { border:0; background:none; cursor:pointer; width:42px; height:42px; border-radius:50%; color:var(--text); flex:none; display:inline-flex; align-items:center; justify-content:center; padding:0; }
 .lfc-ibtn:hover { background:var(--btn); }
-.lfc-in { flex:1; resize:none; border:1px solid var(--border); background:var(--btn); border-radius:18px; padding:8px 13px; font-size:15px; line-height:1.4; max-height:120px; min-height:36px; outline:none; }
-.lfc-in:focus { border-color:var(--sage); }
-.lfc-send { background:var(--pine); color:#fff; font-size:16px; }
-.lfc-send:hover { background:var(--pine); opacity:.88; }
+.lfc-inwrap { flex:1; min-width:0; display:flex; align-items:flex-end; border:1px solid var(--border); background:var(--btn); border-radius:22px; }
+.lfc-inwrap:focus-within { border-color:var(--sage); }
+.lfc-in { flex:1; min-width:0; resize:none; border:0; background:none; padding:10px 4px 10px 16px; font-size:15px; line-height:1.4; max-height:120px; min-height:42px; outline:none; }
+.lfc-smile { color:var(--muted); }
+#lfcSend.on { color:var(--pine); }
 .lfc-empty { text-align:center; color:var(--muted); font-size:13.5px; margin:40px 12px; }
 /* 彈出層（個人卡片、成員、頭像、長按選單、看照片） */
 .lfc-ov { position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding:16px; }

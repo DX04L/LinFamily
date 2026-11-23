@@ -65,24 +65,33 @@
     const isSuper = () => role === 'superuser';
     const prof = uid => members[uid] || { name: '家人', av: 'cat' };
 
+    const I = d => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const IC = {
+      back: I('<path d="M15 4 7 12l8 8"/>'), search: I('<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/><path d="M11 7.5v3.5l2.2 1.5"/>'),
+      menu: I('<path d="M4 6.5h16M4 12h16M4 17.5h16"/>'), more: I('<path d="m9 5 7 7-7 7"/>'),
+      cam: I('<path d="M4 8h3l1.6-2.5h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.4"/>'), pic: I('<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4.5 4 3.5 2.5-2 4.5 4"/>'),
+      smile: I('<circle cx="12" cy="12" r="8.5"/><path d="M8.7 14.2c1.8 2 4.8 2 6.6 0"/><path d="M9.3 9.8h.01M14.7 9.8h.01" stroke-width="2.4"/>'),
+      mic: I('<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/>'), send: I('<path d="M4.5 12 20 4.5 15.5 20l-3.2-6.3z"/><path d="m12.3 13.7 7.7-9.2"/>')
+    };
     root.innerHTML = `
       <div class="lfc">
-        <div class="lfc-head">
+        <div class="lfc-head" id="lfcHead">
+          <button class="lfc-hbtn" id="lfcBack" title="回主畫面">${IC.back}</button>
           <h2 class="lfc-title">林家群組<small id="lfcCount"></small></h2>
-          <button class="lfc-hbtn" id="lfcMembers" title="成員">👥</button>
-          <button class="lfc-hbtn" id="lfcMine" title="我的頭像"><span class="lfc-me-av" id="lfcMyAv"></span></button>
+          <button class="lfc-hbtn" id="lfcFind" title="搜尋">${IC.search}</button>
+          <button class="lfc-hbtn" id="lfcMenu" title="選單">${IC.menu}</button>
         </div>
+        <div class="lfc-findbar" id="lfcFindBar" hidden><input id="lfcFindIn" placeholder="搜尋聊天內容" enterkeyhint="search"><span id="lfcFindN"></span><button id="lfcFindX">✕</button></div>
         <div class="lfc-pin" id="lfcPin" hidden>📢<span id="lfcPinText"></span><button id="lfcUnpin" title="取消公告">✕</button></div>
         <div class="lfc-list" id="lfcList"></div>
         <div class="lfc-reply" id="lfcReply" hidden>↩︎<span id="lfcReplyText"></span><button id="lfcReplyX">✕</button></div>
         <div class="lfc-sugg" id="lfcSugg" hidden></div>
         <div class="lfc-stks" id="lfcStks" hidden></div>
         <div class="lfc-bar">
-          <button class="lfc-ibtn" id="lfcCam" title="拍照">📷</button>
-          <button class="lfc-ibtn" id="lfcPic" title="傳照片">🖼️</button>
-          <button class="lfc-ibtn" id="lfcStk" title="貼圖">😊</button>
-          <textarea class="lfc-in" id="lfcIn" rows="1" placeholder="輸入訊息" enterkeyhint="send"></textarea>
-          <button class="lfc-ibtn lfc-send" id="lfcSend" title="傳送">➤</button>
+          <button class="lfc-ibtn" id="lfcMore" title="更多">${IC.more}</button>
+          <span class="lfc-tools" id="lfcTools" hidden><button class="lfc-ibtn" id="lfcCam" title="拍照">${IC.cam}</button><button class="lfc-ibtn" id="lfcPic" title="傳照片">${IC.pic}</button></span>
+          <div class="lfc-inwrap"><textarea class="lfc-in" id="lfcIn" rows="1" enterkeyhint="send" aria-label="輸入訊息"></textarea><button class="lfc-ibtn lfc-smile" id="lfcStk" title="貼圖">${IC.smile}</button></div>
+          <button class="lfc-ibtn" id="lfcSend" title="語音訊息">${IC.mic}</button>
         </div>
         <input type="file" id="lfcFileCam" accept="image/*" capture="environment" hidden>
         <input type="file" id="lfcFilePic" accept="image/*" multiple hidden>
@@ -94,7 +103,7 @@
     function fit() {
       if (!visible) return;
       const box = root.firstElementChild, vh = window.visualViewport ? visualViewport.height : innerHeight;
-      box.style.height = Math.max(420, vh - box.getBoundingClientRect().top - 14) + 'px';
+      box.style.height = Math.max(360, vh - box.getBoundingClientRect().top) + 'px';
     }
     addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', () => { const nb = nearBottom(); fit(); if (nb) toBottom(); });
 
@@ -106,7 +115,6 @@
       unsubs.push(col('lf_chat_profiles').onSnapshot(s => {
         members = {}; s.forEach(d => members[d.id] = d.data());
         $('lfcCount').textContent = ' (' + s.size + ')';
-        $('lfcMyAv').innerHTML = face(prof(me.uid).av);
         if (!members[me.uid]) col('lf_chat_profiles').doc(me.uid).set({ name: me.displayName || me.email.split('@')[0], av: 'cat', email: me.email.toLowerCase(), at: FV.serverTimestamp() }).then(() => { needPick = true; if (visible) { needPick = false; avatarPicker(true); } });
         render();
       }, err));
@@ -201,9 +209,12 @@
       }
     }
     function grow() { input.style.height = 'auto'; input.style.height = Math.min(120, input.scrollHeight) + 'px'; }
-    input.addEventListener('input', () => { grow(); suggest(); });
-    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); sendText(); } });
-    $('lfcSend').onclick = () => { sendText(); input.focus(); };
+    function sendIcon() { const t = !!input.value.trim(), b = $('lfcSend'); if (b.dataset.t === String(t)) return; b.dataset.t = String(t); b.innerHTML = t ? IC.send : IC.mic; b.title = t ? '傳送' : '語音訊息'; b.classList.toggle('on', t); }
+    input.addEventListener('input', () => { grow(); suggest(); sendIcon(); });
+    input.addEventListener('focus', () => { $('lfcTools').hidden = true; $('lfcMore').hidden = false; });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); sendText(); sendIcon(); } });
+    $('lfcSend').onclick = () => { if (!input.value.trim()) return toast('語音訊息之後開放'); sendText(); sendIcon(); input.focus(); };
+    $('lfcMore').onclick = () => { $('lfcTools').hidden = false; $('lfcMore').hidden = true; };
     $('lfcCam').onclick = () => $('lfcFileCam').click();
     $('lfcPic').onclick = () => $('lfcFilePic').click();
     ['lfcFileCam', 'lfcFilePic'].forEach(id => $(id).onchange = e => { sendFiles(e.target.files); e.target.value = ''; });
@@ -247,8 +258,21 @@
     list.addEventListener('contextmenu', e => { const b = e.target.closest('.lfc-bub'); if (!b) return; e.preventDefault(); actions(b.closest('.lfc-row').dataset.id); });
     $('lfcPin').addEventListener('click', e => { if (e.target.id !== 'lfcUnpin' && pin) go(pin.id); });
     $('lfcUnpin').onclick = () => { if (confirm('取消這則公告？')) db.collection('lf_chat_meta').doc('pin').set({ id: '' }); };
-    $('lfcMembers').onclick = memberList;
-    $('lfcMine').onclick = () => avatarPicker(false);
+    $('lfcBack').onclick = () => opt.onBack && opt.onBack();
+    $('lfcMenu').onclick = () => {
+      const o = overlay(`<button class="lfc-mem" data-m="mine"><span class="lfc-av">${face(prof(me.uid).av)}</span>我的頭像與名稱</button><button class="lfc-act" data-m="mem">👥 成員（${Object.keys(members).length}）</button>${pin ? '<button class="lfc-act" data-m="pin">📢 查看公告</button>' : ''}<button class="lfc-act" data-close>取消</button>`, true);
+      o.ov.addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; o.close(); if (b.dataset.m === 'mine') avatarPicker(false); if (b.dataset.m === 'mem') memberList(); if (b.dataset.m === 'pin') go(pin.id); });
+    };
+    // 預留：點標題列收合／展開聊天室（之後底下要放其他東西時再做）
+    $('lfcHead').addEventListener('click', e => { if (e.target.closest('button')) return; /* toggleCollapse(); */ });
+    // 搜尋聊天內容：Enter 跳到下一則（由新到舊）
+    let findHits = [], findI = -1;
+    $('lfcFind').onclick = () => { $('lfcFindBar').hidden = !$('lfcFindBar').hidden; fit(); if (!$('lfcFindBar').hidden) $('lfcFindIn').focus(); };
+    $('lfcFindX').onclick = () => { $('lfcFindBar').hidden = true; $('lfcFindIn').value = ''; $('lfcFindN').textContent = ''; fit(); };
+    $('lfcFindIn').addEventListener('input', () => { const q = $('lfcFindIn').value.trim().toLowerCase(); findI = -1;
+      findHits = q ? msgs.filter(m => !m.unsent && !hidden.has(m.id) && (m.text || '').toLowerCase().includes(q)).map(m => m.id).reverse() : [];
+      $('lfcFindN').textContent = q ? findHits.length + ' 則' : ''; });
+    $('lfcFindIn').addEventListener('keydown', e => { if (e.key !== 'Enter' || !findHits.length) return; e.preventDefault(); findI = (findI + 1) % findHits.length; go(findHits[findI]); $('lfcFindN').textContent = (findI + 1) + '/' + findHits.length; });
 
     function react(id, emo) {
       const m = msgs.find(x => x.id === id); if (!m) return;
@@ -342,7 +366,7 @@
         if (was !== me.uid) start();
       },
       show(on) {
-        visible = on; dot();
+        visible = on; dot(); document.body.classList.toggle('lf-tab-family', on);
         if (!on) return;
         firstOpen = true; myRead = me ? (reads[me.uid] || 0) : 0;
         fit(); render(); markRead();
