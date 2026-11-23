@@ -107,7 +107,7 @@
     const LAY_KEY = 'lf_chat_layout';
     let lay = { x: null, w: 420 }, layLoaded = false, collapsed = false;
     try { const c = JSON.parse(localStorage.getItem(LAY_KEY) || 'null'); if (c && c.w) lay = { x: c.x, w: c.w }; } catch (_) {}
-    const keepLay = () => { try { localStorage.setItem(LAY_KEY, JSON.stringify({ x: Math.round(lay.x), w: Math.round(lay.w) })); } catch (_) {} };
+    const keepLay = () => { try { localStorage.setItem(LAY_KEY, JSON.stringify({ x: lay.x == null ? null : Math.round(lay.x), w: Math.round(lay.w) })); } catch (_) {} };
     root.setAttribute('data-lf-menu-ignore', ''); // 卡片裡不出現 LF 的 Copy link 選單
     root.addEventListener('contextmenu', e => { if (!e.target.closest('textarea, input, a')) e.preventDefault(); });
     const tab = h('<button class="lfc-tab" hidden>Lin Family<span class="lfc-tdot" hidden></span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>');
