@@ -230,12 +230,10 @@ let width = window.innerWidth;
 let height = window.innerHeight;
 let dpr = Math.min(window.devicePixelRatio || 1, 2);
 let gameState = 'START';
-// Selected character (remembered on this device).
+// Selected character: kept for this visit only (game over keeps it; a reload starts with Pinky).
+// Darren 11/24: no saving until there are accounts.
 const CHARACTER_IDS = PinkyCharacters.map(c => c.id);
-let currentCharacter = (() => {
-  try { const saved = localStorage.getItem('pinkyCharacter'); return CHARACTER_IDS.includes(saved) ? saved : 'pinky'; }
-  catch (_) { return 'pinky'; }
-})();
+let currentCharacter = 'pinky';
 let score = 0;
 let shield = 0;
 let immunity = 0;
@@ -1775,7 +1773,6 @@ const pinkyCharacter = (() => {
     if (!CHARACTER_IDS.includes(id)) return;
     const changed = id !== currentCharacter;
     currentCharacter = id;
-    try { localStorage.setItem('pinkyCharacter', id); } catch (_) {}
     player.idle = PinkyIdle.create();
     if (changed && sound) { sfx.init(); sfx.pick(); }
     for (const fn of listeners) fn(id, changed && hop);

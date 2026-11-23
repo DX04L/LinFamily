@@ -1034,8 +1034,14 @@
       requestAnimationFrame(animate);
     }
     window.addEventListener('deviceorientation',orientationFrame);
-    for (const id of ['controller-motion-test-toggle','pinky-motion-test-toggle'])
-      $(id)?.addEventListener('change',event=>setMotionTest(event.target.checked));
+    // Motion test mode is a developer tool: the checkbox only shows with ?motiontest=1 in the address.
+    const devMotionTest=new URLSearchParams(location.search).has('motiontest');
+    for (const id of ['controller-motion-test-toggle','pinky-motion-test-toggle']) {
+      const box=$(id);
+      if(!box)continue;
+      box.closest('label').hidden=!devMotionTest;
+      box.addEventListener('change',event=>setMotionTest(event.target.checked));
+    }
     // Phone fullscreen (the phone's own screen; browsers can't fullscreen the computer remotely).
     {
       const fsBtn=$('controller-fullscreen'),el=document.documentElement;
