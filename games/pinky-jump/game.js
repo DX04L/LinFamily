@@ -384,8 +384,11 @@ function getGroundY(x=width*.17) {
 
 // The player is separate from SoundFX; jump physics belongs here.
 const SHORT_JUMP_RISE = 42;
+const LUNGE_MAX = 38;
 const player = {
   x: 90,
+  baseX: 90,
+  lunge: 0, // Forward push on screen during a jump (world px); eases back after landing.
   y: 0,
   vy: 0,
   gravity: 0.78,
@@ -402,7 +405,9 @@ const player = {
     return Math.max(0.64, Math.min(1, width / 550, height / 510));
   },
   reset() {
-    this.x = Math.max(52, Math.min(110, width * 0.17));
+    this.baseX = Math.max(52, Math.min(110, width * 0.17));
+    this.lunge = 0;
+    this.x = this.baseX;
     this.y = getGroundY();
     this.vy = 0;
     this.isGrounded = true;
@@ -428,6 +433,11 @@ const player = {
     spawnDust(this.x, this.y, '#f784ba', 8);
   },
   update() {
+    // Test: the cat surges forward while airborne, then drifts back to its spot after landing.
+    // Hitbox follows the drawn cat, so the jump really carries it a little further.
+    const lungeTarget = this.isGrounded ? 0 : LUNGE_MAX;
+    this.lunge += (lungeTarget - this.lunge) * (this.isGrounded ? 0.035 : 0.12);
+    this.x = this.baseX + this.lunge;
     const groundY = getGroundY(this.x);
     if (this.isGrounded) {
       // Walk smoothly over the slope instead of running through the hill.
@@ -856,10 +866,12 @@ function spawnEntity() {
       w:44, h:32, flap:0
     });
   } else if (score > 150 && r < 0.36) {
-    // Slightly larger than a bird, high up, moving across the screen.
+    // Test: small / medium / large airplanes (large = 3× the original 62×30).
+    const pr = Math.random();
+    const size = pr < 0.5 ? 1 : pr < 0.8 ? 1.8 : 3;
     obstacles.push({
       type:'airplane', x, y:groundY - WORLD_H*(0.43 + Math.random()*0.13),
-      w:62, h:30, flap:0
+      w:62*size, h:30*size, flap:0
     });
   } else if (score > 250 && r < 0.51) {
     const shift = baseGroundY() - Math.max(WORLD_H*.78, WORLD_H-90);
