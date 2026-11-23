@@ -663,7 +663,17 @@
   let baseline=null,samples=0,previousImpulse=0;
   let motionPeak=0,motionTimer;
   let lastJumpAt=-Infinity,armed=true;
+  // Flashing warning when the browser gives no motion data (sensor permission blocked).
+  function setMotionWarning(text) {
+    const id=pairedRoom?'controller-motion-status':'pinky-motion-status';
+    setText(id,text);
+    $(id)?.classList.add('pinky-motion-warn');
+  }
+  function clearMotionWarning() {
+    for (const id of ['controller-motion-status','pinky-motion-status']) $(id)?.classList.remove('pinky-motion-warn');
+  }
   function setMotionEnabled(enabled) {
+    clearMotionWarning();
     motionEnabled=enabled;
     clearTimeout(motionTimer);
     motionTimer=undefined;
@@ -694,7 +704,7 @@
     setText(pairedRoom?'controller-motion-status':'pinky-motion-status',message?PinkyLocale.message('{0}{1}',message,fallback):'請先握穩裝置，等待體感校準。');
     if (!message) setTimeout(()=>{
       if(request===motionRequest && motionEnabled && !samples)
-        setText(pairedRoom?'controller-motion-status':'pinky-motion-status','未收到感應資料，請確認瀏覽器權限。');
+        setMotionWarning('偵測不到體感感應器：請到瀏覽器「網站設定 → 動作感應器（Motion sensors）」改成允許；Brave 請點網址列旁的獅子圖示關閉 Shields。改好後重新整理並重新配對。');
     },2600);
   }
   function motionFrame(event) {
@@ -710,6 +720,7 @@
       baseline.x+=dx*weight;baseline.y+=dy*weight;baseline.z+=dz*weight;
     }
     if (samples<24) {
+      if (samples===0) clearMotionWarning();
       if (++samples===24)setText(pairedRoom?'controller-motion-status':'pinky-motion-status','體感跳躍已就緒。');
       return;
     }

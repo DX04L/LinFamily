@@ -494,3 +494,8 @@ body.pinky-popup-open .panel { visibility: hidden; }
   #hud .score-box .label { font-size: 8px; }
 }
 @media (max-width: 860px) { #hud .pinky-hud-label { display: none; } }
+
+/* No motion data: flashing yellow warning under the Motion controls. */
+.pinky-motion-warn { padding: 8px 10px; border: 2px solid #ffd400; border-radius: 12px; background: #fff8d6; color: #8a4b00; font-weight: 700; animation: pinky-motion-warn 1.1s ease-in-out infinite; }
+@keyframes pinky-motion-warn { 50% { box-shadow: 0 0 0 5px #ffd40066; } }
+@media (prefers-reduced-motion: reduce) { .pinky-motion-warn { animation: none; } }
