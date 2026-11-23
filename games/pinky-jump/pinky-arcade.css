@@ -458,3 +458,17 @@ html[lang="en"] #pinky-language span:first-child, html[lang="zh-Hant"] #pinky-la
 .pinky-room-head .pinky-pair-code { min-width: 0; }
 /* Bigger settings window on roomy screens (less scrolling in the guide); short screens still fit by height */
 #pinky-pair-dialog { width: min(560px, calc(100vw - 24px)); height: min(640px, calc(var(--pinky-settings-height, 100dvh) - 16px)); }
+
+/* Connect cue: pulsing ring + hint when a valid pairing code is ready (QR link). */
+#controller-connect.pinky-cta { position: relative; margin-right: 8px; animation: pinky-cta-pulse 1.2s ease-in-out infinite; }
+@keyframes pinky-cta-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 #ff4fa3cc; transform: scale(1); }
+  50% { box-shadow: 0 0 0 6px #ff4fa333; transform: scale(1.04); }
+}
+.pinky-connect-hint { margin: 2px 4px 4px; text-align: right; font-size: 14px; font-weight: 700; color: #d6337f; animation: pinky-cta-hint 1.2s ease-in-out infinite; }
+.pinky-connect-hint[hidden] { display: none; }
+@keyframes pinky-cta-hint { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) {
+  #controller-connect.pinky-cta { animation: none; box-shadow: 0 0 0 4px #ff4fa366; }
+  .pinky-connect-hint { animation: none; }
+}

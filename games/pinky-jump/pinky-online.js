@@ -567,6 +567,12 @@
     openGameDialog(settings);
     syncOverlayViewport();
   }
+  // Pulsing ring + hint on Connect once a valid code is filled in (QR link or typed).
+  function setConnectCue(on) {
+    $('controller-connect')?.classList.toggle('pinky-cta',on);
+    const hint=$('pinky-connect-hint');
+    if(hint)hint.hidden=!on;
+  }
   async function connectPhone(event) {
     event.preventDefault();
     const input=$('controller-room-input');
@@ -574,6 +580,7 @@
     if(!roomPattern.test(code)){renderRoomStatus('請輸入有效的 6 碼配對碼。');return;}
     const button=$('controller-connect');
     if(button.disabled)return;
+    setConnectCue(false);
     button.disabled=true;
     renderRoomStatus('正在連線…');
     // Start the permission request within the submit gesture on iOS.
@@ -876,6 +883,8 @@
       if (event.target===settings) settings.close();
     });
     $('pinky-connect-form').addEventListener('submit',connectPhone);
+    $('controller-room-input').addEventListener('input',e=>
+      setConnectCue(roomPattern.test(e.target.value.trim().toUpperCase())));
     $('controller-disconnect').addEventListener('click',()=>disconnectPhone('已中斷配對。',true));
     window.addEventListener('pagehide',releaseRoom);
     const showHelp=visible=>{
@@ -899,6 +908,7 @@
     });
     if(roomPattern.test(urlRoom)){
       $('controller-room-input').value=urlRoom;
+      setConnectCue(true);
       showSettingsPane('pair');
       openGameDialog(settings);
       syncOverlayViewport();
