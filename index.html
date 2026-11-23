@@ -176,6 +176,7 @@
     .lf-top { flex-wrap:wrap; }
     #lfToolbar { margin:0; justify-content:flex-end; } /* 分頁列右緣對齊皇冠；＋ 在左邊，消失時分頁列不會移動 */
     #lfToolbar .clc-tb-add { order:-1; }
+    @media (max-width:639px) { #lfToolbar { justify-content:flex-start; } #lfToolbar .clc-tb-add { order:0; margin-left:auto; } } /* 手機：分頁列靠左、＋ 在最右邊 */
     main > .clc-tb-search { order:-1; flex:none; } /* 搜尋框出現在上方，把內容往下擠 */
     @media (max-width:639px) { #lfToolbar { order:3; flex-basis:100%; margin-top:14px; } }
     @media (min-width:640px) { .lf-top { align-items:flex-end; padding-top:calc(30px + env(safe-area-inset-top)); } .lf-top > :first-child { flex:1; min-width:0; } }
