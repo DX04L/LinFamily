@@ -302,7 +302,7 @@
 #pinky-help-view::-webkit-scrollbar { width: 5px; }
 #pinky-help-view::-webkit-scrollbar-thumb { border-radius: 8px; background: #d58aac; }
 #pinky-help-back { position: absolute; top: 9px; right: 12px; padding: 0; width: 40px; font-size: 24px; }
-@media (max-height: 345px) {
+@media (max-height: 380px) { /* phone landscape: settings fit without scrolling */
   #pinky-pair-dialog { padding-block: 7px; }
   #pinky-pair-title { font-size: 18px; margin-bottom: 0; }
   .pinky-settings-bar { margin: 2px 0 4px; }
@@ -428,7 +428,7 @@ html[lang="en"] #pinky-language span:first-child, html[lang="zh-Hant"] #pinky-la
 }
 
 .pinky-pair-actions { width: 100%; }
-@media (max-height: 345px) {
+@media (max-height: 380px) { /* phone landscape: settings fit without scrolling */
   .pinky-pair-actions { display: flex; align-items: flex-start; gap: 5px; }
   .pinky-pair-actions form { flex: 1; min-width: 0; }
   .pinky-pair-actions .pinky-setting-row { gap: 4px; }
@@ -528,3 +528,24 @@ body.pinky-popup-open .panel { visibility: hidden; }
 .pinky-ctl-char.is-locked .pinky-ctl-char-hint,
 .pinky-ctl-char.is-locked .pinky-char-dots { visibility: hidden; opacity: 0; }
 #pinky-controller .pinky-char-arrow { min-height: 44px; }
+
+/* ===== 手機控制器橫向：三欄（按鈕／跳躍或體感設定／角色），不用捲動 ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  #pinky-controller:not([hidden]) {
+    display: grid; grid-template-columns: minmax(190px, 1fr) minmax(220px, 1.3fr) auto;
+    column-gap: 14px; align-content: start; align-items: start; max-width: none;
+    padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
+  }
+  #pinky-controller > * { grid-column: 1; min-width: 0; }
+  #pinky-controller > .pinky-controller-heading { grid-column: 1 / -1; margin-bottom: 8px; }
+  #pinky-controller > #controller-manual, #pinky-controller > #controller-motion { grid-column: 2; grid-row: 2 / span 8; }
+  #pinky-controller > #controller-char { grid-column: 3; grid-row: 2 / span 8; margin-top: 0; }
+  #pinky-controller #controller-primary { min-height: 52px; font-size: 22px; }
+  #controller-tabs { margin: 10px 0; }
+  #pinky-controller #controller-jump { margin-top: 0; min-height: calc(100dvh - 86px); }
+  #controller-motion p { font-size: 13px; margin-top: 0; }
+  .pinky-ctl-char-figure canvas { width: clamp(90px, 36dvh, 140px); height: clamp(90px, 36dvh, 140px); }
+  .pinky-ctl-char-hint { font-size: 12px; padding: 4px 8px; }
+  .pinky-ctl-char-row { gap: 4px; }
+  .pinky-ctl-char .pinky-char-name { font-size: 17px; }
+}
