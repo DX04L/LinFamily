@@ -12,7 +12,7 @@
   let startY = null, dy = 0;
   const busy = () => document.querySelector('dialog[open]') || document.querySelector('.slot-grid.is-editing') || !document.getElementById('lfWelcome')?.hidden;
   document.addEventListener('touchstart', e => {
-    const sec = e.target.closest && e.target.closest('main > section');
+    const sec = e.target.closest && !e.target.closest('#lfChat') && e.target.closest('main > section'); // 留言板卡片裡（拖小橫條、捲訊息）不觸發
     startY = sec && sec.scrollTop <= 0 && e.touches.length === 1 && !busy() ? e.touches[0].clientY : null; dy = 0;
   }, { passive: true });
   function reset() {
