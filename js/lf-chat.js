@@ -82,7 +82,7 @@
     };
     root.innerHTML = `
       <div class="lfc">
-        <div class="lfc-grip" id="lfcHead" title="點一下收合／展開"><span></span><i class="lfc-gdot" hidden></i></div>
+        <div class="lfc-mv" id="lfcHead" title="按住左右拖曳可移動"></div><button class="lfc-min" id="lfcMin" title="收合留言板" aria-label="收合留言板"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
         <div class="lfc-findbar" id="lfcFindBar" hidden><span id="lfcFindN"></span><button id="lfcFindUp" title="上一則（較舊）">˄</button><button id="lfcFindDn" title="下一則（較新）">˅</button></div>
         <div class="lfc-pin" id="lfcPin" hidden>📢<span id="lfcPinText"></span><button id="lfcUnpin" title="取消公告">✕</button></div>
         <div class="lfc-list" id="lfcList"></div>
@@ -133,39 +133,30 @@
     // 展開：泡泡噴出一顆光點，沿弧線飛到面板底部中央，再從那一點攤開（先橫向、再縱向）；收合完全倒著播。
     // 手機面板全寬，光點飛到底部中央後往左右兩邊攤開；電腦飛到面板設定的位置再攤開。
     const bubble = h('<button class="lfc-bubble" hidden title="展開留言板"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H9l-5 4z"/></svg><b class="lfc-bnum" hidden></b></button>');
-    const spark = h('<i class="lfc-spark" hidden></i>');
-    root.append(bubble, spark);
+    root.append(bubble);
     bubble.onclick = () => setCollapsed(false);
     let warpId = 0;
     const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches || !box.animate;
-    function fly(a, b, ms, grow) { // 光點沿二次曲線（往上拱）從 a 飛到 b
-      const c = { x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - Math.max(50, Math.abs(a.x - b.x) * .3) }, kf = [];
-      for (let i = 0; i <= 14; i++) { const t = i / 14, u = 1 - t, x = u * u * a.x + 2 * u * t * c.x + t * t * b.x, y = u * u * a.y + 2 * u * t * c.y + t * t * b.y;
-        kf.push({ transform: `translate(${x - 9}px,${y - 9}px) scale(${grow ? .7 + t * .9 : 1.6 - t * .9})` }); }
-      spark.hidden = false;
-      return spark.animate(kf, { duration: ms, easing: 'cubic-bezier(.45,0,.25,1)' }).finished.catch(() => {}).then(() => { spark.hidden = true; });
-    }
+    // 像 Android 關掉 App：整張面板等比例縮小、圓角變圓、淡出，縮進右下角泡泡；泡泡再慢慢浮現。展開完全倒著播。
     async function warp(c) {
-      const id = ++warpId; box.getAnimations().forEach(a => a.cancel());
-      const R = root.getBoundingClientRect(), B = box.getBoundingClientRect(), bb = bubble.getBoundingClientRect();
-      const P = { x: B.left + B.width / 2 - R.left, y: B.bottom - R.top - 20 }, Q = { x: bb.left + bb.width / 2 - R.left, y: bb.top + bb.height / 2 - R.top };
-      box.style.transformOrigin = `${P.x - (B.left - R.left)}px ${B.height - 20}px`;
-      const kf = [{ transform: 'scale(.03,.02) rotate(-22deg)', filter: 'blur(8px)', opacity: 0 },
-                  { offset: .5, transform: 'scale(1,.05) rotate(0deg)', filter: 'blur(2px)', opacity: 1 },
-                  { transform: 'none', filter: 'none', opacity: 1 }];
-      if (!c) { // 放出
-        box.style.visibility = 'hidden';
-        bubble.animate([{ transform: 'scale(1)' }, { transform: 'scale(.8)' }, { transform: 'scale(1)' }], 200);
-        await fly(Q, P, 320, false); if (id !== warpId) return;
-        bubble.hidden = true; box.style.visibility = '';
-        await box.animate(kf, { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }).finished.catch(() => {});
-      } else { // 吸入
-        const an = box.animate(kf.slice().reverse().map(k => k.offset ? k : Object.assign({}, k)), { duration: 280, easing: 'cubic-bezier(.7,0,.85,.3)', fill: 'forwards' });
+      const id = ++warpId; box.getAnimations().forEach(a => a.cancel()); bubble.getAnimations().forEach(a => a.cancel());
+      const B = box.getBoundingClientRect(), bb = bubble.getBoundingClientRect();
+      const dx = bb.left + bb.width / 2 - (B.left + B.width / 2), dy = bb.top + bb.height / 2 - (B.top + B.height / 2);
+      const sc = Math.max(bb.width / B.width, bb.height / B.height);
+      box.style.transformOrigin = '50% 50%';
+      const kf = [{ transform: 'none', borderRadius: '20px 20px 0 0', opacity: 1 },
+                  { offset: .75, opacity: 1 },
+                  { transform: `translate(${dx}px,${dy}px) scale(${sc})`, borderRadius: '50%', opacity: 0 }];
+      const ease = 'cubic-bezier(.3,0,.1,1)';
+      if (c) { // 收進去
+        const an = box.animate(kf, { duration: 320, easing: ease, fill: 'forwards' });
+        bubble.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 260, delay: 220, easing: 'ease-out', fill: 'backwards' });
         await an.finished.catch(() => {}); if (id !== warpId) return;
-        box.style.visibility = 'hidden'; an.cancel();
-        await fly(P, Q, 300, true); if (id !== warpId) return;
-        box.classList.add('is-collapsed'); box.style.visibility = ''; bubble.hidden = false; place();
-        bubble.animate([{ transform: 'scale(.6)' }, { transform: 'scale(1.15)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' });
+        box.classList.add('is-collapsed'); an.cancel(); place();
+      } else { // 飛出來
+        bubble.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.6)' }], { duration: 140, easing: 'ease-in', fill: 'forwards' });
+        await box.animate(kf.slice().reverse(), { duration: 340, easing: ease }).finished.catch(() => {}); if (id !== warpId) return;
+        bubble.hidden = true; bubble.getAnimations().forEach(a => a.cancel());
       }
     }
     function setCollapsed(c) {
@@ -174,8 +165,7 @@
       if (!c) { box.classList.remove('is-collapsed'); fit(); toBottom(); markRead(); }
       dot();
       if (calm()) { box.classList.toggle('is-collapsed', c); bubble.hidden = !c; return; }
-      if (c) bubble.hidden = false, bubble.style.visibility = 'hidden';
-      warp(c).finally(() => { bubble.style.visibility = ''; });
+      bubble.hidden = false; warp(c);
     }
     tab.onclick = () => setCollapsed(false);
     function saveLay() { keepLay(); if (me) db.collection('lf_chat_profiles').doc(me.uid).set({ layout: { x: Math.round(lay.x), w: Math.round(lay.w) } }, { merge: true }).catch(() => {}); }
@@ -189,33 +179,9 @@
         addEventListener('pointermove', mv); addEventListener('pointerup', up);
       });
     }
-    // 小橫條：點一下收合／展開；按住上下拉跟著手指走，放開後拉超過 40px 就收合（或展開），不然彈回；寬螢幕左右拉 = 移動位置
-    const grip = $('lfcHead');
-    grip.addEventListener('pointerdown', e => {
-      if (e.button > 0) return;
-      const sx = e.clientX, sy = e.clientY, st = place(), H = box.offsetHeight, peek = grip.offsetHeight, base = 0;
-      let axis = null;
-      const mv = ev => {
-        const dx = ev.clientX - sx, dy = ev.clientY - sy;
-        if (!axis) {
-          if (Math.hypot(dx, dy) < 5) return;
-          axis = !wideQ.matches || Math.abs(dy) >= Math.abs(dx) ? 'y' : 'x';
-          try { grip.setPointerCapture(e.pointerId); } catch (_) {}
-          if (axis === 'y') box.style.transition = 'none';
-        }
-        if (axis === 'x') { lay.x = st.x + dx; place(); }
-        else box.style.transform = 'translateY(' + Math.max(0, Math.min(H - peek, base + dy)) + 'px)';
-      };
-      const up = ev => {
-        removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
-        if (!axis) return setCollapsed(!collapsed);
-        if (axis === 'x') return saveLay();
-        const dy = ev.clientY - sy;
-        if (dy > 40) { box.style.transform = ''; void box.offsetWidth; box.style.transition = ''; return setCollapsed(true); }
-        void box.offsetWidth; box.style.transition = ''; box.style.transform = '';
-      };
-      addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
-    });
+    // 收合鈕；寬螢幕按住頂端隱形條左右拖 = 移動位置
+    $('lfcMin').onclick = () => setCollapsed(true);
+    drag($('lfcHead'), (dx, st) => { lay.x = st.x + dx; });
     drag(rzR, (dx, st) => { lay.x = st.x; lay.w = Math.max(360, Math.min(st.W - st.x, st.w + dx)); });
     drag(rzL, (dx, st) => { const w = Math.max(360, Math.min(st.x + st.w, st.w - dx)); lay.x = st.x + st.w - w; lay.w = w; });
     wideQ.addEventListener && wideQ.addEventListener('change', fit);
