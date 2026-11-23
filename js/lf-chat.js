@@ -103,7 +103,11 @@
 
     // ---------- 版面：手機全寬貼底；寬螢幕（≥640，跟桌面引擎同一個分界）是浮在 Family 分頁上的卡片，可左右移動、調寬窄 ----------
     const box = root.firstElementChild, wideQ = matchMedia('(min-width:640px)');
+    // 留言板位置：先用這台裝置上次的位置（重新整理不會先跳到預設位置再移過去），雲端讀到再校正
+    const LAY_KEY = 'lf_chat_layout';
     let lay = { x: null, w: 420 }, layLoaded = false, collapsed = false;
+    try { const c = JSON.parse(localStorage.getItem(LAY_KEY) || 'null'); if (c && c.w) lay = { x: c.x, w: c.w }; } catch (_) {}
+    const keepLay = () => { try { localStorage.setItem(LAY_KEY, JSON.stringify({ x: Math.round(lay.x), w: Math.round(lay.w) })); } catch (_) {} };
     root.setAttribute('data-lf-menu-ignore', ''); // 卡片裡不出現 LF 的 Copy link 選單
     root.addEventListener('contextmenu', e => { if (!e.target.closest('textarea, input, a')) e.preventDefault(); });
     const tab = h('<button class="lfc-tab" hidden>Lin Family<span class="lfc-tdot" hidden></span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>');
@@ -127,7 +131,7 @@
     addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', () => { const nb = nearBottom(); fit(); if (nb) toBottom(); });
     function setCollapsed(c) { collapsed = c; box.classList.toggle('is-collapsed', c); place(); if (!c) { fit(); toBottom(); markRead(); } dot(); }
     tab.onclick = () => setCollapsed(false);
-    function saveLay() { if (me) db.collection('lf_chat_profiles').doc(me.uid).set({ layout: { x: Math.round(lay.x), w: Math.round(lay.w) } }, { merge: true }).catch(() => {}); }
+    function saveLay() { keepLay(); if (me) db.collection('lf_chat_profiles').doc(me.uid).set({ layout: { x: Math.round(lay.x), w: Math.round(lay.w) } }, { merge: true }).catch(() => {}); }
     // 拖標題列：寬螢幕左右移動；沒有移動就是點一下 → 收合
     function drag(el, onMove, onClick) {
       el.addEventListener('pointerdown', e => {
@@ -176,7 +180,7 @@
       const col = n => db.collection(n);
       unsubs.push(col('lf_chat_profiles').onSnapshot(s => {
         members = {}; s.forEach(d => members[d.id] = d.data());
-        if (!layLoaded && members[me.uid]) { layLoaded = true; const L = members[me.uid].layout; if (L && L.w) { lay = { x: L.x, w: L.w }; place(); } }
+        if (!layLoaded && members[me.uid]) { layLoaded = true; const L = members[me.uid].layout; if (L && L.w) { lay = { x: L.x, w: L.w }; keepLay(); place(); } }
         if (!members[me.uid]) col('lf_chat_profiles').doc(me.uid).set({ name: me.displayName || me.email.split('@')[0], av: 'cat', email: me.email.toLowerCase(), at: FV.serverTimestamp() }).then(() => { needPick = true; if (visible) { needPick = false; avatarPicker(true); } });
         render();
       }, err));
