@@ -59,7 +59,7 @@
 
   window.lfChatInit = function (root, opt) {
     const db = opt.db, toast = opt.toast || (m => alert(m)), FV = firebase.firestore.FieldValue;
-    let me = null, role = '', unsubs = [], visible = false, needPick = false;
+    let me = null, role = '', unsubs = [], visible = false, needPick = false, denied = false;
     let msgs = [], members = {}, phones = {}, reads = {}, pin = null, myRead = 0, firstOpen = true, reply = null, menuOpen = false;
     const hidden = new Set(JSON.parse(localStorage.getItem('linfamily_chat_hidden') || '[]'));
     const isSuper = () => role === 'superuser';
@@ -110,7 +110,7 @@
     // ---------- 資料 ----------
     function stop() { unsubs.forEach(u => u()); unsubs = []; }
     function start() {
-      stop(); firstOpen = true;
+      stop(); firstOpen = true; denied = false;
       const col = n => db.collection(n);
       unsubs.push(col('lf_chat_profiles').onSnapshot(s => {
         members = {}; s.forEach(d => members[d.id] = d.data());
@@ -130,7 +130,7 @@
         render(); dot(); markRead();
       }, err));
     }
-    function err(e) { console.warn('留言板', e); if (e && e.code === 'permission-denied') list.innerHTML = '<p class="lfc-empty">留言板還沒開放（Firestore 規則尚未發布）。</p>'; }
+    function err(e) { console.warn('留言板', e); if (e && e.code === 'permission-denied') denied = true, list.innerHTML = '<p class="lfc-empty">留言板還沒開放（Firestore 規則尚未發布）。</p>'; }
     function markRead() {
       if (!visible || document.hidden || !me || !msgs.length) return;
       const last = msgs[msgs.length - 1].t;
@@ -155,7 +155,7 @@
     }
     function readCount(m) { let n = 0; for (const uid in reads) if (uid !== me.uid && reads[uid] >= m.t) n++; return n; }
     function render() {
-      if (!me) return;
+      if (!me || denied) return;
       const keep = nearBottom(), top = list.scrollTop;
       const frag = document.createDocumentFragment(); let lastDay = '', unreadMark = false;
       const shown = msgs.filter(m => !hidden.has(m.id));
