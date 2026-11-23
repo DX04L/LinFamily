@@ -874,7 +874,7 @@ function spawnEntity() {
   const x = width + 60;
   const groundY = getGroundY(x);
   const r = Math.random();
-  if (score > 90 && r < 0.20) {
+  if (score > 200 && r < 0.20) {
     // Birds fly lower than airplanes, entering from the right.
     const kinds = ['robin','chick','butterfly'];
     obstacles.push({
@@ -882,20 +882,20 @@ function spawnEntity() {
       x, y:groundY-(62+Math.random()*110),
       w:44, h:32, flap:0
     });
-  } else if (score > 150 && r < 0.36) {
+  } else if (score > 350 && r < 0.36) {
     // Random size: from the original 62×30 up to 2.5×.
     const size = 1 + Math.random() * 1.5;
     obstacles.push({
       type:'airplane', x, y:groundY - WORLD_H*(0.43 + Math.random()*0.13),
       w:62*size, h:30*size, flap:0
     });
-  } else if (score > 250 && r < 0.51) {
+  } else if (score > 600 && r < 0.51) {
     const shift = baseGroundY() - Math.max(WORLD_H*.78, WORLD_H-90);
     const gapY = Math.max(82, (groundY - shift)*0.28) + shift;
     const gapH = Math.max(105, Math.min(165, WORLD_H*0.27));
     obstacles.push({type:'cloudGate',x,y:gapY,w:100,h:gapH});
     coins.push({type:'star',x:x+48,y:gapY+gapH/2,r:13,collected:false,spin:0});
-  } else if (score > 90 && r < 0.70) {
+  } else if (score > 200 && r < 0.70) {
     // A few slightly higher mountains; rare tall peaks remain jumpable with one tap.
     const tall = Math.random() < 0.06;
     const ordinary = [48,56,66,78,Math.min(108,WORLD_H*0.20),Math.min(122,WORLD_H*0.235)];
