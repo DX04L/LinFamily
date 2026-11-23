@@ -20,7 +20,8 @@
       addEventListener('resize', set); addEventListener('orientationchange', function () { setTimeout(set, 300); });
     })();
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive:false });</script><!-- iPhone／iPad 雙指縮放 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>LinFamily</title>
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -284,6 +285,8 @@
     /* iPhone 主畫面 App：100dvh 會少算上方狀態列的高度，底部留一條空白。改用實際螢幕高度（下方的 lfAppHeight） */
     html.lf-ios-app, html.lf-ios-app body { height:var(--lf-app-h); overflow:hidden; }
     html.lf-ios-app .lf-wall { bottom:auto; height:var(--lf-app-h); }
+    /* 手機、平板：主頁不能放大縮小（viewport 鎖 Android；iPhone 另用 gesturestart 擋雙指縮放）。輸入框字 16px，iPhone 點輸入框才不會自動放大 */
+    @media (pointer:coarse) { input, textarea, select { font-size:16px !important; } }
     main { display:flex; flex-direction:column; min-height:0; padding-bottom:0; }
     main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px 10px calc(16px + env(safe-area-inset-bottom)); margin:-10px -10px 0; } /* 四周留 10px，App 滑鼠放大時不會被切到；負邊距讓位置不變 */
     #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
@@ -718,6 +721,7 @@
     }
     function safeUrl(value) {
       const v = normalizeHannahUrl(String(value || '').trim());
+      if (/clc-temp/i.test(v)) return 'sg-discussion/'; // 舊版小組教材（clc-temp，已停用）→ LF 內的新版，所有帳號桌面上的舊格子都會自動改連
       if (!v || v.startsWith('//')) return '';
       if (/^[a-z][a-z0-9+.-]*:/i.test(v)) { try { const u = new URL(v); return /^https?:$/.test(u.protocol) ? u.href : ''; } catch (_) { return ''; } }
       // 看起來像網域（example.com、www.xxx）就補 https://；其他當作站內路徑（例如 HannahProjects/）
