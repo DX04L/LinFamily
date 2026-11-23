@@ -883,9 +883,8 @@ function spawnEntity() {
       w:44, h:32, flap:0
     });
   } else if (score > 150 && r < 0.36) {
-    // Test: small / medium / large airplanes (large = 3× the original 62×30).
-    const pr = Math.random();
-    const size = pr < 0.5 ? 1 : pr < 0.8 ? 1.8 : 3;
+    // Random size: from the original 62×30 up to 2.5×.
+    const size = 1 + Math.random() * 1.5;
     obstacles.push({
       type:'airplane', x, y:groundY - WORLD_H*(0.43 + Math.random()*0.13),
       w:62*size, h:30*size, flap:0
@@ -993,7 +992,7 @@ function drawBackground() {
   }
 
   // 背景飛機（純裝飾，不碰撞）
-  planes.forEach(p=>{ctx.save();ctx.translate(p.x,p.y);ctx.fillStyle='#f4a6c9';ctx.beginPath();ctx.moveTo(-32,0);ctx.lineTo(25,-3);ctx.lineTo(38,2);ctx.lineTo(8,8);ctx.lineTo(-2,18);ctx.lineTo(-12,18);ctx.lineTo(-8,7);ctx.lineTo(-32,4);ctx.fill();ctx.restore();});
+  planes.forEach(p=>{ctx.save();ctx.translate(p.x,p.y);ctx.scale(-1,1);ctx.fillStyle='#f4a6c9';ctx.beginPath();ctx.moveTo(-32,0);ctx.lineTo(25,-3);ctx.lineTo(38,2);ctx.lineTo(8,8);ctx.lineTo(-2,18);ctx.lineTo(-12,18);ctx.lineTo(-8,7);ctx.lineTo(-32,4);ctx.fill();ctx.restore();});
   // 可愛棉花糖雲朵
   clouds.forEach(c => {
     ctx.save();
@@ -1058,7 +1057,8 @@ function drawBackground() {
 function drawObstacles(ctx, objects, groundAt = getGroundY) {
   objects.forEach(obs => {
     if(obs.type==='airplane'){
-      ctx.save();ctx.translate(obs.x,obs.y+14);ctx.scale(obs.w/70,obs.h/30);ctx.fillStyle='#7bbae5';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(57,-7);ctx.lineTo(70,0);ctx.lineTo(53,10);ctx.lineTo(22,10);ctx.lineTo(11,18);ctx.lineTo(3,16);ctx.lineTo(10,8);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(25,0,6,4);ctx.fillRect(36,0,6,4);ctx.restore();
+      ctx.save();ctx.translate(obs.x+obs.w,obs.y+14);ctx.scale(-obs.w/70,obs.h/30); // nose points left, toward the cat
+      ctx.fillStyle='#7bbae5';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(57,-7);ctx.lineTo(70,0);ctx.lineTo(53,10);ctx.lineTo(22,10);ctx.lineTo(11,18);ctx.lineTo(3,16);ctx.lineTo(10,8);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(25,0,6,4);ctx.fillRect(36,0,6,4);ctx.restore();
     }else if(obs.type==='mountain'){
       const cx=obs.x+obs.w*.5, peak=obs.y-obs.h;
       ctx.fillStyle=obs.tall?'#a9c8b5':'#9ac6ab';
