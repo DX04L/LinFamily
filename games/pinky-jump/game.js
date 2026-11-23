@@ -262,6 +262,10 @@ document.querySelector('.shield-box').addEventListener('pointerdown', event => {
   if (cheatTaps >= MAX_HEARTS) startGame(true);
 });
 let gameSpeed = 7;
+// Cloud gate = boost gate: jumping into it pulls the cat to the middle and gives a short dash.
+const GATE_BOOST_FRAMES = 30;
+let gateBoost = 0;
+let gatePass = null;
 let frameCount = 0;
 let lastMilestone = 0;
 const SIMULATION_STEP = 1000 / 60;
@@ -870,6 +874,8 @@ function spawnDust(x, y, color, count = 6) {
   }
 }
 
+// Difficulty tiers by score (sizes grow, gaps shrink, fewer hearts later).
+function tier() { return score < 1500 ? 0 : score < 3000 ? 1 : 2; }
 function spawnEntity() {
   const x = width + 60;
   const groundY = getGroundY(x);
@@ -884,7 +890,7 @@ function spawnEntity() {
     });
   } else if (score > 350 && r < 0.36) {
     // Random size: from the original 62×30 up to 2.5×.
-    const size = 1 + Math.random() * 1.5;
+    const size = 1 + Math.random() * [0.5, 1, 1.5][tier()]; // max 1.5× / 2× / 2.5×
     obstacles.push({
       type:'airplane', x, y:groundY - WORLD_H*(0.43 + Math.random()*0.13),
       w:62*size, h:30*size, flap:0
@@ -894,28 +900,51 @@ function spawnEntity() {
     const gapY = Math.max(82, (groundY - shift)*0.28) + shift;
     const gapH = Math.max(105, Math.min(165, WORLD_H*0.27));
     obstacles.push({type:'cloudGate',x,y:gapY,w:100,h:gapH});
-    coins.push({type:'star',x:x+48,y:gapY+gapH/2,r:13,collected:false,spin:0});
+    // Boost gate: 1 / 2 / 3 stars (100 each) in a row through the middle.
+    const stars = score < 1500 ? 1 : score < 3000 ? 2 : 3;
+    for (let i = 0; i < stars; i++)
+      coins.push({type:'star',x:x+50+(i-(stars-1)/2)*32,y:gapY+gapH/2,r:13,collected:false,spin:i*.6});
   } else if (score > 200 && r < 0.70) {
     // A few slightly higher mountains; rare tall peaks remain jumpable with one tap.
-    const tall = Math.random() < 0.06;
-    const ordinary = [48,56,66,78,Math.min(108,WORLD_H*0.20),Math.min(122,WORLD_H*0.235)];
+    const tall = Math.random() < [0, 0.06, 0.12][tier()];
+    const ordinary = [48,56,66,78,Math.min(108,WORLD_H*0.20),Math.min(122,WORLD_H*0.235)].slice(0, tier() ? 6 : 4);
     const h = tall
       ? Math.min(285, Math.max(125, WORLD_H * 0.29))
       : ordinary[Math.floor(Math.random()*ordinary.length)];
     const w = tall ? Math.min(136, Math.max(76,h*0.34)) : 64;
     obstacles.push({type:'mountain',x,y:groundY,w,h,tall});
   } else {
-    const count=score>460&&Math.random()<.26?2:1;
+    const count=Math.random()<[0,.22,.4][tier()]?2:1;
     obstacles.push({type:'crystal',x,y:groundY,w:count*30,h:45,count});
   }
   if (Math.random() < .85) {
-    const roll=Math.random(),type=roll<.11?'heart':roll<.36?'star':'coin';
+    const heartChance = score < 3000 ? .11 : .08;
+    const roll=Math.random(),type=roll<heartChance?'heart':roll<heartChance+.25?'star':'coin';
     const lift = type==='heart'?125:(Math.random()<.5?58:Math.min(180,WORLD_H*.38));
     for(let i=0;i<(type==='coin'?3:1);i++) {
       const cx=x+70+i*34;
       coins.push({type,x:cx,y:getGroundY(cx)-lift-Math.sin(i*Math.PI/2)*15,
         lift:lift+Math.sin(i*Math.PI/2)*15,r:12,collected:false,spin:i*.6});
     }
+  }
+}
+
+function updateGatePass(gate, pBox) {
+  const inX = pBox.x + pBox.w > gate.x && pBox.x < gate.x + gate.w;
+  const midY = gate.y + gate.h / 2;
+  if (!gate.entered && inX && !player.isGrounded) {
+    const catMid = player.y - CAT_HEIGHT / 2;
+    if (catMid > gate.y - 70 && catMid < gate.y + gate.h + 70) {
+      gate.entered = true; gatePass = gate; gateBoost = GATE_BOOST_FRAMES;
+      sfx.star();
+    }
+  }
+  if (gatePass === gate) {
+    if (pBox.x > gate.x + gate.w + 10) { gatePass = null; player.vy = Math.max(player.vy, 0); return; }
+    // Glide through the middle of the gap.
+    player.y += (midY + CAT_HEIGHT / 2 - player.y) * 0.3;
+    player.vy = 0;
+    player.isGrounded = false;
   }
 }
 
@@ -1276,6 +1305,7 @@ function simulateFrame() {
   if (gameState === 'PLAYING') {
     // 隨分數漸進加速
     gameSpeed = Math.min(16, 6.6 + score * 0.0022);
+    if (gateBoost > 0) { gameSpeed *= 1 + 0.35 * Math.sin(Math.PI * gateBoost / GATE_BOOST_FRAMES); gateBoost--; }
     if(immunity>0)immunity--;
     if(shieldShake>0)shieldShake--;
     score += gameSpeed * 0.045;
@@ -1299,7 +1329,8 @@ function simulateFrame() {
     spawnTimer -= gameSpeed;
     if (spawnTimer <= 0) {
       spawnEntity();
-      spawnTimer = 360 + Math.random() * 260;
+      // Wider gaps early on, tightening until 3000 points.
+      spawnTimer = 420 - 80 * Math.min(1, score / 3000) + Math.random() * 260;
     }
 
     // 更新障礙物與碰撞檢查
@@ -1317,6 +1348,7 @@ function simulateFrame() {
         h: obs.h - 10
       };
 
+      if (obs.type === 'cloudGate') updateGatePass(obs, pBox);
       if(obs.type!=='cloudGate' && immunity===0 && checkCollision(pBox,oBox)){
         if(shield>0){shield--;renderHearts();immunity=90;shieldShake=18;sfx.shieldHit();bumpShieldIcon();spawnDust(player.x,player.y-32,'#ffe27a',16);}
         else triggerGameOver();
@@ -1455,6 +1487,8 @@ function startGame(cheat) {
   beginMusic();
   score = 0;
   lastMilestone = 0;
+  gateBoost = 0;
+  gatePass = null;
   gameSpeed = 7.2;
   obstacles = [];
   coins = [];
