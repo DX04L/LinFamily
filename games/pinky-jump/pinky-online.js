@@ -743,12 +743,12 @@
       motionTimer=setTimeout(()=>{
         motionTimer=undefined;
         if (!motionEnabled || document.hidden || document.querySelector('dialog[open]')) return;
-        // Bigger lift = higher jump. Wide range (threshold → hop, 2.4× threshold → full jump) with a
-        // squared response curve, like a controller sensitivity curve: gentle lifts stay low,
-        // only a clearly strong lift reaches the top. (1.5× ≈ 13%, 1.8× ≈ 33%, 2.1× ≈ 62%.)
+        // Bigger lift = higher jump. Cubic response curve (like a controller sensitivity curve):
+        // ordinary arm movement stays a low hop; height climbs fast only near a strong lift.
+        // threshold → hop, 2.6× threshold → full jump. (1.5× ≈ 3%, 1.8× ≈ 13%, 2.2× ≈ 42%.)
         const strength=motionPeak/cfg.threshold;
-        const t=Math.max(0,Math.min(1,(strength-1)/1.4));
-        const power=t*t;
+        const t=Math.max(0,Math.min(1,(strength-1)/1.6));
+        const power=t*t*t;
         if(pairedRoom)sendPairedJump(power);
         else window.pinkyRemoteJump(power);
       },85); // long enough to catch a lift's peak without inflating gentle lifts
