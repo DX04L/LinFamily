@@ -375,6 +375,11 @@
       renderRoomStatus('手機已離開，可用其他裝置輸入同一組配對碼。');
       return;
     }
+    // Sound toggle from the phone rides on 'ready' (no Firestore rules change needed).
+    if (payload.action === 'ready' && (payload.playerName==='mute' || payload.playerName==='sound')) {
+      window.pinkySetMuted?.(payload.playerName==='mute');
+      return;
+    }
     if (payload.action === 'ready') {
       PinkyRTC.hostPeer(true);
       renderRoomStatus('手機已配對，可從手機開始遊戲。');
@@ -910,6 +915,30 @@
     $('controller-room-input').addEventListener('input',e=>
       setConnectCue(roomPattern.test(e.target.value.trim().toUpperCase())));
     $('controller-disconnect').addEventListener('click',()=>disconnectPhone('已中斷配對。',true));
+    // Phone fullscreen (the phone's own screen; browsers can't fullscreen the computer remotely).
+    {
+      const fsBtn=$('controller-fullscreen'),el=document.documentElement;
+      fsBtn.hidden=!((el.requestFullscreen||el.webkitRequestFullscreen)&&(document.fullscreenEnabled??document.webkitFullscreenEnabled??true));
+      fsBtn.addEventListener('click',async()=>{
+        try{
+          if(!document.fullscreenElement&&!document.webkitFullscreenElement){
+            if(el.requestFullscreen)await el.requestFullscreen();else await el.webkitRequestFullscreen();
+          }else if(document.exitFullscreen)await document.exitFullscreen();else await document.webkitExitFullscreen?.();
+        }catch(err){console.info('Fullscreen is unavailable:',err);}
+      });
+    }
+    // Game sound on/off from the phone; sends the wanted state so repeats are harmless.
+    {
+      const soundBtn=$('controller-sound');
+      let soundOn=localStorage.getItem('pinkyControllerSound')!=='off';
+      const paint=()=>{soundBtn.textContent=soundOn?'🔊':'🔇';soundBtn.setAttribute('aria-pressed',String(soundOn));};
+      paint();
+      soundBtn.addEventListener('click',()=>{
+        soundOn=!soundOn;paint();
+        try{localStorage.setItem('pinkyControllerSound',soundOn?'on':'off');}catch{}
+        sendPhoneCommand('ready',0,soundOn?'sound':'mute');
+      });
+    }
     window.addEventListener('pagehide',releaseRoom);
     const showHelp=visible=>{
       $('pinky-settings-view').hidden=visible;

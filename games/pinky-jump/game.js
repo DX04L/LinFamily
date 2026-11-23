@@ -319,6 +319,9 @@ async function enterLandscapeFullscreen() {
   }
 }
 fullscreenBtn.addEventListener('click', enterLandscapeFullscreen);
+// Phone controller sound button: set the game's sound on/off (same as Settings 🔊).
+window.pinkySetMuted = muted => { if (sfx.muted !== !!muted) muteBtn.click(); return sfx.muted; };
+window.pinkyIsMuted = () => sfx.muted;
 // Hide the HUD fullscreen button only where the page can't go fullscreen (e.g. iPhone Safari).
 {
   const el = document.documentElement;

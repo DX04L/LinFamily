@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="style.css?v=11" />
   <link rel="stylesheet" href="install.css?v=1" />
   <link rel="stylesheet" href="splash.css?v=2" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=26" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=27" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=2"></script>
@@ -244,7 +244,7 @@
       <ul class="pinky-guide-controls">
         <li data-zh="🏆 TOP 或 HI 可開啟排行榜，SCORE 顯示本局分數。">🏆 TOP and HI open the leaderboard. SCORE tracks your current run.</li>
         <li data-zh="♥ 顯示剩餘愛心（最多 5 顆）。貓掌齒輪可開啟設定與遊戲說明。">♥ Shows your remaining hearts (up to 5). Tap the paw gear for Settings and the Game Guide.</li>
-        <li data-zh="右上角 ⛶ 切換全螢幕（iPhone 不支援，不會顯示）；設定裡 🔊 開關聲音；📲 安裝可將遊戲加到裝置。">⛶ at the top right toggles fullscreen (not shown on iPhone, which doesn't support it). 🔊 in Settings toggles sound, and 📲 installs the game on your device.</li>
+        <li data-zh="右上角 ⛶ 切換全螢幕（iPhone 不支援，不會顯示）；設定裡 🔊 開關聲音；📲 安裝可將遊戲加到裝置。用手機控制時，手機上方也有 ⛶（手機全螢幕）和 🔊（開關遊戲聲音）。">⛶ at the top right toggles fullscreen (not shown on iPhone, which doesn't support it). 🔊 in Settings toggles sound, and 📲 installs the game on your device. When pairing a phone, the controller also has ⛶ (phone fullscreen) and 🔊 (game sound on/off).</li>
       </ul>
     </section>
   </dialog>
@@ -253,6 +253,8 @@
     <div class="pinky-controller-heading">
       <img src="pinky-icon.png?v=3" alt="" width="44" height="44">
       <h1>Pinky Jump</h1>
+      <button id="controller-fullscreen" type="button" class="pinky-light pinky-ctl-icon" aria-label="Fullscreen" title="Fullscreen" data-zh-aria-label="手機全螢幕" data-zh-title="手機全螢幕">⛶</button>
+      <button id="controller-sound" type="button" class="pinky-light pinky-ctl-icon" aria-pressed="true" aria-label="Game sound" title="Game sound" data-zh-aria-label="遊戲聲音" data-zh-title="遊戲聲音">🔊</button>
       <button id="controller-disconnect" type="button" class="pinky-light" data-zh="離開">Disconnect</button>
     </div>
     <p id="controller-run-score" class="pinky-run-score" role="status" hidden></p>
@@ -289,9 +291,9 @@
   <script src="qrcode.js?v=1"></script>
   <script src="pinky-rtc.js?v=1"></script>
   <script src="locale.js?v=7"></script>
-  <script src="game.js?v=20261123-fs2"></script>
+  <script src="game.js?v=20261123-snd"></script>
   <script src="name-filter.js?v=1"></script>
-  <script src="pinky-online.js?v=34"></script>
+  <script src="pinky-online.js?v=35"></script>
   <script src="lf-menu.js?v=3"></script>
 </body>
 </html>
