@@ -134,8 +134,9 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc { transition:transform .32s cubic-bezier(.4,0,.2,1); } /* 加速再減速 */
 /* 收合：卡片被「吸進」右下角固定的泡泡（泡泡上顯示未讀數字），點泡泡再「放出來」 */
 .lfc.is-collapsed { visibility:hidden; pointer-events:none; }
-.lfc-bubble { position:absolute; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); width:54px; height:54px; border-radius:50%; border:0; padding:0; cursor:pointer; pointer-events:auto; z-index:3;
+.lfc-bubble { position:absolute; right:max(var(--lf-pad), env(safe-area-inset-right)); bottom:calc(16px + env(safe-area-inset-bottom)); width:54px; height:54px; border-radius:50%; border:0; padding:0; cursor:pointer; pointer-events:auto; z-index:3;
   display:flex; align-items:center; justify-content:center; color:#fff; background:var(--pine); box-shadow:0 6px 18px rgba(0,0,0,.28); }
+@media (min-width:640px) { .lfc-bubble { right:0; } } /* 右緣切齊上面那排（手機：頁面左右內距；寬螢幕：留言板區已有內距） */
 .lfc-bubble[hidden], .lfc-bnum[hidden], .lfc-x[hidden] { display:none; }
 .lfc-bnum { position:absolute; top:-4px; right:-4px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:#ef4444; color:#fff; font:700 11.5px/20px Arial, sans-serif; text-align:center; box-shadow:0 0 0 2px var(--surface); }
 /* 右上角收合鈕（—，像 Messenger 最小化）：小、半透明，看得到但不搶眼 */
