@@ -497,7 +497,7 @@
       setMotionEnabled(false);
     }
   }
-  let phoneViewMode='motion', phoneCommandBusy=false;
+  let phoneViewMode='motion', phoneCommandBusy=false, phoneBusySince=0;
   function renderPhoneView() {
     const labels={ready:'開始遊戲',playing:'暫停遊戲',paused:'繼續遊戲',gameover:'再玩一次',submitted:'再玩一次'};
     const record=pairedPhase==='record'||pairedPhase==='record_error';
@@ -625,11 +625,13 @@
   async function sendPhoneCommand(action, power=0, playerName='') {
     const ref=pairedRoom;
     const jumpEdge=action==='jump' && playerName!=='';
-    if (!ref || (phoneCommandBusy && !jumpEdge)) return;
+    // A Firestore write that never settles (flaky network) must not block motion jumps forever:
+    // the busy flag only holds for 1 s. Button jumps (edges) never wait.
+    if (!ref || (phoneCommandBusy && !jumpEdge && performance.now()-phoneBusySince<1000)) return;
     // Direct WebRTC link first; Firebase only when it isn't open.
     if (action==='jump' && pairedPhase!=='playing') return;
     if (PinkyRTC.send({action,power,playerName})) return;
-    if (!jumpEdge) phoneCommandBusy=true;
+    if (!jumpEdge) { phoneCommandBusy=true; phoneBusySince=performance.now(); }
     try {
       const {fs,auth}=await cloud();
       if (pairedRoom!==ref) return;
