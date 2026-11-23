@@ -129,7 +129,54 @@
       place();
     }
     addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', () => { const nb = nearBottom(); fit(); if (nb) toBottom(); });
-    function setCollapsed(c) { collapsed = c; box.classList.toggle('is-collapsed', c); place(); if (!c) { fit(); toBottom(); markRead(); } dot(); }
+    // ---------- 收合 = 右下角固定泡泡（顯示未讀數字）；展開／收合是「黑洞放出／吸入」動畫 ----------
+    // 展開：泡泡噴出一顆光點，沿弧線飛到面板底部中央，再從那一點攤開（先橫向、再縱向）；收合完全倒著播。
+    // 手機面板全寬，光點飛到底部中央後往左右兩邊攤開；電腦飛到面板設定的位置再攤開。
+    const bubble = h('<button class="lfc-bubble" hidden title="展開留言板"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H9l-5 4z"/></svg><b class="lfc-bnum" hidden></b></button>');
+    const spark = h('<i class="lfc-spark" hidden></i>');
+    root.append(bubble, spark);
+    bubble.onclick = () => setCollapsed(false);
+    let warpId = 0;
+    const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches || !box.animate;
+    function fly(a, b, ms, grow) { // 光點沿二次曲線（往上拱）從 a 飛到 b
+      const c = { x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - Math.max(50, Math.abs(a.x - b.x) * .3) }, kf = [];
+      for (let i = 0; i <= 14; i++) { const t = i / 14, u = 1 - t, x = u * u * a.x + 2 * u * t * c.x + t * t * b.x, y = u * u * a.y + 2 * u * t * c.y + t * t * b.y;
+        kf.push({ transform: `translate(${x - 9}px,${y - 9}px) scale(${grow ? .7 + t * .9 : 1.6 - t * .9})` }); }
+      spark.hidden = false;
+      return spark.animate(kf, { duration: ms, easing: 'cubic-bezier(.45,0,.25,1)' }).finished.catch(() => {}).then(() => { spark.hidden = true; });
+    }
+    async function warp(c) {
+      const id = ++warpId; box.getAnimations().forEach(a => a.cancel());
+      const R = root.getBoundingClientRect(), B = box.getBoundingClientRect(), bb = bubble.getBoundingClientRect();
+      const P = { x: B.left + B.width / 2 - R.left, y: B.bottom - R.top - 20 }, Q = { x: bb.left + bb.width / 2 - R.left, y: bb.top + bb.height / 2 - R.top };
+      box.style.transformOrigin = `${P.x - (B.left - R.left)}px ${B.height - 20}px`;
+      const kf = [{ transform: 'scale(.03,.02) rotate(-22deg)', filter: 'blur(8px)', opacity: 0 },
+                  { offset: .5, transform: 'scale(1,.05) rotate(0deg)', filter: 'blur(2px)', opacity: 1 },
+                  { transform: 'none', filter: 'none', opacity: 1 }];
+      if (!c) { // 放出
+        box.style.visibility = 'hidden';
+        bubble.animate([{ transform: 'scale(1)' }, { transform: 'scale(.8)' }, { transform: 'scale(1)' }], 200);
+        await fly(Q, P, 320, false); if (id !== warpId) return;
+        bubble.hidden = true; box.style.visibility = '';
+        await box.animate(kf, { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }).finished.catch(() => {});
+      } else { // 吸入
+        const an = box.animate(kf.slice().reverse().map(k => k.offset ? k : Object.assign({}, k)), { duration: 280, easing: 'cubic-bezier(.7,0,.85,.3)', fill: 'forwards' });
+        await an.finished.catch(() => {}); if (id !== warpId) return;
+        box.style.visibility = 'hidden'; an.cancel();
+        await fly(P, Q, 300, true); if (id !== warpId) return;
+        box.classList.add('is-collapsed'); box.style.visibility = ''; bubble.hidden = false; place();
+        bubble.animate([{ transform: 'scale(.6)' }, { transform: 'scale(1.15)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' });
+      }
+    }
+    function setCollapsed(c) {
+      if (c === collapsed) return;
+      collapsed = c; place();
+      if (!c) { box.classList.remove('is-collapsed'); fit(); toBottom(); markRead(); }
+      dot();
+      if (calm()) { box.classList.toggle('is-collapsed', c); bubble.hidden = !c; return; }
+      if (c) bubble.hidden = false, bubble.style.visibility = 'hidden';
+      warp(c).finally(() => { bubble.style.visibility = ''; });
+    }
     tab.onclick = () => setCollapsed(false);
     function saveLay() { keepLay(); if (me) db.collection('lf_chat_profiles').doc(me.uid).set({ layout: { x: Math.round(lay.x), w: Math.round(lay.w) } }, { merge: true }).catch(() => {}); }
     // 拖標題列：寬螢幕左右移動；沒有移動就是點一下 → 收合
@@ -146,7 +193,7 @@
     const grip = $('lfcHead');
     grip.addEventListener('pointerdown', e => {
       if (e.button > 0) return;
-      const sx = e.clientX, sy = e.clientY, st = place(), H = box.offsetHeight, peek = grip.offsetHeight, base = collapsed ? H - peek : 0;
+      const sx = e.clientX, sy = e.clientY, st = place(), H = box.offsetHeight, peek = grip.offsetHeight, base = 0;
       let axis = null;
       const mv = ev => {
         const dx = ev.clientX - sx, dy = ev.clientY - sy;
@@ -164,8 +211,8 @@
         if (!axis) return setCollapsed(!collapsed);
         if (axis === 'x') return saveLay();
         const dy = ev.clientY - sy;
+        if (dy > 40) { box.style.transform = ''; void box.offsetWidth; box.style.transition = ''; return setCollapsed(true); }
         void box.offsetWidth; box.style.transition = ''; box.style.transform = '';
-        setCollapsed(collapsed ? dy > -40 : dy > 40);
       };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
     });
@@ -208,8 +255,9 @@
     function dot() { // Family 分頁紅點：別人有新訊息、我還沒看
       if (!opt.tabDot || !me) return;
       const mine = reads[me.uid] || 0;
-      const unread = msgs.some(m => m.uid !== me.uid && m.t > mine);
-      opt.tabDot(!visible && unread); $('lfcHead').querySelector('.lfc-gdot').hidden = !(collapsed && unread);
+      const n = msgs.filter(m => m.uid !== me.uid && m.t > mine).length, unread = n > 0;
+      opt.tabDot(!visible && unread);
+      const num = bubble.querySelector('.lfc-bnum'); num.hidden = !unread; num.textContent = n > 99 ? '99+' : n;
     }
 
     // ---------- 畫面 ----------

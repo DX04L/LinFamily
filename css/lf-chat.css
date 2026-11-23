@@ -135,8 +135,13 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-tabdot { position:absolute; top:3px; right:3px; width:8px; height:8px; border-radius:50%; background:#ef4444; pointer-events:none; }
 @media (max-width:639px) { .lfc-vbtn[data-v=x] { top:calc(12px + env(safe-area-inset-top)) !important; } .lfc-vbtn[data-v=dl] { bottom:calc(14px + env(safe-area-inset-bottom)) !important; } .lfc-vcount { top:calc(22px + env(safe-area-inset-top)); } }
 .lfc { transition:transform .32s cubic-bezier(.4,0,.2,1); } /* 加速再減速 */
-/* 收合：整張卡片往下收，只露出頂端小橫條，點一下再展開 */
-.lfc.is-collapsed { transform:translateY(calc(100% - 18px)); } /* 只露出小橫條 */
+/* 收合：卡片被「吸進」右下角固定的泡泡（泡泡上顯示未讀數字），點泡泡再「放出來」 */
+.lfc.is-collapsed { visibility:hidden; pointer-events:none; }
+.lfc-bubble { position:absolute; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); width:54px; height:54px; border-radius:50%; border:0; padding:0; cursor:pointer; pointer-events:auto; z-index:3;
+  display:flex; align-items:center; justify-content:center; color:#fff; background:var(--pine); box-shadow:0 6px 18px rgba(0,0,0,.28); }
+.lfc-bubble[hidden], .lfc-bnum[hidden], .lfc-spark[hidden] { display:none; }
+.lfc-bnum { position:absolute; top:-4px; right:-4px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:#ef4444; color:#fff; font:700 11.5px/20px Arial, sans-serif; text-align:center; box-shadow:0 0 0 2px var(--surface); }
+.lfc-spark { position:absolute; left:0; top:0; width:18px; height:18px; border-radius:50%; pointer-events:none; z-index:4; background:var(--pine); box-shadow:0 0 14px 4px color-mix(in srgb, var(--sage) 70%, transparent); }
 .lfc-grip { position:relative; }
 .lfc-gdot { position:absolute; top:4px; left:calc(50% + 26px); width:8px; height:8px; border-radius:50%; background:#ef4444; }
 .lfc-gdot[hidden] { display:none; }
