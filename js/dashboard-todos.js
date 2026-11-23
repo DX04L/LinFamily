@@ -595,17 +595,17 @@ window.clcMountTodos = function (dashboard, {
           undoBar.className = 'todo-undo-bar';
           undoBar.setAttribute('role', 'status');
           undoBar.setAttribute('aria-live', 'polite');
-          undoBar.style.cssText = 'position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:1000;max-width:calc(100vw - 32px);padding:12px 18px;border-radius:14px;background:#242a38;color:#fff;box-shadow:0 8px 30px #0006;display:flex;align-items:center;gap:18px;font-size:14px;';
+          undoBar.style.cssText = 'position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));right:16px;z-index:1000;max-width:calc(100vw - 32px);padding:6px 6px 6px 14px;border-radius:10px;background:#242a38;color:#e5e7eb;box-shadow:0 4px 16px #0005;display:flex;align-items:center;gap:6px;font-size:13px;'; // 右下角小小一條（像 Gmail），5 秒後自動消失
           const message = document.createElement('span'); message.className = 'todo-undo-message';
           const button = document.createElement('button'); button.type = 'button';
-          button.innerHTML = '復原<span class="undo-en"> Undo</span>'; button.style.cssText = 'flex:none;background:none;border:0;color:#67e8f9;font:700 14px Arial;padding:8px;cursor:pointer;';
+          button.textContent = '復原'; button.style.cssText = 'flex:none;background:none;border:0;color:#67e8f9;font:700 13px Arial,sans-serif;padding:6px 8px;cursor:pointer;';
           button.addEventListener('click', undoDelete);
           undoBar.append(message, button); document.body.append(undoBar);
         }
         undoBar.hidden = !undoEntries.size;
         if (undoEntries.size) document.body.append(undoBar);
         undoBar.style.display = undoEntries.size ? 'flex' : 'none';
-        undoBar.querySelector('.todo-undo-message').textContent = `已刪除 ${undoEntries.size} 項待辦`;
+        undoBar.querySelector('.todo-undo-message').textContent = `已刪除 ${undoEntries.size} 項`;
         undoBar.querySelector('button').disabled = undoBusy;
       }
       function expireUndo(id) {
