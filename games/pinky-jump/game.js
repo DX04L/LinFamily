@@ -319,6 +319,13 @@ async function enterLandscapeFullscreen() {
   }
 }
 fullscreenBtn.addEventListener('click', enterLandscapeFullscreen);
+// Hide the HUD fullscreen button where the page can't go fullscreen (iPhone Safari) or already is (installed app).
+{
+  const el = document.documentElement;
+  const canFull = !!(el.requestFullscreen || el.webkitRequestFullscreen) && (document.fullscreenEnabled ?? document.webkitFullscreenEnabled ?? true);
+  const standaloneApp = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
+  fullscreenBtn.hidden = !canFull || standaloneApp;
+}
 forceFullscreenBtn.addEventListener('click', async () => {
   await enterLandscapeFullscreen();
   rotateOverlay.classList.add('hidden');
