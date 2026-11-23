@@ -208,6 +208,17 @@ function updateMusic() {
 }
 
 // Gameplay state and canvas sizing.
+// World units: the game world is designed for a desktop landscape screen (WORLD_H tall) and every
+// device shows the same world, scaled to fit. Taller screens just show more sky; shorter screens
+// shrink everything. MIN_WORLD_W keeps enough road visible ahead on narrow portrait phones.
+const WORLD_H = 800;
+const MIN_WORLD_W = 720;
+// Highest jump keeps the cat's head about half a cat below the HUD (cat ≈ 68 world px).
+const CAT_HEIGHT = 68;
+const MAX_RISE = 520;
+function jumpTopMargin() { return hudClearance + CAT_HEIGHT * 1.5; }
+let viewScale = 1;
+let hudClearance = 64;
 let width = window.innerWidth;
 let height = window.innerHeight;
 let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -260,12 +271,16 @@ let needsPaint = true;
 hiScoreEl.textContent = '-----';
 
 function resizeCanvas() {
-  width = window.innerWidth;
-  height = window.innerHeight;
+  const screenW = window.innerWidth, screenH = window.innerHeight;
+  viewScale = Math.min(screenW / MIN_WORLD_W, screenH / WORLD_H);
+  width = screenW / viewScale;
+  height = screenH / viewScale;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  canvas.width = screenW * dpr;
+  canvas.height = screenH * dpr;
+  ctx.setTransform(dpr * viewScale, 0, 0, dpr * viewScale, 0, 0);
+  const hud = document.getElementById('hud')?.getBoundingClientRect();
+  hudClearance = ((hud && hud.bottom > 0 ? hud.bottom : 64) / viewScale);
   needsPaint = true;
   checkOrientation();
 }
@@ -357,8 +372,8 @@ function getGroundY(x=width*.17) {
   const [endX,endY]=terrainRoute[left];
   const t=Math.max(0,Math.min(1,(worldX-startX)/(endX-startX)));
   const ease=t*t*(3-2*t);
-  return baseGroundY()+(startY+(endY-startY)*ease)*height+
-    height*(Math.sin(worldX/290+terrainPhase)*.012+
+  return baseGroundY()+(startY+(endY-startY)*ease)*WORLD_H+
+    WORLD_H*(Math.sin(worldX/290+terrainPhase)*.012+
             Math.sin(worldX/117+terrainPhase*.68)*.005);
 }
 
@@ -392,16 +407,13 @@ const player = {
   jump(input = null, power = 1) {
     if (!this.isGrounded || gameState !== 'PLAYING') return;
     // Keyboard and canvas input can trim an ascent; remote input supplies the chosen power.
-    this.gravity = Math.max(0.65, Math.min(0.9, height * 0.00105));
-    let rise = Math.max(175, Math.min(330, height * 0.35));
-    if (width > height) {
-      // Aim at the top as seen at takeoff. The camera never clamps the trajectory.
-      rise = Math.max(24, this.y - cameraY - 100 * this.getScale());
-      this.gravity = Math.max(this.gravity, 2 * rise / (25 * 25));
-    }
+    // Full jump: the same height in world units on every device (desktop landscape reference),
+    // ascent always 25 frames. The camera rises if needed so the head stays half a cat below the HUD.
+    let rise = MAX_RISE;
+    this.gravity = 2 * rise / (25 * 25);
     const shortRise = Math.min(SHORT_JUMP_RISE,rise);
     rise = shortRise + (rise - shortRise) * power;
-    this.jumpCameraLimit = this.y - rise - 100 * this.getScale();
+    this.jumpCameraLimit = this.y - rise - jumpTopMargin();
     this.vy = -Math.sqrt(2 * this.gravity * rise) - this.gravity / 2;
     this.isGrounded = false;
     this.jumpInput = input;
@@ -841,20 +853,21 @@ function spawnEntity() {
   } else if (score > 150 && r < 0.36) {
     // Slightly larger than a bird, high up, moving across the screen.
     obstacles.push({
-      type:'airplane', x, y:groundY - height*(0.43 + Math.random()*0.13),
+      type:'airplane', x, y:groundY - WORLD_H*(0.43 + Math.random()*0.13),
       w:62, h:30, flap:0
     });
   } else if (score > 250 && r < 0.51) {
-    const gapY = Math.max(82, groundY*0.28);
-    const gapH = Math.max(105, Math.min(165, height*0.27));
+    const shift = baseGroundY() - Math.max(WORLD_H*.78, WORLD_H-90);
+    const gapY = Math.max(82, (groundY - shift)*0.28) + shift;
+    const gapH = Math.max(105, Math.min(165, WORLD_H*0.27));
     obstacles.push({type:'cloudGate',x,y:gapY,w:100,h:gapH});
     coins.push({type:'star',x:x+48,y:gapY+gapH/2,r:13,collected:false,spin:0});
   } else if (score > 90 && r < 0.70) {
     // A few slightly higher mountains; rare tall peaks remain jumpable with one tap.
     const tall = Math.random() < 0.06;
-    const ordinary = [48,56,66,78,Math.min(108,height*0.20),Math.min(122,height*0.235)];
+    const ordinary = [48,56,66,78,Math.min(108,WORLD_H*0.20),Math.min(122,WORLD_H*0.235)];
     const h = tall
-      ? Math.min(285, Math.max(125, height * 0.29))
+      ? Math.min(285, Math.max(125, WORLD_H * 0.29))
       : ordinary[Math.floor(Math.random()*ordinary.length)];
     const w = tall ? Math.min(136, Math.max(76,h*0.34)) : 64;
     obstacles.push({type:'mountain',x,y:groundY,w,h,tall});
@@ -864,7 +877,7 @@ function spawnEntity() {
   }
   if (Math.random() < .85) {
     const roll=Math.random(),type=roll<.11?'heart':roll<.36?'star':'coin';
-    const lift = type==='heart'?125:(Math.random()<.5?58:Math.min(180,height*.38));
+    const lift = type==='heart'?125:(Math.random()<.5?58:Math.min(180,WORLD_H*.38));
     for(let i=0;i<(type==='coin'?3:1);i++) {
       const cx=x+70+i*34;
       coins.push({type,x:cx,y:getGroundY(cx)-lift-Math.sin(i*Math.PI/2)*15,
@@ -1209,7 +1222,7 @@ function simulateFrame() {
   // Look ahead on downhill roads, placing the road farther up in the frame.
   const roadHere = getGroundY(player.x);
   const roadAhead = getGroundY(player.x + Math.min(width*.78,720));
-  const downhillLookAhead = Math.min(height*.39,Math.max(0,roadAhead-roadHere)*.92);
+  const downhillLookAhead = Math.min(WORLD_H*.39,Math.max(0,roadAhead-roadHere)*.92);
   const desiredCamera = roadHere - baseGroundY() + downhillLookAhead;
   // Hold the highest useful camera position through the arc, without tracking the cat.
   const cameraTarget = player.isGrounded ? desiredCamera : Math.min(desiredCamera, player.jumpCameraLimit);
@@ -1485,7 +1498,7 @@ function releaseJump(input, heldMs) {
   }
   player.vy = Math.max(player.vy, -Math.sqrt(2 * player.gravity * remainingRise));
   const ascent = player.vy ** 2 / (2 * player.gravity);
-  player.jumpCameraLimit = player.y - ascent - 100 * player.getScale();
+  player.jumpCameraLimit = player.y - ascent - jumpTopMargin();
 }
 window.pinkyRemoteRelease = function(input, heldMs, missingPress) {
   if (gameState !== 'PLAYING' || document.querySelector('dialog[open]')) return;

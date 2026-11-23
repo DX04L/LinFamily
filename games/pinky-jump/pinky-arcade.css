@@ -451,3 +451,10 @@ html[lang="en"] #pinky-language span:first-child, html[lang="zh-Hant"] #pinky-la
 #pinky-pair-btn .pinky-link-dot { position: absolute; top: 2px; left: 2px; }
 .pinky-controller-heading .pinky-link-dot { margin-left: 8px; vertical-align: middle; }
 .pinky-link-hint { margin: 6px 0 0; font-size: 12px; color: #8a5a76; }
+
+/* Pairing QR code next to the 6-character code */
+.pinky-room-head { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 0; }
+#pinky-room-qr { flex: 0 0 auto; width: clamp(76px, 24vh, 170px); height: auto; aspect-ratio: 1; border: 2px solid #f1aac9; border-radius: 10px; background: #fff; image-rendering: pixelated; }
+.pinky-room-head .pinky-pair-code { min-width: 0; }
+/* Bigger settings window on roomy screens (less scrolling in the guide); short screens still fit by height */
+#pinky-pair-dialog { width: min(560px, calc(100vw - 24px)); height: min(640px, calc(var(--pinky-settings-height, 100dvh) - 16px)); }

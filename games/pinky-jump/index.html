@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="style.css?v=11" />
   <link rel="stylesheet" href="install.css?v=1" />
   <link rel="stylesheet" href="splash.css?v=2" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=19" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=20" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=2"></script>
@@ -202,7 +202,10 @@
             <button id="pinky-create-room" type="button" class="pinky-light" data-zh="產生 6 碼配對碼">Get Code</button>
           </div>
           <div id="pinky-share-room" hidden>
-            <p id="pinky-room-code" class="pinky-pair-code" hidden></p>
+            <div class="pinky-room-head">
+              <canvas id="pinky-room-qr" width="200" height="200" aria-label="QR code: scan with the phone camera to connect" data-zh-aria-label="QR code：用手機相機掃描即可連線"></canvas>
+              <p id="pinky-room-code" class="pinky-pair-code" hidden></p>
+            </div>
             <div class="pinky-setting-row">
               <input id="pinky-room-link" aria-label="Controller link" readonly data-zh-aria-label="手機控制器連結">
               <button id="pinky-copy-link" type="button" class="pinky-light" data-zh="複製連結">Copy Link</button>
@@ -280,11 +283,12 @@
   </main>
 
   <script src="pinky-ui.js?v=1"></script>
+  <script src="qrcode.js?v=1"></script>
   <script src="pinky-rtc.js?v=1"></script>
   <script src="locale.js?v=4"></script>
-  <script src="game.js?v=20261122-ui"></script>
+  <script src="game.js?v=20261123-world"></script>
   <script src="name-filter.js?v=1"></script>
-  <script src="pinky-online.js?v=26"></script>
+  <script src="pinky-online.js?v=27"></script>
   <script src="lf-menu.js?v=3"></script>
 </body>
 </html>

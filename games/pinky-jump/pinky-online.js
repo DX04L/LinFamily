@@ -421,6 +421,20 @@
     window.pinkyRemoteJump?.(Math.max(0,Math.min(1,Number(payload.power)||0)));
   }
 
+  // QR code for the controller link, generated locally (qrcode.js, MIT).
+  function drawRoomQR(text) {
+    const canvas=$('pinky-room-qr');
+    if(!canvas||typeof qrcode!=='function')return;
+    const qr=qrcode(0,'M');
+    qr.addData(text);
+    qr.make();
+    const count=qr.getModuleCount(), quiet=3, cell=Math.floor(canvas.width/(count+quiet*2));
+    const ctx=canvas.getContext('2d'), offset=Math.floor((canvas.width-cell*count)/2);
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#4b1528';
+    for(let r=0;r<count;r++)for(let c=0;c<count;c++)
+      if(qr.isDark(r,c))ctx.fillRect(offset+c*cell,offset+r*cell,cell,cell);
+  }
   async function createRoom() {
     // Unlock host audio in the local gesture before a phone starts the game.
     sfx.init();
@@ -438,6 +452,7 @@
     link.searchParams.set('room',code);
     const field=$('pinky-room-link');
     if(field)field.value=link.href;
+    drawRoomQR(link.href);
     renderRoomStatus('正在建立配對…');
     const dialog=$('pinky-pair-dialog');
     openGameDialog(dialog);
