@@ -75,7 +75,7 @@
     };
     root.innerHTML = `
       <div class="lfc">
-        <div class="lfc-grip" id="lfcHead" title="點一下收合"><span></span></div>
+        <div class="lfc-grip" id="lfcHead" title="點一下收合／展開"><span></span><i class="lfc-gdot" hidden></i></div>
         <div class="lfc-findbar" id="lfcFindBar" hidden><span id="lfcFindN"></span><button id="lfcFindUp" title="上一則（較舊）">˄</button><button id="lfcFindDn" title="下一則（較新）">˅</button></div>
         <div class="lfc-pin" id="lfcPin" hidden>📢<span id="lfcPinText"></span><button id="lfcUnpin" title="取消公告">✕</button></div>
         <div class="lfc-list" id="lfcList"></div>
@@ -118,7 +118,7 @@
       place();
     }
     addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', () => { const nb = nearBottom(); fit(); if (nb) toBottom(); });
-    function setCollapsed(c) { collapsed = c; box.hidden = c; tab.hidden = !c; place(); if (!c) { fit(); toBottom(); markRead(); } dot(); }
+    function setCollapsed(c) { collapsed = c; box.classList.toggle('is-collapsed', c); place(); if (!c) { fit(); toBottom(); markRead(); } dot(); }
     tab.onclick = () => setCollapsed(false);
     function saveLay() { if (me) db.collection('lf_chat_profiles').doc(me.uid).set({ layout: { x: Math.round(lay.x), w: Math.round(lay.w) } }, { merge: true }).catch(() => {}); }
     // 拖標題列：寬螢幕左右移動；沒有移動就是點一下 → 收合
@@ -131,7 +131,7 @@
         addEventListener('pointermove', mv); addEventListener('pointerup', up);
       });
     }
-    drag($('lfcHead'), (dx, st) => { if (wideQ.matches) lay.x = st.x + dx; }, () => setCollapsed(true));
+    drag($('lfcHead'), (dx, st) => { if (wideQ.matches) lay.x = st.x + dx; }, () => setCollapsed(!collapsed));
     drag(rzR, (dx, st) => { lay.x = st.x; lay.w = Math.max(360, Math.min(st.W - st.x, st.w + dx)); });
     drag(rzL, (dx, st) => { const w = Math.max(360, Math.min(st.x + st.w, st.w - dx)); lay.x = st.x + st.w - w; lay.w = w; });
     wideQ.addEventListener && wideQ.addEventListener('change', fit);
@@ -172,7 +172,7 @@
       if (!opt.tabDot || !me) return;
       const mine = reads[me.uid] || 0;
       const unread = msgs.some(m => m.uid !== me.uid && m.t > mine);
-      opt.tabDot(!visible && unread); tab.querySelector('.lfc-tdot').hidden = !(collapsed && unread);
+      opt.tabDot(!visible && unread); $('lfcHead').querySelector('.lfc-gdot').hidden = !(collapsed && unread);
     }
 
     // ---------- 畫面 ----------

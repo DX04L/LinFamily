@@ -132,3 +132,9 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-vcount { position:absolute; top:22px; left:50%; transform:translateX(-50%); color:#fff; font-size:13px; }
 .lfc-tabdot { position:absolute; top:3px; right:3px; width:8px; height:8px; border-radius:50%; background:#ef4444; pointer-events:none; }
 @media (max-width:639px) { .lfc-vbtn[data-v=x] { top:calc(12px + env(safe-area-inset-top)) !important; } .lfc-vbtn[data-v=dl] { bottom:calc(14px + env(safe-area-inset-bottom)) !important; } .lfc-vcount { top:calc(22px + env(safe-area-inset-top)); } }
+.lfc { transition:transform .25s ease; }
+/* 收合：整張卡片往下收，只露出頂端小橫條，點一下再展開 */
+.lfc.is-collapsed { transform:translateY(calc(100% - 22px - env(safe-area-inset-bottom))); }
+.lfc-grip { position:relative; }
+.lfc-gdot { position:absolute; top:4px; left:calc(50% + 26px); width:8px; height:8px; border-radius:50%; background:#ef4444; }
+.lfc-gdot[hidden] { display:none; }

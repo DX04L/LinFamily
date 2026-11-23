@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
   <link rel="stylesheet" href="css/lf-todos.css?v=9">
-  <link rel="stylesheet" href="css/lf-chat.css?v=5">
+  <link rel="stylesheet" href="css/lf-chat.css?v=6">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
@@ -176,7 +176,7 @@
     .lf-top { flex-wrap:wrap; }
     #lfToolbar { margin:0; justify-content:flex-end; } /* 分頁列右緣對齊皇冠；＋ 在左邊，消失時分頁列不會移動 */
     #lfToolbar .clc-tb-add { order:-1; }
-    @media (max-width:639px) { #lfToolbar { justify-content:flex-start; } #lfToolbar .clc-tb-add { order:0; margin-left:auto; } } /* 手機：分頁列靠左、＋ 在最右邊 */
+    @media (max-width:639px) { #lfToolbar { justify-content:flex-start; } #lfToolbar .clc-tb-add { order:0; } } /* 手機：分頁列靠左、＋ 緊接在放大鏡旁邊 */
     main > .clc-tb-search { order:-1; flex:none; } /* 搜尋框出現在上方，把內容往下擠 */
     @media (max-width:639px) { #lfToolbar { order:3; flex-basis:100%; margin-top:14px; } }
     @media (min-width:640px) { .lf-top { align-items:flex-end; padding-top:calc(30px + env(safe-area-inset-top)); } .lf-top > :first-child { flex:1; min-width:0; } }
@@ -438,7 +438,7 @@
   <script src="js/dashboard-todos.js"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=8"></script>
+  <script src="js/lf-chat.js?v=9"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
