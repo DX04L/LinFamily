@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png?v=5">
   <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png?v=5">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=5">
-  <link rel="stylesheet" href="./sg-reader.css?v=5">
+  <link rel="stylesheet" href="./sg-reader.css?v=6">
 
   <style>
     :root {
@@ -1416,6 +1416,13 @@
         authUnavailable();
       }
     }
+
+    // iPhone（WebKit）點 summary 裡的日期膠囊有時不會展開 <details>：改由程式自己開關
+    document.querySelector('#sg-date-picker > summary').addEventListener('click', event => {
+      event.preventDefault();
+      const picker = document.getElementById('sg-date-picker');
+      picker.open = !picker.open;
+    });
 
     function updateDateNav() {
       const idx = recentList.findIndex(d => d.date === currentDoc?.date);

@@ -98,6 +98,7 @@
 
 .sg-date-picker {
   position: relative;
+  z-index: 100; /* 下拉清單要蓋在閱讀區上面（iPhone 會被下面的內容蓋住） */
   min-width: 0;
   border: 0;
   padding: 0;

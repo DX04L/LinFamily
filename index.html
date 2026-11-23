@@ -8,6 +8,18 @@
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
+  <script>
+    (function lfAppHeight() { // iPhone 主畫面 App 才用：高度＝整個螢幕（直式取長邊、橫式取短邊）
+      if (!/iPhone/i.test(navigator.userAgent) || !(navigator.standalone === true || matchMedia('(display-mode: standalone)').matches)) return;
+      var root = document.documentElement;
+      function set() {
+        var a = screen.width, b = screen.height, portrait = innerHeight >= innerWidth;
+        root.style.setProperty('--lf-app-h', (portrait ? Math.max(a, b) : Math.min(a, b)) + 'px');
+      }
+      root.classList.add('lf-ios-app'); set();
+      addEventListener('resize', set); addEventListener('orientationchange', function () { setTimeout(set, 300); });
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>LinFamily</title>
   <!-- PWA -->
@@ -269,6 +281,9 @@
     /* 上面（標題、分頁）固定，只有下面的 App 區捲動；App 沒滿就不能捲 */
     html, body { height:100%; }
     body { height:100dvh; min-height:0 !important; overflow:hidden; display:flex; flex-direction:column; }
+    /* iPhone 主畫面 App：100dvh 會少算上方狀態列的高度，底部留一條空白。改用實際螢幕高度（下方的 lfAppHeight） */
+    html.lf-ios-app, html.lf-ios-app body { height:var(--lf-app-h); overflow:hidden; }
+    html.lf-ios-app .lf-wall { bottom:auto; height:var(--lf-app-h); }
     main { display:flex; flex-direction:column; min-height:0; padding-bottom:0; }
     main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px 10px calc(16px + env(safe-area-inset-bottom)); margin:-10px -10px 0; } /* 四周留 10px，App 滑鼠放大時不會被切到；負邊距讓位置不變 */
     #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
