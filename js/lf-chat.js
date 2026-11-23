@@ -130,7 +130,7 @@
         render(); dot(); markRead();
       }, err));
     }
-    function err(e) { console.warn('留言板', e); if (e && e.code === 'permission-denied') denied = true, list.innerHTML = '<p class="lfc-empty">留言板還沒開放（Firestore 規則尚未發布）。</p>'; }
+    function err(e) { console.warn('留言板', e); toast('留言板讀取失敗：' + ((e && e.code) || e)); if (e && e.code === 'permission-denied') denied = true, list.innerHTML = '<p class="lfc-empty">留言板還沒開放（Firestore 規則尚未發布）。</p>'; }
     function markRead() {
       if (!visible || document.hidden || !me || !msgs.length) return;
       const last = msgs[msgs.length - 1].t;
@@ -194,7 +194,7 @@
       const d = Object.assign({ uid: me.uid, ts: FV.serverTimestamp() }, data);
       if (reply) { d.replyTo = reply; setReply(null); }
       try { await db.collection('lf_chat_messages').add(d); setTimeout(toBottom, 50); }
-      catch (e) { toast('傳送失敗，請檢查網路後再試'); console.warn(e); }
+      catch (e) { toast('傳送失敗：' + ((e && e.code) || e)); console.warn(e); }
     }
     function sendText() {
       const text = input.value.trim(); if (!text) return;
