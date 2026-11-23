@@ -12,6 +12,7 @@ const ctx = canvas.getContext('2d');
 
 // UI 元素
 const startPanel = document.getElementById('start-panel');
+const bluesChoice = document.getElementById('character-blues');
 const gameoverPanel = document.getElementById('gameover-panel');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
@@ -518,6 +519,12 @@ const player = {
     ctx.translate(0, bounce);
     ctx.scale(1 - this.squash * 0.6, 1 + this.squash);
     ctx.rotate(tilt);
+
+    if (bluesChoice.checked) {
+      drawBlues(ctx,this);
+      ctx.restore();
+      return;
+    }
 
     // 1. 粉白尾巴 (擺動)
     const tailWag = Math.sin(this.runCycle * 1.2) * 0.35;
@@ -1691,6 +1698,9 @@ window.addEventListener('load', () => {
     gameWrapper.focus({preventScroll:true});
   }
 });
+const bluesPreview = document.getElementById('blues-preview').getContext('2d');
+bluesPreview.translate(38,110);
+drawBlues(bluesPreview,{runCycle:0,isGrounded:true,hurt:false,blinkTimer:0});
 requestAnimationFrame(update);
 
 // Re-arm game audio on every tap/key, so sound comes back after iOS interrupts it.

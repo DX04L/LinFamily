@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" />
   <link rel="canonical" href="https://linfamily.pages.dev/games/pinky-jump/" />
   <link rel="manifest" href="manifest.webmanifest?v=4" />
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=12" />
   <link rel="stylesheet" href="install.css?v=1" />
   <link rel="stylesheet" href="splash.css?v=2" />
   <link rel="stylesheet" href="pinky-arcade.css?v=27" />
@@ -107,6 +107,16 @@
         <div class="controls-hint">
           <span data-zh="👆 點一下畫面就跳（電腦可按空白鍵）">👆 Tap the screen or press Space to jump</span>
         </div>
+        <fieldset id="pinky-character-choice" aria-label="Character" data-zh-aria-label="角色">
+          <label>
+            <input id="character-pinky" type="radio" name="character" value="pinky" checked>
+            <span><img src="pinky-icon.png?v=3" alt="">Pinky</span>
+          </label>
+          <label>
+            <input id="character-blues" type="radio" name="character" value="blues">
+            <span><canvas id="blues-preview" width="76" height="112" aria-hidden="true"></canvas>Blues</span>
+          </label>
+        </fieldset>
         <button id="start-btn" class="btn-primary pulse" data-zh="開始奔跑 ▶">Play ▶</button>
       </div>
 
@@ -291,7 +301,8 @@
   <script src="qrcode.js?v=1"></script>
   <script src="pinky-rtc.js?v=1"></script>
   <script src="locale.js?v=7"></script>
-  <script src="game.js?v=20261123-snd"></script>
+  <script src="blues.js?v=1"></script>
+  <script src="game.js?v=20261124-blues"></script>
   <script src="name-filter.js?v=1"></script>
   <script src="pinky-online.js?v=35"></script>
   <script src="lf-menu.js?v=3"></script>
