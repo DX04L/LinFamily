@@ -73,8 +73,9 @@ html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 4%, transparent)
 .lfc-sugg { flex-wrap:wrap; }
 .lfc-sugg button { border:1px solid var(--border); background:var(--btn); border-radius:14px; padding:3px 10px 3px 4px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; font-size:13px; }
 .lfc-sugg .lfc-av { width:22px; height:22px; }
-.lfc-stks { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; padding:10px 14px; border-top:1px solid var(--border); max-height:220px; overflow-y:auto; }
-.lfc-stks button { border:0; background:none; cursor:pointer; padding:4px; border-radius:12px; aspect-ratio:1; }
+.lfc-stks { position:absolute; right:8px; z-index:20; display:grid; grid-template-columns:repeat(8, 40px); gap:4px; padding:8px; width:max-content; max-width:calc(100% - 16px); max-height:min(60%, 340px); overflow-y:auto; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:var(--shadow); } /* 貼圖：小方框一次看到全部；之後太多再分頁 */
+@media (max-width:400px) { .lfc-stks { grid-template-columns:repeat(8, 1fr); left:8px; } }
+.lfc-stks button { border:0; background:none; cursor:pointer; padding:2px; border-radius:10px; aspect-ratio:1; width:100%; }
 .lfc-stks button:hover { background:var(--btn); }
 .lfc-bar { display:flex; align-items:flex-end; gap:4px; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
 .lfc-tools { display:flex; gap:2px; }

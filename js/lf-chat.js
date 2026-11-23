@@ -287,7 +287,11 @@
     $('lfcStk').onclick = () => {
       const box = $('lfcStks');
       if (!box.childElementCount) AV.forEach(a => MOODS.forEach(md => { const b = h(`<button title="${a[1]}">${face(a[0], md, true)}</button>`); b.onclick = () => { box.hidden = true; send({ stk: a[0] + ':' + md }); }; box.append(b); }));
-      box.hidden = !box.hidden; fit();
+      box.hidden = !box.hidden;
+      if (!box.hidden) { // 浮在輸入列上方的小方框（照 LINE），點外面就關
+        box.style.bottom = (root.querySelector('.lfc-bar').offsetHeight + 6) + 'px';
+        setTimeout(() => document.addEventListener('pointerdown', function off(e) { if (!box.contains(e.target) && !$('lfcStk').contains(e.target)) box.hidden = true; if (box.hidden) document.removeEventListener('pointerdown', off, true); }, true));
+      }
     };
     // @提及：輸入 @ 跳出成員
     function suggest() {
