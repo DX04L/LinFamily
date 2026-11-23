@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="style.css?v=11" />
   <link rel="stylesheet" href="install.css?v=1" />
   <link rel="stylesheet" href="splash.css?v=2" />
-  <link rel="stylesheet" href="pinky-arcade.css?v=25" />
+  <link rel="stylesheet" href="pinky-arcade.css?v=26" />
   <!-- LF/DX 規格：先接住瀏覽器可能提前送出的安裝事件 -->
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pinkyBIP=e;});</script>
   <script defer src="install.js?v=2"></script>
@@ -182,7 +182,7 @@
           <p class="pinky-pause-tip" data-zh="點右下角的箭頭 ❯❯❯ 即可暫停，再點遊戲畫面繼續。">Tap the arrows ❯❯❯ in the bottom-right corner to pause. Tap the game screen to resume.</p>
         </section>
         <section id="pinky-motion-pane" aria-labelledby="pinky-motion-tab" hidden>
-          <p data-zh="輕抬手機或平板可短跳，抬快一點就會跳得更高。切回「一般控制」可恢復點畫面跳躍。">Lift your device gently for a short hop, or lift it faster to jump higher. Switch back to Controls to use the screen.</p>
+          <p data-zh="輕抬手機或平板可短跳；抬得越快越用力，跳得越高。切回「一般控制」可恢復點畫面跳躍。">Lift your device gently for a short hop; the harder and faster you lift, the higher you jump. Switch back to Controls to use the screen.</p>
           <div class="pinky-setting-row">
             <label for="controller-sensitivity" data-zh="靈敏度">Sensitivity</label>
             <select id="controller-sensitivity">
@@ -255,6 +255,7 @@
       <h1>Pinky Jump</h1>
       <button id="controller-disconnect" type="button" class="pinky-light" data-zh="離開">Disconnect</button>
     </div>
+    <p id="controller-run-score" class="pinky-run-score" role="status" hidden></p>
     <button id="controller-primary" type="button" class="btn-primary" data-zh="開始遊戲">Start Game</button>
     <form id="controller-record" hidden>
       <label for="controller-name" data-zh="🏆 輸入名字登記排行榜">🏆 Enter your name for the leaderboard.</label>
@@ -272,7 +273,7 @@
       <button id="controller-jump" type="button" class="btn-primary" data-zh-title="輕點短跳，按住高跳" title="Tap to hop. Hold to jump higher."><span data-zh="跳躍">Jump</span><small data-zh="輕點短跳 · 按住高跳">Tap to hop · Hold to jump high</small></button>
     </section>
     <section id="controller-motion">
-      <p data-zh="先握穩手機等體感就緒。遊戲開始後，輕抬可短跳，抬快一點就會跳得更高。">Hold your phone steady to calibrate. Once the run starts, lift it gently to hop or faster to jump higher.</p>
+      <p data-zh="先握穩手機等體感就緒。遊戲開始後，輕抬可短跳；抬得越快越用力，跳得越高。">Hold your phone steady to calibrate. Once the run starts, lift it gently to hop; the harder and faster you lift, the higher you jump.</p>
       <div class="pinky-setting-row">
         <label for="controller-remote-sensitivity" data-zh="靈敏度">Sensitivity</label>
         <select id="controller-remote-sensitivity">
@@ -287,10 +288,10 @@
   <script src="pinky-ui.js?v=2"></script>
   <script src="qrcode.js?v=1"></script>
   <script src="pinky-rtc.js?v=1"></script>
-  <script src="locale.js?v=5"></script>
+  <script src="locale.js?v=6"></script>
   <script src="game.js?v=20261123-fs"></script>
   <script src="name-filter.js?v=1"></script>
-  <script src="pinky-online.js?v=30"></script>
+  <script src="pinky-online.js?v=31"></script>
   <script src="lf-menu.js?v=3"></script>
 </body>
 </html>

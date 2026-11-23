@@ -497,7 +497,7 @@
       setMotionEnabled(false);
     }
   }
-  let phoneViewMode='motion', phoneCommandBusy=false, phoneBusySince=0;
+  let phoneViewMode='motion', phoneCommandBusy=false, phoneBusySince=0, pairedRunScore=0;
   function renderPhoneView() {
     const labels={ready:'開始遊戲',playing:'暫停遊戲',paused:'繼續遊戲',gameover:'再玩一次',submitted:'再玩一次'};
     const record=pairedPhase==='record'||pairedPhase==='record_error';
@@ -511,13 +511,20 @@
     $('controller-jump').disabled=pairedPhase!=='playing';
     $('controller-manual-tab').disabled=phoneViewMode==='motion' && pairedPhase==='playing';
     setText('controller-status',pairedPhase==='record_error'?'登記失敗，請重新送出或略過。':'');
+    // Show this run's score on the phone after the run (name entry and game over).
+    const scoreEl=$('controller-run-score');
+    const showScore=(record||pairedPhase==='gameover'||pairedPhase==='submitted') && pairedRunScore>0;
+    scoreEl.hidden=!showScore;
+    if (showScore) setText('controller-run-score',PinkyLocale.message(record?'🏆 上榜了！本局 {0} 分':'本局 {0} 分',String(pairedRunScore)));
   }
   function updatePairedPhase(data) {
     // A ready room starts at score 0. Reserve nonzero ready scores for pause
     // so existing Firestore room rules also work with paused games.
     const phase=data.phase==='ready' && data.runScore>0 ? 'paused' : data.phase;
     const previous=pairedPhase;
-    if (phase===previous) return;
+    const runScore=Math.max(0,Math.floor(Number(data.runScore)||0));
+    if (phase===previous && runScore===pairedRunScore) return;
+    pairedRunScore=runScore;
     pairedPhase=phase;
     renderPhoneView();
     if (phase==='playing') document.dispatchEvent(new Event('pinky-play-start'));
@@ -736,11 +743,12 @@
       motionTimer=setTimeout(()=>{
         motionTimer=undefined;
         if (!motionEnabled || document.hidden || document.querySelector('dialog[open]')) return;
+        // Bigger lift = higher jump, smoothly: threshold → short hop, 1.7× threshold → full jump.
         const strength=motionPeak/cfg.threshold;
-        const power=strength>=1.85?1:strength>=1.4?.45:0;
+        const power=Math.max(0,Math.min(1,(strength-1.15)/0.55));
         if(pairedRoom)sendPairedJump(power);
         else window.pinkyRemoteJump(power);
-      },65);
+      },110); // wait a little longer so a big lift's peak is fully measured
     }
     previousImpulse=impulse;
   }
