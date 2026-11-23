@@ -472,3 +472,6 @@ html[lang="en"] #pinky-language span:first-child, html[lang="zh-Hant"] #pinky-la
   #controller-connect.pinky-cta { animation: none; box-shadow: 0 0 0 4px #ffd400aa; }
   .pinky-connect-hint { animation: none; }
 }
+
+/* A popup is open: hide the start / game-over / record boxes behind it (no overlapping boxes). */
+body.pinky-popup-open .panel { visibility: hidden; }

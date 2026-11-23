@@ -18,6 +18,10 @@
   }
 
   const stack = [];
+  // While any popup is open, hide the screen panels (start / gameover / record) so boxes never overlap.
+  function syncCover() {
+    document.body.classList.toggle('pinky-popup-open', stack.some(d => d.open || d.__pinkyCovered));
+  }
   function hook(dialog) {
     if (!dialog || dialog.__pinkyHooked) return;
     dialog.__pinkyHooked = true;
@@ -31,6 +35,7 @@
       if (at >= 0) stack.splice(at, 1);
       stack.push(dialog);
       rawShow();
+      syncCover();
     };
     dialog.__pinkyRawShow = rawShow;
     dialog.__pinkyRawClose = rawClose;
@@ -41,6 +46,7 @@
       if (at >= 0) stack.splice(at, 1);
       const prev = stack[stack.length - 1];
       if (prev && !prev.open) prev.__pinkyRawShow();
+      syncCover();
     });
   }
   function rawCloseOf(dialog) { return dialog.__pinkyRawClose || dialog.close.bind(dialog); }
@@ -53,6 +59,6 @@
     top: () => stack[stack.length - 1] || null,
     hook,
     /** Close every popup at once (no previous one is revealed). */
-    closeAll() { while (stack.length) { const d = stack.pop(); if (d.open) rawCloseOf(d)(); } }
+    closeAll() { while (stack.length) { const d = stack.pop(); if (d.open) rawCloseOf(d)(); } syncCover(); }
   };
 })();
