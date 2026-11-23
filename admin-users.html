@@ -123,6 +123,11 @@
             <select class="field" id="lfSecMSleep"><option value="0">關閉</option><option value="5">5 分鐘</option><option value="10">10 分鐘</option><option value="15">15 分鐘</option><option value="30">30 分鐘</option><option value="60">60 分鐘</option></select></label>
           <label>自動登出：多久沒操作就全站登出
             <select class="field" id="lfSecMLogout"><option value="0">關閉</option><option value="30">30 分鐘</option><option value="60">1 小時</option><option value="240">4 小時</option><option value="480">8 小時</option><option value="1440">1 天</option></select></label>
+          <p style="margin-top:8px"><b>🔒 App 櫃密碼鎖（Superuser 帳號，防小朋友亂改）</b></p>
+          <label>密碼（數字，預設 0404）
+            <input class="field" id="lfSecPin" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="0404"></label>
+          <label>解鎖後幾分鐘內不用再輸入
+            <select class="field" id="lfSecPinMin"><option value="5">5 分鐘</option><option value="10">10 分鐘</option><option value="15">15 分鐘</option><option value="30">30 分鐘</option><option value="60">60 分鐘</option></select></label>
           <button type="submit" class="lf-primary">儲存</button>
           <p class="lf-note" id="lfSecMsg"></p>
         </form>
@@ -173,13 +178,13 @@
     async function loadSec() {
       try { const d = (await db.collection('linfamily_settings').doc('security').get()).data() || {};
         $('lfSecSleep').value = String(d.sleepMin || 0); $('lfSecLogout').value = String(d.logoutMin || 0);
-        $('lfSecMSleep').value = String(d.mSleepMin ?? d.sleepMin ?? 0); $('lfSecMLogout').value = String(d.mLogoutMin ?? d.logoutMin ?? 0); } catch (err) { $('lfSecMsg').textContent = '讀取失敗：' + errText(err); }
+        $('lfSecMSleep').value = String(d.mSleepMin ?? d.sleepMin ?? 0); $('lfSecMLogout').value = String(d.mLogoutMin ?? d.logoutMin ?? 0); $('lfSecPin').value = String(d.cabinetPin || '0404'); $('lfSecPinMin').value = String(d.cabinetUnlockMin || 10); } catch (err) { $('lfSecMsg').textContent = '讀取失敗：' + errText(err); }
     }
     $('lfSecForm').addEventListener('submit', async e => {
       e.preventDefault();
       try {
         const N = id => Number($(id).value);
-        await db.collection('linfamily_settings').doc('security').set({ sleepMin: N('lfSecSleep'), logoutMin: N('lfSecLogout'), mSleepMin: N('lfSecMSleep'), mLogoutMin: N('lfSecMLogout'), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        await db.collection('linfamily_settings').doc('security').set({ sleepMin: N('lfSecSleep'), logoutMin: N('lfSecLogout'), mSleepMin: N('lfSecMSleep'), mLogoutMin: N('lfSecMLogout'), cabinetPin: ($('lfSecPin').value.trim() || '0404'), cabinetUnlockMin: N('lfSecPinMin'), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
         try { localStorage.setItem('clc_security_lf', JSON.stringify({ sleepMin: N('lfSecSleep'), logoutMin: N('lfSecLogout') })); localStorage.setItem('clc_security_lf_m', JSON.stringify({ sleepMin: N('lfSecMSleep'), logoutMin: N('lfSecMLogout') })); } catch (_) {}
         $('lfSecMsg').textContent = '✅ 已儲存，下次打開或 1 分鐘內生效。';
       } catch (err) { $('lfSecMsg').textContent = '儲存失敗：' + errText(err); }

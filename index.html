@@ -151,6 +151,20 @@
     .lf-all-row { display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:14px; background:var(--btn); }
     .lf-all-row a { flex:1; display:flex; align-items:center; gap:12px; color:inherit; text-decoration:none; min-width:0; font-weight:700; }
     .lf-all-row .lf-icon { width:40px; height:40px; flex:none; }
+    .lf-all-row a { -webkit-touch-callout:none; }
+    .lf-open { flex:none; display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; user-select:none; }
+    .lf-open input { width:38px; height:22px; margin:0; appearance:none; -webkit-appearance:none; border-radius:11px; background:var(--btn-h); position:relative; cursor:pointer; transition:background .2s; }
+    .lf-open input::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:left .2s; }
+    .lf-open input:checked { background:var(--pine, #4E8B7E); }
+    .lf-open input:checked::after { left:18px; }
+    .lf-open span { min-width:2.2em; }
+    .lf-row-menu .lf-danger { width:100%; }
+    dialog.lf-dialog.lf-pin { width:min(300px, 90vw); text-align:center; } .lf-pin form { padding:20px; }
+    .lf-pin-btns .lf-primary { background:var(--pine); color:#fff; border:0; }
+    .lf-pin h3 { margin:0 0 4px; } .lf-pin p { margin:0 0 10px; }
+    .lf-pin input { width:100%; height:44px; text-align:center; letter-spacing:.4em; font-size:20px; border-radius:12px; border:1px solid var(--border); background:var(--btn); }
+    .lf-pin-err { color:#E0525E; margin-top:8px !important; }
+    .lf-pin-btns { display:flex; gap:10px; margin-top:14px; } .lf-pin-btns button { flex:1; height:40px; border-radius:10px; border:1px solid var(--border); background:var(--btn); }
     .lf-all-row button:disabled { background:var(--btn-h); color:inherit; opacity:.7; cursor:default; }
 
     /* App 格子：手機 4 欄、平板 6 欄、電腦 8 欄 */
@@ -470,7 +484,7 @@
       clearTimeout(waitT); waitT = setTimeout(appsReady, 3000); // 保險：最多等 3 秒
     }
     window.lfSleep = function () { // 全站設定的「休眠」時間到（clc-sso.js 呼叫）：回到 Welcome，點一下再進
-      entered = false; try { sessionStorage.removeItem('linfamily_entered'); } catch (_) {}
+      entered = false; try { sessionStorage.removeItem('linfamily_entered'); sessionStorage.removeItem('lf_cabinet_unlock'); } catch (_) {}
       document.querySelectorAll('dialog[open]').forEach(d => d.close());
       $('lfWelcome').hidden = false;
     };
@@ -677,7 +691,7 @@
     let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '', finishDeskWait;
     const deskKey = () => 'linfamily_desk_' + deskEmail;
     function showApps() {
-      apps = (myDesk || globalApps).filter(a => isSuper() || !isOwnSite(a)); // DX、YA、SR 只有 Superuser 看得到
+      apps = (myDesk || globalApps).filter(a => !hiddenFor(a)); // App 櫃刪除的大家都不見；關閉的（DX、YA、SR 預設關）只有 Superuser 看得到
       if (slots) { slots.render(); renderNews(); if (!$('panelAll').hidden) renderAll(); }
     }
     function watchDesk() {
@@ -767,6 +781,16 @@
       const u = new URL(url);
       if ((u.hostname === 'clc-dx04.pages.dev' || u.origin === location.origin) && /^\/lf(\/|$)/.test(u.pathname)) return false;
       return OWN_HOSTS.includes(u.hostname) || u.origin === location.origin;
+    }
+    // App 櫃規則：Superuser 有的 App＝大家都有，差別只在「開放」（open）。預設開放；DX、YA、SR 預設關閉。
+    // 從 App 櫃刪除＝標記 deleted（保留 id），所有人主畫面上的那一格一起消失。
+    const isYaSr = a => isOwnSite(a) && /clc-(ya|sr)-portal/.test(safeUrl(a.url));
+    const isOpen = a => typeof a.open === 'boolean' ? a.open : !isOwnSite(a);
+    function hiddenFor(a) {
+      const g = globalApps.find(x => x.id === a.id);
+      if (g && g.deleted) return true;
+      if (isSuper()) return false;
+      return g ? !isOpen(g) : isOwnSite(a);
     }
     apps = apps.filter(a => !isOwnSite(a)); // 權限確認前先不放 DX、YA、SR（確認是 Superuser 才出現），避免打開時先閃出來
     function tileHref(app) {
@@ -1029,39 +1053,97 @@
     // ---------- 權限管理 ----------
     // ---------- 所有 App（預設桌面＝目前全部 App）／新 App 通知 ----------
     const onDesk = a => apps.some(m => m.id === a.id);
-    const locked = a => !isSuper() && isOwnSite(a);
-    const newApps = () => role && myDesk ? globalApps.filter(a => !mySeen.includes(a.id) && !onDesk(a) && !locked(a)) : [];
+    const locked = a => !isSuper() && !isOpen(a);
+    const newApps = () => role && myDesk ? globalApps.filter(a => !a.deleted && !mySeen.includes(a.id) && !onDesk(a) && !locked(a)) : [];
     async function addToDesk(a) {
       const base = withPos(); let pos = 0; while (base.some(m => m.pos === pos)) pos++;
       try { await persist(base.concat(Object.assign({}, a, { pos })), [a.id]); toast('已加到主畫面：' + a.name); }
       catch (err) { toast('加入失敗：' + errText(err)); }
     }
     function renderAll() {
-      const list = role ? window.clcSlotGridNormalize(globalApps).filter(a => !onDesk(a) && !locked(a)).sort((a, b) => a.pos - b.pos) : [];
-      $('lfAllNote').textContent = !role ? '登入後，還沒加到主畫面的 App 會列在這裡。' : list.length ? '還沒加到主畫面的 App（從主畫面移除的也會回到這裡）。' : '全部 App 都在你的主畫面了。';
+      const sup = isSuper();
+      if (sup && curTab === 'all' && !cabUnlocked()) { tb.setTab('apps', true); if (curTab !== 'apps') onTab('apps'); return; } // 重新整理停在 Apps 也要密碼
+      const list = role ? window.clcSlotGridNormalize(globalApps).filter(a => !a.deleted && (sup ? !isYaSr(a) : !onDesk(a) && isOpen(a))).sort((a, b) => a.pos - b.pos) : [];
+      $('lfAllNote').textContent = !role ? '登入後，還沒加到主畫面的 App 會列在這裡。' : sup ? 'App 櫃的全部 App。右邊開關＝是否開放給其他帳號；長按（電腦按右鍵）可從 App 櫃永久刪除。' : list.length ? '還沒加到主畫面的 App（從主畫面移除的也會回到這裡）。' : '全部 App 都在你的主畫面了。';
       const box = $('lfAll'); box.textContent = '';
       list.forEach(a => {
         const row = document.createElement('div'); row.className = 'lf-all-row';
-        const link = document.createElement('a'); link.href = locked(a) ? '#' : tileHref(a);
+        const link = document.createElement('a'); link.href = tileHref(a);
         const name = document.createElement('span'); name.textContent = a.name;
         link.append(iconEl(a), name);
-        if (locked(a)) { link.style.opacity = '.4'; link.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + a.name + '。'); }); }
         row.append(link);
-        if (role) {
-          const b = document.createElement('button'); b.type = 'button';
-          b.textContent = '＋ 加到主畫面'; b.addEventListener('click', () => { b.disabled = true; addToDesk(a); });
-          row.append(b);
-        }
-        if (isSuper()) { // Superuser：從 App 櫃刪除（所有人都不會再看到新增選項）
-          const d = document.createElement('button'); d.type = 'button'; d.textContent = '刪除'; d.style.background = '#B5483D';
-          d.addEventListener('click', async () => {
-            if (!confirm('從 App 櫃刪除「' + a.name + '」？（已加到別人主畫面的不受影響）')) return;
-            try { await saveGlobal(globalApps.filter(x => x.id !== a.id)); } catch (err) { toast('刪除失敗：' + errText(err)); }
+        const b = document.createElement('button'); b.type = 'button';
+        if (onDesk(a)) { b.textContent = '已在主畫面'; b.disabled = true; }
+        else { b.textContent = '＋ 加到主畫面'; b.addEventListener('click', () => { b.disabled = true; addToDesk(a); }); }
+        row.append(b);
+        if (sup) {
+          const sw = document.createElement('label'); sw.className = 'lf-open';
+          const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: isOpen(a) });
+          const t = document.createElement('span'); t.textContent = cb.checked ? '開放' : '關閉';
+          cb.addEventListener('change', async () => {
+            t.textContent = cb.checked ? '開放' : '關閉';
+            try { await saveGlobal(globalApps.map(x => x.id === a.id ? Object.assign({}, x, { open: cb.checked }) : x)); }
+            catch (err) { cb.checked = !cb.checked; t.textContent = cb.checked ? '開放' : '關閉'; toast('儲存失敗：' + errText(err)); }
           });
-          row.append(d);
+          sw.append(cb, t); row.append(sw);
+          rowMenu(row, a);
         }
         box.append(row);
       });
+    }
+    // Apps 分頁（Superuser）：長按或右鍵 → 選單「從 App 櫃刪除」，和主畫面刪除同樣的操作
+    function rowMenu(row, a) {
+      let timer = 0, longAt = 0;
+      const open = (x, y) => {
+        document.querySelectorAll('.lf-row-menu').forEach(m => m.remove());
+        const m = document.createElement('div'); m.className = 'lf-menu lf-row-menu'; m.setAttribute('role', 'menu');
+        m.style.cssText = 'position:fixed;right:auto;top:' + Math.min(y, innerHeight - 70) + 'px;left:' + Math.min(x, innerWidth - 220) + 'px;margin:0';
+        const del = document.createElement('button'); del.type = 'button'; del.className = 'lf-danger'; del.textContent = '🗑️ 從 App 櫃刪除';
+        del.addEventListener('click', () => { m.remove(); deleteFromCabinet(a); });
+        m.append(del); document.body.append(m);
+        setTimeout(() => document.addEventListener('pointerdown', function off(e) { if (!m.contains(e.target)) { m.remove(); document.removeEventListener('pointerdown', off, true); } }, true));
+      };
+      row.addEventListener('contextmenu', e => { e.preventDefault(); open(e.clientX, e.clientY); });
+      row.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse') return;
+        clearTimeout(timer); const { clientX: x, clientY: y } = e;
+        timer = setTimeout(() => { longAt = Date.now(); open(x, y); }, 500);
+      });
+      ['pointerup', 'pointercancel', 'pointermove'].forEach(t => row.addEventListener(t, e => { if (t !== 'pointermove' || e.pointerType !== 'mouse') clearTimeout(timer); }));
+      row.addEventListener('click', e => { if (Date.now() - longAt < 800) { e.preventDefault(); e.stopPropagation(); } }, true); // 長按放開不要開 App
+    }
+    async function deleteFromCabinet(a) {
+      if (!confirm('從 App 櫃永久刪除「' + a.name + '」？\n所有人主畫面上的這個 App 也會一起移除。')) return;
+      try {
+        await saveGlobal(globalApps.map(x => x.id === a.id ? Object.assign({}, x, { deleted: true }) : x));
+        if (onDesk(a)) await persist(withPos().filter(m => m.id !== a.id));
+        toast('已從 App 櫃刪除：' + a.name);
+      } catch (err) { toast('刪除失敗：' + errText(err)); }
+    }
+    // ---------- App 櫃密碼鎖（Superuser 帳號給小朋友用時，防止亂改）：密碼與解鎖分鐘數在「全站設定 → 休眠與登出」 ----------
+    const CAB_KEY = 'lf_cabinet_unlock';
+    let cabCfg = null;
+    async function cabConfig() {
+      if (!cabCfg) { try { const d = (await db.collection('linfamily_settings').doc('security').get()).data() || {}; cabCfg = { pin: String(d.cabinetPin || '0404'), min: Number(d.cabinetUnlockMin) || 10 }; } catch (_) { cabCfg = { pin: '0404', min: 10 }; } }
+      return cabCfg;
+    }
+    function cabUnlocked() {
+      let t = 0; try { t = Number(sessionStorage.getItem(CAB_KEY) || 0); } catch (_) {}
+      return t && Date.now() - t < (cabCfg ? cabCfg.min : 10) * 60000;
+    }
+    async function askPin(done) {
+      const cfg = await cabConfig();
+      const d = document.createElement('dialog'); d.className = 'lf-dialog lf-pin';
+      d.innerHTML = '<form method="dialog"><h3>🔒 App 櫃</h3><p>請輸入管理密碼</p><input type="password" inputmode="numeric" autocomplete="off" maxlength="12"><p class="lf-pin-err" hidden>密碼不對</p><div class="lf-pin-btns"><button value="cancel" type="button">取消</button><button value="ok" class="lf-primary">確定</button></div></form>';
+      document.body.append(d);
+      const input = d.querySelector('input'), err = d.querySelector('.lf-pin-err');
+      d.querySelector('[value=cancel]').addEventListener('click', () => d.close());
+      d.querySelector('form').addEventListener('submit', e => {
+        if (input.value === cfg.pin) { try { sessionStorage.setItem(CAB_KEY, String(Date.now())); } catch (_) {} return; }
+        e.preventDefault(); err.hidden = false; input.value = ''; input.focus();
+      });
+      d.addEventListener('close', () => { d.remove(); if (cabUnlocked()) done(); });
+      d.showModal(); input.focus();
     }
     function renderNews() { tb.setDot('all', newApps().length > 0); } // 有新 App → Apps 分頁紅點
     function clearNews() { const n = newApps(); if (n.length) persist(withPos(), n.map(a => a.id)).catch(() => {}); } // 打開 Apps 就算看過
@@ -1248,6 +1330,10 @@
 
     // ---------- 分頁：主畫面／家庭留言板／App 櫃 ----------
     function onTab(tab) {
+      if (tab === 'all' && isSuper() && !cabUnlocked()) { // App 櫃要密碼
+        tb.setTab(curTab === 'all' ? 'apps' : curTab, true);
+        return askPin(() => { tb.setTab('all', true); if (curTab !== 'all') onTab('all'); });
+      }
       curTab = tab; syncAddBtn();
       $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family'; $('panelAll').hidden = tab !== 'all';
       if (tab === 'all') { renderAll(); clearNews(); }
