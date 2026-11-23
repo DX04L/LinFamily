@@ -942,14 +942,27 @@
       onClear: () => { setUploaded(''); preview(); },
       onError: showErr
     }) : null;
+    // LF 站內的 App（例如 sg-discussion/）：同網站直接讀那一頁，照 iPhone「加入主畫面」的順序找圖示：
+    // 頁面裡的 <link rel="apple-touch-icon"> → 那個資料夾的 apple-touch-icon.png。存成站內路徑。
+    async function localInfo(url) {
+      const page = new URL(url, location.href), base = new URL('./', location.href).href;
+      const rel = u => u.startsWith(base) ? u.slice(base.length) : u;
+      const r = await fetch(page.href, { cache: 'no-store' });
+      if (!r.ok) return { ok: false };
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      const link = doc.querySelector('link[rel~="apple-touch-icon"][href], link[rel="apple-touch-icon-precomposed"][href]');
+      const icon = new URL(link ? link.getAttribute('href') : 'apple-touch-icon.png', page).href;
+      const name = (doc.querySelector('meta[name="apple-mobile-web-app-title"]')?.content || doc.title || '').trim();
+      return { ok: true, name, icon: rel(icon) };
+    }
     async function fetchInfo() {
       const url = safeUrl($('lfAppUrl').value);
       if (!url || url === auto.url) return;
       auto.url = url; auto.embeddable = undefined;
-      if (!isExternal(url)) return;
+      const local = !isExternal(url);
       const seq = ++fetchSeq; status('讀取網站名稱與圖示…');
       let info = null;
-      try { const r = await fetch(SITE_INFO + encodeURIComponent(url)); info = await r.json(); } catch (_) {}
+      try { info = local ? await localInfo(url) : await (await fetch(SITE_INFO + encodeURIComponent(url))).json(); } catch (_) {}
       if (seq !== fetchSeq) return;
       status(info && info.ok ? '' : '讀取不到網站資訊，請自行填寫（圖示可留空）。');
       if (!info) return;
