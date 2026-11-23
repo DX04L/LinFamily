@@ -53,6 +53,7 @@ html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 4%, transparent)
 .lfc-bub.lfc-media { padding:3px; background:transparent; border:0; }
 .lfc-bub img.lfc-photo { display:block; max-width:min(230px, 60vw); max-height:300px; border-radius:14px; cursor:zoom-in; }
 .lfc-stk { width:110px; height:110px; }
+.lfc-bub.lfc-stkbub { padding:0 !important; background:none !important; border:0 !important; box-shadow:none !important; } /* 貼圖不要泡泡框 */
 .lfc-row.hit .lfc-bub { box-shadow:0 0 0 2px #fbbf24; }
 .lfc-ment { font-weight:700; color:var(--pine); }
 .lfc-row.me .lfc-ment { color:#fff; text-decoration:underline; }

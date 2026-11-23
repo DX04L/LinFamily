@@ -8,7 +8,9 @@
   const AV = [['cat', '小貓', '#f8c8d8', '#e58aa8'], ['bear', '小熊', '#e8c9a0', '#b98a5a'], ['rab', '兔兔', '#eef0f6', '#f2a7c0'], ['dog', '小狗', '#f3dcb5', '#a8774a'],
     ['pen', '企鵝', '#cfe3f7', '#2f3a4a'], ['chk', '小雞', '#fde9a0', '#f0a640'], ['frg', '青蛙', '#c9eab0', '#5a9a3a'], ['pnd', '熊貓', '#f4f4f4', '#333333']];
   const MOODS = ['', 'happy', 'love', 'wow']; // 貼圖：每個頭像 4 種表情
-  function face(key, mood) {
+  // 貼圖：不畫方框，只有動物的臉；4 種表情各有不同的歪頭角度（臉部五官往轉的方向偏，看起來不是正面）
+  const TILT = { '': [-10, -3], happy: [8, 3], love: [-5, 2.5], wow: [12, -2.5] };
+  function face(key, mood, stk) {
     const a = AV.find(x => x[0] === key) || AV[0], t = a[0], b = a[2], c = a[3];
     let e = '';
     if (t === 'cat') e = `<path d="M14 22 L18 8 L26 18Z M50 22 L46 8 L38 18Z" fill="${c}"/>`;
@@ -25,7 +27,12 @@
     const beak = t === 'chk' || t === 'pen';
     const mouth = mood === 'wow' ? `<ellipse cx="32" cy="44" rx="3" ry="4" fill="#7a3b3b"/>` : mood === 'happy' || mood === 'love' ? `<path d="M27 42 Q32 48 37 42" stroke="#555" stroke-width="2" fill="none" stroke-linecap="round"/>` : '';
     const nose = beak ? `<path d="M29 38 L35 38 L32 42Z" fill="#f0a640"/>` : `<ellipse cx="32" cy="39" rx="2.4" ry="1.8" fill="#555"/>`;
-    return `<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><rect width="64" height="64" fill="${b}"/>${e}${fc}${eyes}${nose}${beak ? '' : mouth}<circle cx="19" cy="41" r="3" fill="#f39cb0" opacity=".6"/><circle cx="45" cy="41" r="3" fill="#f39cb0" opacity=".6"/></svg>`;
+    const feat = `${fc}${eyes}${nose}${beak ? '' : mouth}<circle cx="19" cy="41" r="3" fill="#f39cb0" opacity=".6"/><circle cx="45" cy="41" r="3" fill="#f39cb0" opacity=".6"/>`;
+    if (stk) {
+      const [deg, dx] = TILT[mood] || TILT[''];
+      return `<svg viewBox="-4 -4 72 72" width="100%" height="100%" aria-hidden="true"><g transform="rotate(${deg} 32 34)">${e}<ellipse cx="32" cy="35" rx="23" ry="21" fill="${b}" stroke="${c}" stroke-opacity=".35" stroke-width="1.5"/><g transform="translate(${dx} 0)">${feat}</g></g></svg>`;
+    }
+    return `<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><rect width="64" height="64" fill="${b}"/>${e}${feat}</svg>`;
   }
   const EMOS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -227,7 +234,7 @@
         if (m.unsent) { frag.append(h(`<div class="lfc-sys"><span>${esc(mine ? '你' : p.name)}已收回訊息</span></div>`)); return; }
         let body;
         if (m.img) body = `<div class="lfc-bub lfc-media"><img class="lfc-photo" src="${m.img}" alt="照片"></div>`;
-        else if (m.stk) { const [k, mood] = m.stk.split(':'); body = `<div class="lfc-bub lfc-media"><div class="lfc-stk">${face(k, mood)}</div></div>`; }
+        else if (m.stk) { const [k, mood] = m.stk.split(':'); body = `<div class="lfc-bub lfc-media lfc-stkbub"><div class="lfc-stk">${face(k, mood, true)}</div></div>`; }
         else body = `<div class="lfc-bub">${m.replyTo ? `<div class="lfc-quote" data-go="${esc(m.replyTo.id)}">${esc(m.replyTo.name)}：${esc(m.replyTo.text)}</div>` : ''}${textHtml(m)}</div>`;
         const rc = {}; Object.values(m.reacts || {}).forEach(e => rc[e] = (rc[e] || 0) + 1);
         const myE = (m.reacts || {})[me.uid];
@@ -279,7 +286,7 @@
     ['lfcFileCam', 'lfcFilePic'].forEach(id => $(id).onchange = e => { sendFiles(e.target.files); e.target.value = ''; });
     $('lfcStk').onclick = () => {
       const box = $('lfcStks');
-      if (!box.childElementCount) AV.forEach(a => MOODS.forEach(md => { const b = h(`<button title="${a[1]}">${face(a[0], md)}</button>`); b.onclick = () => { box.hidden = true; send({ stk: a[0] + ':' + md }); }; box.append(b); }));
+      if (!box.childElementCount) AV.forEach(a => MOODS.forEach(md => { const b = h(`<button title="${a[1]}">${face(a[0], md, true)}</button>`); b.onclick = () => { box.hidden = true; send({ stk: a[0] + ':' + md }); }; box.append(b); }));
       box.hidden = !box.hidden; fit();
     };
     // @提及：輸入 @ 跳出成員

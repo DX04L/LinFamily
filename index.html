@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
   <link rel="stylesheet" href="css/lf-todos.css?v=9">
-  <link rel="stylesheet" href="css/lf-chat.css?v=7">
+  <link rel="stylesheet" href="css/lf-chat.css?v=8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
@@ -158,11 +158,11 @@
     .lf-open input:checked { background:var(--pine, #4E8B7E); }
     .lf-open input:checked::after { left:18px; }
     .lf-open span { min-width:2.2em; }
-    .lf-row-menu .lf-danger { width:100%; }
+    .lf-row-menu { position:fixed; }
     dialog.lf-dialog.lf-pin { width:min(300px, 90vw); text-align:center; } .lf-pin form { padding:20px; }
     .lf-pin-btns .lf-primary { background:var(--pine); color:#fff; border:0; }
     .lf-pin h3 { margin:0 0 4px; } .lf-pin p { margin:0 0 10px; }
-    .lf-pin input { width:100%; height:44px; text-align:center; letter-spacing:.4em; font-size:20px; border-radius:12px; border:1px solid var(--border); background:var(--btn); }
+    .lf-pin input { -webkit-text-security:disc; text-security:disc; width:100%; height:44px; text-align:center; letter-spacing:.4em; font-size:20px; border-radius:12px; border:1px solid var(--border); background:var(--btn); }
     .lf-pin-err { color:#E0525E; margin-top:8px !important; }
     .lf-pin-btns { display:flex; gap:10px; margin-top:14px; } .lf-pin-btns button { flex:1; height:40px; border-radius:10px; border:1px solid var(--border); background:var(--btn); }
     .lf-all-row button:disabled { background:var(--btn-h); color:inherit; opacity:.7; cursor:default; }
@@ -433,7 +433,7 @@
   <script src="js/dashboard-todos.js"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=10"></script>
+  <script src="js/lf-chat.js?v=11"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -1096,11 +1096,11 @@
       let timer = 0, longAt = 0;
       const open = (x, y) => {
         document.querySelectorAll('.lf-row-menu').forEach(m => m.remove());
-        const m = document.createElement('div'); m.className = 'lf-menu lf-row-menu'; m.setAttribute('role', 'menu');
-        m.style.cssText = 'position:fixed;right:auto;top:' + Math.min(y, innerHeight - 70) + 'px;left:' + Math.min(x, innerWidth - 220) + 'px;margin:0';
-        const del = document.createElement('button'); del.type = 'button'; del.className = 'lf-danger'; del.textContent = '🗑️ 從 App 櫃刪除';
+        const m = document.createElement('div'); m.className = 'dk-menu lf-row-menu'; m.setAttribute('role', 'menu'); // 和主畫面長按選單同一套樣式
+        const del = document.createElement('button'); del.type = 'button'; del.setAttribute('role', 'menuitem'); del.className = 'dk-danger'; del.textContent = '刪除';
         del.addEventListener('click', () => { m.remove(); deleteFromCabinet(a); });
         m.append(del); document.body.append(m);
+        const r = m.getBoundingClientRect(); m.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px'; m.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
         setTimeout(() => document.addEventListener('pointerdown', function off(e) { if (!m.contains(e.target)) { m.remove(); document.removeEventListener('pointerdown', off, true); } }, true));
       };
       row.addEventListener('contextmenu', e => { e.preventDefault(); open(e.clientX, e.clientY); });
@@ -1113,7 +1113,12 @@
       row.addEventListener('click', e => { if (Date.now() - longAt < 800) { e.preventDefault(); e.stopPropagation(); } }, true); // 長按放開不要開 App
     }
     async function deleteFromCabinet(a) {
-      if (!confirm('從 App 櫃永久刪除「' + a.name + '」？\n所有人主畫面上的這個 App 也會一起移除。')) return;
+      const dlg = document.createElement('dialog'); dlg.className = 'dk-confirm'; // 和主畫面的刪除確認框同一套
+      dlg.innerHTML = '<form method="dialog"><p></p><div class="dk-actions"><button value="no">取消</button><button value="yes" class="dk-danger">刪除</button></div></form>';
+      dlg.querySelector('p').textContent = '確認從 App 櫃刪除「' + a.name + '」？所有人的主畫面也會一起移除。';
+      document.body.append(dlg); dlg.showModal();
+      const ok = await new Promise(r => dlg.addEventListener('close', () => { r(dlg.returnValue === 'yes'); dlg.remove(); }, { once: true }));
+      if (!ok) return;
       try {
         await saveGlobal(globalApps.map(x => x.id === a.id ? Object.assign({}, x, { deleted: true }) : x));
         if (onDesk(a)) await persist(withPos().filter(m => m.id !== a.id));
@@ -1134,7 +1139,7 @@
     async function askPin(done) {
       const cfg = await cabConfig();
       const d = document.createElement('dialog'); d.className = 'lf-dialog lf-pin';
-      d.innerHTML = '<form method="dialog"><h3>🔒 App 櫃</h3><p>請輸入管理密碼</p><input type="password" inputmode="numeric" autocomplete="off" maxlength="12"><p class="lf-pin-err" hidden>密碼不對</p><div class="lf-pin-btns"><button value="cancel" type="button">取消</button><button value="ok" class="lf-primary">確定</button></div></form>';
+      d.innerHTML = '<form method="dialog"><h3>🔒 App 櫃</h3><p>請輸入管理密碼</p><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="12"><p class="lf-pin-err" hidden>密碼不對</p><div class="lf-pin-btns"><button value="cancel" type="button">取消</button><button value="ok" class="lf-primary">確定</button></div></form>';
       document.body.append(d);
       const input = d.querySelector('input'), err = d.querySelector('.lf-pin-err');
       d.querySelector('[value=cancel]').addEventListener('click', () => d.close());
