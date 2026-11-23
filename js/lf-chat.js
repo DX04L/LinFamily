@@ -125,7 +125,7 @@
     function fit() {
       if (!visible) return;
       const vh = window.visualViewport ? visualViewport.height : innerHeight;
-      box.style.height = Math.max(300, Math.min(root.clientHeight, vh - root.getBoundingClientRect().top)) + 'px';
+      box.style.height = Math.max(160, Math.min(root.clientHeight, vh - Math.max(0, root.getBoundingClientRect().top))) + 'px'; // 手機橫放高度很矮：最低只留 160，輸入列才不會被推出畫面
       place();
     }
     addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', () => { const nb = nearBottom(); fit(); if (nb) toBottom(); });
