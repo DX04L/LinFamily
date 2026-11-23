@@ -131,7 +131,33 @@
         addEventListener('pointermove', mv); addEventListener('pointerup', up);
       });
     }
-    drag($('lfcHead'), (dx, st) => { if (wideQ.matches) lay.x = st.x + dx; }, () => setCollapsed(!collapsed));
+    // 小橫條：點一下收合／展開；按住上下拉跟著手指走，放開後拉超過 40px 就收合（或展開），不然彈回；寬螢幕左右拉 = 移動位置
+    const grip = $('lfcHead');
+    grip.addEventListener('pointerdown', e => {
+      if (e.button > 0) return;
+      const sx = e.clientX, sy = e.clientY, st = place(), H = box.offsetHeight, peek = grip.offsetHeight, base = collapsed ? H - peek : 0;
+      let axis = null;
+      const mv = ev => {
+        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (!axis) {
+          if (Math.hypot(dx, dy) < 5) return;
+          axis = !wideQ.matches || Math.abs(dy) >= Math.abs(dx) ? 'y' : 'x';
+          try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+          if (axis === 'y') box.style.transition = 'none';
+        }
+        if (axis === 'x') { lay.x = st.x + dx; place(); }
+        else box.style.transform = 'translateY(' + Math.max(0, Math.min(H - peek, base + dy)) + 'px)';
+      };
+      const up = ev => {
+        removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+        if (!axis) return setCollapsed(!collapsed);
+        if (axis === 'x') return saveLay();
+        const dy = ev.clientY - sy;
+        void box.offsetWidth; box.style.transition = ''; box.style.transform = '';
+        setCollapsed(collapsed ? dy > -40 : dy > 40);
+      };
+      addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    });
     drag(rzR, (dx, st) => { lay.x = st.x; lay.w = Math.max(360, Math.min(st.W - st.x, st.w + dx)); });
     drag(rzL, (dx, st) => { const w = Math.max(360, Math.min(st.x + st.w, st.w - dx)); lay.x = st.x + st.w - w; lay.w = w; });
     wideQ.addEventListener && wideQ.addEventListener('change', fit);
