@@ -330,7 +330,7 @@
   <!-- 暫停測試：改成 false 即恢復 iPhone 動畫；動畫檔案保留。 -->
   <script>
     (function () {
-      var pauseIPhoneIntro = true;
+      var pauseIPhoneIntro = false;
       if (pauseIPhoneIntro && /iPhone/i.test(navigator.userAgent)) {
         document.documentElement.classList.add('lf-iphone-static');
         return;
