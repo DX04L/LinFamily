@@ -101,7 +101,7 @@
       padding:calc(16px + env(safe-area-inset-top)) max(var(--lf-pad), env(safe-area-inset-right)) 0 max(var(--lf-pad), env(safe-area-inset-left));
       width:100%; margin:0 auto; }
     .lf-date { margin:0; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.02em; }
-    .lf-title { margin:2px 0 0; font-size:clamp(24px, 6.6vw, 42px); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); }
+    .lf-title { margin:2px 0 0; font-size:var(--lf-greeting-size, clamp(24px, 6.6vw, 42px)); font-weight:800; letter-spacing:-.02em; line-height:1.15; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     /* 右上角按鈕位置照 DX 的 Header：離上緣 6px（DX 的 Header 高 46／48px、按鈕 34／36px 置中），離右緣 14／20／24／32px，貼齊整個畫面右邊 */
     .lf-right { display:flex; align-items:center; gap:6px; flex:none; position:fixed; z-index:40; top:calc(6px + env(safe-area-inset-top)); right:max(14px, env(safe-area-inset-right)); }
     @media (min-width:640px) { .lf-right { right:max(20px, env(safe-area-inset-right)); gap:7.1px; } } /* DX 的 gap-1.5 在寬畫面量起來是 7.1px */
@@ -1218,9 +1218,8 @@
       const mobile = matchMedia('(max-width:639px)');
       const right = document.querySelector('.lf-right');
       function fitGreeting() {
-        if (!mobile.matches) return;
-        el.style.removeProperty('--lf-greeting-size');
-        const reserve = Math.max(0, el.parentElement.getBoundingClientRect().right - right.getBoundingClientRect().left + 8);
+        el.style.removeProperty('--lf-greeting-size'); // 手機、寬螢幕都一樣：問候語不換行，放不下就縮小字
+        const reserve = mobile.matches ? Math.max(0, el.parentElement.getBoundingClientRect().right - right.getBoundingClientRect().left + 8) : 0;
         el.style.setProperty('--lf-greeting-reserve', reserve + 'px');
         const available = el.clientWidth;
         const required = el.scrollWidth;
