@@ -8,11 +8,11 @@
  */
 
 const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
+// `let`: character previews (start/game-over stage, phone controller) briefly point ctx at their own canvas.
+let ctx = canvas.getContext('2d');
 
 // UI 元素
 const startPanel = document.getElementById('start-panel');
-const bluesChoice = document.getElementById('character-blues');
 const gameoverPanel = document.getElementById('gameover-panel');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
@@ -92,6 +92,11 @@ class SoundFX {
     // Small, light "叮" so it reads clearly apart from the game-over sound.
     this.playTone(880,'sine',.09,660,.05);
     setTimeout(()=>this.playTone(620,'triangle',.08,520,.035),60);
+  }
+  pick() {
+    // Soft "whoosh" when changing character.
+    this.playTone(420,'sine',.12,880,.11);
+    setTimeout(()=>this.playTone(990,'triangle',.08,1320,.06),70);
   }
   footstep() {
     this.playTone(125,'sine',.035,90,.019);
@@ -225,6 +230,12 @@ let width = window.innerWidth;
 let height = window.innerHeight;
 let dpr = Math.min(window.devicePixelRatio || 1, 2);
 let gameState = 'START';
+// Selected character (remembered on this device).
+const CHARACTER_IDS = PinkyCharacters.map(c => c.id);
+let currentCharacter = (() => {
+  try { const saved = localStorage.getItem('pinkyCharacter'); return CHARACTER_IDS.includes(saved) ? saved : 'pinky'; }
+  catch (_) { return 'pinky'; }
+})();
 let score = 0;
 let shield = 0;
 let immunity = 0;
@@ -422,6 +433,7 @@ const player = {
   runCycle: 0,
   blinkTimer: 0,
   hurt: false,
+  idle: PinkyIdle.create(), // random ear/eye motion, one action at a time
 
   getScale() {
     return Math.max(0.64, Math.min(1, width / 550, height / 510));
@@ -520,12 +532,14 @@ const player = {
     ctx.scale(1 - this.squash * 0.6, 1 + this.squash);
     ctx.rotate(tilt);
 
-    if (bluesChoice.checked) {
-      drawBlues(ctx,this);
-      ctx.restore();
-      return;
-    }
+    if (currentCharacter === 'blues') drawBlues(ctx,this);
+    else this.drawBody();
+    ctx.restore();
+  },
 
+  // Pinky's artwork around the ground anchor (also used by the character previews).
+  drawBody() {
+    const idle = PinkyIdle.tick(this.idle);
     // 1. 粉白尾巴 (擺動)
     const tailWag = Math.sin(this.runCycle * 1.2) * 0.35;
     ctx.save();
@@ -609,8 +623,8 @@ const player = {
     ctx.translate(2, -62);
 
     // 左右貓耳朵
-    this.drawEar(-18, -20, -0.3, false);
-    this.drawEar(18, -20, 0.3, true);
+    this.drawEar(-18, -20, -0.3 - idle.earL, false);
+    this.drawEar(18, -20, 0.3 + idle.earR, true);
 
     // 頭形：圓頂 + 兩側外翹的毛絨翼
     const head = new Path2D();
@@ -676,8 +690,8 @@ const player = {
     ctx.stroke();
 
     // 大眼睛：寶藍虹膜 + 紅色花瓣眼眶
-    this.drawEye(-14, 2.5, -1);
-    this.drawEye(14, 2.5, 1);
+    this.drawEye(-14, 2.5, -1, idle);
+    this.drawEye(14, 2.5, 1, idle);
 
     // 桃紅色圓腮紅
     ctx.fillStyle = '#e0187a';
@@ -707,7 +721,6 @@ const player = {
     ctx.quadraticCurveTo(7.5, 17, 8.5, 12.5);
     ctx.stroke();
 
-    ctx.restore();
     ctx.restore();
   },
 
@@ -797,7 +810,7 @@ const player = {
     ctx.restore();
   },
 
-  drawEye(x, y, side) {
+  drawEye(x, y, side, idle) {
     // 撞到時顯示 X 眼
     if (this.hurt) {
       ctx.strokeStyle = '#1d3fb8';
@@ -812,6 +825,8 @@ const player = {
     }
     ctx.save();
     ctx.translate(x, y);
+    const blink = idle ? idle.blink : 0;
+    const look = idle ? idle.lookX * 1.7 : 0;
 
     // 紅色花瓣邊（在眼睛外上方）
     ctx.fillStyle = '#e8253f';
@@ -826,21 +841,37 @@ const player = {
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = '#e8253f';
     ctx.lineWidth = 1.9;
+    if (blink > .5) {
+      // Closed eye: a soft lid curve inside the red rim.
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 9.4, 10.8, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffd6ea';
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = '#1b2f9c';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(-6, 1);
+      ctx.quadraticCurveTo(0, 5.5, 6, 1);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
     ctx.beginPath();
     ctx.ellipse(0, 0, 9.4, 10.8, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // 寶藍虹膜（偏向臉內側，外側露出眼白）
+    // 寶藍虹膜（偏向臉內側，外側露出眼白）；look 讓眼睛往左右看
     ctx.fillStyle = '#1b2f9c';
     ctx.beginPath();
-    ctx.ellipse(-side * 1.6, 0.8, 7.1, 9, 0, 0, Math.PI * 2);
+    ctx.ellipse(-side * 1.6 + look, 0.8, 7.1, 9, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // 白色小高光
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(-side * 1.5 + 2, -3.6, 1.4, 0, Math.PI * 2);
+    ctx.arc(-side * 1.5 + 2 + look, -3.6, 1.4, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -1698,9 +1729,145 @@ window.addEventListener('load', () => {
     gameWrapper.focus({preventScroll:true});
   }
 });
-const bluesPreview = document.getElementById('blues-preview').getContext('2d');
-bluesPreview.translate(38,110);
-drawBlues(bluesPreview,{runCycle:0,isGrounded:true,hurt:false,blinkTimer:0});
+
+// ===== Character select: start + game-over stage, info card, keyboard, swipe =====
+const pinkyCharacter = (() => {
+  const listeners = [];
+  // A drawing state that reuses the player's drawing methods with its own pose and idle motion.
+  function makeState() {
+    const state = Object.create(player);
+    Object.assign(state, {runCycle:0, isGrounded:true, hurt:false, blinkTimer:0, idle:PinkyIdle.create(), hop:0});
+    return state;
+  }
+  // Draw a character standing on its shadow in the bottom-center of a preview canvas.
+  function drawPreview(c, id, state, scale) {
+    const w = c.canvas.width, h = c.canvas.height;
+    c.setTransform(1,0,0,1,0,0);
+    c.clearRect(0,0,w,h);
+    let lift = 0, squash = 0;
+    if (state.hop > 0) {
+      const p = 1 - state.hop / 24;
+      lift = Math.sin(p * Math.PI) * 22;
+      squash = p < .15 ? -.12 * (1 - p/.15) : Math.sin(p * Math.PI) * .08;
+      state.hop = Math.max(0, state.hop - 1);
+    }
+    c.translate(w/2, h*.93);
+    c.scale(scale, scale);
+    c.fillStyle = 'rgba(214, 40, 114, .18)';
+    c.beginPath();
+    c.ellipse(0, 1, 34 * (1 - lift/60), 7 * (1 - lift/60), 0, 0, Math.PI*2);
+    c.fill();
+    c.translate(0, -lift);
+    c.scale(1 - squash*.6, 1 + squash);
+    if (id === 'blues') drawBlues(c, state);
+    else {
+      const saved = ctx;
+      ctx = c;
+      try { player.drawBody.call(state); } finally { ctx = saved; }
+    }
+  }
+  function info(id) { return PinkyCharacters.find(c => c.id === id) || PinkyCharacters[0]; }
+  function canChange() {
+    return (gameState === 'START' || gameState === 'GAMEOVER') &&
+      document.getElementById('record-panel').classList.contains('hidden');
+  }
+  function set(id, {hop = true, sound = true} = {}) {
+    if (!CHARACTER_IDS.includes(id)) return;
+    const changed = id !== currentCharacter;
+    currentCharacter = id;
+    try { localStorage.setItem('pinkyCharacter', id); } catch (_) {}
+    player.idle = PinkyIdle.create();
+    if (changed && sound) { sfx.init(); sfx.pick(); }
+    for (const fn of listeners) fn(id, changed && hop);
+    needsPaint = true;
+  }
+  function step(dir, opts) {
+    const i = CHARACTER_IDS.indexOf(currentCharacter);
+    set(CHARACTER_IDS[(i + dir + CHARACTER_IDS.length) % CHARACTER_IDS.length], opts);
+  }
+  return {list:PinkyCharacters, get:() => currentCharacter, set, step, canChange, info, makeState, drawPreview, onChange:fn => listeners.push(fn)};
+})();
+window.pinkyCharacter = pinkyCharacter;
+
+{
+  const dialog = document.getElementById('pinky-char-dialog');
+  const dialogState = pinkyCharacter.makeState();
+  const stages = [...document.querySelectorAll('.pinky-char-pick')].map(el => ({
+    el, c: el.querySelector('canvas').getContext('2d'), state: pinkyCharacter.makeState()
+  }));
+  function showInfo() {
+    const item = pinkyCharacter.info(currentCharacter);
+    const title = document.getElementById('pinky-char-title');
+    title.textContent = item.name;
+    title.style.color = item.color;
+    PinkyLocale.set(document.getElementById('pinky-char-desc'), item.zh);
+    dialogState.hop = 24;
+    if (!dialog.open) dialog.showModal();
+  }
+  function render(id, hop) {
+    const item = pinkyCharacter.info(id);
+    for (const stage of stages) {
+      const name = stage.el.querySelector('.pinky-char-name');
+      name.textContent = item.name;
+      name.style.color = item.color;
+      stage.el.querySelector('.pinky-char-dots').innerHTML =
+        CHARACTER_IDS.map(c => `<i${c === id ? ' class="on"' : ''}></i>`).join('');
+      stage.state.idle = PinkyIdle.create();
+      if (hop) stage.state.hop = 24;
+    }
+  }
+  pinkyCharacter.onChange(render);
+  render(currentCharacter, false);
+  for (const stage of stages) {
+    for (const arrow of stage.el.querySelectorAll('.pinky-char-arrow'))
+      arrow.addEventListener('click', () => pinkyCharacter.canChange() && pinkyCharacter.step(Number(arrow.dataset.dir)));
+    // Tap the character for its info card; swipe left/right to change.
+    const figure = stage.el.querySelector('.pinky-char-figure');
+    let down = null;
+    figure.addEventListener('pointerdown', event => { down = {x:event.clientX, y:event.clientY}; });
+    figure.addEventListener('pointerup', event => {
+      if (!down) return;
+      const dx = event.clientX - down.x, dy = event.clientY - down.y;
+      down = null;
+      if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) {
+        figure.dataset.swiped = '1';
+        if (pinkyCharacter.canChange()) pinkyCharacter.step(dx < 0 ? 1 : -1);
+      }
+    });
+    figure.addEventListener('pointercancel', () => { down = null; });
+    figure.addEventListener('click', () => {
+      if (figure.dataset.swiped) { delete figure.dataset.swiped; return; }
+      showInfo();
+    });
+  }
+  document.getElementById('pinky-char-close').addEventListener('click', () => dialog.close());
+  // ← → change character on the start and game-over screens.
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    if (window.pinkyArcade?.isController() || document.querySelector('dialog[open]')) return;
+    if (event.target?.closest?.('input,textarea,select,[contenteditable="true"]')) return;
+    if (!pinkyCharacter.canChange()) return;
+    event.preventDefault();
+    pinkyCharacter.step(event.key === 'ArrowLeft' ? -1 : 1);
+  });
+  // Animate only the previews that are on screen.
+  const visible = el => el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden';
+  function animate() {
+    if (!gameWrapper.hidden && !document.hidden) {
+      for (const stage of stages) {
+        if (!visible(stage.el)) continue;
+        pinkyCharacter.drawPreview(stage.c, currentCharacter, stage.state, stage.c.canvas.width / 150);
+      }
+      if (dialog.open) {
+        const c = document.getElementById('pinky-char-dialog-canvas').getContext('2d');
+        pinkyCharacter.drawPreview(c, currentCharacter, dialogState, c.canvas.width / 150);
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+}
+
 requestAnimationFrame(update);
 
 // Re-arm game audio on every tap/key, so sound comes back after iOS interrupts it.

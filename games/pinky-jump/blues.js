@@ -1,7 +1,7 @@
 /* Blues' articulated artwork. Coordinates are relative to the same ground anchor as Pinky. */
 const drawBlues = (() => {
-  const blue = '#164bd7';
-  const outline = '#102c8d';
+  const blue = '#5b8bf0'; // lighter blue (Darren 11/24) so it stands apart from the dark outline
+  const outline = '#1f45a8';
   const pink = '#ff689e';
   const cream = '#fff2d7';
   const gold = '#ffd846';
@@ -116,8 +116,9 @@ const drawBlues = (() => {
     ctx.save();ctx.translate(0,-62);fill(ctx,diamond,'#fff8ed','#d49b29');ctx.restore();
   }
 
-  function face(ctx, hurt, blink) {
-    for (const x of [-10,10]) {
+  function face(ctx, hurt, blink, look) {
+    for (const x0 of [-10,10]) {
+      const x = x0 + (hurt||blink ? 0 : look*1.6);
       if (hurt || blink) {
         ctx.strokeStyle=outline;
         ctx.lineWidth=2.2;
@@ -152,6 +153,7 @@ const drawBlues = (() => {
     const stride=Math.sin(state.runCycle);
     const step=state.isGrounded ? stride*8 : 5;
     const earMotion=state.isGrounded ? stride*.055 : -.09;
+    const idle=state.idle ? PinkyIdle.tick(state.idle) : {earL:0,earR:0,blink:state.blinkTimer%180>173?1:0,lookX:0};
     ctx.save();
     ctx.lineJoin='round';
     ctx.lineCap='round';
@@ -167,11 +169,11 @@ const drawBlues = (() => {
     arm(ctx,19,-36,state.hurt?-1.2:state.isGrounded?-.42+stride*.55:-1.8);
 
     ctx.translate(0,-(state.isGrounded?Math.abs(stride):0));
-    ear(ctx,-16,-67,-.09+earMotion,1);
-    ear(ctx,16,-67,.09-earMotion,-1);
+    ear(ctx,-16,-67,-.09+earMotion-idle.earL,1);
+    ear(ctx,16,-67,.09-earMotion+idle.earR,-1);
     fill(ctx,head,blue,outline);
     hat(ctx,state.runCycle);
-    face(ctx,state.hurt,state.blinkTimer%180>173);
+    face(ctx,state.hurt,idle.blink>.5,idle.lookX);
     ctx.restore();
   };
 })();

@@ -375,6 +375,12 @@
       renderRoomStatus('手機已離開，可用其他裝置輸入同一組配對碼。');
       return;
     }
+    // Character choice from the phone also rides on 'ready' (playerName "ch:<id>").
+    if (payload.action === 'ready' && /^ch:[a-z]{1,9}$/.test(payload.playerName || '')) {
+      const pc=window.pinkyCharacter;
+      if (pc?.canChange()) pc.set(payload.playerName.slice(3));
+      return;
+    }
     // Sound toggle from the phone rides on 'ready' (no Firestore rules change needed).
     if (payload.action === 'ready' && (payload.playerName==='mute' || payload.playerName==='sound')) {
       window.pinkySetMuted?.(payload.playerName==='mute');
@@ -503,6 +509,16 @@
     }
   }
   let phoneViewMode='motion', phoneCommandBusy=false, phoneBusySince=0, pairedRunScore=0;
+  // The phone may change character before a run and after game over (not while playing, paused or entering a name).
+  function phoneCanPick() {
+    return ['ready','gameover','submitted'].includes(pairedPhase);
+  }
+  function phonePickStep(dir) {
+    const pc=window.pinkyCharacter;
+    if(!pc || !pairedRoom || !phoneCanPick())return;
+    pc.step(dir);
+    sendPhoneCommand('ready',0,'ch:'+pc.get());
+  }
   function renderPhoneView() {
     const labels={ready:'開始遊戲',playing:'暫停遊戲',paused:'繼續遊戲',gameover:'再玩一次',submitted:'再玩一次'};
     const record=pairedPhase==='record'||pairedPhase==='record_error';
@@ -514,6 +530,11 @@
     $('controller-manual').hidden=record||phoneViewMode!=='manual';
     $('controller-motion').hidden=record||phoneViewMode!=='motion';
     $('controller-jump').disabled=pairedPhase!=='playing';
+    // Character card: same layout before and during a run; only the arrows / tilt hint fade out.
+    const card=$('controller-char');
+    card.hidden=record;
+    card.dataset.mode=phoneViewMode;
+    card.classList.toggle('is-locked',!phoneCanPick());
     $('controller-manual-tab').disabled=phoneViewMode==='motion' && pairedPhase==='playing';
     setText('controller-status',pairedPhase==='record_error'?'登記失敗，請重新送出或略過。':'');
     // Show this run's score on the phone after the run (name entry and game over).
@@ -629,6 +650,8 @@
       },err=>disconnectPhone(errorText(err)));
       PinkyRTC.phone({fs,db,code,uid:auth.currentUser.uid});
       renderRoomStatus('已連線');
+      // The phone's character choice applies to the game screen.
+      if(window.pinkyCharacter)sendPhoneCommand('ready',0,'ch:'+window.pinkyCharacter.get());
 
     } catch(err) {
       renderRoomStatus(errorText(err));
@@ -674,6 +697,10 @@
   let motionEnabled=false,motionRequest=0;
   let baseline=null,samples=0,previousImpulse=0;
   let motionPeak=0,motionTimer;
+  // Lift measurement (11/24): jump height follows the speed gained by the lift (Δv = Σ upward accel × dt),
+  // so a tiny quick shake stays a hop and only a big, strong lift reaches full height.
+  let lastSampleAt=0,riseDv=0,lift=null;
+  const motionTestLog=[];
   let lastJumpAt=-Infinity,armed=true;
   // Flashing warning when the browser gives no motion data (sensor permission blocked).
   function setMotionWarning(text) {
@@ -695,6 +722,7 @@
     previousImpulse=0;
     lastJumpAt=-Infinity;
     armed=true;
+    lastSampleAt=0;riseDv=0;lift=null;
   }
   async function requestMotionPermission() {
     try {
@@ -702,6 +730,9 @@
       if(typeof DeviceMotionEvent.requestPermission==='function' &&
          await DeviceMotionEvent.requestPermission()!=='granted')
         return '需要動作感應權限。';
+      // Tilt-to-choose uses device orientation (same iOS permission; best effort).
+      if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function')
+        DeviceOrientationEvent.requestPermission().catch(()=>{});
       return '';
     } catch(_) {
       return '無法取得動作感應權限。';
@@ -718,6 +749,70 @@
       if(request===motionRequest && motionEnabled && !samples)
         setMotionWarning('偵測不到體感感應器：請到瀏覽器「網站設定 → 動作感應器（Motion sensors）」改成允許，改好後重新整理並重新配對。');
     },2600);
+  }
+  function finishLift(cfg) {
+    const {peak,dv}=lift;
+    lift=null;
+    clearTimeout(motionTimer);motionTimer=undefined;
+    if (!motionEnabled || document.hidden) return;
+    // Test mode measures even with Settings open (no jump then).
+    const dialogOpen=Boolean(document.querySelector('dialog[open]'));
+    if (dialogOpen && !motionTest) return;
+    // Δv range scales with the sensitivity threshold (Medium: 0.5 m/s hop → 3 m/s full jump).
+    // Curve stays flat at first and climbs late, so ordinary arm movement stays a modest jump.
+    // Tune with test mode: too easy to jump high → raise `full`; too hard → lower it.
+    const k=cfg.threshold/7, low=.5*k, full=3*k;
+    const t=Math.max(0,Math.min(1,(dv-low)/(full-low)));
+    const power=Math.pow(t,2.2);
+    if (motionTest) {
+      // Old rule (peak, cubic) shown for comparison.
+      const strength=peak/cfg.threshold;
+      const old=Math.pow(Math.max(0,Math.min(1,(strength-1)/1.6)),3);
+      motionTestLog.unshift(PinkyLocale.message('峰值 {0}× ｜ 速度 {1} m/s → 跳 {2}%（舊算法 {3}%）',
+        strength.toFixed(2),dv.toFixed(2),String(Math.round(power*100)),String(Math.round(old*100))));
+      motionTestLog.length=Math.min(motionTestLog.length,6);
+      renderMotionTest();
+    }
+    if (dialogOpen) return;
+    if(pairedRoom)sendPairedJump(power);
+    else window.pinkyRemoteJump(power);
+  }
+  // ===== Test mode: show each lift's numbers so the thresholds can be tuned from real data =====
+  let motionTest=false;
+  function renderMotionTest() {
+    for (const id of ['controller-motion-test','pinky-motion-test']) {
+      const el=$(id);
+      if(!el)continue;
+      el.hidden=!motionTest;
+      el.textContent=motionTestLog.length?motionTestLog.map(PinkyLocale.translate).join('\n'):PinkyLocale.translate('測試模式：輕抬、一般舉手、用力抬各做幾次，數值會列在這裡。');
+    }
+  }
+  function setMotionTest(on) {
+    motionTest=on;
+    for (const id of ['controller-motion-test-toggle','pinky-motion-test-toggle']) if($(id))$(id).checked=on;
+    renderMotionTest();
+  }
+  // ===== Tilt the phone left/right to change character (paired phone, Motion Jump, before a run) =====
+  let tiltArmed=true,lastOrientationAt=0;
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  function tiltStep(tilt) {
+    // tilt in degrees, right side down = positive. Re-arm only after returning near level.
+    if (!pairedRoom || !motionEnabled || phoneViewMode!=='motion' || !phoneCanPick()) { tiltArmed=true; return; }
+    if (Math.abs(tilt)<12) { tiltArmed=true; return; }
+    if (!tiltArmed || Math.abs(tilt)<28) return;
+    tiltArmed=false;
+    phonePickStep(tilt>0?1:-1);
+  }
+  function orientationFrame(event) {
+    if (typeof event.gamma!=='number') return;
+    lastOrientationAt=performance.now();
+    tiltStep(event.gamma);
+  }
+  function tiltFromMotion(a,now) {
+    // Fallback when the browser gives no orientation events: roll from gravity on the x axis.
+    if (now-lastOrientationAt<1000) return;
+    const g=Math.max(-1,Math.min(1,a.x/9.81));
+    tiltStep((isIOS?1:-1)*Math.asin(g)*180/Math.PI);
   }
   function motionFrame(event) {
     if(!motionEnabled)return;
@@ -738,25 +833,27 @@
     }
     const cfg=sensitivities[$(pairedRoom?'controller-remote-sensitivity':'controller-sensitivity').value]||sensitivities.normal;
     const now=performance.now();
+    const dt=lastSampleAt?Math.max(.004,Math.min(.05,(now-lastSampleAt)/1000)):.016;
+    lastSampleAt=now;
+    tiltFromMotion(a,now);
+    // Speed gained during the current upward push (includes the ramp before the trigger).
+    riseDv=impulse>0?riseDv+impulse*dt:0;
     if(!armed && Math.abs(impulse)<cfg.threshold*.35 && now-lastJumpAt>=cfg.cooldown)armed=true;
-    if(motionTimer!==undefined) motionPeak=Math.max(motionPeak,impulse);
-    if(armed && impulse>cfg.threshold && previousImpulse>cfg.threshold*.7 &&
-       !document.hidden && !document.querySelector('dialog[open]')){
+    if(lift){
+      lift.peak=Math.max(lift.peak,impulse);
+      if(impulse>0)lift.dv+=impulse*dt;
+      const age=now-lift.start;
+      // The push is over once the hand starts slowing down (or after 170 ms, to keep latency low).
+      if((age>=60 && impulse<=0) || age>=170) finishLift(cfg);
+    }
+    else if(armed && impulse>cfg.threshold && previousImpulse>cfg.threshold*.7 &&
+       !document.hidden && (motionTest || !document.querySelector('dialog[open]'))){
       armed=false;
       lastJumpAt=now;
-      motionPeak=Math.max(impulse,previousImpulse);
-      motionTimer=setTimeout(()=>{
-        motionTimer=undefined;
-        if (!motionEnabled || document.hidden || document.querySelector('dialog[open]')) return;
-        // Bigger lift = higher jump. Cubic response curve (like a controller sensitivity curve):
-        // ordinary arm movement stays a low hop; height climbs fast only near a strong lift.
-        // threshold → hop, 2.6× threshold → full jump. (1.5× ≈ 3%, 1.8× ≈ 13%, 2.2× ≈ 42%.)
-        const strength=motionPeak/cfg.threshold;
-        const t=Math.max(0,Math.min(1,(strength-1)/1.6));
-        const power=t*t*t;
-        if(pairedRoom)sendPairedJump(power);
-        else window.pinkyRemoteJump(power);
-      },85); // long enough to catch a lift's peak without inflating gentle lifts
+      lift={start:now,peak:Math.max(impulse,previousImpulse),dv:riseDv};
+      clearTimeout(motionTimer);
+      // Safety net if sensor events stop mid-lift.
+      motionTimer=setTimeout(()=>{motionTimer=undefined;if(lift)finishLift(cfg);},240);
     }
     previousImpulse=impulse;
   }
@@ -915,6 +1012,30 @@
     $('controller-room-input').addEventListener('input',e=>
       setConnectCue(roomPattern.test(e.target.value.trim().toUpperCase())));
     $('controller-disconnect').addEventListener('click',()=>disconnectPhone('已中斷配對。',true));
+    // Character card on the phone controller: arrows (Phone Control) or tilt (Motion Jump).
+    {
+      const card=$('controller-char'),pc=window.pinkyCharacter;
+      const c=card.querySelector('canvas').getContext('2d'),state=pc.makeState();
+      const paint=(id,hop)=>{
+        const item=pc.info(id),name=card.querySelector('.pinky-char-name');
+        name.textContent=item.name;name.style.color=item.color;
+        card.querySelector('.pinky-char-dots').innerHTML=pc.list.map(x=>'<i'+(x.id===id?' class="on"':'')+'></i>').join('');
+        state.idle=PinkyIdle.create();
+        if(hop)state.hop=24;
+      };
+      pc.onChange(paint);
+      paint(pc.get(),false);
+      for(const arrow of card.querySelectorAll('.pinky-char-arrow'))
+        arrow.addEventListener('click',()=>phonePickStep(Number(arrow.dataset.dir)));
+      const animate=()=>{
+        if(!$('pinky-controller').hidden && !card.hidden && !document.hidden)pc.drawPreview(c,pc.get(),state,c.canvas.width/150);
+        requestAnimationFrame(animate);
+      };
+      requestAnimationFrame(animate);
+    }
+    window.addEventListener('deviceorientation',orientationFrame);
+    for (const id of ['controller-motion-test-toggle','pinky-motion-test-toggle'])
+      $(id)?.addEventListener('change',event=>setMotionTest(event.target.checked));
     // Phone fullscreen (the phone's own screen; browsers can't fullscreen the computer remotely).
     {
       const fsBtn=$('controller-fullscreen'),el=document.documentElement;

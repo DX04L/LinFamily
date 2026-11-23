@@ -366,7 +366,7 @@
   justify-self: center;
   width: 100%;
   margin-top: 12px;
-  min-height: clamp(150px, 45dvh, 320px);
+  min-height: clamp(130px, 30dvh, 260px); /* same size before and during a run (character card below) */
   border-radius: 26px;
   padding: 8px;
   font-size: clamp(24px, 8vw, 44px);
@@ -506,3 +506,31 @@ body.pinky-popup-open .panel { visibility: hidden; }
 /* Phone controller: this run's score after a run. */
 .pinky-run-score { margin: 4px 0 10px; padding: 10px 12px; border-radius: 16px; background: #fff3c4; border: 2px solid #ffd400; color: #8a3a00; font-size: 22px; font-weight: 800; text-align: center; }
 .pinky-run-score[hidden] { display: none; }
+
+/* ===== 手機控制器：角色卡（選角與遊戲中同一版面，只淡出箭頭／傾斜提示） ===== */
+.pinky-ctl-char:not([hidden]) { display: grid; justify-items: center; margin-top: 10px; }
+.pinky-ctl-char-hint {
+  margin: 0 0 4px; padding: 6px 12px; border-radius: 14px; border: 2px dashed #f0c23a;
+  background: #fff3c4; color: #7a5600; font-weight: 800; font-size: 14px; text-align: center;
+}
+.pinky-ctl-char-row { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+.pinky-ctl-char-figure { display: grid; justify-items: center; }
+.pinky-ctl-char-figure canvas { width: clamp(110px, 20dvh, 170px); height: clamp(110px, 20dvh, 170px); }
+.pinky-ctl-char .pinky-char-name { font-size: 20px; }
+.pinky-ctl-char .pinky-char-dots { margin: 4px 0 0; }
+.pinky-tilt-icon { width: 44px; text-align: center; font: 900 28px/1 system-ui, sans-serif; color: #bc317a; }
+.pinky-ctl-char[data-mode="manual"] .pinky-tilt-icon,
+.pinky-ctl-char[data-mode="manual"] .pinky-ctl-char-hint,
+.pinky-ctl-char[data-mode="motion"] .pinky-char-arrow { display: none; }
+.pinky-ctl-char .pinky-char-arrow, .pinky-ctl-char .pinky-tilt-icon, .pinky-ctl-char-hint { transition: opacity .25s, visibility .25s; }
+.pinky-ctl-char.is-locked .pinky-char-arrow,
+.pinky-ctl-char.is-locked .pinky-tilt-icon,
+.pinky-ctl-char.is-locked .pinky-ctl-char-hint,
+.pinky-ctl-char.is-locked .pinky-char-dots { visibility: hidden; opacity: 0; }
+#pinky-controller .pinky-char-arrow { min-height: 44px; }
+/* 體感測試模式 */
+.pinky-test-toggle { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; cursor: pointer; }
+.pinky-motion-test {
+  margin: 6px 0 0; padding: 8px 10px; border-radius: 10px; background: #fff; border: 1px solid #efb2d0;
+  font: 12px/1.5 ui-monospace, Menlo, monospace; white-space: pre-line; color: #742050;
+}
