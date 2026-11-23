@@ -711,7 +711,7 @@
     setText(pairedRoom?'controller-motion-status':'pinky-motion-status',message?PinkyLocale.message('{0}{1}',message,fallback):'請先握穩裝置，等待體感校準。');
     if (!message) setTimeout(()=>{
       if(request===motionRequest && motionEnabled && !samples)
-        setMotionWarning('偵測不到體感感應器：請到瀏覽器「網站設定 → 動作感應器（Motion sensors）」改成允許；Brave 請點網址列旁的獅子圖示關閉 Shields。改好後重新整理並重新配對。');
+        setMotionWarning('偵測不到體感感應器：請到瀏覽器「網站設定 → 動作感應器（Motion sensors）」改成允許，改好後重新整理並重新配對。');
     },2600);
   }
   function motionFrame(event) {

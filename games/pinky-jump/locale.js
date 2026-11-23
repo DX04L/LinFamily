@@ -45,7 +45,7 @@
     "仍可點畫面跳躍。": " You can still tap the screen to jump.",
     "請先握穩裝置，等待體感校準。": "Hold your device steady to calibrate.",
     "未收到感應資料，請確認瀏覽器權限。": "No motion data received. Check your browser permissions.",
-    "偵測不到體感感應器：請到瀏覽器「網站設定 → 動作感應器（Motion sensors）」改成允許；Brave 請點網址列旁的獅子圖示關閉 Shields。改好後重新整理並重新配對。": "No motion sensor detected. In your browser, open Site settings → Motion sensors and choose Allow. In Brave, tap the lion icon by the address bar and turn Shields off. Then reload and pair again.",
+    "偵測不到體感感應器：請到瀏覽器「網站設定 → 動作感應器（Motion sensors）」改成允許，改好後重新整理並重新配對。": "No motion sensor detected. In your browser, open Site settings → Motion sensors and choose Allow, then reload and pair again.",
     "體感跳躍已就緒。": "Motion Jump is ready.",
     "🏆 上榜了！本局 {0} 分": "🏆 You made the leaderboard! You scored {0}",
     "本局 {0} 分": "You scored {0}",
