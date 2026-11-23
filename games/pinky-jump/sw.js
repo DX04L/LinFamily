@@ -1,6 +1,6 @@
 /* Pinky Jump: per-game offline PWA (scoped to this folder only). */
-const CACHE = 'pinky-jump-v54';
-const ASSETS = ['./','./index.html','./style.css?v=11','./locale.js?v=4','./game.js?v=20261123-zoom','./install.css','./install.js?v=2','./manifest.webmanifest?v=4','./pinky-icon.png?v=3','./pinky-icon-192.png?v=3','./pinky-icon-maskable.png?v=3','./apple-touch-icon.png?v=3','./name-filter.js?v=1','./pinky-ui.js?v=1','./qrcode.js?v=1','./pinky-rtc.js?v=1','./pinky-online.js?v=28','./splash.css?v=2','./splash-cat.png?v=2','./pinky-arcade.css?v=21','./lf-menu.js?v=3','./controller.html','./pinky-jump-music.mp3'];
+const CACHE = 'pinky-jump-v55';
+const ASSETS = ['./','./index.html','./style.css?v=11','./locale.js?v=4','./game.js?v=20261123-zoom2','./install.css','./install.js?v=2','./manifest.webmanifest?v=4','./pinky-icon.png?v=3','./pinky-icon-192.png?v=3','./pinky-icon-maskable.png?v=3','./apple-touch-icon.png?v=3','./name-filter.js?v=1','./pinky-ui.js?v=1','./qrcode.js?v=1','./pinky-rtc.js?v=1','./pinky-online.js?v=28','./splash.css?v=2','./splash-cat.png?v=2','./pinky-arcade.css?v=21','./lf-menu.js?v=3','./controller.html','./pinky-jump-music.mp3'];
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(ASSETS.map(path => cache.add(path)))));

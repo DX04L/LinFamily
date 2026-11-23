@@ -273,9 +273,10 @@ hiScoreEl.textContent = '-----';
 
 function resizeCanvas() {
   const screenW = window.innerWidth, screenH = window.innerHeight;
-  // Phones zoom in a little so the cat isn't tiny: portrait ×1.3, landscape ×1.1 (rules stay in world units).
+  // Phones zoom in ×1.3 so the cat isn't tiny (rules stay in world units). In landscape the camera
+  // follows the cat up near the top of a jump (Super Mario style).
   const phone = Math.min(screenW, screenH) < 600;
-  viewZoom = phone ? (screenH > screenW ? 1.3 : 1.1) : 1;
+  viewZoom = phone ? 1.3 : 1;
   viewScale = Math.min(screenW / MIN_WORLD_W, screenH / WORLD_H) * viewZoom;
   width = screenW / viewScale;
   height = screenH / viewScale;
@@ -1229,8 +1230,12 @@ function simulateFrame() {
   const downhillLookAhead = Math.min(WORLD_H*.39,Math.max(0,roadAhead-roadHere)*.92);
   const desiredCamera = roadHere - baseGroundY() + downhillLookAhead;
   // Hold the highest useful camera position through the arc, without tracking the cat.
-  const cameraTarget = player.isGrounded ? desiredCamera : Math.min(desiredCamera, player.jumpCameraLimit);
+  // Airborne: the camera follows the cat up only when its head reaches the HUD margin (Mario style);
+  // otherwise it eases back to the road.
+  const followTarget = player.y - jumpTopMargin();
+  const cameraTarget = player.isGrounded ? desiredCamera : Math.min(desiredCamera, followTarget);
   cameraY += (cameraTarget-cameraY)*.16;
+  if (!player.isGrounded) cameraY = Math.min(cameraY, followTarget); // never let the head slide under the HUD
   if (gameState === 'PLAYING') {
     // 隨分數漸進加速
     gameSpeed = Math.min(16, 6.6 + score * 0.0022);
@@ -1329,7 +1334,7 @@ function paintFrame() {
 // Zoomed-in portrait phones see less road ahead: a small "!" at the right edge marks an obstacle
 // that is about to enter the screen (shown for up to ~0.6 s before it appears).
 function drawIncomingHints() {
-  if (viewZoom < 1.2 || gameState !== 'PLAYING') return; // portrait phones only
+  if (viewZoom <= 1 || height < width || gameState !== 'PLAYING') return; // portrait phones only
   for (const o of obstacles) {
     const lead = o.x - width;
     if (lead <= 0 || lead > gameSpeed * 36) continue;
