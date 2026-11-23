@@ -176,6 +176,9 @@
     }
 
     // ---------- 畫面 ----------
+    let lastId = '', stick = true;
+    list.addEventListener('scroll', () => { stick = nearBottom(); }, { passive: true });
+    list.addEventListener('load', () => { if (stick) toBottom(); }, true); // 照片載入後高度變了，仍停在最新
     const nearBottom = () => list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     const toBottom = () => { list.scrollTop = list.scrollHeight; };
     function textHtml(m) {
@@ -186,7 +189,7 @@
     function readCount(m) { let n = 0; for (const uid in reads) if (uid !== me.uid && reads[uid] >= m.t) n++; return n; }
     function render() {
       if (!me || denied) return;
-      const keep = nearBottom(), top = list.scrollTop;
+      const keep = nearBottom(), top = list.scrollTop, newest = msgs.length ? msgs[msgs.length - 1].id : '', fresh = newest !== lastId; lastId = newest;
       const frag = document.createDocumentFragment(); let lastDay = '', unreadMark = false;
       const shown = msgs.filter(m => !hidden.has(m.id));
       if (!shown.length) frag.append(h('<p class="lfc-empty">No messages yet — say hi to your family!</p>'));
@@ -197,7 +200,7 @@
         const p = prof(m.uid), mine = m.uid === me.uid;
         if (m.unsent) { frag.append(h(`<div class="lfc-sys"><span>${esc(mine ? '你' : p.name)}已收回訊息</span></div>`)); return; }
         let body;
-        if (m.img) body = `<div class="lfc-bub lfc-media"><img class="lfc-photo" src="${m.img}" alt="照片" loading="lazy"></div>`;
+        if (m.img) body = `<div class="lfc-bub lfc-media"><img class="lfc-photo" src="${m.img}" alt="照片"></div>`;
         else if (m.stk) { const [k, mood] = m.stk.split(':'); body = `<div class="lfc-bub lfc-media"><div class="lfc-stk">${face(k, mood)}</div></div>`; }
         else body = `<div class="lfc-bub">${m.replyTo ? `<div class="lfc-quote" data-go="${esc(m.replyTo.id)}">${esc(m.replyTo.name)}：${esc(m.replyTo.text)}</div>` : ''}${textHtml(m)}</div>`;
         const rc = {}; Object.values(m.reacts || {}).forEach(e => rc[e] = (rc[e] || 0) + 1);
@@ -215,7 +218,7 @@
         const mk = list.querySelector('#lfcUnreadMark');
         if (mk) list.scrollTop = mk.offsetTop - 8; else toBottom();
         if (msgs.length) { firstOpen = false; myRead = 0; }
-      } else if (keep) toBottom(); else list.scrollTop = top;
+      } else if (keep || fresh) { toBottom(); stick = true; } else list.scrollTop = top; // 有新訊息（自己或別人）一律捲到最新
     }
 
     // ---------- 傳送 ----------
