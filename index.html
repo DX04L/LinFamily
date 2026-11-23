@@ -17,7 +17,7 @@
       var state = '等待啟動', touches = 0;
       function render() {
         var label = document.getElementById('lfBootStatus');
-        if (label) label.textContent = 'LF 檢查版 B1 · ' + state + ' · 觸控 ' + touches;
+        if (label) label.textContent = 'LF 檢查版 B2 · ' + state + ' · 觸控 ' + touches;
       }
       window.lfBootMark = function (message) { state = message; render(); };
       document.addEventListener('pointerdown', function () { touches++; render(); }, { capture:true, passive:true });
@@ -48,7 +48,7 @@
   <meta name="apple-mobile-web-app-title" content="LinFamily">
   <meta name="theme-color" content="#161716" id="metaThemeColor">
   <script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__lfBIP=e;});</script><!-- 安裝事件可能很早就來，先接住 -->
-  <link rel="stylesheet" href="css/entrance.css?v=18">
+  <link rel="stylesheet" href="css/entrance.css?v=19">
 
   <!-- 深淺主題預載防閃爍（沿用舊的設定值 linfamily_pixel_theme） -->
   <script>
@@ -306,7 +306,7 @@
   <script src="https://clc-dx04.pages.dev/open-external.js?v=1"></script><!-- LINE／FB／IG 內建瀏覽器改用預設瀏覽器開啟 -->
 </head>
 <body>
-  <div id="lfBootProbe" role="status"><span id="lfBootStatus">LF 檢查版 B1 · 等待啟動</span><br><button type="button" id="lfBootReload">重新載入新版</button></div>
+  <div id="lfBootProbe" role="status"><span id="lfBootStatus">LF 檢查版 B2 · 等待啟動</span><br><button type="button" id="lfBootReload">重新載入新版</button></div>
   <script>
     if (window.lfBootMark) {
       window.lfBootMark('畫面已載入');
@@ -324,7 +324,7 @@
     <div class="lf-ent-logo"><img src="assets/lf-mark.v2.svg" alt="" width="644" height="594"></div>
     <p class="lf-ent-note" hidden>請用 Safari 或 Chrome 開啟本頁再登入</p>
   </div>
-  <script src="js/entrance.js?v=20261118-boot" async></script>
+  <script src="js/entrance.js?v=20261123-pending" async></script>
   <!-- 暫停測試：改成 false 即恢復 iPhone 動畫；動畫檔案保留。 -->
   <script>
     (function () {

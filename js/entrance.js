@@ -47,6 +47,14 @@
     clearTimeout(bootTimer);
     if (note && !inApp) { note.hidden = true; note.textContent = ''; }
   };
+  // 保險：主程式（index.html 的 DOMContentLoaded）5 秒還沒跑到 applyRole，html 會一直帶 lf-pending，
+  // 畫面只剩「Welcome home＋🔐」且按了沒反應（iPhone 主畫面 App 曾發生）。先把 Welcome 叫出來，並記下卡在哪。
+  setTimeout(() => {
+    const h = document.documentElement;
+    if (!h.classList.contains('lf-pending')) return;
+    h.classList.remove('lf-pending');
+    if (window.lfBootMark) window.lfBootMark('主程式未啟動 ' + document.readyState + (window.firebase ? '' : ' 無Firebase') + (window.lfEnter ? '' : ' 無lfEnter'));
+  }, 5000);
   if (typeof window.lfEnter !== 'function') bootTimer = setTimeout(() => {
     if (typeof window.lfEnter === 'function' || !note || wrap.hidden || inApp) return;
     note.hidden = false; note.textContent = '登入服務載入較慢，請確認網路。';
