@@ -75,13 +75,8 @@
     };
     root.innerHTML = `
       <div class="lfc">
-        <div class="lfc-head" id="lfcHead">
-          <button class="lfc-hbtn" id="lfcBack" title="回主畫面">${IC.back}</button>
-          <h2 class="lfc-title">Lin Family<small id="lfcCount"></small></h2>
-          <button class="lfc-hbtn" id="lfcFind" title="搜尋">${IC.search}</button>
-          <button class="lfc-hbtn" id="lfcMenu" title="選單">${IC.menu}</button>
-        </div>
-        <div class="lfc-findbar" id="lfcFindBar" hidden><input id="lfcFindIn" placeholder="搜尋聊天內容" enterkeyhint="search"><span id="lfcFindN"></span><button id="lfcFindX">✕</button></div>
+        <div class="lfc-grip" id="lfcHead" title="點一下收合"><span></span></div>
+        <div class="lfc-findbar" id="lfcFindBar" hidden><span id="lfcFindN"></span><button id="lfcFindUp" title="上一則（較舊）">˄</button><button id="lfcFindDn" title="下一則（較新）">˅</button></div>
         <div class="lfc-pin" id="lfcPin" hidden>📢<span id="lfcPinText"></span><button id="lfcUnpin" title="取消公告">✕</button></div>
         <div class="lfc-list" id="lfcList"></div>
         <div class="lfc-reply" id="lfcReply" hidden>↩︎<span id="lfcReplyText"></span><button id="lfcReplyX">✕</button></div>
@@ -110,7 +105,7 @@
     function place() {
       const W = root.clientWidth, wide = wideQ.matches;
       let x = 0, w = W;
-      if (wide) { w = Math.min(W, Math.max(360, lay.w || 420)); x = lay.x == null ? W - w - 24 : lay.x; x = Math.max(0, Math.min(W - w, x)); }
+      if (wide) { w = Math.min(W, Math.max(360, lay.w || 420)); x = lay.x == null ? W - w : lay.x; x = Math.max(0, Math.min(W - w, x)); }
       box.style.left = x + 'px'; box.style.width = wide ? w + 'px' : '';
       rzL.style.left = (x - 5) + 'px'; rzR.style.left = (x + w - 5) + 'px'; rzL.hidden = rzR.hidden = !wide || collapsed;
       tab.style.left = (wide ? x + 16 : 12) + 'px';
@@ -149,7 +144,6 @@
       unsubs.push(col('lf_chat_profiles').onSnapshot(s => {
         members = {}; s.forEach(d => members[d.id] = d.data());
         if (!layLoaded && members[me.uid]) { layLoaded = true; const L = members[me.uid].layout; if (L && L.w) { lay = { x: L.x, w: L.w }; place(); } }
-        $('lfcCount').textContent = ' (' + s.size + ')';
         if (!members[me.uid]) col('lf_chat_profiles').doc(me.uid).set({ name: me.displayName || me.email.split('@')[0], av: 'cat', email: me.email.toLowerCase(), at: FV.serverTimestamp() }).then(() => { needPick = true; if (visible) { needPick = false; avatarPicker(true); } });
         render();
       }, err));
@@ -216,7 +210,7 @@
           ${mine ? '' : `<button class="lfc-av" data-uid="${esc(m.uid)}" aria-label="${esc(p.name)}">${face(p.av)}</button>`}
           <div class="lfc-col">${mine ? '' : `<p class="lfc-name">${esc(p.name)}</p>`}<div class="lfc-line">${body}${meta}</div>${reacts}</div></div>`));
       });
-      list.replaceChildren(frag);
+      list.replaceChildren(frag); if (findQ) findMark();
       if (firstOpen && visible) {
         const mk = list.querySelector('#lfcUnreadMark');
         if (mk) list.scrollTop = mk.offsetTop - 8; else toBottom();
@@ -294,20 +288,22 @@
     list.addEventListener('contextmenu', e => { const b = e.target.closest('.lfc-bub'); if (!b) return; e.preventDefault(); if (!document.querySelector('.lfc-pop')) actions(b.closest('.lfc-row').dataset.id); });
     $('lfcPin').addEventListener('click', e => { if (e.target.id !== 'lfcUnpin' && pin) go(pin.id); });
     $('lfcUnpin').onclick = () => { if (confirm('取消這則公告？')) db.collection('lf_chat_meta').doc('pin').set({ id: '' }); };
-    $('lfcBack').onclick = () => opt.onBack && opt.onBack();
-    $('lfcMenu').onclick = () => {
-      const o = overlay(`<button class="lfc-mem" data-m="mine"><span class="lfc-av">${face(prof(me.uid).av)}</span>我的頭像與名稱</button><button class="lfc-act" data-m="mem">👥 成員（${Object.keys(members).length}）</button>${pin ? '<button class="lfc-act" data-m="pin">📢 查看公告</button>' : ''}<button class="lfc-act" data-close>取消</button>`, true);
-      o.ov.addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; o.close(); if (b.dataset.m === 'mine') avatarPicker(false); if (b.dataset.m === 'mem') memberList(); if (b.dataset.m === 'pin') go(pin.id); });
-    };
-    // 預留：點標題列收合／展開聊天室（之後底下要放其他東西時再做）
-    // 搜尋聊天內容：Enter 跳到下一則（由新到舊）
-    let findHits = [], findI = -1;
-    $('lfcFind').onclick = () => { $('lfcFindBar').hidden = !$('lfcFindBar').hidden; fit(); if (!$('lfcFindBar').hidden) $('lfcFindIn').focus(); };
-    $('lfcFindX').onclick = () => { $('lfcFindBar').hidden = true; $('lfcFindIn').value = ''; $('lfcFindN').textContent = ''; fit(); };
-    $('lfcFindIn').addEventListener('input', () => { const q = $('lfcFindIn').value.trim().toLowerCase(); findI = -1;
-      findHits = q ? msgs.filter(m => !m.unsent && !hidden.has(m.id) && (m.text || '').toLowerCase().includes(q)).map(m => m.id).reverse() : [];
-      $('lfcFindN').textContent = q ? findHits.length + ' 則' : ''; });
-    $('lfcFindIn').addEventListener('keydown', e => { if (e.key !== 'Enter' || !findHits.length) return; e.preventDefault(); findI = (findI + 1) % findHits.length; go(findHits[findI]); $('lfcFindN').textContent = (findI + 1) + '/' + findHits.length; });
+    // 搜尋聊天內容（用分頁列的放大鏡）：打字時標出符合的訊息；Enter 跳到最新一則，再按 Enter 或 ˄ 往舊的找，˅ 往新的
+    let findQ = '', findHits = [], findI = -1;
+    function findMark() {
+      list.querySelectorAll('.lfc-qhit').forEach(r => r.classList.remove('lfc-qhit'));
+      findHits.forEach(id => { const r = list.querySelector(`[data-id="${CSS.escape(id)}"]`); if (r) r.classList.add('lfc-qhit'); });
+      $('lfcFindBar').hidden = !findQ;
+      $('lfcFindN').textContent = !findQ ? '' : !findHits.length ? '找不到符合的訊息' : findI < 0 ? findHits.length + ' 則符合，按 Enter 跳過去' : (findI + 1) + ' / ' + findHits.length;
+    }
+    function search(q) {
+      findQ = (q || '').toLowerCase(); findI = -1;
+      findHits = findQ ? msgs.filter(m => !m.unsent && !hidden.has(m.id) && ((m.text || '').toLowerCase().includes(findQ) || prof(m.uid).name.toLowerCase().includes(findQ))).map(m => m.id).reverse() : [];
+      findMark();
+    }
+    function findStep(d) { if (!findHits.length) return; if (collapsed) setCollapsed(false); findI = Math.max(0, Math.min(findHits.length - 1, findI + d)); go(findHits[findI]); findMark(); }
+    $('lfcFindUp').onclick = () => findStep(1);
+    $('lfcFindDn').onclick = () => findStep(-1);
 
     function react(id, emo) {
       const m = msgs.find(x => x.id === id); if (!m) return;
@@ -393,7 +389,7 @@
     }
     function avatarPicker(first) {
       const p = prof(me.uid); let pick = p.av;
-      const o = overlay(`${first ? '<p style="margin-bottom:8px">歡迎來到 Lin Family！先選一個頭像吧</p>' : ''}<div class="lfc-big" id="lfcCur">${face(pick)}</div>
+      const o = overlay(`${first ? '<p style="margin-bottom:8px">歡迎來到 Lin Family！先選一個頭像吧</p>' : '<h3 style="margin:0 0 12px">帳號設定</h3>'}<div class="lfc-big" id="lfcCur">${face(pick)}</div>
         <div class="lfc-field"><input id="lfcName" maxlength="12" placeholder="顯示名稱" value="${esc(p.name)}"></div>
         <div class="lfc-avs">${AV.map(a => `<button data-k="${a[0]}" class="${a[0] === pick ? 'on' : ''}"><span>${face(a[0])}</span>${a[1]}</button>`).join('')}</div>
         <button class="lfc-pbtn" id="lfcAvSave">儲存</button><button class="lfc-gbtn" data-close>取消</button>`);
@@ -429,6 +425,8 @@
         if (!me) { stop(); msgs = []; list.replaceChildren(); opt.tabDot && opt.tabDot(false); return; }
         if (was !== me.uid) start();
       },
+      account() { if (me) avatarPicker(false); },
+      search, findNext: () => findStep(1),
       show(on) {
         visible = on; dot(); document.body.classList.toggle('lf-tab-family', on);
         if (!on) return;

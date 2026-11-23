@@ -1,6 +1,8 @@
 /* LF 家庭留言板（Family 分頁）：操作照 LINE，外觀用 LF 色系變數（--pine、--sage、--surface…），主題切換會跟著變 */
 /* Family 分頁：分頁區不留邊；聊天卡片浮在上面（以後 Family 底下放東西會被壓住），手機全寬貼底，寬螢幕可移動、調寬窄 */
-body.lf-tab-family main { padding-left:0 !important; padding-right:0 !important; padding-bottom:0; }
+body.lf-tab-family main { padding-bottom:0; }
+@media (max-width:639px) { body.lf-tab-family main { padding-left:0 !important; padding-right:0 !important; }
+  body.lf-tab-family main > .clc-tb-search { margin-left:max(var(--lf-pad), env(safe-area-inset-left)); margin-right:max(var(--lf-pad), env(safe-area-inset-right)); } }
 body.lf-tab-family #panelFamily { margin:0; padding:0; overflow:hidden; position:relative; }
 #lfChat { position:absolute; inset:0; pointer-events:none; }
 .lfc { position:absolute; left:0; right:0; top:0; height:100%; pointer-events:auto; display:flex; flex-direction:column; overflow:hidden; min-height:300px;
@@ -13,7 +15,12 @@ body.lf-tab-family #panelFamily { margin:0; padding:0; overflow:hidden; position
   border-radius:14px 14px 0 0; background:color-mix(in srgb, var(--surface) 88%, transparent); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); color:var(--text); font-size:14px; font-weight:800; cursor:pointer; }
 .lfc-tdot { width:8px; height:8px; border-radius:50%; background:#ef4444; }
 body.lf-tab-family footer { display:none; }
-.lfc-head { cursor:pointer; touch-action:none; user-select:none; display:flex; align-items:center; gap:4px; padding:8px 8px 8px 4px; border-bottom:1px solid var(--border); }
+.lfc-grip { flex:none; height:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; user-select:none; }
+@media (min-width:640px) { .lfc-grip { cursor:grab; } }
+.lfc-grip span { width:40px; height:4px; border-radius:2px; background:var(--muted); opacity:.45; }
+.lfc-qhit .lfc-bub { box-shadow:0 0 0 2px var(--sage); }
+.lfc-findbar button { width:30px; height:26px; border-radius:8px; color:var(--text); font-size:16px; }
+.lfc-findbar span { flex:1; }
 .lfc-title { flex:1; margin:0; font-size:16px; font-weight:800; }
 .lfc-title small { font-weight:600; color:var(--muted); font-size:13px; margin-left:4px; }
 .lfc-hbtn { border:0; background:none; border-radius:10px; height:40px; width:40px; padding:0; cursor:pointer; color:var(--text); display:inline-flex; align-items:center; justify-content:center; flex:none; }

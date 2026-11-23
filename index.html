@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
   <link rel="stylesheet" href="css/lf-todos.css?v=9">
-  <link rel="stylesheet" href="css/lf-chat.css?v=4">
+  <link rel="stylesheet" href="css/lf-chat.css?v=5">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <!-- 暫時診斷：只顯示於 iPhone 的主畫面 App，確認實機卡住的位置。 -->
@@ -174,7 +174,9 @@
     @media (max-width:699px) { #lfApps { margin:0 -8px; } }
     #lfApps .lf-app { width:100%; }
     .lf-top { flex-wrap:wrap; }
-    #lfToolbar { margin:0; }
+    #lfToolbar { margin:0; justify-content:flex-end; } /* 分頁列右緣對齊皇冠；＋ 在左邊，消失時分頁列不會移動 */
+    #lfToolbar .clc-tb-add { order:-1; }
+    main > .clc-tb-search { order:-1; flex:none; } /* 搜尋框出現在上方，把內容往下擠 */
     @media (max-width:639px) { #lfToolbar { order:3; flex-basis:100%; margin-top:14px; } }
     @media (min-width:640px) { .lf-top { align-items:flex-end; padding-top:calc(30px + env(safe-area-inset-top)); } .lf-top > :first-child { flex:1; min-width:0; } }
     html.lf-has-wall .clc-tb-tabs, html.lf-has-wall .clc-tb-btn { background:color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
@@ -353,8 +355,9 @@
       <button type="button" id="lfAuthBtn" class="lf-btn" title="管理員登入 / 狀態" aria-haspopup="menu" aria-expanded="false"><span id="lfAuthIcon">🔐</span><span id="lfAuthDot" class="lf-dot" hidden></span></button>
       <div id="lfMenu" class="lf-menu" role="menu" hidden>
         <div id="lfMenuHead" class="lf-menu-head">管理員已登入</div>
-        <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>⚙️ 全站設定</button>
+        <button type="button" role="menuitem" data-act="account">👤 帳號設定</button>
         <button type="button" role="menuitem" data-act="theme">🎨 背景主題</button>
+        <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>⚙️ 全站設定</button>
         <div class="lf-sep"></div>
         <button type="button" role="menuitem" data-act="logout" class="lf-danger" id="lfLogoutBtn">🚪 登出帳號</button>
       </div>
@@ -434,7 +437,7 @@
   <script src="js/dashboard-todos.js"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=6"></script>
+  <script src="js/lf-chat.js?v=7"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -603,6 +606,7 @@
         $('lfThemeDialog').showModal();
       }
       else if (act === 'users') location.href = 'admin-users.html';
+      else if (act === 'account') { if (window.lfChatApi) window.lfChatApi.account(); }
     });
     function setColorMode(dark) {
       document.documentElement.classList.toggle('dark', dark);
@@ -836,7 +840,7 @@
       active: 'apps', onTab: t => onTab(t), placeholder: '搜尋 App 或卡片內容…', searchHost: document.querySelector('main'),
       addItems: t => addMenu(t),
       onSearch: () => applySearch(),
-      onEnter: () => { const id = applySearch().find(x => apps.some(a => a.id === x)); const a = id && desk.element(id) && desk.element(id).querySelector('a[href]'); if (a) location.href = a.href; }
+      onEnter: () => { if (tb.tab() === 'family') return window.lfChatApi && window.lfChatApi.findNext(); const id = applySearch().find(x => apps.some(a => a.id === x)); const a = id && desk.element(id) && desk.element(id).querySelector('a[href]'); if (a) location.href = a.href; }
     });
     // 家庭留言板（Family 分頁）：有新訊息時 Family 分頁標籤亮紅點
     window.lfChatApi = db && window.lfChatInit ? window.lfChatInit($('lfChat'), { db, toast, onBack: () => tb.setTab('apps', true), tabDot: on => {
@@ -1250,13 +1254,14 @@
       $('panelApps').hidden = tab !== 'apps'; $('panelFamily').hidden = tab !== 'family'; $('panelAll').hidden = tab !== 'all';
       if (tab === 'all') { renderAll(); clearNews(); }
       if (tab !== 'apps') desk.closeMenu();
-      if (window.lfChatApi) window.lfChatApi.show(tab === 'family');
+      if (window.lfChatApi) { window.lfChatApi.show(tab === 'family'); window.lfChatApi.search(tab === 'family' ? tb.value() : ''); }
       try { history.replaceState(history.state, '', tab === 'apps' ? location.pathname + location.search : '#' + (tab === 'all' ? 'apps' : tab)); } catch (_) {} // 重新整理時停在同一個分頁
     }
     // ---------- 搜尋：符合的 App 保持清楚，其他變淡；Enter 開第一個符合的 App ----------
     // ---------- 搜尋：App ＋ 卡片內容；符合的保持清楚，其他變淡；Enter 開第一個符合的 App ----------
     function applySearch() {
       const q = tb.value();
+      if (tb.tab() === 'family') { if (window.lfChatApi) window.lfChatApi.search(q); return []; } // Family：搜聊天內容
       if (q && tb.tab() !== 'apps') tb.setTab('apps', true);
       const hits = desk.search(q);
       $('lfNoResult').hidden = !q || hits.length > 0;
