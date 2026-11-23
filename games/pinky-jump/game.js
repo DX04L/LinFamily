@@ -218,6 +218,7 @@ const CAT_HEIGHT = 68;
 const MAX_RISE = 520;
 function jumpTopMargin() { return hudClearance + CAT_HEIGHT * 1.5; }
 let viewScale = 1;
+let viewZoom = 1;
 let hudClearance = 64;
 let width = window.innerWidth;
 let height = window.innerHeight;
@@ -272,7 +273,10 @@ hiScoreEl.textContent = '-----';
 
 function resizeCanvas() {
   const screenW = window.innerWidth, screenH = window.innerHeight;
-  viewScale = Math.min(screenW / MIN_WORLD_W, screenH / WORLD_H);
+  // Phones zoom in a little so the cat isn't tiny: portrait ×1.3, landscape ×1.1 (rules stay in world units).
+  const phone = Math.min(screenW, screenH) < 600;
+  viewZoom = phone ? (screenH > screenW ? 1.3 : 1.1) : 1;
+  viewScale = Math.min(screenW / MIN_WORLD_W, screenH / WORLD_H) * viewZoom;
   width = screenW / viewScale;
   height = screenH / viewScale;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1314,11 +1318,33 @@ function paintFrame() {
   ctx.translate(0,-cameraY);
   drawCoins(ctx,coins);
   drawObstacles(ctx,obstacles);
+  drawIncomingHints();
   player.draw();
   drawParticles();
   ctx.restore();
   ctx.restore();
   needsPaint=false;
+}
+
+// Zoomed-in portrait phones see less road ahead: a small "!" at the right edge marks an obstacle
+// that is about to enter the screen (shown for up to ~0.6 s before it appears).
+function drawIncomingHints() {
+  if (viewZoom < 1.2 || gameState !== 'PLAYING') return; // portrait phones only
+  for (const o of obstacles) {
+    const lead = o.x - width;
+    if (lead <= 0 || lead > gameSpeed * 36) continue;
+    const midY = o.type === 'mountain' || o.type === 'crystal' ? o.y - Math.min(o.h, 120) / 2 : o.type === 'cloudGate' ? o.y + o.h / 2 : o.y;
+    const x = width - 22, alpha = 1 - lead / (gameSpeed * 36) * .6;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#e2558f';
+    ctx.beginPath(); ctx.arc(x, midY, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 20px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('!', x, midY + 1);
+    ctx.restore();
+  }
 }
 
 function update(timestamp = performance.now()) {
