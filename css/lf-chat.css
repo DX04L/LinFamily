@@ -1,0 +1,93 @@
+/* LF 家庭留言板（Family 分頁）：操作照 LINE，外觀用 LF 色系變數（--pine、--sage、--surface…），主題切換會跟著變 */
+.lfc { display:flex; flex-direction:column; border-radius:18px; background:var(--surface); border:1px solid var(--border); overflow:hidden; min-height:420px; }
+.lfc-head { display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid var(--border); }
+.lfc-title { flex:1; margin:0; font-size:16px; font-weight:800; }
+.lfc-title small { font-weight:600; color:var(--muted); font-size:13px; margin-left:4px; }
+.lfc-hbtn { border:0; background:var(--btn); border-radius:9px; height:32px; min-width:32px; padding:0 9px; cursor:pointer; font-size:14px; display:inline-flex; align-items:center; gap:5px; }
+.lfc-hbtn:hover { background:var(--btn-h); }
+.lfc-me-av { width:22px; height:22px; border-radius:50%; overflow:hidden; display:inline-block; }
+.lfc-pin { display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:13px; background:color-mix(in srgb, var(--sage) 18%, transparent); border-bottom:1px solid var(--border); cursor:pointer; }
+.lfc-pin[hidden] { display:none; }
+.lfc-pin span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lfc-pin button { border:0; background:none; cursor:pointer; color:var(--muted); font-size:15px; }
+.lfc-list { flex:1; overflow-y:auto; padding:8px 12px 12px; background:color-mix(in srgb, var(--cream) 22%, var(--surface)); overscroll-behavior:contain; }
+html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 5%, var(--surface)); }
+.lfc-date, .lfc-sys { text-align:center; margin:12px 0 6px; }
+.lfc-date span, .lfc-sys span { display:inline-block; font-size:11.5px; padding:3px 11px; border-radius:10px; background:var(--btn-h); color:var(--muted); }
+.lfc-unread span { background:var(--pine); color:#fff; }
+.lfc-row { display:flex; gap:8px; margin:9px 0; align-items:flex-start; }
+.lfc-row.me { justify-content:flex-end; }
+.lfc-av { width:36px; height:36px; border-radius:50%; overflow:hidden; flex:none; cursor:pointer; border:0; padding:0; background:none; }
+.lfc-col { display:flex; flex-direction:column; min-width:0; max-width:74%; }
+.lfc-row.me .lfc-col { align-items:flex-end; }
+.lfc-name { font-size:11.5px; color:var(--muted); margin:0 0 3px 3px; }
+.lfc-line { display:flex; gap:6px; align-items:flex-end; }
+.lfc-row.me .lfc-line { flex-direction:row-reverse; }
+.lfc-bub { background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:17px; padding:8px 12px; font-size:14.5px; line-height:1.5;
+  white-space:pre-wrap; word-break:break-word; user-select:text; -webkit-touch-callout:none; }
+.lfc-row.me .lfc-bub { background:var(--pine); color:#fff; border-color:transparent; }
+.lfc-row.me .lfc-bub a { color:#fff; }
+.lfc-bub.lfc-media { padding:3px; background:transparent; border:0; }
+.lfc-bub img.lfc-photo { display:block; max-width:min(230px, 60vw); max-height:300px; border-radius:14px; cursor:zoom-in; }
+.lfc-stk { width:110px; height:110px; }
+.lfc-row.hit .lfc-bub { box-shadow:0 0 0 2px #fbbf24; }
+.lfc-ment { font-weight:700; color:var(--pine); }
+.lfc-row.me .lfc-ment { color:#fff; text-decoration:underline; }
+.lfc-quote { border-left:3px solid var(--sage); padding:2px 8px; margin:-1px 0 5px; font-size:12.5px; opacity:.85; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
+.lfc-row.me .lfc-quote { border-left-color:rgba(255,255,255,.7); }
+.lfc-meta { font-size:10.5px; color:var(--muted); line-height:1.3; white-space:nowrap; text-align:right; }
+.lfc-row:not(.me) .lfc-meta { text-align:left; }
+.lfc-reacts { display:flex; gap:4px; margin-top:3px; flex-wrap:wrap; }
+.lfc-reacts span { font-size:12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1px 7px; cursor:pointer; }
+.lfc-reacts span.mine { border-color:var(--pine); }
+.lfc-flash .lfc-bub { animation:lfcFlash 1.2s; }
+@keyframes lfcFlash { 30% { box-shadow:0 0 0 3px var(--sage); } }
+.lfc-reply, .lfc-sugg { display:flex; align-items:center; gap:8px; padding:7px 14px; font-size:12.5px; border-top:1px solid var(--border); color:var(--muted); }
+.lfc-reply[hidden], .lfc-sugg[hidden], .lfc-stks[hidden] { display:none; }
+.lfc-reply span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lfc-reply button { border:0; background:none; cursor:pointer; color:var(--muted); font-size:15px; }
+.lfc-sugg { flex-wrap:wrap; }
+.lfc-sugg button { border:1px solid var(--border); background:var(--btn); border-radius:14px; padding:3px 10px 3px 4px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; font-size:13px; }
+.lfc-sugg .lfc-av { width:22px; height:22px; }
+.lfc-stks { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; padding:10px 14px; border-top:1px solid var(--border); max-height:220px; overflow-y:auto; }
+.lfc-stks button { border:0; background:none; cursor:pointer; padding:4px; border-radius:12px; aspect-ratio:1; }
+.lfc-stks button:hover { background:var(--btn); }
+.lfc-bar { display:flex; align-items:flex-end; gap:6px; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); }
+.lfc-ibtn { border:0; background:none; cursor:pointer; width:34px; height:36px; border-radius:9px; font-size:19px; color:var(--muted); flex:none; display:inline-flex; align-items:center; justify-content:center; }
+.lfc-ibtn:hover { background:var(--btn); }
+.lfc-in { flex:1; resize:none; border:1px solid var(--border); background:var(--btn); border-radius:18px; padding:8px 13px; font-size:15px; line-height:1.4; max-height:120px; min-height:36px; outline:none; }
+.lfc-in:focus { border-color:var(--sage); }
+.lfc-send { background:var(--pine); color:#fff; font-size:16px; }
+.lfc-send:hover { background:var(--pine); opacity:.88; }
+.lfc-empty { text-align:center; color:var(--muted); font-size:13.5px; margin:40px 12px; }
+/* 彈出層（個人卡片、成員、頭像、長按選單、看照片） */
+.lfc-ov { position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding:16px; }
+.lfc-ov.lfc-sheet { align-items:flex-end; padding:0; }
+.lfc-card { background:var(--surface); color:var(--text); border-radius:18px; width:min(320px, 100%); padding:22px 18px 16px; text-align:center; box-shadow:var(--shadow); max-height:86vh; overflow-y:auto; }
+.lfc-sheet .lfc-card { width:min(480px, 100%); border-radius:18px 18px 0 0; padding:14px 14px calc(14px + env(safe-area-inset-bottom)); text-align:left; }
+.lfc-big { width:92px; height:92px; border-radius:50%; overflow:hidden; margin:0 auto; }
+.lfc-card h3 { margin:10px 0 2px; font-size:18px; }
+.lfc-card p { margin:0; color:var(--muted); font-size:13.5px; }
+.lfc-pbtn { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:14px; padding:11px; border:0; border-radius:12px; background:var(--pine); color:#fff; font-size:15px; font-weight:700; cursor:pointer; text-decoration:none; }
+.lfc-gbtn { display:block; width:100%; margin-top:8px; padding:9px; border:0; border-radius:12px; background:var(--btn); cursor:pointer; font-size:14px; }
+.lfc-field { display:flex; gap:6px; margin-top:12px; }
+.lfc-field input { flex:1; min-width:0; border:1px solid var(--border); background:var(--btn); border-radius:10px; padding:8px 10px; font-size:14px; }
+.lfc-field button { border:0; border-radius:10px; background:var(--pine); color:#fff; padding:0 14px; cursor:pointer; font-size:14px; }
+.lfc-avs { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-top:14px; }
+.lfc-avs button { border:0; background:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11.5px; color:var(--muted); }
+.lfc-avs span { width:54px; height:54px; border-radius:50%; overflow:hidden; display:block; }
+.lfc-avs .on span { box-shadow:0 0 0 3px var(--pine); }
+.lfc-mem { display:flex; align-items:center; gap:10px; width:100%; padding:8px 4px; border:0; background:none; cursor:pointer; text-align:left; font-size:15px; border-radius:10px; }
+.lfc-mem:hover { background:var(--btn); }
+.lfc-mem .lfc-av { width:40px; height:40px; }
+.lfc-emos { display:flex; justify-content:space-around; padding:4px 0 10px; border-bottom:1px solid var(--border); margin-bottom:6px; }
+.lfc-emos button { border:0; background:none; font-size:26px; cursor:pointer; border-radius:10px; padding:2px 6px; }
+.lfc-emos button:hover { background:var(--btn); }
+.lfc-act { display:block; width:100%; padding:12px 8px; border:0; background:none; text-align:left; font-size:15px; cursor:pointer; border-radius:10px; }
+.lfc-act:hover { background:var(--btn); }
+.lfc-act.danger { color:#dc2626; }
+.lfc-view { position:fixed; inset:0; z-index:95; background:rgba(0,0,0,.92); display:flex; align-items:center; justify-content:center; touch-action:pan-y; }
+.lfc-view img { max-width:100%; max-height:100%; object-fit:contain; }
+.lfc-vbtn { position:absolute; border:0; background:rgba(255,255,255,.14); color:#fff; border-radius:50%; width:42px; height:42px; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; text-decoration:none; }
+.lfc-vcount { position:absolute; top:calc(18px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); color:#fff; font-size:13px; }
+.lfc-tabdot { position:absolute; top:3px; right:3px; width:8px; height:8px; border-radius:50%; background:#ef4444; pointer-events:none; }

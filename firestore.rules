@@ -44,6 +44,35 @@ service cloud.firestore {
         && (isSuper() || isMember());
     }
 
+    // 家庭留言板（Family 分頁）：名單內的人都能看、能發言
+    function chatMember() { return isSuper() || isMember(); }
+    match /lf_chat_messages/{id} {
+      allow read: if chatMember();
+      allow create: if chatMember() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'ts', 'text', 'img', 'stk', 'replyTo', 'mentions'])
+        && request.resource.data.ts == request.time;
+      // 本人可收回；其他人只能改自己的表情回應
+      allow update: if chatMember() && (
+        (resource.data.uid == request.auth.uid && request.resource.data.uid == resource.data.uid && request.resource.data.ts == resource.data.ts)
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reacts']));
+      allow delete: if isSuper();
+    }
+    match /lf_chat_profiles/{uid} {
+      allow read: if chatMember();
+      allow write: if chatMember() && request.auth.uid == uid;
+    }
+    match /lf_chat_reads/{uid} {
+      allow read: if chatMember();
+      allow write: if chatMember() && request.auth.uid == uid;
+    }
+    match /lf_chat_phones/{uid} {
+      allow read: if chatMember();
+      allow write: if isSuper();
+    }
+    match /lf_chat_meta/{doc} {
+      allow read, write: if chatMember();
+    }
+
     // Hannah's Studio 作品：大家可看；Superuser、Admin 可新增、修改、刪除
     match /hannah_artworks/{id} {
       allow read: if true;
