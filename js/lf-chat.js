@@ -77,7 +77,7 @@
       <div class="lfc">
         <div class="lfc-head" id="lfcHead">
           <button class="lfc-hbtn" id="lfcBack" title="回主畫面">${IC.back}</button>
-          <h2 class="lfc-title">林家群組<small id="lfcCount"></small></h2>
+          <h2 class="lfc-title">Lin Family<small id="lfcCount"></small></h2>
           <button class="lfc-hbtn" id="lfcFind" title="搜尋">${IC.search}</button>
           <button class="lfc-hbtn" id="lfcMenu" title="選單">${IC.menu}</button>
         </div>
@@ -159,7 +159,7 @@
       const keep = nearBottom(), top = list.scrollTop;
       const frag = document.createDocumentFragment(); let lastDay = '', unreadMark = false;
       const shown = msgs.filter(m => !hidden.has(m.id));
-      if (!shown.length) frag.append(h('<p class="lfc-empty">還沒有訊息，跟家人打聲招呼吧！</p>'));
+      if (!shown.length) frag.append(h('<p class="lfc-empty">No messages yet — say hi to your family!</p>'));
       shown.forEach(m => {
         const dl = dayLabel(m.t);
         if (dl !== lastDay) { frag.append(h(`<div class="lfc-date"><span>${dl}</span></div>`)); lastDay = dl; }
@@ -329,7 +329,7 @@
     }
     function avatarPicker(first) {
       const p = prof(me.uid); let pick = p.av;
-      const o = overlay(`${first ? '<p style="margin-bottom:8px">歡迎來到林家群組！先選一個頭像吧</p>' : ''}<div class="lfc-big" id="lfcCur">${face(pick)}</div>
+      const o = overlay(`${first ? '<p style="margin-bottom:8px">歡迎來到 Lin Family！先選一個頭像吧</p>' : ''}<div class="lfc-big" id="lfcCur">${face(pick)}</div>
         <div class="lfc-field"><input id="lfcName" maxlength="12" placeholder="顯示名稱" value="${esc(p.name)}"></div>
         <div class="lfc-avs">${AV.map(a => `<button data-k="${a[0]}" class="${a[0] === pick ? 'on' : ''}"><span>${face(a[0])}</span>${a[1]}</button>`).join('')}</div>
         <button class="lfc-pbtn" id="lfcAvSave">儲存</button><button class="lfc-gbtn" data-close>取消</button>`);

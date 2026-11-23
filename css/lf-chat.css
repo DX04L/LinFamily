@@ -1,8 +1,9 @@
 /* LF 家庭留言板（Family 分頁）：操作照 LINE，外觀用 LF 色系變數（--pine、--sage、--surface…），主題切換會跟著變 */
 .lfc { display:flex; flex-direction:column; border-radius:18px 18px 0 0; background:var(--surface); border-top:1px solid var(--border); overflow:hidden; min-height:360px;
-  margin:0 calc(-1 * max(var(--lf-pad), env(safe-area-inset-right))) 0 calc(-1 * max(var(--lf-pad), env(safe-area-inset-left))); }
-/* Family 分頁：聊天框左右、下方貼齊畫面，頁尾收起 */
-body.lf-tab-family main { padding-bottom:0; }
+}
+/* Family 分頁：聊天框左右、下方貼齊畫面（main 與分頁區都不留邊），頁尾收起 */
+body.lf-tab-family main { padding-left:0 !important; padding-right:0 !important; padding-bottom:0; }
+body.lf-tab-family #panelFamily { margin:0; padding:0; overflow:hidden; }
 body.lf-tab-family footer { display:none; }
 .lfc-head { display:flex; align-items:center; gap:4px; padding:8px 8px 8px 4px; border-bottom:1px solid var(--border); }
 .lfc-title { flex:1; margin:0; font-size:16px; font-weight:800; }
