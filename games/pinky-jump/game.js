@@ -271,7 +271,10 @@ let frameTimeRemaining = 0;
 let needsPaint = true;
 hiScoreEl.textContent = '-----';
 
+// Previous physics step, for render interpolation (see paintFrame).
+const prevState = {valid:false, camY:0, px:0, py:0, dist:0, speed:0};
 function resizeCanvas() {
+  prevState.valid = false;
   const screenW = window.innerWidth, screenH = window.innerHeight;
   // Phones zoom in ×1.3 so the cat isn't tiny (rules stay in world units). In landscape the camera
   // follows the cat up near the top of a jump (Super Mario style).
@@ -389,6 +392,10 @@ const player = {
   x: 90,
   baseX: 90,
   lunge: 0, // Forward push on screen during a jump (world px); eases back after landing.
+  lungeV: 0,
+  tilt: 0,
+  squash: 0, // >0 stretch (taller), <0 squash (flatter); visual only
+  squashV: 0,
   y: 0,
   vy: 0,
   gravity: 0.78,
@@ -406,7 +413,7 @@ const player = {
   },
   reset() {
     this.baseX = Math.max(52, Math.min(110, width * 0.17));
-    this.lunge = 0;
+    this.lunge = this.lungeV = this.tilt = this.squash = this.squashV = 0;
     this.x = this.baseX;
     this.y = getGroundY();
     this.vy = 0;
@@ -429,14 +436,18 @@ const player = {
     this.jumpInput = input;
     this.launchY = this.y;
     this.launchVelocity = this.vy;
+    this.squashV += 0.05 + 0.05 * power; // stretch upward on takeoff (visual only)
     sfx.jump();
     spawnDust(this.x, this.y, '#f784ba', 8);
   },
   update() {
     // Test: the cat surges forward while airborne, then drifts back to its spot after landing.
     // Hitbox follows the drawn cat, so the jump really carries it a little further.
+    // Critically damped spring: starts and stops smoothly (no jolt on takeoff or landing).
     const lungeTarget = this.isGrounded ? 0 : LUNGE_MAX;
-    this.lunge += (lungeTarget - this.lunge) * (this.isGrounded ? 0.035 : 0.12);
+    const k = this.isGrounded ? 0.004 : 0.014;
+    this.lungeV += (lungeTarget - this.lunge) * k - this.lungeV * 2 * Math.sqrt(k);
+    this.lunge += this.lungeV;
     this.x = this.baseX + this.lunge;
     const groundY = getGroundY(this.x);
     if (this.isGrounded) {
@@ -447,11 +458,16 @@ const player = {
       this.vy += this.gravity;
       this.y += this.vy;
       if (this.y >= groundY) {
+        this.squashV -= Math.min(0.09, 0.02 + this.vy * 0.004); // squash on landing (visual only)
         this.y = groundY;
         this.vy = 0;
         this.isGrounded = true;
       }
     }
+    const tiltTarget = !this.isGrounded ? Math.max(-0.22, Math.min(0.22, this.vy * 0.015)) : 0;
+    this.tilt += (tiltTarget - this.tilt) * 0.2;
+    this.squashV += -this.squash * 0.22 - this.squashV * 0.32;
+    this.squash = Math.max(-0.22, Math.min(0.22, this.squash + this.squashV));
     if (this.isGrounded && gameState === 'PLAYING') this.runCycle += gameSpeed * 0.032;
     this.blinkTimer++;
   },
@@ -475,7 +491,7 @@ const player = {
     ctx.scale(this.getScale(),this.getScale());
 
     const bounce = this.isGrounded ? Math.abs(Math.sin(this.runCycle)) * -5 : 0;
-    const tilt = !this.isGrounded ? Math.max(-0.22, Math.min(0.22, this.vy * 0.015)) : 0;
+    const tilt = this.tilt;
 
     // 地面陰影
     const groundOffset = getGroundY(this.x) - this.y;
@@ -486,6 +502,7 @@ const player = {
     ctx.fill();
 
     ctx.translate(0, bounce);
+    ctx.scale(1 - this.squash * 0.6, 1 + this.squash);
     ctx.rotate(tilt);
 
     // 1. 粉白尾巴 (擺動)
@@ -1228,7 +1245,15 @@ function updateScenery() {
   }
 }
 
+// Render interpolation: physics stays at 60 Hz; on 90/120/144 Hz screens each painted frame
+// blends the previous and current physics step, so motion is smooth on every refresh rate.
+function snapshotState() {
+  prevState.valid = true;
+  prevState.camY = cameraY; prevState.px = player.x; prevState.py = player.y;
+  prevState.dist = terrainDistance; prevState.speed = gameState === 'PLAYING' ? gameSpeed : 0;
+}
 function simulateFrame() {
+  snapshotState();
   frameCount++;
   if (gameState === 'PLAYING') {
     terrainDistance += gameSpeed;
@@ -1326,21 +1351,40 @@ function simulateFrame() {
   updateEffects();
 }
 
-function paintFrame() {
+function paintFrame(alpha = 1) {
+  // Temporarily move everything to the in-between position, paint, then restore.
+  const back = prevState.valid ? 1 - Math.max(0, Math.min(1, alpha)) : 0;
+  const saved = {camY:cameraY, px:player.x, py:player.y, dist:terrainDistance};
+  const shift = (terrainDistance - prevState.dist) * back; // world scrolled this step
+  if (back > 0) {
+    cameraY = lerp(prevState.camY, cameraY, 1 - back);
+    player.x = lerp(prevState.px, player.x, 1 - back);
+    player.y = lerp(prevState.py, player.y, 1 - back);
+    terrainDistance -= shift;
+  }
+  try { paintScene(shift); }
+  finally {
+    cameraY = saved.camY; player.x = saved.px; player.y = saved.py; terrainDistance = saved.dist;
+  }
+  needsPaint=false;
+}
+function paintScene(shift) {
   ctx.save();
   // Light screen shake while the shield breaks.
   if (shieldShake > 0) ctx.translate(Math.sin(shieldShake*2.3)*shieldShake*.3, Math.cos(shieldShake*1.7)*shieldShake*.2);
   drawBackground();
   ctx.save();
   ctx.translate(0,-cameraY);
+  ctx.save();
+  ctx.translate(shift,0); // obstacles and coins were this much further right a moment ago
   drawCoins(ctx,coins);
   drawObstacles(ctx,obstacles);
   drawIncomingHints();
+  ctx.restore();
   player.draw();
   drawParticles();
   ctx.restore();
   ctx.restore();
-  needsPaint=false;
 }
 
 // Zoomed-in portrait phones see less road ahead: a small "!" at the right edge marks an obstacle
@@ -1388,11 +1432,14 @@ function update(timestamp = performance.now()) {
       break;
     }
   }
-  if (!stepped && !needsPaint) return;
-  if (gameState==='PLAYING') updateMusic();
-  const renderedScore=String(Math.floor(score)).padStart(5,'0');
-  if (currentScoreEl.textContent!==renderedScore) currentScoreEl.textContent=renderedScore;
-  paintFrame();
+  // While playing, paint every display frame (interpolated) even without a new physics step.
+  if (!stepped && !needsPaint && gameState!=='PLAYING') return;
+  if (stepped) {
+    if (gameState==='PLAYING') updateMusic();
+    const renderedScore=String(Math.floor(score)).padStart(5,'0');
+    if (currentScoreEl.textContent!==renderedScore) currentScoreEl.textContent=renderedScore;
+  }
+  paintFrame(gameState==='PLAYING' ? frameTimeRemaining/SIMULATION_STEP : 1);
 }
 
 function startGame(cheat) {
@@ -1421,6 +1468,7 @@ function startGame(cheat) {
   shield=cheatRun?MAX_HEARTS:0;immunity=0;shieldShake=0;renderHearts();
   runJumps = {motion:0, manual:0};
   player.reset();
+  prevState.valid = false;
   pinkyUI.screen(null);
   window.pinkyArcade?.onStart();
   gameWrapper.focus({preventScroll:true});
