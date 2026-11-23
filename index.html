@@ -513,7 +513,7 @@
   </dialog>
 
   <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script><!-- 只用 clcSlotGridNormalize（舊 pos 欄位） -->
-  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=12"></script>
+  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=13"></script>
   <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261116-menu2"></script>
   <script src="js/lf-menu.js?v=4"></script>
@@ -731,7 +731,7 @@
     // ---------- 桌面（共用格子引擎） ----------
     // 電腦版格子固定 104px（圖示約 80＋間距 22），視窗變窄就少幾欄、放不下的暫時往下補（不存）；手機 4 欄平分（間距 16）；格高＝寬 × 1.3
     const desk = window.clcDesktop($('lfApps'), {
-      cols: { desktop: 16, phone: 4 }, cell: { desktop: 104 }, ratio: 1.3, margin: { desktop: 11, phone: 8 },
+      cols: { desktop: 16, phone: 4 }, cell: { desktop: 104, phone: 88 }, ratio: 1.3, margin: { desktop: 11, phone: 8 },
       waitLayout: true,
       canEdit: () => !!role,
       label: id => (apps.find(a => a.id === id) || {}).name || '這個待辦區域',
