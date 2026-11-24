@@ -47,8 +47,8 @@ html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 4%, transparent)
 .lfc-row.me .lfc-line { flex-direction:row-reverse; }
 .lfc-bub { background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:17px; padding:8px 12px; font-size:14.5px; line-height:1.5;
   white-space:pre-wrap; word-break:break-word; user-select:text; -webkit-touch-callout:none; }
-.lfc-row.me .lfc-bub { background:color-mix(in srgb, var(--pine) 38%, #fff); color:#111; border-color:transparent; } /* 自己的訊息：主題綠（松綠）調淡＋黑字 */
-html.dark .lfc-row.me .lfc-bub { background:color-mix(in srgb, var(--pine) 60%, #fff); color:#111; }
+.lfc-row.me .lfc-bub { background:color-mix(in srgb, var(--pine) 28%, #fff); color:#111; border-color:transparent; } /* 自己的訊息：主題綠（松綠）調淡＋黑字 */
+html.dark .lfc-row.me .lfc-bub { background:color-mix(in srgb, var(--pine) 50%, #fff); color:#111; }
 .lfc-row.me .lfc-bub a { color:#1a5fb4; }
 .lfc-bub.lfc-media { padding:3px; background:transparent; border:0; }
 .lfc-bub img.lfc-photo { display:block; max-width:min(230px, 60vw); max-height:300px; border-radius:14px; cursor:zoom-in; }
