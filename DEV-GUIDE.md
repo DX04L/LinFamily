@@ -64,3 +64,9 @@
 - **Worker 自動插入、或好幾站一起用的檔案留在根目錄不搬**：`header.js`、`clc-sso.js`、`lf-back.js`、`login-gate.js`、`_worker.js`、`sw.js`、`manifest.json`、圖示檔。
 - 改名時舊檔名留一個轉址小檔（`location.replace` 到新檔名），舊連結、書籤、已寄出的信才不會壞。
 - 不要把 `desktop.ini`、`.DS_Store` 這類系統檔放進 repo。
+
+## 共用：取得圖片＋裁切（js/clc-icon-upload.js）
+需要讓使用者給一張圖（頭像、圖示、封面）時，一律用這支，不要另寫：
+- `clcImageSources()` → `{ camera, shot, paste }`：這台裝置可用的來源（拍照只在手機、螢幕截圖／貼上只在電腦）。
+- `await clcCropImage(src, { round, title, tip })`：`src` 是 File（拍照／上傳的 input），或 `'shot'`、`'paste'`。開啟可拖曳、縮放（滑桿、滾輪、雙指）的裁切畫面，回傳 160px WebP data URL，取消回傳 null。`round:true` 為圓形（頭像）。
+- 範例：留言板頭像（js/lf-chat.js 的 avatarPicker）；App 圖示用 `clcIconUploader()`。

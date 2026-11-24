@@ -3,7 +3,8 @@
  * 1. App 圖示：按 📷 選圖（手機可選相簿或拍照）、把圖片拖進視窗、或在視窗裡按 Ctrl／⌘＋V 貼上截圖。
  *    取得圖片後開啟裁切畫面（像 LINE）：中間是 App 的圓角方形，可拖曳移動、縮放（滑桿、滾輪、雙指），
  *    下方即時預覽 App 圖示和名稱。完成後縮成 160px 的 WebP（不支援時用 JPEG），以 data URL 存進 App 資料。
- * 2. 對話框點外面才關閉：只有「按下」和「放開」都在框外才算，避免拖曳選字滑到框外放開時，改到一半的資料不見。
+ * 2. 共用 clcCropImage()：拍照／上傳／螢幕截圖／剪貼簿 → 同一個裁切畫面（可圓形），例如留言板頭像。
+ * 3. 對話框點外面才關閉：只有「按下」和「放開」都在框外才算，避免拖曳選字滑到框外放開時，改到一半的資料不見。
  */
 (function () {
   if (window.clcIconUploader) return;
@@ -125,19 +126,19 @@
   }
 
   // 裁切畫面：回傳 Promise<dataURL | null>（按 ✕ 或 Esc 取消為 null）
-  function openCropper(img, name) {
+  function openCropper(img, name, o = {}) { // o: { round, title, tip }（頭像用圓形）
     injectStyle();
     return new Promise(resolve => {
       const d = document.createElement('dialog');
       d.className = 'clc-crop';
       d.innerHTML = `
         <div class="clc-crop-in">
-          <div class="clc-crop-top"><b>調整圖示</b><button type="button" class="clc-crop-x" data-c="x" aria-label="取消">${CROSS}</button></div>
-          <div class="clc-crop-stage" data-c="stage"><img alt="" data-c="img"><div class="clc-crop-hole"></div></div>
+          <div class="clc-crop-top"><b>${o.title || '調整圖示'}</b><button type="button" class="clc-crop-x" data-c="x" aria-label="取消">${CROSS}</button></div>
+          <div class="clc-crop-stage" data-c="stage"><img alt="" data-c="img"><div class="clc-crop-hole"${o.round ? ' style="border-radius:50%"' : ''}></div></div>
           <div class="clc-crop-zoom"><button type="button" data-c="out" aria-label="縮小">−</button><input type="range" min="0" max="1000" value="0" data-c="zoom" aria-label="縮放"><button type="button" data-c="in" aria-label="放大">＋</button></div>
           <div class="clc-crop-foot">
-            <div class="clc-crop-prev"><canvas width="120" height="120" data-c="prev"></canvas><span data-c="name"></span></div>
-            <div class="clc-crop-tip">拖曳移動、縮放調整<br>框內就是 App 圖示</div>
+            <div class="clc-crop-prev"><canvas width="120" height="120" data-c="prev"${o.round ? ' style="border-radius:50%"' : ''}></canvas><span data-c="name"></span></div>
+            <div class="clc-crop-tip">${o.tip || '拖曳移動、縮放調整<br>框內就是 App 圖示'}</div>
             <button type="button" class="clc-crop-ok" data-c="ok">完成</button>
           </div>
         </div>`;
@@ -306,6 +307,19 @@
       take(item.getAsFile());
     });
     return { setUploaded(on) { clear.hidden = !on; } };
+  };
+
+  // 共用：取得圖片＋裁切（例如留言板頭像）。src = File，或 'shot'（螢幕截圖）、'paste'（剪貼簿）
+  // 回傳 data URL（160px WebP），取消回傳 null。window.clcImageSources() 告訴你這台裝置能用哪些來源。
+  window.clcImageSources = () => {
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    return { camera: coarse, shot: canCapture(), paste: !coarse && !!(navigator.clipboard && navigator.clipboard.read) };
+  };
+  window.clcCropImage = async function (src, o = {}) {
+    injectStyle();
+    const f = src === 'shot' ? await captureScreen() : src === 'paste' ? await clipboardImage() : src;
+    const img = await loadImage(f);
+    try { return await openCropper(img, o.name || '', o); } finally { URL.revokeObjectURL(img.src); }
   };
 
   // 點對話框外面關閉：按下和放開都要在框外（拖曳選字滑出去不會關掉）。

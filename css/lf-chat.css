@@ -164,3 +164,6 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 /* 留言板英文字型跟全站一致（按鈕/輸入框預設不繼承字型） */
 .lfc, .lfc button, .lfc input, .lfc textarea, .lfc-view, .lfc-view button, .lfc-view input { font-family:"CLC Arial", Arial, "Microsoft JhengHei", "微軟正黑體", "PingFang TC", "Noto Sans TC", sans-serif; }
 .lfc-bot { cursor:default; }
+.lfc-face { width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
+.lfc-src { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:10px 0 4px; }
+.lfc-src button { border:1px solid var(--border); background:var(--btn); color:var(--text); border-radius:14px; padding:5px 11px; font-size:13px; cursor:pointer; }

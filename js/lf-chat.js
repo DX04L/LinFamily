@@ -11,6 +11,8 @@
   // 貼圖：不畫方框，只有動物的臉；4 種表情各有不同的歪頭角度（臉部五官往轉的方向偏，看起來不是正面）
   const TILT = { '': [-10, -3], happy: [8, 3], love: [-5, 2.5], wow: [12, -2.5] };
   function face(key, mood, stk) {
+    if (key === 'pinky') return '<img class="lfc-face" src="assets/pinky-avatar.webp" alt="Pinky">';
+    if (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(String(key || ''))) return `<img class="lfc-face" src="${key}" alt="">`; // 自訂照片頭像
     const a = AV.find(x => x[0] === key) || AV[0], t = a[0], b = a[2], c = a[3];
     let e = '';
     if (t === 'cat') e = `<path d="M14 22 L18 8 L26 18Z M50 22 L46 8 L38 18Z" fill="${c}"/>`;
@@ -90,7 +92,7 @@
     let msgs = [], members = {}, phones = {}, reads = {}, pin = null, myRead = 0, firstOpen = true, reply = null, menuOpen = false;
     const hidden = new Set(JSON.parse(localStorage.getItem('linfamily_chat_hidden') || '[]'));
     const isSuper = () => role === 'superuser';
-    const PINKY = { name: 'Pinky', av: 'cat' }; // AI 小幫手（訊息存成發問者的 uid + bot:'pinky'）
+    const PINKY = { name: 'Pinky', av: 'pinky' }; // AI 小幫手（訊息存成發問者的 uid + bot:'pinky'）
     const prof = uid => members[uid] || { name: '家人', av: 'cat' };
 
     const I = d => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -292,7 +294,7 @@
         const meta = `<div class="lfc-meta">${mine && n ? '已讀 ' + n + '<br>' : ''}${hm(m.t)}</div>`;
         const hit = !mine && (m.mentions || []).includes(me.uid);
         frag.append(h(`<div class="lfc-row${mine ? ' me' : ''}${hit ? ' hit' : ''}" data-id="${m.id}">
-          ${mine ? '' : bot ? `<span class="lfc-av lfc-bot" aria-label="Pinky">${face(p.av)}</span>` : `<button class="lfc-av" data-uid="${esc(m.uid)}" aria-label="${esc(p.name)}">${face(p.av)}</button>`}
+          ${mine ? '' : bot ? `<span class="lfc-av lfc-bot" data-at="Pinky" aria-label="Pinky">${face(p.av)}</span>` : `<button class="lfc-av" data-uid="${esc(m.uid)}" aria-label="${esc(p.name)}">${face(p.av)}</button>`}
           <div class="lfc-col">${mine ? '' : `<p class="lfc-name">${esc(p.name)}</p>`}<div class="lfc-line">${body}${meta}</div>${reacts}</div></div>`));
       });
       list.replaceChildren(frag); if (findQ) findMark();
@@ -429,11 +431,15 @@
       if (!hits.length && !pk) { box.hidden = true; return; }
       const pick = name => { const pos = input.selectionStart, before = input.value.slice(0, pos).replace(/@[^\s@]*$/, '@' + name + ' ');
         input.value = before + input.value.slice(pos); input.focus(); input.selectionStart = input.selectionEnd = before.length; box.hidden = true; };
-      const pb = h(`<button><span class="lfc-av">${face('cat')}</span>Pinky（AI）</button>`); pb.onclick = () => pick('Pinky');
+      const pb = h(`<button><span class="lfc-av">${face('pinky')}</span>Pinky（AI）</button>`); pb.onclick = () => pick('Pinky');
       box.replaceChildren(...(pk ? [pb] : []), ...hits.map(uid => { const b = h(`<button><span class="lfc-av">${face(members[uid].av)}</span>${esc(members[uid].name)}</button>`);
         b.onclick = () => { const pos = input.selectionStart, before = input.value.slice(0, pos).replace(/@[^\s@]*$/, '@' + members[uid].name + ' ');
           input.value = before + input.value.slice(pos); input.focus(); input.selectionStart = input.selectionEnd = before.length; box.hidden = true; }; return b; }));
       box.hidden = false;
+    }
+    function insertAt(name) { // 點頭像／個人頁的「@ 提及」：在輸入框游標處插入 @名字
+      const pos = input.selectionStart ?? input.value.length, pre = input.value.slice(0, pos), add = (pre && !/\s$/.test(pre) ? ' ' : '') + '@' + name + ' ';
+      input.value = pre + add + input.value.slice(pos); grow(); sendIcon(); input.focus(); input.selectionStart = input.selectionEnd = pos + add.length;
     }
     function setReply(m) {
       reply = m ? { id: m.id, name: m.bot === 'pinky' ? 'Pinky' : prof(m.uid).name, text: m.text ? m.text.slice(0, 60) : m.img ? '照片' : '貼圖' } : null;
@@ -446,7 +452,7 @@
     function go(id) { const r = list.querySelector(`[data-id="${CSS.escape(id)}"]`); if (!r) return toast('這則訊息已經太舊或被收回'); r.scrollIntoView({ block: 'center', behavior: 'smooth' }); r.classList.remove('lfc-flash'); void r.offsetWidth; r.classList.add('lfc-flash'); }
     list.addEventListener('click', e => {
       if (menuOpen) return;
-      const av = e.target.closest('.lfc-av'); if (av) return av.dataset.uid ? profile(av.dataset.uid) : undefined;
+      const av = e.target.closest('.lfc-av'); if (av) return av.dataset.uid ? profile(av.dataset.uid) : av.dataset.at ? insertAt(av.dataset.at) : undefined;
       const q = e.target.closest('[data-go]'); if (q) return go(q.dataset.go);
       const ph = e.target.closest('.lfc-photo'); if (ph) return viewer(ph.closest('.lfc-row').dataset.id);
       const em = e.target.closest('[data-emo]'); if (em) return react(em.closest('.lfc-row').dataset.id, em.dataset.emo);
@@ -589,7 +595,9 @@
       const o = overlay(`<div class="lfc-big">${face(p.av)}</div><h3>${esc(p.name)}</h3><p>${ph ? esc(ph) : '尚未設定電話'}</p>
         ${ph ? `<a class="lfc-pbtn" href="tel:${esc(ph.replace(/[^\d+]/g, ''))}">📞 撥打電話</a>` : ''}
         ${isSuper() ? `<div class="lfc-field"><input id="lfcPh" type="tel" placeholder="手機號碼（只有 Superuser 能改）" value="${esc(ph)}"><button id="lfcPhSave">儲存</button></div>` : ''}
+        ${uid !== me.uid ? '<button class="lfc-pbtn" id="lfcAtBtn" style="background:var(--btn);color:var(--text)">＠ 提及</button>' : ''}
         <button class="lfc-gbtn" data-close>關閉</button>`);
+      if (uid !== me.uid) o.q('#lfcAtBtn').onclick = () => { o.close(); insertAt(p.name); };
       if (isSuper()) o.q('#lfcPhSave').onclick = () => db.collection('lf_chat_phones').doc(uid).set({ phone: o.q('#lfcPh').value.trim() })
         .then(() => { toast('電話已儲存'); o.close(); }, () => toast('無法儲存（請確認 Firestore 規則已發布）'));
     }
@@ -602,9 +610,21 @@
       const p = prof(me.uid); let pick = p.av;
       const o = overlay(`${first ? '<p style="margin-bottom:8px">歡迎來到 Lin Family！先選一個頭像吧</p>' : '<h3 style="margin:0 0 12px">帳號設定</h3>'}<div class="lfc-big" id="lfcCur">${face(pick)}</div>
         <div class="lfc-field"><input id="lfcName" maxlength="12" placeholder="顯示名稱" value="${esc(p.name)}"></div>
+        <div class="lfc-src">${(() => { const S = window.clcImageSources ? window.clcImageSources() : { camera: true };
+          return (S.camera ? '<button data-src="cam">📷 拍照</button>' : '') + '<button data-src="file">🖼️ 上傳圖片</button>'
+            + (S.shot ? '<button data-src="shot">🖥️ 螢幕截圖</button>' : '') + (S.paste ? '<button data-src="paste">📋 貼上</button>' : ''); })()}
+          <input type="file" accept="image/*" capture="user" hidden data-in="cam"><input type="file" accept="image/*" hidden data-in="file"></div>
         <div class="lfc-avs">${AV.map(a => `<button data-k="${a[0]}" class="${a[0] === pick ? 'on' : ''}"><span>${face(a[0])}</span>${a[1]}</button>`).join('')}</div>
         <button class="lfc-pbtn" id="lfcAvSave">儲存</button><button class="lfc-gbtn" data-close>取消</button>`);
-      o.ov.addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; pick = b.dataset.k; o.q('#lfcCur').innerHTML = face(pick); o.ov.querySelectorAll('[data-k]').forEach(x => x.classList.toggle('on', x === b)); });
+      const crop = async src => { // 共用裁切（js/clc-icon-upload.js）：圓形、可拖曳縮放
+        try { const d = await window.clcCropImage(src, { round: true, title: '調整頭像', tip: '拖曳移動、縮放調整<br>圓框內就是頭像' });
+          if (d) { pick = d; o.q('#lfcCur').innerHTML = face(pick); o.ov.querySelectorAll('[data-k]').forEach(x => x.classList.remove('on')); } }
+        catch (err) { if (!err || err.name !== 'NotAllowedError') toast(err && err.message || '圖片處理失敗'); }
+      };
+      o.ov.querySelectorAll('[data-in]').forEach(i => i.onchange = () => { if (i.files[0]) crop(i.files[0]); i.value = ''; });
+      o.ov.addEventListener('click', e => { const sb = e.target.closest('[data-src]');
+        if (sb) { const k = sb.dataset.src; return k === 'cam' || k === 'file' ? o.q(`[data-in="${k}"]`).click() : crop(k); }
+        const b = e.target.closest('[data-k]'); if (!b) return; pick = b.dataset.k; o.q('#lfcCur').innerHTML = face(pick); o.ov.querySelectorAll('[data-k]').forEach(x => x.classList.toggle('on', x === b)); });
       o.q('#lfcAvSave').onclick = () => {
         const name = o.q('#lfcName').value.trim() || p.name;
         db.collection('lf_chat_profiles').doc(me.uid).set({ name, av: pick, email: me.email.toLowerCase(), at: FV.serverTimestamp() }, { merge: true })
