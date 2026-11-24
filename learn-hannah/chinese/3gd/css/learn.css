@@ -272,3 +272,18 @@ html.dark .heart b { color: #111; }
 .heart.star svg { fill: #F2B632; }
 .heart.star b { color: #5a3d00; margin-top: 1px; }
 .lvgrid .opt small { font-size: 14px; }
+
+/* 過關／鼓勵：一次一個角色，跳到畫面中間 */
+.cb-ov { background: rgba(0,0,0,.32); }
+.cb-text { top: 12%; z-index: 2; }
+.cb-one { position: absolute; left: 50%; top: 56%; width: min(82vw, 440px); height: auto; z-index: 1;
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,.3)); transform: translate(-50%, -50%); animation: cbOne 1.5s .1s cubic-bezier(.3,.9,.4,1) both; }
+.cb-ov.big .cb-one { animation: cbOne 1.5s .1s cubic-bezier(.3,.9,.4,1) both, cbHop .8s 1.7s ease-in-out 2; }
+@keyframes cbOne {
+  0% { transform: translate(-50%, 70vh) scale(.6) rotate(-10deg); }
+  45% { transform: translate(-50%, -62%) scale(1.06) rotate(5deg); }
+  62% { transform: translate(-50%, -44%) scale(.96) rotate(-2deg); }
+  80% { transform: translate(-50%, -54%) scale(1.02) rotate(1deg); }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0); } }
+@keyframes cbHop { 0%, 100% { transform: translate(-50%, -50%); } 40% { transform: translate(-50%, -64%) rotate(-4deg); } }
+@media (prefers-reduced-motion: reduce) { .cb-one { animation-duration: .01s !important; animation-delay: 0s !important; } }
