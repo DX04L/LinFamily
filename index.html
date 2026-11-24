@@ -426,7 +426,7 @@
   </dialog>
 
   <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script><!-- 只用 clcSlotGridNormalize（舊 pos 欄位） -->
-  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=17"></script>
+  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=18"></script>
   <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261124-crop"></script>
   <script src="js/lf-menu.js?v=5"></script>
@@ -1106,7 +1106,7 @@
         const del = document.createElement('button'); del.type = 'button'; del.setAttribute('role', 'menuitem'); del.className = 'dk-danger'; del.textContent = '刪除';
         del.addEventListener('click', () => { m.remove(); deleteFromCabinet(a); });
         m.append(del); document.body.append(m);
-        const r = m.getBoundingClientRect(), c = row.getBoundingClientRect(), g = 8; // 同主畫面：選單放在這一列下方（放不下放上方），左邊切齊，不蓋住圖示
+        const r = { width: m.offsetWidth, height: m.offsetHeight }, c = row.getBoundingClientRect(), g = 8; // 同主畫面：選單放在這一列下方（放不下放上方），左邊切齊，不蓋住圖示
         let top = c.bottom + g + r.height <= innerHeight - g ? c.bottom + g : c.top - g - r.height >= g ? c.top - g - r.height : y;
         if (top < c.top) m.style.transformOrigin = 'bottom left';
         m.style.left = Math.max(8, Math.min(c.left, innerWidth - r.width - 8)) + 'px'; m.style.top = Math.max(8, Math.min(top, innerHeight - r.height - 8)) + 'px';
