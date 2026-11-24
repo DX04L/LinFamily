@@ -386,8 +386,8 @@
     const loadImg = src => imgCache[src] || (imgCache[src] = new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }));
     const svgSrc = svg => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '));
     function frameArt(kind) { // 回傳 [邊框色, 圖片網址們]
-      if (kind === 'pinky') return ['#f9a8d4', ['assets/chat-stickers/pinky-1.webp', 'assets/chat-stickers/pinky-4.webp']];
-      if (kind === 'blues') return ['#93c5fd', ['assets/chat-stickers/blues-new-1.webp', 'assets/chat-stickers/blues-new-3.webp']];
+      if (kind === 'pinky') return ['#f9a8d4', ['assets/chat-stickers/pinky-1.webp?v=2', 'assets/chat-stickers/pinky-4.webp?v=2']];
+      if (kind === 'blues') return ['#93c5fd', ['assets/chat-stickers/blues-new-1.webp?v=2', 'assets/chat-stickers/blues-new-3.webp?v=2']];
       const a = AV.find(x => x[0] === kind); if (!a) return null;
       return [a[2], [svgSrc(face(kind, 'happy', true)), svgSrc(face(kind, 'love', true))]];
     }
@@ -634,10 +634,11 @@
       document.querySelectorAll('dialog.lf-dialog[open]').forEach(d => d.close());
       const wide = wideQ.matches;
       // mode：live＝我們的相機；native＝用手機相機拍完回來加相框
-      let facing = 'environment', stream = null, track = null, caps = {}, fr = 'none', timer = 0, torch = false, shot = null, busy = false;
+      let facing = matchMedia('(pointer: coarse)').matches ? 'environment' : 'user', stream = null, track = null, caps = {}, fr = 'none', timer = 0, torch = false, shot = null, busy = false;
       let mode = 'live', baseImg = null, z = 1, zMin = 1, zMax = 5, hwZoom = false, flashModes = [], flash = 'auto';
       const TONE = 'saturate(1.25) contrast(1.08) brightness(1.06) sepia(.12)'; // 調色 D：鮮明暖調（偏 iPhone 鮮豔暖色）
       const COARSE = matchMedia('(pointer: coarse)').matches; let swB = 1;
+      const mir = () => facing === 'user' || !COARSE; // 像照鏡子：手機自拍、電腦網路攝影機都左右相反顯示，拍出來也一樣
       const toneStr = () => TONE + (swB !== 1 ? ` brightness(${swB.toFixed(2)})` : ''), tone = () => { video.style.filter = toneStr(); };
       const I = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
       const v = h(`<div class="lfc-cam${wide ? ' wide' : ''}"><div class="lfc-cam-box">
@@ -688,7 +689,7 @@
       const zLo = () => hwZoom ? Math.max(.5, zMin) : 1;
       function setZoom(nz) {
         z = Math.min(Math.min(5, zMax), Math.max(zLo(), nz));
-        if (hwZoom) setTrack({ zoom: z }); else video.style.transform = `${facing === 'user' ? 'scaleX(-1) ' : ''}scale(${z})`;
+        if (hwZoom) setTrack({ zoom: z }); else video.style.transform = `${mir() ? 'scaleX(-1) ' : ''}scale(${z})`;
         zoomUI();
       }
       let pinch = null;
@@ -702,7 +703,7 @@
         const R = view.getBoundingClientRect(), f = q('.lfc-cam-focus');
         f.style.left = (e.clientX - R.left) + 'px'; f.style.top = (e.clientY - R.top) + 'px'; f.hidden = false; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
         clearTimeout(f._t); f._t = setTimeout(() => { f.hidden = true; }, 1200);
-        let x = (e.clientX - R.left) / R.width, y = (e.clientY - R.top) / R.height; if (facing === 'user') x = 1 - x;
+        let x = (e.clientX - R.left) / R.width, y = (e.clientY - R.top) / R.height; if (mir()) x = 1 - x;
         if (caps.pointsOfInterest || (caps.focusMode || []).includes('single-shot'))
           setTrack({ pointsOfInterest: [{ x, y }], focusMode: (caps.focusMode || []).includes('single-shot') ? 'single-shot' : 'continuous' });
       });
@@ -716,7 +717,7 @@
         catch (e) { close(); toast(e && e.name === 'NotAllowedError' ? '沒有相機權限，改用相簿選照片' : '打不開相機，改用相簿選照片'); $('lfcFilePic').click(); return; }
         track = stream.getVideoTracks()[0]; caps = track && track.getCapabilities ? track.getCapabilities() : {};
         video.onloadedmetadata = () => { video.play().catch(() => {}); paint(); }; // 先接好再等其他設定，畫面不會卡黑
-        video.srcObject = stream; video.classList.toggle('mirror', facing === 'user'); video.style.transform = ''; swB = 1; tone();
+        video.srcObject = stream; video.classList.toggle('mirror', mir()); video.style.transform = ''; swB = 1; tone();
         q('[data-a="torch"]').hidden = !caps.torch;
         hwZoom = !!(caps.zoom && caps.zoom.max > 1); zMin = hwZoom ? caps.zoom.min : 1; zMax = hwZoom ? Math.min(caps.zoom.max, 10) : 5; z = 1;
         if (hwZoom) setTrack({ zoom: Math.max(zMin, 1) }); zoomUI();
@@ -746,7 +747,7 @@
             bl = await compose(bm, bm.width, bm.height, true, false); bm.close && bm.close();
           }
         } catch (_) { bl = null; }
-        if (!bl) { if (!video.videoWidth) return; bl = await compose(video, video.videoWidth, video.videoHeight, true, facing === 'user'); }
+        if (!bl) { if (!video.videoWidth) return; bl = await compose(video, video.videoWidth, video.videoHeight, true, mir()); }
         if (!bl) return; v.classList.add('flash'); setTimeout(() => v.classList.remove('flash'), 300);
         toEditor(bl);
       }
