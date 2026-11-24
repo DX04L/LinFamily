@@ -59,7 +59,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124b').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124c').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -102,7 +102,7 @@
     apiKey: 'AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs', authDomain: 'linfamily-31cb6.firebaseapp.com', projectId: 'linfamily-31cb6',
     storageBucket: 'linfamily-31cb6.firebasestorage.app', messagingSenderId: '299667187224', appId: '1:299667187224:web:8df32264698caad761c56d'
   };
-  let allowed = false;
+  let allowed = false, isSuper = false;
   function gate() {
     if (!window.firebase) { app.innerHTML = '<p class="muted">無法載入登入元件，請檢查網路後重新整理。</p>'; return; }
     if (!firebase.apps.length) firebase.initializeApp(FB);
@@ -111,7 +111,8 @@
     auth.onAuthStateChanged(async user => {
       if (!user) { allowed = false; return showLogin(auth); }
       const email = (user.email || '').toLowerCase();
-      if (SUPERUSERS.includes(email)) allowed = true;
+      isSuper = SUPERUSERS.includes(email);
+      if (isSuper) allowed = true;
       else {
         try {
           const d = await firebase.firestore().collection('admin_users').doc(email).get();
@@ -125,7 +126,7 @@
   function showLogin(auth) {
     head('三年級國語', false);
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>請先登入</p></div><div class="row" style="justify-content:center"><button class="btn" id="login">用 Google 登入</button></div>`;
-    $('#login').onclick = () => auth.signInWithPopup((()=>{const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});return p})()).catch(e => toast('登入沒有完成：' + (e.code || '')));
+    $('#login').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => toast('登入沒有完成：' + (e.code || '')));
   }
 
   // ---------- 路由 ----------
@@ -146,7 +147,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124b').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124c').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -162,12 +163,13 @@
       <div class="hero"><p>第${L.no}課</p><h2 class="zy">${zy(L.title)}</h2><p>${esc(L.author)}</p></div>
       ${done ? `<div class="card celebrate"><div class="big">🏆</div><p>這一課全部學會了！</p><div class="row" style="justify-content:center"><a class="btn" href="#/${L.id}/extend">延伸討論</a><button class="btn ghost" id="restart2">重新開始</button></div></div>` : ''}
       <div class="units">${L.units.map(u => unitCard(L, p, u)).join('')}</div>
-      <div class="row" style="margin-top:18px"><a class="btn ghost" href="#/${L.id}/cards">字卡</a>${done ? '' : `<a class="btn ghost" href="#/${L.id}/extend">延伸討論</a>`}<span class="spacer"></span><button class="btn ghost" id="restart">⚙ 設定</button></div>`;
+      <div class="row" style="margin-top:18px"><a class="btn ghost" href="#/${L.id}/cards">字卡</a>${done ? '' : `<a class="btn ghost" href="#/${L.id}/extend">延伸討論</a>`}<span class="spacer"></span>${isSuper ? '<button class="btn ghost" id="testBtn">🧪 測試</button>' : ''}<button class="btn ghost" id="restart">⚙ 設定</button></div>`;
     app.querySelectorAll('.unit').forEach(b => b.onclick = () => {
       if (b.classList.contains('locked')) return toast('先把課文讀一遍喔');
       location.hash = b.dataset.u === 'read' ? `#/${L.id}/read` : `#/${L.id}/u/${b.dataset.u}`;
     });
     const rs = () => settingsDialog(L);
+    if ($('#testBtn')) $('#testBtn').onclick = () => testDialog(L);
     $('#restart').onclick = rs; if ($('#restart2')) $('#restart2').onclick = rs;
   }
   function unitCard(L, p, u) {
@@ -209,6 +211,23 @@
       root.querySelector('#cx').onclick = () => { dlg.close(); route(); };
     };
     openDialog('', draw);
+  }
+  // 測試用（只有 Superuser 看得到）：直接跳到某單元的某一級，略過朗讀
+  function testDialog(L) {
+    const units = L.units.filter(u => u.id !== 'read');
+    openDialog(`<h3 style="margin-top:0">🧪 測試｜直接跳到</h3>
+      <div class="set-list">${units.map(u => `<div class="set-row"><span>${u.icon} ${u.name}</span><span class="seg">${[1, 2, 3].map(lv => `<button data-u="${u.id}" data-lv="${lv}">${LVN[lv][0]}</button>`).join('')}</span></div>`).join('')}</div>
+      <p class="muted" style="text-align:left;font-size:14px">手寫題：生字「高」、句子醫生「高」；注音鍵盤：一字多音「高」。</p>
+      <div class="row end"><button class="btn" id="cx">關閉</button></div>`, root => {
+      root.querySelector('#cx').onclick = () => dlg.close();
+      root.querySelectorAll('[data-u]').forEach(b => b.onclick = () => {
+        const p = progress(L);
+        p.readDone = true;
+        p.units[b.dataset.u] = { lv: +b.dataset.lv, wrong: 0, cov: [], done: false, last: '' };
+        save(L, p); dlg.close();
+        location.hash = `#/${L.id}/u/${b.dataset.u}`;
+      });
+    });
   }
   function nextUnit(L, p, fromId) {
     const us = L.units.filter(u => u.id !== 'read');
