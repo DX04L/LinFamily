@@ -30,7 +30,7 @@ body.lf-tab-family footer { display:none; }
 .lfc-pin[hidden] { display:none; }
 .lfc-pin span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lfc-pin button { border:0; background:none; cursor:pointer; color:var(--muted); font-size:15px; }
-.lfc-list { flex:1; min-height:0; overflow-y:auto; padding:8px 12px 12px; background:color-mix(in srgb, var(--cream) 14%, transparent); overscroll-behavior:contain;
+.lfc-list { position:relative; flex:1; min-height:0; overflow-y:auto; padding:8px 12px 12px; background:color-mix(in srgb, var(--cream) 14%, transparent); overscroll-behavior:contain;
   -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 12px); mask-image:linear-gradient(to bottom, transparent 0, #000 12px); } /* 上緣淡出：知道上面還能捲 */
 html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 4%, transparent); }
 .lfc-date, .lfc-sys { text-align:center; margin:12px 0 6px; }
@@ -142,7 +142,7 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
   .lfc-vbox { width:min(960px, 88vw); height:min(760px, 86vh); background:#111; border-radius:16px; overflow:hidden; box-shadow:0 25px 60px rgba(0,0,0,.45); } }
 .lfc-vbtn { position:absolute; border:0; background:rgba(255,255,255,.14); color:#fff; border-radius:50%; width:42px; height:42px; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; text-decoration:none; }
 .lfc-vcount { position:absolute; top:22px; left:50%; transform:translateX(-50%); color:#fff; font-size:13px; }
-.lfc-tabdot { position:absolute; top:3px; right:3px; width:8px; height:8px; border-radius:50%; background:#ef4444; pointer-events:none; }
+.lfc-tabdot { position:absolute; top:-5px; right:-6px; min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#ef4444; color:#fff; font:700 11px/18px "CLC Arial", Arial, sans-serif; text-align:center; pointer-events:none; box-shadow:0 0 0 2px var(--surface); }
 @media (max-width:639px) { .lfc-vbtn[data-v=x] { top:calc(12px + env(safe-area-inset-top)) !important; } .lfc-vbtn[data-v=dl] { bottom:calc(14px + env(safe-area-inset-bottom)) !important; } .lfc-vcount { top:calc(22px + env(safe-area-inset-top)); } }
 .lfc { transition:transform .32s cubic-bezier(.4,0,.2,1); } /* 加速再減速 */
 /* 收合：卡片被「吸進」右下角固定的泡泡（泡泡上顯示未讀數字），點泡泡再「放出來」 */
@@ -167,3 +167,26 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-face { width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
 .lfc-src { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:10px 0 4px; }
 .lfc-src button { border:1px solid var(--border); background:var(--btn); color:var(--text); border-radius:14px; padding:5px 11px; font-size:13px; cursor:pointer; }
+
+/* ↓ 回到最新 */
+.lfc-downwrap { position:sticky; bottom:0; height:0; z-index:2; }
+.lfc-down { position:absolute; right:2px; bottom:10px; width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:color-mix(in srgb, var(--surface) 90%, transparent); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); color:var(--text); display:grid; place-items:center; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.15); padding:0; }
+.lfc-down[hidden], .lfc-down b[hidden] { display:none; }
+.lfc-down b { position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#ef4444; color:#fff; font:700 11px/18px "CLC Arial", Arial, sans-serif; }
+.lfc.lfc-drop { outline:3px dashed var(--sage); outline-offset:-6px; }
+/* 相機 */
+.lfc-cam { position:fixed; inset:0; z-index:1000; background:#000; color:#fff; }
+.lfc-cam video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+.lfc-cam video.mirror { transform:scaleX(-1); }
+.lfc-cam-fr { position:absolute; pointer-events:none; }
+.lfc-cam.flash::after { content:''; position:absolute; inset:0; background:#fff; animation:lfcFl .25s ease-out forwards; }
+@keyframes lfcFl { to { opacity:0; } }
+.lfc-cam button { border:0; cursor:pointer; color:#fff; font-family:inherit; }
+.lfc-cam-x { position:absolute; top:calc(12px + env(safe-area-inset-top)); right:12px; width:42px; height:42px; border-radius:50%; background:rgba(0,0,0,.45); font-size:20px; }
+.lfc-cam-frs { position:absolute; left:0; right:0; bottom:calc(112px + env(safe-area-inset-bottom)); display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:0 12px; }
+.lfc-cam-frs button { background:rgba(0,0,0,.45); border-radius:16px; padding:6px 12px; font-size:13.5px; }
+.lfc-cam-frs button.on { background:#f472b6; }
+.lfc-cam-bar { position:absolute; left:0; right:0; bottom:calc(24px + env(safe-area-inset-bottom)); display:flex; align-items:center; justify-content:space-around; }
+.lfc-cam-bar .lfc-cam-pic, .lfc-cam-bar .lfc-cam-flip { width:48px; height:48px; border-radius:50%; background:rgba(0,0,0,.45); font-size:22px; }
+.lfc-cam-shot { width:72px; height:72px; border-radius:50%; background:#fff !important; box-shadow:0 0 0 4px rgba(0,0,0,.4), 0 0 0 7px #fff; }
+.lfc-cam-shot:active { transform:scale(.92); }

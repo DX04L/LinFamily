@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
   <link rel="stylesheet" href="css/lf-todos.css?v=9">
-  <link rel="stylesheet" href="css/lf-chat.css?v=17">
+  <link rel="stylesheet" href="css/lf-chat.css?v=18">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=12">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
@@ -451,7 +451,7 @@
   <script src="js/dashboard-todos.js?v=20261124a"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=22"></script>
+  <script src="js/lf-chat.js?v=23"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -864,9 +864,9 @@
     // 家庭留言板（Family 分頁）：有新訊息時 Family 分頁標籤亮紅點
     window.lfChatApi = db && window.lfChatInit ? window.lfChatInit($('lfChat'), { db, onBack: () => tb.setTab('apps', true), tabDot: on => {
       const b = Array.from($('lfToolbar').querySelectorAll('button, [role="tab"]')).find(x => x.textContent.trim() === 'Family');
-      if (!b) return; let d = b.querySelector('.lfc-tabdot');
-      if (on && !d) { b.style.position = 'relative'; b.append(Object.assign(document.createElement('span'), { className: 'lfc-tabdot' })); }
-      if (!on && d) d.remove();
+      if (!b) return; let d = b.querySelector('.lfc-tabdot'); // on＝未讀數（0＝不顯示），像 LINE 的紅色數字徽章
+      if (on && !d) { b.style.position = 'relative'; d = b.appendChild(Object.assign(document.createElement('span'), { className: 'lfc-tabdot' })); }
+      if (on) d.textContent = on > 99 ? '99+' : on; else if (d) d.remove();
     } }) : null;
     if (window.lfChatApi && role) window.lfChatApi.auth(user, role);
     { const t0 = { '#family': 'family', '#apps': 'all' }[location.hash]; if (t0) { tb.setTab(t0, true); if (curTab !== t0) onTab(t0); } }

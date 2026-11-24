@@ -123,6 +123,10 @@
       </div>`;
     const $ = id => root.querySelector('#' + id);
     const list = $('lfcList'), input = $('lfcIn');
+    // ↓ 回到最新：沒停在最底下時出現，數字＝下面還沒捲到的別人訊息
+    const down = h('<div class="lfc-downwrap"><button class="lfc-down" title="回到最新訊息" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><b hidden></b></button></div>');
+    const downBtn = down.firstElementChild;
+    downBtn.onclick = () => { list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }); };
 
     // ---------- 版面：手機全寬貼底；寬螢幕（≥640，跟桌面引擎同一個分界）是浮在 Family 分頁上的卡片，可左右移動、調寬窄 ----------
     const box = root.firstElementChild, wideQ = matchMedia('(min-width:640px)');
@@ -194,7 +198,7 @@
     function setCollapsed(c) {
       if (c === collapsed) return;
       collapsed = c; place();
-      if (!c) { box.classList.remove('is-collapsed'); fit(); toBottom(); markRead(); }
+      if (!c) { box.classList.remove('is-collapsed'); fit(); firstOpen = true; myRead = me ? (reads[me.uid] || 0) : 0; render(); markRead(); }
       dot();
       if (calm()) { box.classList.toggle('is-collapsed', c); bubble.hidden = !c; return; }
       bubble.hidden = false; warp(c);
@@ -254,8 +258,26 @@
       if (!opt.tabDot || !me) return;
       const mine = reads[me.uid] || 0;
       const n = msgs.filter(m => m.uid !== me.uid && m.t > mine).length, unread = n > 0;
-      opt.tabDot(!visible && unread);
+      opt.tabDot(visible ? 0 : n);
       const num = bubble.querySelector('.lfc-bnum'); num.hidden = !unread; num.textContent = n > 99 ? '99+' : n;
+      badge(n);
+    }
+    // 瀏覽器分頁標題「(3) LinFamily」、分頁小圖示右上角紅點、安裝成 App 時的圖示數字（電腦、iPhone）
+    let baseTitle = '', lastBadge = -1, favOrig = null, favDot = null;
+    function badge(n) {
+      if (n === lastBadge) return; lastBadge = n;
+      if (!baseTitle) baseTitle = document.title.replace(/^\(\d+\+?\)\s*/, '');
+      document.title = n ? `(${n > 99 ? '99+' : n}) ${baseTitle}` : baseTitle;
+      try { if (navigator.setAppBadge) n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } catch (_) {}
+      const link = document.querySelector('link[rel="icon"]'); if (!link) return;
+      if (!favOrig) favOrig = link.href;
+      if (!n) { link.href = favOrig; return; }
+      if (favDot) { link.href = favDot; return; }
+      const im = new Image(); im.onload = () => {
+        const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+        g.drawImage(im, 0, 0, 64, 64); g.beginPath(); g.arc(50, 14, 13, 0, 7); g.fillStyle = '#ef4444'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke();
+        try { favDot = c.toDataURL('image/png'); if (lastBadge) link.href = favDot; } catch (_) {}
+      }; im.src = favOrig;
     }
 
     // ---------- 畫面 ----------
@@ -274,6 +296,7 @@
     function render() {
       if (!me || denied) return;
       const keep = nearBottom(), top = list.scrollTop, newest = msgs.length ? msgs[msgs.length - 1].id : '', fresh = newest !== lastId; lastId = newest;
+      const nm = msgs[msgs.length - 1], ownNew = !!nm && nm.uid === me.uid && nm.bot !== 'pinky';
       const frag = document.createDocumentFragment(); let lastDay = '', unreadMark = false;
       const shown = msgs.filter(m => !hidden.has(m.id));
       if (!shown.length) frag.append(h('<p class="lfc-empty">No messages yet — say hi to your family!</p>'));
@@ -302,8 +325,16 @@
         const mk = list.querySelector('#lfcUnreadMark');
         if (mk) list.scrollTop = mk.offsetTop - 8; else toBottom();
         if (msgs.length) { firstOpen = false; myRead = 0; }
-      } else if (keep || fresh) { toBottom(); stick = true; } else list.scrollTop = top; // 有新訊息（自己或別人）一律捲到最新
+      } else if (keep || (fresh && ownNew)) { toBottom(); stick = true; } else list.scrollTop = top; // 在最底下或自己發的才捲到最新；往上看時不拉走
+      list.append(down); downUpd();
     }
+    function downUpd() {
+      const far = list.scrollHeight - list.scrollTop - list.clientHeight > 160; downBtn.hidden = !far; if (!far) return;
+      const edge = list.scrollTop + list.clientHeight; let k = 0;
+      list.querySelectorAll('.lfc-row:not(.me)').forEach(r => { if (r.offsetTop > edge) k++; });
+      const b = downBtn.querySelector('b'); b.hidden = !k; b.textContent = k > 99 ? '99+' : k;
+    }
+    list.addEventListener('scroll', () => requestAnimationFrame(downUpd), { passive: true });
 
     // ---------- 傳送 ----------
     async function send(data) {
@@ -342,6 +373,85 @@
         if (img) await send({ img }); else toast('這張照片無法讀取');
       }
     }
+    // 拖放照片到留言板、在輸入框貼上截圖：直接傳送
+    box.addEventListener('dragover', e => { if (Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); box.classList.add('lfc-drop'); } });
+    box.addEventListener('dragleave', e => { if (!e.relatedTarget || !box.contains(e.relatedTarget)) box.classList.remove('lfc-drop'); });
+    box.addEventListener('drop', e => { box.classList.remove('lfc-drop'); const fs = Array.from(e.dataTransfer.files || []).filter(f => /^image\//.test(f.type)); if (!fs.length) return; e.preventDefault(); sendFiles(fs); });
+    input.addEventListener('paste', e => { const fs = Array.from((e.clipboardData && e.clipboardData.items) || []).filter(i => i.kind === 'file' && /^image\//.test(i.type)).map(i => i.getAsFile()); if (fs.length) { e.preventDefault(); sendFiles(fs); } });
+
+    // ---------- 相機：直接拍照、前後鏡頭切換、可愛相框 ----------
+    const FRAMES = [['none', '無'], ['heart', '愛心'], ['star', '星星'], ['flower', '花花'], ['cat', '貓耳'], ['polaroid', '拍立得']];
+    function shape(g, kind, x, y, r, color) {
+      g.save(); g.translate(x, y); g.fillStyle = color; g.beginPath();
+      if (kind === 'heart') { g.moveTo(0, r * .35); g.bezierCurveTo(-r * 1.2, -r * .5, -r * .4, -r * 1.1, 0, -r * .45); g.bezierCurveTo(r * .4, -r * 1.1, r * 1.2, -r * .5, 0, r * .35); }
+      else if (kind === 'star') for (let i = 0; i < 10; i++) { const a = Math.PI / 5 * i - Math.PI / 2, rr = i % 2 ? r * .45 : r; g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      else if (kind === 'flower') { for (let i = 0; i < 5; i++) { const a = Math.PI * 2 / 5 * i; g.moveTo(Math.cos(a) * r * .55 + r * .4, Math.sin(a) * r * .55); g.arc(Math.cos(a) * r * .55, Math.sin(a) * r * .55, r * .4, 0, 7); } g.fill(); g.beginPath(); g.fillStyle = '#fde68a'; g.arc(0, 0, r * .32, 0, 7); }
+      g.fill(); g.restore();
+    }
+    function drawFrame(g, W, H, kind) {
+      const u = Math.min(W, H) / 100;
+      if (kind === 'heart' || kind === 'star' || kind === 'flower') {
+        const col = { heart: ['#f472b6', '#fb7185', '#f9a8d4'], star: ['#facc15', '#fbbf24', '#fde047'], flower: ['#f9a8d4', '#c4b5fd', '#93c5fd'] }[kind];
+        g.lineWidth = u * 2.2; g.strokeStyle = col[0]; g.strokeRect(u * 2, u * 2, W - u * 4, H - u * 4);
+        const pts = []; const nx = Math.max(3, Math.round(W / (u * 22))), ny = Math.max(3, Math.round(H / (u * 22)));
+        for (let i = 0; i <= nx; i++) pts.push([u * 2 + (W - u * 4) * i / nx, u * 2], [u * 2 + (W - u * 4) * i / nx, H - u * 2]);
+        for (let j = 1; j < ny; j++) pts.push([u * 2, u * 2 + (H - u * 4) * j / ny], [W - u * 2, u * 2 + (H - u * 4) * j / ny]);
+        pts.forEach((p, i) => shape(g, kind, p[0], p[1], u * (i % 3 ? 4.5 : 6.5), col[i % 3]));
+      } else if (kind === 'cat') {
+        g.fillStyle = '#f9a8d4'; g.strokeStyle = '#fff'; g.lineWidth = u * 1.2;
+        [[W * .2, 1], [W * .8, -1]].forEach(([x, d]) => { g.beginPath(); g.moveTo(x - d * u * 14, u * 20); g.lineTo(x - d * u * 4, -u * 2); g.lineTo(x + d * u * 12, u * 14); g.closePath(); g.fill(); g.stroke();
+          g.beginPath(); g.fillStyle = '#fbcfe8'; g.moveTo(x - d * u * 8, u * 15); g.lineTo(x - d * u * 3, u * 4); g.lineTo(x + d * u * 6, u * 12); g.closePath(); g.fill(); g.fillStyle = '#f9a8d4'; });
+        g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = u * .9; g.lineCap = 'round';
+        [[-1, -3], [-1, 0], [-1, 3], [1, -3], [1, 0], [1, 3]].forEach(([d, k]) => { const x = W / 2 + d * u * 16; g.beginPath(); g.moveTo(x, H * .62 + k * u); g.lineTo(x + d * u * 18, H * .62 + k * u * 2.2); g.stroke(); });
+        shape(g, 'heart', W / 2, H * .58, u * 3, '#f472b6');
+      } else if (kind === 'polaroid') {
+        g.fillStyle = '#fff'; const b = u * 5; g.fillRect(0, 0, W, b); g.fillRect(0, 0, b, H); g.fillRect(W - b, 0, b, H); g.fillRect(0, H - u * 18, W, u * 18);
+        g.fillStyle = '#9ca3af'; g.font = `600 ${u * 6}px "CLC Arial", Arial, "Microsoft JhengHei", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(new Date().toLocaleDateString('zh-TW'), W / 2, H - u * 9);
+      }
+    }
+    async function camera() {
+      if (closeOverlay) closeOverlay(false);
+      document.querySelectorAll('dialog.lf-dialog[open]').forEach(d => d.close());
+      let facing = 'environment', stream = null, fr = 'none';
+      const v = h(`<div class="lfc-cam"><video playsinline muted autoplay></video><canvas class="lfc-cam-fr"></canvas>
+        <button class="lfc-cam-x" aria-label="關閉">✕</button>
+        <div class="lfc-cam-frs">${FRAMES.map(f => `<button data-fr="${f[0]}" class="${f[0] === 'none' ? 'on' : ''}">${f[1]}</button>`).join('')}</div>
+        <div class="lfc-cam-bar"><button class="lfc-cam-pic" aria-label="從相簿選">🖼️</button><button class="lfc-cam-shot" aria-label="拍照"></button><button class="lfc-cam-flip" aria-label="切換鏡頭">🔄</button></div></div>`);
+      document.body.append(v);
+      const video = v.querySelector('video'), cv = v.querySelector('.lfc-cam-fr');
+      const stop = () => { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; };
+      const close = () => { stop(); v.remove(); removeEventListener('resize', paint); };
+      function paint() { // 預覽上的相框：對齊影片實際顯示的範圍
+        const vw = video.videoWidth, vh = video.videoHeight; if (!vw) return;
+        const R = v.getBoundingClientRect(), sc = Math.min(R.width / vw, R.height / vh), w = vw * sc, hh = vh * sc;
+        Object.assign(cv.style, { width: w + 'px', height: hh + 'px', left: (R.width - w) / 2 + 'px', top: (R.height - hh) / 2 + 'px' });
+        cv.width = w * devicePixelRatio; cv.height = hh * devicePixelRatio; const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); drawFrame(g, cv.width, cv.height, fr);
+      }
+      async function start() {
+        stop();
+        try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false }); }
+        catch (e) { close(); if (e && e.name === 'NotAllowedError') toast('沒有相機權限，改用相簿選照片'); $('lfcFileCam').click(); return; }
+        video.srcObject = stream; video.classList.toggle('mirror', facing === 'user');
+        video.onloadedmetadata = () => { video.play(); paint(); };
+      }
+      addEventListener('resize', paint);
+      v.addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        if (b.classList.contains('lfc-cam-x')) return close();
+        if (b.classList.contains('lfc-cam-pic')) { close(); return $('lfcFilePic').click(); }
+        if (b.classList.contains('lfc-cam-flip')) { facing = facing === 'user' ? 'environment' : 'user'; return start(); }
+        if (b.dataset.fr) { fr = b.dataset.fr; v.querySelectorAll('[data-fr]').forEach(x => x.classList.toggle('on', x === b)); return paint(); }
+        if (b.classList.contains('lfc-cam-shot')) {
+          const vw = video.videoWidth, vh = video.videoHeight; if (!vw) return;
+          const k = Math.min(1, 1600 / Math.max(vw, vh)), c = document.createElement('canvas'); c.width = Math.round(vw * k); c.height = Math.round(vh * k);
+          const g = c.getContext('2d'); if (facing === 'user') { g.translate(c.width, 0); g.scale(-1, 1); }
+          g.drawImage(video, 0, 0, c.width, c.height); g.setTransform(1, 0, 0, 1, 0, 0); drawFrame(g, c.width, c.height, fr);
+          v.classList.add('flash'); c.toBlob(bl => { close(); if (bl) sendFiles([new File([bl], 'photo.jpg', { type: 'image/jpeg' })]); }, 'image/jpeg', .9);
+        }
+      });
+      start();
+    }
     function grow() { input.style.height = 'auto'; input.style.height = Math.min(120, input.scrollHeight) + 'px'; }
     function sendIcon() { const t = !!input.value.trim(), b = $('lfcSend'); if (b.dataset.t === String(t)) return; b.dataset.t = String(t); b.innerHTML = t ? IC.send : IC.mic; b.title = t ? '傳送' : '語音訊息'; b.classList.toggle('on', t); }
     input.addEventListener('input', () => { grow(); suggest(); sendIcon(); });
@@ -349,7 +459,7 @@
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); sendText(); sendIcon(); } });
     $('lfcSend').onclick = () => { if (!input.value.trim()) return toast('語音訊息之後開放'); sendText(); sendIcon(); input.focus(); };
     $('lfcMore').onclick = () => { $('lfcTools').hidden = false; $('lfcMore').hidden = true; };
-    $('lfcCam').onclick = () => $('lfcFileCam').click();
+    $('lfcCam').onclick = () => (navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? camera() : $('lfcFileCam').click());
     $('lfcPic').onclick = () => $('lfcFilePic').click();
     ['lfcFileCam', 'lfcFilePic'].forEach(id => $(id).onchange = e => { sendFiles(e.target.files); e.target.value = ''; });
     const stickerBox = $('lfcStks'), stickerToggle = $('lfcStk');
