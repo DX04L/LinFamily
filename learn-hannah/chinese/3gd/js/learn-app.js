@@ -35,6 +35,8 @@
   function openDialog(html, bind) { dlgBody.innerHTML = html; bind && bind(dlgBody); dlg.showModal(); }
 
   // ---------- 朗讀：先用裝置的中文語音；沒有中文語音、出錯或沒出聲時，改用 Google 線上語音 ----------
+  // 線上語音走 LF 自己的伺服器 /api/tts（在 /lf 底下時加前綴）
+  const TTS_API = (/^\/lf(\/|$)/.test(location.pathname) ? '/lf' : '') + '/api/tts';
   const TTS = (() => {
     const ss = window.speechSynthesis;
     let voice = null, keep = null, audio = null, token = 0;
@@ -51,7 +53,7 @@
       const next = () => {
         if (my !== token) return;
         if (i >= parts.length) return onend && onend();
-        audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-TW&client=tw-ob&ttsspeed=${rate < .7 ? .3 : 1}&q=${encodeURIComponent(parts[i++])}`);
+        audio = new Audio(`${TTS_API}?q=${encodeURIComponent(parts[i++])}${rate < .7 ? '&slow=1' : ''}`);
         audio.onended = next;
         audio.onerror = () => { if (my === token) toast('播放不出聲音：請檢查網路和媒體音量'); };
         audio.play().catch(() => toast('請再按一次播放'));
@@ -77,6 +79,7 @@
     // 聲音測試：回報每一步的狀況，方便找出哪裡出問題
     async function test(kind, log) {
       stop(); const my = token;
+      log('版本 20261124k');
       if (kind === 'device') {
         if (!ss) return log('❌ 這個瀏覽器不支援語音朗讀');
         await ready;
@@ -91,7 +94,8 @@
         ss.speak(u); if (ss.paused) ss.resume();
         setTimeout(() => { if (my === token && !st) log('❌ 等了 2 秒還沒開始唸'); }, 2000);
       } else {
-        const a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-TW&client=tw-ob&q=' + encodeURIComponent('你好，這是線上語音測試。'));
+        log('連線到 ' + TTS_API + ' …');
+        const a = new Audio(TTS_API + '?q=' + encodeURIComponent('你好，這是線上語音測試。'));
         audio = a;
         a.onplaying = () => log('✅ 線上語音開始播放（如果沒聲音，請調高「媒體音量」）');
         a.onerror = () => log('❌ 線上語音載入失敗（可能被擋或沒網路）');
@@ -136,7 +140,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124j').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124k').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -246,7 +250,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124j').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124k').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
