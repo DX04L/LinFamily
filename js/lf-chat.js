@@ -420,22 +420,23 @@
       const wide = wideQ.matches;
       // mode：live＝我們的相機；native＝用手機相機拍完回來加相框
       let facing = 'environment', stream = null, track = null, caps = {}, fr = 'none', timer = 0, torch = false, shot = null, busy = false;
-      let mode = 'live', baseImg = null, z = 1, zMin = 1, zMax = 5, hwZoom = false;
+      let mode = 'live', baseImg = null, z = 1, zMin = 1, zMax = 5, hwZoom = false, flashModes = [], flash = 'auto';
+      const TONE = 'saturate(1.1) contrast(1.05) brightness(1.03)'; // 調色：偏 iPhone 原廠的鮮明、明亮一點
       const I = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
       const v = h(`<div class="lfc-cam${wide ? ' wide' : ''}"><div class="lfc-cam-box">
         <div class="lfc-cam-view"><video playsinline muted autoplay></video><img class="lfc-cam-base" alt="" hidden><canvas class="lfc-cam-fr"></canvas><img class="lfc-cam-shotimg" alt="" hidden><b class="lfc-cam-count" hidden></b><i class="lfc-cam-focus" hidden></i></div>
         <button class="lfc-cam-x" data-a="x" aria-label="關閉">${I('<path d="M6 6l12 12M18 6L6 18"/>', 26)}</button>
         <div class="lfc-cam-side">
           <button data-a="flip" aria-label="切換鏡頭">${I('<path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/>')}</button>
-          <button data-a="torch" aria-label="閃光燈" hidden>${I('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>')}</button>
+          <button data-a="torch" aria-label="閃光燈" hidden>${I('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>')}<small hidden></small></button>
           <button data-a="timer" aria-label="倒數計時">${I('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>')}<small hidden></small></button>
-          <button data-a="frames" aria-label="相框">${I('<circle cx="12" cy="8.5" r="4.5"/><circle cx="8.3" cy="15" r="4.5"/><circle cx="15.7" cy="15" r="4.5"/>')}</button>
+          <button data-a="frames" class="on" aria-label="相框">${I('<circle cx="12" cy="8.5" r="4.5"/><circle cx="8.3" cy="15" r="4.5"/><circle cx="15.7" cy="15" r="4.5"/>')}</button>
         </div>
         <div class="lfc-cam-exp" hidden>☀<input type="range" aria-label="亮度"></div>
         <div class="lfc-cam-panel">
           <div class="lfc-cam-zoom"></div>
-          <div class="lfc-cam-frs" hidden>${FRAMES.map(f => `<button data-fr="${f[0]}" class="${f[0] === 'none' ? 'on' : ''}"><span class="lfc-cam-th" data-th="${f[0]}">${f[0] === 'none' ? '🚫' : f[0] === 'polaroid' ? '🖼️' : ''}</span>${f[1]}</button>`).join('')}</div>
-          <div class="lfc-cam-bar"><button class="lfc-cam-native" data-a="native" aria-label="用手機相機拍">${I('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', 22)}<span>手機相機</span></button>
+          <div class="lfc-cam-frs">${FRAMES.map(f => `<button data-fr="${f[0]}" class="${f[0] === 'none' ? 'on' : ''}"><span class="lfc-cam-th" data-th="${f[0]}">${f[0] === 'none' ? '🚫' : f[0] === 'polaroid' ? '<i class="lfc-cam-pol"></i>' : ''}</span>${f[1]}</button>`).join('')}</div>
+          <div class="lfc-cam-bar">${matchMedia('(pointer: coarse)').matches ? `<button class="lfc-cam-native" data-a="native" aria-label="用預設相機拍">${I('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', 22)}<span>預設相機</span></button>` : '<span></span>'}
             <button class="lfc-cam-shot" data-a="shot" aria-label="拍照"></button><span></span></div>
           <div class="lfc-cam-after" hidden><button data-a="retake">重拍</button><button data-a="send" class="go">傳送</button></div>
         </div>
@@ -463,15 +464,13 @@
         if (id !== pid) return; cv.width = c2.width; cv.height = c2.height; cv.getContext('2d').drawImage(c2, 0, 0);
       }
       // ---- 縮放：鏡頭有變焦就用鏡頭（畫質好），沒有就裁切放大 ----
-      function zoomUI() {
-        const box = q('.lfc-cam-zoom'), steps = [zMin < 1 ? zMin : null, 1, 2, 5].filter(x => x && x >= zMin - .01 && x <= zMax + .01);
-        const fmt = n => n < 1 ? '.' + Math.round(n * 10) : String(Math.round(n * 10) / 10);
-        const act = steps.reduce((p, x) => Math.abs(x - z) < Math.abs(p - z) ? x : p, steps[0]); // 最接近目前倍率的那顆顯示實際倍率
-        box.innerHTML = steps.map(x => `<button data-z="${x}" class="${x === act ? 'on' : ''}">${x === act ? fmt(z) + '×' : fmt(x)}</button>`).join('');
-        box.hidden = mode !== 'live' || !!shot;
+      function zoomUI() { // 倍率拉桿 1～5 倍
+        const box = q('.lfc-cam-zoom'); box.hidden = mode !== 'live' || !!shot;
+        if (!box.firstChild) { box.innerHTML = '<span>1×</span><input type="range" min="1" max="5" step="0.1" aria-label="倍率"><b></b>'; box.querySelector('input').oninput = e => setZoom(+e.target.value); }
+        const hi = Math.min(5, zMax); const rg = box.querySelector('input'); rg.max = hi; rg.value = z; box.querySelector('b').textContent = (Math.round(z * 10) / 10) + '×';
       }
       function setZoom(nz) {
-        z = Math.min(zMax, Math.max(zMin, nz));
+        z = Math.min(Math.min(5, zMax), Math.max(1, zMin, nz));
         if (hwZoom) setTrack({ zoom: z }); else video.style.transform = `${facing === 'user' ? 'scaleX(-1) ' : ''}scale(${z})`;
         zoomUI();
       }
@@ -490,17 +489,24 @@
         if (caps.pointsOfInterest || (caps.focusMode || []).includes('single-shot'))
           setTrack({ pointsOfInterest: [{ x, y }], focusMode: (caps.focusMode || []).includes('single-shot') ? 'single-shot' : 'continuous' });
       });
+      function flashUI() { // 閃光燈圖示：A＝自動、亮＝開、斜線＝關
+        const b = q('[data-a="torch"]'), s = b.querySelector('small'); if (!flashModes.length) return;
+        b.classList.toggle('on', flash === 'flash'); b.classList.toggle('off', flash === 'off'); s.hidden = flash !== 'auto'; s.textContent = 'A';
+      }
       async function start() {
         stop(); torch = false; q('[data-a="torch"]').classList.remove('on'); mode = 'live'; baseEl.hidden = true; video.hidden = false;
         try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false }); }
         catch (e) { close(); toast(e && e.name === 'NotAllowedError' ? '沒有相機權限，改用相簿選照片' : '打不開相機，改用相簿選照片'); $('lfcFilePic').click(); return; }
         track = stream.getVideoTracks()[0]; caps = track && track.getCapabilities ? track.getCapabilities() : {};
-        video.srcObject = stream; video.classList.toggle('mirror', facing === 'user'); video.style.transform = '';
+        video.srcObject = stream; video.classList.toggle('mirror', facing === 'user'); video.style.transform = ''; video.style.filter = TONE;
         q('[data-a="torch"]').hidden = !caps.torch;
         hwZoom = !!(caps.zoom && caps.zoom.max > 1); zMin = hwZoom ? caps.zoom.min : 1; zMax = hwZoom ? Math.min(caps.zoom.max, 10) : 5; z = 1;
         if (hwZoom) setTrack({ zoom: Math.max(zMin, 1) }); zoomUI();
+        // 閃光燈：拍照模式支援「自動／開／關」就用它，不然只有手電筒開關
+        flashModes = []; try { if (window.ImageCapture) { const pc = await new ImageCapture(track).getPhotoCapabilities(); flashModes = (pc.fillLightMode || []).filter(m => ['auto', 'flash', 'off'].includes(m)); } } catch (_) {}
+        const fb = q('[data-a="torch"]'); fb.hidden = !(flashModes.length > 1 || caps.torch); if (flashModes.length > 1 && !flashModes.includes(flash)) flash = 'off'; flashUI();
         const ex = q('.lfc-cam-exp'), ec = caps.exposureCompensation; ex.hidden = !ec;
-        if (ec) { const r = ex.querySelector('input'); Object.assign(r, { min: ec.min, max: ec.max, step: ec.step || .1, value: 0 }); r.oninput = () => setTrack({ exposureMode: 'continuous', exposureCompensation: +r.value }); }
+        if (ec) { const r = ex.querySelector('input'), m = Math.min(-ec.min, ec.max); Object.assign(r, { min: -m, max: m, step: ec.step || .1 }); r.value = 0; setTrack({ exposureCompensation: 0 }); r.oninput = () => setTrack({ exposureMode: 'continuous', exposureCompensation: +r.value }); } // 每次回來都在中間
         video.onloadedmetadata = () => { video.play(); paint(); };
       }
       // 組合成照片：來源照片（裁成畫面看到的範圍）＋相框
@@ -509,7 +515,8 @@
         if (crop) { const R = view.getBoundingClientRect(), a = R.width / R.height; if (sw / sh > a) cw = sh * a; else ch = sw / a; if (!hwZoom) { cw /= z; ch /= z; } }
         const k = Math.min(1, 2000 / Math.max(cw, ch)), c = document.createElement('canvas'); c.width = Math.round(cw * k); c.height = Math.round(ch * k);
         const g = c.getContext('2d'); if (mirror) { g.translate(c.width, 0); g.scale(-1, 1); }
-        g.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, c.width, c.height); g.setTransform(1, 0, 0, 1, 0, 0);
+        if (crop) g.filter = TONE;
+        g.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, c.width, c.height); g.setTransform(1, 0, 0, 1, 0, 0); g.filter = 'none';
         await drawFrame(g, c.width, c.height, fr);
         return new Promise(ok => c.toBlob(ok, 'image/jpeg', .9));
       }
@@ -517,7 +524,7 @@
         let bl = null;
         try { // 高畫質：用相機的拍照模式（Android Chrome），套用手機的降噪、HDR
           if (window.ImageCapture && track && facing !== 'user') {
-            const ph = await new ImageCapture(track).takePhoto(), bm = await createImageBitmap(ph);
+            const ph = await new ImageCapture(track).takePhoto(flashModes.length > 1 ? { fillLightMode: flash } : undefined), bm = await createImageBitmap(ph);
             bl = await compose(bm, bm.width, bm.height, true, false); bm.close && bm.close();
           }
         } catch (_) { bl = null; }
@@ -540,14 +547,17 @@
       v.addEventListener('click', async e => {
         const b = e.target.closest('button'); if (!b) return;
         const a = b.dataset.a;
-        if (b.dataset.z) return setZoom(+b.dataset.z);
         if (b.dataset.fr) { fr = b.dataset.fr; v.querySelectorAll('[data-fr]').forEach(x => x.classList.toggle('on', x === b)); return paint(); }
         if (a === 'x') return close();
         if (a === 'native') return q('[data-native]').click();
         if (a === 'flip') { facing = facing === 'user' ? 'environment' : 'user'; return start(); }
         if (a === 'frames') { const f = q('.lfc-cam-frs'); f.hidden = !f.hidden; b.classList.toggle('on', !f.hidden); return; }
         if (a === 'timer') { timer = timer === 0 ? 3 : timer === 3 ? 10 : 0; const s = b.querySelector('small'); s.hidden = !timer; s.textContent = timer + 's'; b.classList.toggle('on', !!timer); return; }
-        if (a === 'torch') { if (!track) return; torch = !torch; await setTrack({ torch }); b.classList.toggle('on', torch); return; }
+        if (a === 'torch') {
+          if (!track) return;
+          if (flashModes.length > 1) { const order = ['auto', 'flash', 'off'].filter(m => flashModes.includes(m)); flash = order[(order.indexOf(flash) + 1) % order.length]; return flashUI(); }
+          torch = !torch; await setTrack({ torch }); b.classList.toggle('on', torch); return;
+        }
         if (a === 'retake') { if (mode === 'native') v.classList.remove('native'); return retake(); }
         if (a === 'send') {
           if (mode === 'native' && baseImg) { const bl = await compose(baseImg, baseImg.naturalWidth, baseImg.naturalHeight, false, false); if (!bl) return; shot = bl; }

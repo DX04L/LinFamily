@@ -216,8 +216,13 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-cam.native .lfc-cam-fr { display:block; }
 .lfc-cam-zoom { display:flex; justify-content:center; gap:8px; margin-bottom:10px; }
 .lfc-cam-zoom:empty, .lfc-cam-zoom[hidden] { display:none; }
-.lfc-cam-zoom button { min-width:36px; height:36px; border-radius:18px; background:rgba(0,0,0,.4) !important; font:700 12.5px/1 "CLC Arial", Arial, sans-serif; padding:0 6px !important; }
-.lfc-cam-zoom button.on { color:#fbcfe8 !important; background:rgba(0,0,0,.6) !important; font-size:13.5px; }
+.lfc-cam-zoom { align-items:center; gap:10px; font:700 12px/1 "CLC Arial", Arial, sans-serif; text-shadow:0 1px 3px rgba(0,0,0,.7); }
+.lfc-cam-zoom input { width:min(260px, 60vw); accent-color:#f472b6; }
+.lfc-cam-zoom b { min-width:34px; color:#fbcfe8; }
+.lfc-cam-side button.off svg { opacity:.5; }
+.lfc-cam-side button.off::after { content:''; position:absolute; width:26px; height:2px; background:#fff; transform:rotate(-45deg); border-radius:1px; }
+.lfc-cam-pol { display:block; width:26px; height:30px; background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.3); position:relative; }
+.lfc-cam-pol::before { content:''; position:absolute; left:3px; right:3px; top:3px; height:19px; background:#cbd5e1; }
 .lfc-cam-focus { position:absolute; width:70px; height:70px; margin:-35px 0 0 -35px; border:2px solid #fbcfe8; border-radius:14px; z-index:3; pointer-events:none; }
 .lfc-cam-focus.go { animation:lfcFoc .35s ease-out; }
 @keyframes lfcFoc { from { transform:scale(1.5); opacity:.4; } }
