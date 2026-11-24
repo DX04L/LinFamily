@@ -34,6 +34,18 @@
     }
     return `<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><rect width="64" height="64" fill="${b}"/>${e}${feat}</svg>`;
   }
+  const STICKER_PACKS = ['Pinky', 'Blues'];
+  const STICKER_LABELS = ['早安', 'Good night', '謝啦！', 'OK!', '辛苦了', 'You got this!'];
+  const STICKERS = new Map(STICKER_PACKS.flatMap(pack =>
+    STICKER_LABELS.map((label, index) => [pack.toLowerCase() + '-' + (index + 1), pack + ' · ' + label])));
+  const LEGACY_STICKERS = AV.flatMap(([key, label]) =>
+    MOODS.map(mood => ({ id: key + ':' + mood, label })));
+  const RECENT_STICKERS_KEY = 'lf-chat-recent-stickers';
+  function sticker(id) {
+    if (STICKERS.has(id)) return `<img src="assets/chat-stickers/${id}.webp" alt="${STICKERS.get(id)}" draggable="false">`;
+    const [key, mood] = id.split(':');
+    return face(key, mood, true);
+  }
   const EMOS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const h = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
@@ -252,7 +264,7 @@
         if (m.unsent) { frag.append(h(`<div class="lfc-sys"><span>${esc(mine ? '你' : p.name)}已收回訊息</span></div>`)); return; }
         let body;
         if (m.img) body = `<div class="lfc-bub lfc-media"><img class="lfc-photo" src="${m.img}" alt="照片"></div>`;
-        else if (m.stk) { const [k, mood] = m.stk.split(':'); body = `<div class="lfc-bub lfc-media lfc-stkbub"><div class="lfc-stk">${face(k, mood, true)}</div></div>`; }
+        else if (m.stk) { body = `<div class="lfc-bub lfc-media lfc-stkbub"><div class="lfc-stk">${sticker(m.stk)}</div></div>`; }
         else body = `<div class="lfc-bub">${m.replyTo ? `<div class="lfc-quote" data-go="${esc(m.replyTo.id)}">${esc(m.replyTo.name)}：${esc(m.replyTo.text)}</div>` : ''}${textHtml(m)}</div>`;
         const rc = {}; Object.values(m.reacts || {}).forEach(e => rc[e] = (rc[e] || 0) + 1);
         const myE = (m.reacts || {})[me.uid];
@@ -274,11 +286,11 @@
 
     // ---------- 傳送 ----------
     async function send(data) {
-      if (!me) return;
+      if (!me) return false;
       const d = Object.assign({ uid: me.uid, ts: FV.serverTimestamp() }, data);
       if (reply) { d.replyTo = reply; setReply(null); }
-      try { await db.collection('lf_chat_messages').add(d); setTimeout(toBottom, 50); }
-      catch (e) { toast('傳送失敗：' + ((e && e.code) || e)); console.warn(e); }
+      try { await db.collection('lf_chat_messages').add(d); setTimeout(toBottom, 50); return true; }
+      catch (e) { toast('傳送失敗：' + ((e && e.code) || e)); console.warn(e); return false; }
     }
     function sendText() {
       const text = input.value.trim(); if (!text) return;
@@ -302,15 +314,76 @@
     $('lfcCam').onclick = () => $('lfcFileCam').click();
     $('lfcPic').onclick = () => $('lfcFilePic').click();
     ['lfcFileCam', 'lfcFilePic'].forEach(id => $(id).onchange = e => { sendFiles(e.target.files); e.target.value = ''; });
-    $('lfcStk').onclick = () => {
-      const box = $('lfcStks');
-      if (!box.childElementCount) AV.forEach(a => MOODS.forEach(md => { const b = h(`<button title="${a[1]}">${face(a[0], md, true)}</button>`); b.onclick = () => { box.hidden = true; send({ stk: a[0] + ':' + md }); }; box.append(b); }));
-      box.hidden = !box.hidden;
-      if (!box.hidden) { // 浮在輸入列上方的小方框（照 LINE），點外面就關
-        box.style.bottom = (root.querySelector('.lfc-bar').offsetHeight + 6) + 'px';
-        setTimeout(() => document.addEventListener('pointerdown', function off(e) { if (!box.contains(e.target) && !$('lfcStk').contains(e.target)) box.hidden = true; if (box.hidden) document.removeEventListener('pointerdown', off, true); }, true));
+    const stickerBox = $('lfcStks'), stickerToggle = $('lfcStk');
+    let stickerTab = '貼圖', stickerPack = '最近使用', recentStickers = [];
+    try {
+      const saved = JSON.parse(localStorage.getItem(RECENT_STICKERS_KEY));
+      if (Array.isArray(saved)) recentStickers = saved.filter(id => STICKERS.has(id)).slice(0, 24);
+    } catch {}
+    function closeStickers() {
+      stickerBox.hidden = true;
+      stickerToggle.setAttribute('aria-expanded', 'false');
+    }
+    function renderStickers() {
+      const isEmoji = stickerTab === 'Emoji';
+      stickerBox.innerHTML = `<div class="lfc-stk-tabs">
+        ${['貼圖', 'Emoji'].map(tab => `<button type="button" data-sticker-tab="${tab}" aria-pressed="${tab === stickerTab}">${tab}</button>`).join('')}
+        <button type="button" class="lfc-stk-close" aria-label="關閉">×</button>
+      </div>
+      ${isEmoji ? '' : `<div class="lfc-stk-packs">${['最近使用', ...STICKER_PACKS].map(pack =>
+        `<button type="button" data-sticker-pack="${pack}" aria-pressed="${pack === stickerPack}">${pack}</button>`).join('')}</div>`}
+      <div class="lfc-stk-grid${isEmoji ? ' is-emoji' : ''}"></div>`;
+      const grid = stickerBox.querySelector('.lfc-stk-grid');
+      const ids = stickerPack === '最近使用' ? recentStickers :
+        [...STICKERS.keys()].filter(id => id.startsWith(stickerPack.toLowerCase() + '-'));
+      const items = isEmoji ? LEGACY_STICKERS : ids.map(id => ({ id, label: STICKERS.get(id) }));
+      if (!items.length) grid.append(h('<p>還沒有最近使用的貼圖，選 Pinky 或 Blues 開始。</p>'));
+      for (const { id, label } of items) {
+        const button = h(`<button type="button" aria-label="${label}" title="${label}">${sticker(id)}</button>`);
+        button.onclick = async () => {
+          closeStickers();
+          if (await send({ stk: id }) && !isEmoji) {
+            recentStickers = [id, ...recentStickers.filter(item => item !== id)].slice(0, 24);
+            try { localStorage.setItem(RECENT_STICKERS_KEY, JSON.stringify(recentStickers)); } catch {}
+            if (!stickerBox.hidden && stickerTab === '貼圖' && stickerPack === '最近使用') renderStickers();
+          }
+        };
+        grid.append(button);
+      }
+    }
+    stickerToggle.setAttribute('aria-controls', 'lfcStks');
+    stickerToggle.setAttribute('aria-expanded', 'false');
+    stickerToggle.onclick = () => {
+      if (!stickerBox.hidden) return closeStickers();
+      renderStickers();
+      stickerBox.style.bottom = (root.querySelector('.lfc-bar').offsetHeight + 6) + 'px';
+      stickerBox.hidden = false;
+      stickerToggle.setAttribute('aria-expanded', 'true');
+    };
+    stickerBox.onclick = e => {
+      const button = e.target.closest('button');
+      if (!button) return;
+      if (button.classList.contains('lfc-stk-close')) {
+        closeStickers();
+        stickerToggle.focus();
+      } else if (button.dataset.stickerTab || button.dataset.stickerPack) {
+        const { stickerTab: tab, stickerPack: pack } = button.dataset;
+        if (tab) stickerTab = tab;
+        if (pack) stickerPack = pack;
+        renderStickers();
+        stickerBox.querySelector(tab ? '[data-sticker-tab][aria-pressed=true]' :
+          '[data-sticker-pack][aria-pressed=true]').focus();
       }
     };
+    document.addEventListener('pointerdown', e => {
+      if (!stickerBox.hidden && !stickerBox.contains(e.target) && !stickerToggle.contains(e.target)) closeStickers();
+    }, true);
+    stickerBox.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closeStickers();
+        stickerToggle.focus();
+      }
+    });
     // @提及：輸入 @ 跳出成員
     function suggest() {
       const box = $('lfcSugg'), m = input.value.slice(0, input.selectionStart).match(/@([^\s@]*)$/);
@@ -487,7 +560,7 @@
       search, findNext: () => findStep(1),
       show(on) {
         visible = on; dot(); document.body.classList.toggle('lf-tab-family', on);
-        if (!on) return;
+        if (!on) { closeStickers(); return; }
         firstOpen = true; myRead = me ? (reads[me.uid] || 0) : 0;
         if (collapsed) setCollapsed(false);
         fit(); render(); markRead();
