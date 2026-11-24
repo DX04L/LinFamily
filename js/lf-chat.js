@@ -89,7 +89,7 @@
   window.lfChatInit = function (root, opt) {
     const db = opt.db, FV = firebase.firestore.FieldValue;
     let me = null, role = '', unsubs = [], visible = false, needPick = false, denied = false;
-    let msgs = [], members = {}, phones = {}, reads = {}, pin = null, myRead = 0, firstOpen = true, reply = null, menuOpen = false;
+    let msgs = [], members = {}, phones = {}, reads = {}, pin = null, myRead = 0, seenTs = 0, firstOpen = true, reply = null, menuOpen = false;
     const hidden = new Set(JSON.parse(localStorage.getItem('linfamily_chat_hidden') || '[]'));
     const isSuper = () => role === 'superuser';
     const PINKY = { name: 'Pinky', av: 'pinky' }; // AI 小幫手（訊息存成發問者的 uid + bot:'pinky'）
@@ -198,7 +198,7 @@
     function setCollapsed(c) {
       if (c === collapsed) return;
       collapsed = c; place();
-      if (!c) { box.classList.remove('is-collapsed'); fit(); firstOpen = true; myRead = me ? (reads[me.uid] || 0) : 0; render(); markRead(); }
+      if (!c) { box.classList.remove('is-collapsed'); fit(); firstOpen = true; myRead = seenTs = me ? (reads[me.uid] || 0) : 0; render(); markRead(); }
       dot();
       if (calm()) { box.classList.toggle('is-collapsed', c); bubble.hidden = !c; return; }
       bubble.hidden = false; warp(c);
@@ -236,7 +236,7 @@
       unsubs.push(col('lf_chat_phones').onSnapshot(s => { phones = {}; s.forEach(d => phones[d.id] = d.data().phone || ''); }, err));
       unsubs.push(col('lf_chat_reads').onSnapshot(s => {
         reads = {}; s.forEach(d => reads[d.id] = ms(d.data({ serverTimestamps: 'estimate' }).at));
-        if (reads[me.uid] && firstOpen) myRead = reads[me.uid];
+        if (reads[me.uid] && firstOpen) myRead = seenTs = Math.max(seenTs, reads[me.uid]);
         render(); dot();
       }, err));
       unsubs.push(col('lf_chat_meta').doc('pin').onSnapshot(d => { pin = d.exists && d.data().id ? d.data() : null; $('lfcPin').hidden = !pin; if (pin) $('lfcPinText').textContent = pin.name + '：' + pin.text; fit(); }, err));
@@ -316,7 +316,7 @@
         const n = mine ? readCount(m) : 0;
         const meta = `<div class="lfc-meta">${mine && n ? '已讀 ' + n + '<br>' : ''}${hm(m.t)}</div>`;
         const hit = !mine && (m.mentions || []).includes(me.uid);
-        frag.append(h(`<div class="lfc-row${mine ? ' me' : ''}${hit ? ' hit' : ''}" data-id="${m.id}">
+        frag.append(h(`<div class="lfc-row${mine ? ' me' : ''}${hit ? ' hit' : ''}" data-id="${m.id}" data-ts="${ms(m.ts)}">
           ${mine ? '' : bot ? `<span class="lfc-av lfc-bot" data-at="Pinky" aria-label="Pinky">${face(p.av)}</span>` : `<button class="lfc-av" data-uid="${esc(m.uid)}" aria-label="${esc(p.name)}">${face(p.av)}</button>`}
           <div class="lfc-col">${mine ? '' : `<button class="lfc-name" data-at="${esc(p.name)}" title="@${esc(p.name)}">${esc(p.name)}</button>`}<div class="lfc-line">${body}${meta}</div>${reacts}</div></div>`));
       });
@@ -329,10 +329,11 @@
       list.append(down); downUpd();
     }
     function downUpd() {
-      const far = list.scrollHeight - list.scrollTop - list.clientHeight > 160; downBtn.hidden = !far; if (!far) return;
+      // 只在下面還有「沒看過」的訊息時出現；捲到看過的就不算，已讀的不會再出現
       const edge = list.scrollTop + list.clientHeight; let k = 0;
-      list.querySelectorAll('.lfc-row:not(.me)').forEach(r => { if (r.offsetTop > edge) k++; });
-      const b = downBtn.querySelector('b'); b.hidden = !k; b.textContent = k > 99 ? '99+' : k;
+      list.querySelectorAll('.lfc-row').forEach(r => { const t = +r.dataset.ts; if (r.offsetTop + r.offsetHeight <= edge) { if (t > seenTs) seenTs = t; } });
+      list.querySelectorAll('.lfc-row:not(.me)').forEach(r => { if (r.offsetTop + r.offsetHeight > edge && +r.dataset.ts > seenTs) k++; });
+      downBtn.hidden = !k; const b = downBtn.querySelector('b'); b.hidden = !k; b.textContent = k > 99 ? '99+' : k;
     }
     list.addEventListener('scroll', () => requestAnimationFrame(downUpd), { passive: true });
 
@@ -1115,7 +1116,7 @@
           clearTimeout(noticeTimer); notice.textContent = '';
           return;
         }
-        firstOpen = true; myRead = me ? (reads[me.uid] || 0) : 0;
+        firstOpen = true; myRead = seenTs = me ? (reads[me.uid] || 0) : 0;
         if (collapsed) setCollapsed(false);
         fit(); render(); markRead();
         if (needPick) { needPick = false; avatarPicker(true); }
