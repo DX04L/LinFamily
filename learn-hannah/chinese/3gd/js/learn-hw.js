@@ -416,8 +416,10 @@
     const sym = [], toneS = [];
     ink.forEach(s => {
       const b = bbox([s]), cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2, md = Math.max(b.x1 - b.x0, b.y1 - b.y0);
-      if (md < w * .2 && (cy < h * .3 || cx > w * .55)) toneS.push(s);
-      else if (md < w * .42 && cx > w * .6) toneS.push(s);
+      const bw = b.x1 - b.x0, bh = b.y1 - b.y0;
+      const flat = bw > w * .28 && bw > bh * 2.5;                       // 直書的「ㄧ」是一短橫，算符號
+      if (!flat && md < w * .2 && (cy < h * .3 || cx > w * .6)) toneS.push(s);   // 小點：輕聲或聲調
+      else if (!flat && md < w * .45 && cx > w * .62) toneS.push(s);           // 虛線右邊的小筆畫＝聲調
       else sym.push(s);
     });
     // 依上下位置分組；組數比答案多就把最靠近的兩組合併
@@ -443,7 +445,8 @@
         const c = await rec(groups[i].ss); if (c === null) return null;
         const mapped = c.map(toBpmf);
         guess += mapped.find(Boolean) || '？';
-        if (!mapped.includes(ansSyms[i]) && !c.includes(ansSyms[i])) symOk = false;
+        // 候選字對得上，或字形和標準注音夠像，都算對
+        if (!mapped.includes(ansSyms[i]) && !c.includes(ansSyms[i]) && shapeScore(groups[i].ss, ansSyms[i]) < 45) symOk = false;
       }
     }
     if (!symOk && sym.length) {   // 再整格一起辨識一次
