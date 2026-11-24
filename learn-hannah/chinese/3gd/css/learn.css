@@ -210,3 +210,34 @@ html.dark .heart b { color: #111; }
 .cells-row { display: flex; gap: 4px; }
 .cell { display: block; border: 2px solid var(--line); border-radius: 8px; touch-action: none; }
 .cell-z { border-style: dashed; }
+
+/* 過關小動畫 */
+.cb-ov { position: fixed; inset: 0; z-index: 80; overflow: hidden; pointer-events: auto; background: rgba(0,0,0,.18); animation: cbFade 3.2s ease forwards; }
+.cb-ov.big { animation-duration: 4.2s; }
+.cb-text { position: absolute; left: 50%; top: 24%; transform: translate(-50%, 0) scale(0); white-space: nowrap;
+  font: 900 clamp(40px, 11vw, 76px)/1 "CLC Arial", Arial, "Microsoft JhengHei", sans-serif; color: #fff;
+  -webkit-text-stroke: 3px var(--accent); paint-order: stroke fill; text-shadow: 0 6px 0 rgba(0,0,0,.18);
+  animation: cbPop .7s .15s cubic-bezier(.2,1.6,.4,1) forwards; }
+.cb-chr { position: absolute; bottom: -42vw; width: min(46vw, 260px); height: auto; filter: drop-shadow(0 8px 10px rgba(0,0,0,.25)); }
+.cb-pinky { left: 4%; animation: cbJump 1.5s .1s ease-out both; }
+.cb-blues { right: 4%; animation: cbJump 1.5s .85s ease-out both; }
+.cb-ov.big .cb-pinky { animation: cbJump 1.5s .1s ease-out both, cbJump2 1.5s 1.7s ease-out both; }
+.cb-ov.big .cb-blues { animation: cbJump 1.5s .85s ease-out both, cbJump2 1.5s 2.4s ease-out both; }
+.cb-stars i { position: absolute; top: -10%; font-style: normal; font-size: 28px; animation: cbFall 2.6s linear both; }
+@keyframes cbPop { to { transform: translate(-50%, 0) scale(1); } }
+@keyframes cbJump {
+  0% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-78vw) rotate(-6deg); }
+  40% { transform: translateY(-60vw) rotate(0); }
+  55% { transform: translateY(-72vw) rotate(5deg); }
+  75%, 100% { transform: translateY(-62vw) rotate(0); } }
+@keyframes cbJump2 {
+  0% { transform: translateY(-62vw); } 30% { transform: translateY(-80vw) rotate(-4deg); } 60%, 100% { transform: translateY(-62vw); } }
+@keyframes cbFall { to { transform: translateY(120vh) rotate(260deg); } }
+@keyframes cbFade { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (min-width: 700px) {
+  .cb-chr { bottom: -280px; }
+  @keyframes cbJump { 0% { transform: translateY(0); } 25% { transform: translateY(-460px) rotate(-6deg); } 40% { transform: translateY(-360px); } 55% { transform: translateY(-420px) rotate(5deg); } 75%, 100% { transform: translateY(-380px); } }
+  @keyframes cbJump2 { 0% { transform: translateY(-380px); } 30% { transform: translateY(-470px) rotate(-4deg); } 60%, 100% { transform: translateY(-380px); } }
+}
+@media (prefers-reduced-motion: reduce) { .cb-chr, .cb-text, .cb-stars i { animation-duration: .01s !important; animation-delay: 0s !important; } }
