@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
   <link rel="stylesheet" href="css/lf-todos.css?v=9">
-  <link rel="stylesheet" href="css/lf-chat.css?v=18">
+  <link rel="stylesheet" href="css/lf-chat.css?v=19">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=12">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
@@ -356,6 +356,7 @@
       <div id="lfMenu" class="lf-menu" role="menu" hidden>
         <div id="lfMenuHead" class="lf-menu-head">管理員已登入</div>
         <button type="button" role="menuitem" data-act="account">👤 帳號設定</button>
+        <button type="button" role="menuitem" data-act="switch">🔄 切換 Google 帳號</button>
         <button type="button" role="menuitem" data-act="theme">🎨 背景主題</button>
         <button type="button" role="menuitem" data-act="users" id="lfUsersItem" hidden>⚙️ 全站設定</button>
         <div class="lf-sep"></div>
@@ -451,7 +452,7 @@
   <script src="js/dashboard-todos.js?v=20261124a"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=23"></script>
+  <script src="js/lf-chat.js?v=24"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -614,6 +615,7 @@
         $('lfThemeDialog').showModal();
       }
       else if (act === 'users') location.href = 'admin-users.html';
+      else if (act === 'switch') login(); // 直接登入另一個帳號（一律跳出帳號選單），會取代目前的登入
       else if (act === 'account') { if (window.lfChatApi) window.lfChatApi.account(); }
     });
     function setColorMode(dark) {

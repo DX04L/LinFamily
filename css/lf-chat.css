@@ -162,7 +162,7 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 @media (min-width:640px) { .lfc-mv { display:block; cursor:grab; } }
 
 /* 留言板英文字型跟全站一致（按鈕/輸入框預設不繼承字型） */
-.lfc, .lfc button, .lfc input, .lfc textarea, .lfc-view, .lfc-view button, .lfc-view input { font-family:"CLC Arial", Arial, "Microsoft JhengHei", "微軟正黑體", "PingFang TC", "Noto Sans TC", sans-serif; }
+.lfc, .lfc button, .lfc input, .lfc textarea, .lfc-view, .lfc-view button, .lfc-view input, .lfc-cam, .lfc-cam button { font-family:"CLC Arial", Arial, "Microsoft JhengHei", "微軟正黑體", "PingFang TC", "Noto Sans TC", sans-serif; }
 .lfc-bot { cursor:default; }
 .lfc-face { width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
 .lfc-src { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:10px 0 4px; }
@@ -174,19 +174,40 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-down[hidden], .lfc-down b[hidden] { display:none; }
 .lfc-down b { position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#ef4444; color:#fff; font:700 11px/18px "CLC Arial", Arial, sans-serif; }
 .lfc.lfc-drop { outline:3px dashed var(--sage); outline-offset:-6px; }
-/* 相機 */
-.lfc-cam { position:fixed; inset:0; z-index:1000; background:#000; color:#fff; }
-.lfc-cam video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+/* 相機（照 LINE 的介面，底部用淡粉＋sage 漸層） */
+.lfc-cam { position:absolute; inset:0; z-index:60; background:#000; color:#fff; }
+.lfc-cam.wide { position:fixed; z-index:95; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; }
+.lfc-cam-box { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; background:#000; }
+.lfc-cam.wide .lfc-cam-box { position:relative; inset:auto; width:min(960px, 88vw); height:min(760px, 86vh); border-radius:16px; box-shadow:0 25px 60px rgba(0,0,0,.45); }
+.lfc-cam-view { position:relative; flex:1; min-height:0; overflow:hidden; }
+.lfc-cam video, .lfc-cam-shotimg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.lfc-cam-shotimg { object-fit:contain; background:#000; z-index:2; }
 .lfc-cam video.mirror { transform:scaleX(-1); }
-.lfc-cam-fr { position:absolute; pointer-events:none; }
-.lfc-cam.flash::after { content:''; position:absolute; inset:0; background:#fff; animation:lfcFl .25s ease-out forwards; }
+.lfc-cam-fr { position:absolute; pointer-events:none; z-index:1; }
+.lfc-cam-count { position:absolute; inset:0; display:grid; place-items:center; font:800 96px/1 "CLC Arial", Arial, sans-serif; color:#fff; text-shadow:0 4px 20px rgba(0,0,0,.5); z-index:3; }
+.lfc-cam-count[hidden], .lfc-cam-shotimg[hidden], .lfc-cam [hidden] { display:none !important; }
+.lfc-cam.flash .lfc-cam-view::after { content:''; position:absolute; inset:0; background:#fff; z-index:4; animation:lfcFl .3s ease-out forwards; }
 @keyframes lfcFl { to { opacity:0; } }
-.lfc-cam button { border:0; cursor:pointer; color:#fff; font-family:inherit; }
-.lfc-cam-x { position:absolute; top:calc(12px + env(safe-area-inset-top)); right:12px; width:42px; height:42px; border-radius:50%; background:rgba(0,0,0,.45); font-size:20px; }
-.lfc-cam-frs { position:absolute; left:0; right:0; bottom:calc(112px + env(safe-area-inset-bottom)); display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:0 12px; }
-.lfc-cam-frs button { background:rgba(0,0,0,.45); border-radius:16px; padding:6px 12px; font-size:13.5px; }
-.lfc-cam-frs button.on { background:#f472b6; }
-.lfc-cam-bar { position:absolute; left:0; right:0; bottom:calc(24px + env(safe-area-inset-bottom)); display:flex; align-items:center; justify-content:space-around; }
-.lfc-cam-bar .lfc-cam-pic, .lfc-cam-bar .lfc-cam-flip { width:48px; height:48px; border-radius:50%; background:rgba(0,0,0,.45); font-size:22px; }
-.lfc-cam-shot { width:72px; height:72px; border-radius:50%; background:#fff !important; box-shadow:0 0 0 4px rgba(0,0,0,.4), 0 0 0 7px #fff; }
+.lfc-cam button { border:0; background:none; cursor:pointer; color:#fff; font-family:inherit; padding:0; }
+.lfc-cam-x { position:absolute; top:calc(10px + env(safe-area-inset-top)); left:10px; width:44px; height:44px; display:grid; place-items:center; z-index:5; filter:drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
+.lfc-cam-side { position:absolute; top:calc(10px + env(safe-area-inset-top)); right:8px; display:flex; flex-direction:column; gap:14px; z-index:5; }
+.lfc-cam-side button { position:relative; width:44px; height:44px; display:grid; place-items:center; border-radius:50%; filter:drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
+.lfc-cam-side button.on { color:#fbcfe8; }
+.lfc-cam-side small { position:absolute; bottom:-2px; right:-2px; font:700 10.5px/1 "CLC Arial", Arial, sans-serif; background:#f472b6; color:#fff; border-radius:8px; padding:2px 4px; }
+.lfc-cam.taken .lfc-cam-side, .lfc-cam.taken .lfc-cam-fr { display:none; }
+.lfc-cam-panel { position:relative; margin-top:-22px; z-index:5; border-radius:22px 22px 0 0; padding:12px 12px calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(135deg, #fde2ec 0%, #f8eef3 45%, #dcefe6 100%); color:#4b5563; }
+html.dark .lfc-cam-panel { background:linear-gradient(135deg, #4a2c3a 0%, #2f2a33 50%, #23362f 100%); color:#e5e7eb; }
+.lfc-cam-frs { display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; scrollbar-width:none; }
+.lfc-cam-frs button { flex:none; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; color:inherit; }
+.lfc-cam-th { width:48px; height:48px; border-radius:50%; display:grid; place-items:center; overflow:hidden; background:rgba(255,255,255,.7); font-size:20px; border:3px solid transparent; box-sizing:border-box; }
+.lfc-cam-th img { width:100%; height:100%; object-fit:cover; }
+.lfc-cam-frs button.on .lfc-cam-th { border-color:#f472b6; }
+.lfc-cam-bar { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+.lfc-cam-shot { width:72px; height:72px; border-radius:50%; border:5px solid #fff !important; background:rgba(255,255,255,.25) !important; box-shadow:0 2px 10px rgba(244,114,182,.35), inset 0 0 0 2px rgba(244,114,182,.25); }
 .lfc-cam-shot:active { transform:scale(.92); }
+.lfc-cam-pic { justify-self:end; margin-right:10px; width:48px; height:48px; border-radius:12px; display:grid; place-items:center; background:rgba(255,255,255,.75) !important; color:#be185d !important; }
+html.dark .lfc-cam-pic { background:rgba(255,255,255,.15) !important; color:#fbcfe8 !important; }
+.lfc-cam-after { display:flex; gap:12px; justify-content:center; padding:10px 0 4px; }
+.lfc-cam-after button { min-width:120px; height:46px; border-radius:23px; font-size:16px; font-weight:700; background:rgba(255,255,255,.8) !important; color:#4b5563 !important; }
+.lfc-cam-after button.go { background:#f472b6 !important; color:#fff !important; }

@@ -379,75 +379,115 @@
     box.addEventListener('drop', e => { box.classList.remove('lfc-drop'); const fs = Array.from(e.dataTransfer.files || []).filter(f => /^image\//.test(f.type)); if (!fs.length) return; e.preventDefault(); sendFiles(fs); });
     input.addEventListener('paste', e => { const fs = Array.from((e.clipboardData && e.clipboardData.items) || []).filter(i => i.kind === 'file' && /^image\//.test(i.type)).map(i => i.getAsFile()); if (fs.length) { e.preventDefault(); sendFiles(fs); } });
 
-    // ---------- 相機：直接拍照、前後鏡頭切換、可愛相框 ----------
-    const FRAMES = [['none', '無'], ['heart', '愛心'], ['star', '星星'], ['flower', '花花'], ['cat', '貓耳'], ['polaroid', '拍立得']];
-    function shape(g, kind, x, y, r, color) {
-      g.save(); g.translate(x, y); g.fillStyle = color; g.beginPath();
-      if (kind === 'heart') { g.moveTo(0, r * .35); g.bezierCurveTo(-r * 1.2, -r * .5, -r * .4, -r * 1.1, 0, -r * .45); g.bezierCurveTo(r * .4, -r * 1.1, r * 1.2, -r * .5, 0, r * .35); }
-      else if (kind === 'star') for (let i = 0; i < 10; i++) { const a = Math.PI / 5 * i - Math.PI / 2, rr = i % 2 ? r * .45 : r; g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
-      else if (kind === 'flower') { for (let i = 0; i < 5; i++) { const a = Math.PI * 2 / 5 * i; g.moveTo(Math.cos(a) * r * .55 + r * .4, Math.sin(a) * r * .55); g.arc(Math.cos(a) * r * .55, Math.sin(a) * r * .55, r * .4, 0, 7); } g.fill(); g.beginPath(); g.fillStyle = '#fde68a'; g.arc(0, 0, r * .32, 0, 7); }
-      g.fill(); g.restore();
+    // ---------- 相機（照 LINE 的介面）：直接拍照、前後鏡頭、閃光燈（有支援才顯示）、倒數、可愛相框、拍完預覽 ----------
+    // 手機：蓋住留言板那一塊；寬螢幕：像看照片一樣在頁面中間跳出框
+    const FRAMES = [['none', '無'], ['polaroid', '拍立得'], ['pinky', 'Pinky'], ['blues', 'Blues'], ...AV.map(a => [a[0], a[1]])];
+    const imgCache = {};
+    const loadImg = src => imgCache[src] || (imgCache[src] = new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }));
+    const svgSrc = svg => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '));
+    function frameArt(kind) { // 回傳 [邊框色, 圖片網址們]
+      if (kind === 'pinky') return ['#f9a8d4', ['assets/chat-stickers/pinky-1.webp', 'assets/chat-stickers/pinky-4.webp']];
+      if (kind === 'blues') return ['#93c5fd', ['assets/chat-stickers/blues-new-1.webp', 'assets/chat-stickers/blues-new-3.webp']];
+      const a = AV.find(x => x[0] === kind); if (!a) return null;
+      return [a[2], [svgSrc(face(kind, 'happy', true)), svgSrc(face(kind, 'love', true))]];
     }
-    function drawFrame(g, W, H, kind) {
+    async function drawFrame(g, W, H, kind) {
       const u = Math.min(W, H) / 100;
-      if (kind === 'heart' || kind === 'star' || kind === 'flower') {
-        const col = { heart: ['#f472b6', '#fb7185', '#f9a8d4'], star: ['#facc15', '#fbbf24', '#fde047'], flower: ['#f9a8d4', '#c4b5fd', '#93c5fd'] }[kind];
-        g.lineWidth = u * 2.2; g.strokeStyle = col[0]; g.strokeRect(u * 2, u * 2, W - u * 4, H - u * 4);
-        const pts = []; const nx = Math.max(3, Math.round(W / (u * 22))), ny = Math.max(3, Math.round(H / (u * 22)));
-        for (let i = 0; i <= nx; i++) pts.push([u * 2 + (W - u * 4) * i / nx, u * 2], [u * 2 + (W - u * 4) * i / nx, H - u * 2]);
-        for (let j = 1; j < ny; j++) pts.push([u * 2, u * 2 + (H - u * 4) * j / ny], [W - u * 2, u * 2 + (H - u * 4) * j / ny]);
-        pts.forEach((p, i) => shape(g, kind, p[0], p[1], u * (i % 3 ? 4.5 : 6.5), col[i % 3]));
-      } else if (kind === 'cat') {
-        g.fillStyle = '#f9a8d4'; g.strokeStyle = '#fff'; g.lineWidth = u * 1.2;
-        [[W * .2, 1], [W * .8, -1]].forEach(([x, d]) => { g.beginPath(); g.moveTo(x - d * u * 14, u * 20); g.lineTo(x - d * u * 4, -u * 2); g.lineTo(x + d * u * 12, u * 14); g.closePath(); g.fill(); g.stroke();
-          g.beginPath(); g.fillStyle = '#fbcfe8'; g.moveTo(x - d * u * 8, u * 15); g.lineTo(x - d * u * 3, u * 4); g.lineTo(x + d * u * 6, u * 12); g.closePath(); g.fill(); g.fillStyle = '#f9a8d4'; });
-        g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = u * .9; g.lineCap = 'round';
-        [[-1, -3], [-1, 0], [-1, 3], [1, -3], [1, 0], [1, 3]].forEach(([d, k]) => { const x = W / 2 + d * u * 16; g.beginPath(); g.moveTo(x, H * .62 + k * u); g.lineTo(x + d * u * 18, H * .62 + k * u * 2.2); g.stroke(); });
-        shape(g, 'heart', W / 2, H * .58, u * 3, '#f472b6');
-      } else if (kind === 'polaroid') {
+      if (kind === 'polaroid') {
         g.fillStyle = '#fff'; const b = u * 5; g.fillRect(0, 0, W, b); g.fillRect(0, 0, b, H); g.fillRect(W - b, 0, b, H); g.fillRect(0, H - u * 18, W, u * 18);
         g.fillStyle = '#9ca3af'; g.font = `600 ${u * 6}px "CLC Arial", Arial, "Microsoft JhengHei", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.fillText(new Date().toLocaleDateString('zh-TW'), W / 2, H - u * 9);
+        g.fillText(new Date().toLocaleDateString('zh-TW'), W / 2, H - u * 9); return;
       }
+      const art = frameArt(kind); if (!art) return;
+      const [col, srcs] = art, ims = await Promise.all(srcs.map(loadImg));
+      g.save(); g.lineWidth = u * 3.2; g.strokeStyle = col; g.globalAlpha = .9;
+      const r = u * 6, x = u * 2, y = u * 2, w = W - u * 4, hh = H - u * 4;
+      g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + hh, r); g.arcTo(x + w, y + hh, x, y + hh, r); g.arcTo(x, y + hh, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); g.stroke();
+      g.globalAlpha = 1; g.fillStyle = col; // 邊框上的小圓點
+      for (let i = 1; i < 8; i++) { g.beginPath(); g.arc(x + w * i / 8, y, u * 1.3, 0, 7); g.arc(x + w * i / 8, y + hh, u * 1.3, 0, 7); g.fill(); }
+      const S = u * 30; // 角落的角色：右上小、左下大
+      if (ims[1]) g.drawImage(ims[1], W - S * .8 - u, u, S * .8, S * .8);
+      if (ims[0]) g.drawImage(ims[0], u, H - S - u, S, S);
+      g.restore();
     }
     async function camera() {
       if (closeOverlay) closeOverlay(false);
       document.querySelectorAll('dialog.lf-dialog[open]').forEach(d => d.close());
-      let facing = 'environment', stream = null, fr = 'none';
-      const v = h(`<div class="lfc-cam"><video playsinline muted autoplay></video><canvas class="lfc-cam-fr"></canvas>
-        <button class="lfc-cam-x" aria-label="關閉">✕</button>
-        <div class="lfc-cam-frs">${FRAMES.map(f => `<button data-fr="${f[0]}" class="${f[0] === 'none' ? 'on' : ''}">${f[1]}</button>`).join('')}</div>
-        <div class="lfc-cam-bar"><button class="lfc-cam-pic" aria-label="從相簿選">🖼️</button><button class="lfc-cam-shot" aria-label="拍照"></button><button class="lfc-cam-flip" aria-label="切換鏡頭">🔄</button></div></div>`);
-      document.body.append(v);
-      const video = v.querySelector('video'), cv = v.querySelector('.lfc-cam-fr');
+      const wide = wideQ.matches;
+      let facing = 'environment', stream = null, fr = 'none', timer = 0, torch = false, shot = null, busy = false;
+      const I = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+      const v = h(`<div class="lfc-cam${wide ? ' wide' : ''}"><div class="lfc-cam-box">
+        <div class="lfc-cam-view"><video playsinline muted autoplay></video><canvas class="lfc-cam-fr"></canvas><img class="lfc-cam-shotimg" alt="" hidden><b class="lfc-cam-count" hidden></b></div>
+        <button class="lfc-cam-x" data-a="x" aria-label="關閉">${I('<path d="M6 6l12 12M18 6L6 18"/>', 26)}</button>
+        <div class="lfc-cam-side">
+          <button data-a="flip" aria-label="切換鏡頭">${I('<path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/>')}</button>
+          <button data-a="torch" aria-label="閃光燈" hidden>${I('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>')}</button>
+          <button data-a="timer" aria-label="倒數計時">${I('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>')}<small hidden></small></button>
+          <button data-a="frames" aria-label="相框">${I('<circle cx="12" cy="8.5" r="4.5"/><circle cx="8.3" cy="15" r="4.5"/><circle cx="15.7" cy="15" r="4.5"/>')}</button>
+        </div>
+        <div class="lfc-cam-panel">
+          <div class="lfc-cam-frs" hidden>${FRAMES.map(f => `<button data-fr="${f[0]}" class="${f[0] === 'none' ? 'on' : ''}"><span class="lfc-cam-th" data-th="${f[0]}">${f[0] === 'none' ? '🚫' : f[0] === 'polaroid' ? '🖼️' : ''}</span>${f[1]}</button>`).join('')}</div>
+          <div class="lfc-cam-bar"><span></span><button class="lfc-cam-shot" data-a="shot" aria-label="拍照"></button>
+            <button class="lfc-cam-pic" data-a="pic" aria-label="從相簿選">${I('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>')}</button></div>
+          <div class="lfc-cam-after" hidden><button data-a="retake">重拍</button><button data-a="send" class="go">傳送</button></div>
+        </div></div></div>`);
+      (wide ? document.body : box).append(v);
+      // 相框縮圖：角色的臉
+      v.querySelectorAll('[data-th]').forEach(t => { const a = frameArt(t.dataset.th); if (a) { t.style.background = a[0]; t.innerHTML = `<img src="${a[1][0]}" alt="">`; } });
+      const q = s => v.querySelector(s), video = q('video'), cv = q('.lfc-cam-fr'), view = q('.lfc-cam-view');
       const stop = () => { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; };
       const close = () => { stop(); v.remove(); removeEventListener('resize', paint); };
-      function paint() { // 預覽上的相框：對齊影片實際顯示的範圍
+      let pid = 0;
+      async function paint() { // 預覽上的相框：對齊影片實際顯示的範圍
         const vw = video.videoWidth, vh = video.videoHeight; if (!vw) return;
-        const R = v.getBoundingClientRect(), sc = Math.min(R.width / vw, R.height / vh), w = vw * sc, hh = vh * sc;
-        Object.assign(cv.style, { width: w + 'px', height: hh + 'px', left: (R.width - w) / 2 + 'px', top: (R.height - hh) / 2 + 'px' });
-        cv.width = w * devicePixelRatio; cv.height = hh * devicePixelRatio; const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); drawFrame(g, cv.width, cv.height, fr);
+        const R = view.getBoundingClientRect(), sc = Math.max(R.width / vw, R.height / vh), w = vw * sc, hh = vh * sc;
+        const W = Math.min(w, R.width), H = Math.min(hh, R.height); // object-fit:cover：看得到的範圍
+        Object.assign(cv.style, { width: W + 'px', height: H + 'px', left: (R.width - W) / 2 + 'px', top: (R.height - H) / 2 + 'px' });
+        const id = ++pid; cv.width = W * devicePixelRatio; cv.height = H * devicePixelRatio; const g = cv.getContext('2d');
+        const c2 = document.createElement('canvas'); c2.width = cv.width; c2.height = cv.height; await drawFrame(c2.getContext('2d'), c2.width, c2.height, fr);
+        if (id === pid) { g.clearRect(0, 0, cv.width, cv.height); g.drawImage(c2, 0, 0); }
       }
       async function start() {
-        stop();
+        stop(); torch = false; q('[data-a="torch"]').classList.remove('on');
         try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false }); }
-        catch (e) { close(); if (e && e.name === 'NotAllowedError') toast('沒有相機權限，改用相簿選照片'); $('lfcFileCam').click(); return; }
+        catch (e) { close(); toast(e && e.name === 'NotAllowedError' ? '沒有相機權限，改用相簿選照片' : '打不開相機，改用相簿選照片'); $('lfcFilePic').click(); return; }
         video.srcObject = stream; video.classList.toggle('mirror', facing === 'user');
+        const tr = stream.getVideoTracks()[0], caps = tr && tr.getCapabilities ? tr.getCapabilities() : {};
+        q('[data-a="torch"]').hidden = !caps.torch;
         video.onloadedmetadata = () => { video.play(); paint(); };
       }
+      function capture() { // 拍下看得到的範圍（和預覽一樣），連相框一起
+        const vw = video.videoWidth, vh = video.videoHeight, R = view.getBoundingClientRect(); if (!vw) return;
+        const sc = Math.max(R.width / vw, R.height / vh), sw = Math.min(vw, R.width / sc), sh = Math.min(vh, R.height / sc);
+        const k = Math.min(1, 1600 / Math.max(sw, sh)), c = document.createElement('canvas'); c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+        const g = c.getContext('2d'); if (facing === 'user') { g.translate(c.width, 0); g.scale(-1, 1); }
+        g.drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, c.width, c.height); g.setTransform(1, 0, 0, 1, 0, 0);
+        drawFrame(g, c.width, c.height, fr).then(() => c.toBlob(bl => {
+          if (!bl) return; shot = bl; v.classList.add('flash'); setTimeout(() => v.classList.remove('flash'), 300);
+          const im = q('.lfc-cam-shotimg'); if (im.src) URL.revokeObjectURL(im.src); im.src = URL.createObjectURL(bl); im.hidden = false;
+          v.classList.add('taken'); q('.lfc-cam-after').hidden = false; q('.lfc-cam-bar').hidden = true; q('.lfc-cam-frs').hidden = true;
+        }, 'image/jpeg', .9));
+      }
+      function retake() { shot = null; q('.lfc-cam-shotimg').hidden = true; v.classList.remove('taken'); q('.lfc-cam-after').hidden = true; q('.lfc-cam-bar').hidden = false; }
       addEventListener('resize', paint);
-      v.addEventListener('click', e => {
+      if (wide) v.addEventListener('click', e => { if (e.target === v) close(); });
+      v.addEventListener('click', async e => {
         const b = e.target.closest('button'); if (!b) return;
-        if (b.classList.contains('lfc-cam-x')) return close();
-        if (b.classList.contains('lfc-cam-pic')) { close(); return $('lfcFilePic').click(); }
-        if (b.classList.contains('lfc-cam-flip')) { facing = facing === 'user' ? 'environment' : 'user'; return start(); }
+        const a = b.dataset.a;
         if (b.dataset.fr) { fr = b.dataset.fr; v.querySelectorAll('[data-fr]').forEach(x => x.classList.toggle('on', x === b)); return paint(); }
-        if (b.classList.contains('lfc-cam-shot')) {
-          const vw = video.videoWidth, vh = video.videoHeight; if (!vw) return;
-          const k = Math.min(1, 1600 / Math.max(vw, vh)), c = document.createElement('canvas'); c.width = Math.round(vw * k); c.height = Math.round(vh * k);
-          const g = c.getContext('2d'); if (facing === 'user') { g.translate(c.width, 0); g.scale(-1, 1); }
-          g.drawImage(video, 0, 0, c.width, c.height); g.setTransform(1, 0, 0, 1, 0, 0); drawFrame(g, c.width, c.height, fr);
-          v.classList.add('flash'); c.toBlob(bl => { close(); if (bl) sendFiles([new File([bl], 'photo.jpg', { type: 'image/jpeg' })]); }, 'image/jpeg', .9);
+        if (a === 'x') return close();
+        if (a === 'pic') { close(); return $('lfcFilePic').click(); }
+        if (a === 'flip') { facing = facing === 'user' ? 'environment' : 'user'; return start(); }
+        if (a === 'frames') { const f = q('.lfc-cam-frs'); f.hidden = !f.hidden; b.classList.toggle('on', !f.hidden); return; }
+        if (a === 'timer') { timer = timer === 0 ? 3 : timer === 3 ? 10 : 0; const s = b.querySelector('small'); s.hidden = !timer; s.textContent = timer + 's'; b.classList.toggle('on', !!timer); return; }
+        if (a === 'torch') { const tr = stream && stream.getVideoTracks()[0]; if (!tr) return; torch = !torch; try { await tr.applyConstraints({ advanced: [{ torch }] }); } catch (_) { torch = false; } b.classList.toggle('on', torch); return; }
+        if (a === 'retake') return retake();
+        if (a === 'send') { if (!shot) return; const f = new File([shot], 'photo.jpg', { type: 'image/jpeg' }); close(); return sendFiles([f]); }
+        if (a === 'shot') {
+          if (busy) return; busy = true;
+          const cnt = q('.lfc-cam-count');
+          for (let n = timer; n > 0; n--) { cnt.hidden = false; cnt.textContent = n; await new Promise(r => setTimeout(r, 1000)); if (!v.isConnected) return; }
+          cnt.hidden = true; busy = false; capture();
         }
       });
       start();
