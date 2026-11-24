@@ -418,10 +418,12 @@
       if (closeOverlay) closeOverlay(false);
       document.querySelectorAll('dialog.lf-dialog[open]').forEach(d => d.close());
       const wide = wideQ.matches;
-      let facing = 'environment', stream = null, fr = 'none', timer = 0, torch = false, shot = null, busy = false;
+      // mode：live＝我們的相機；native＝用手機相機拍完回來加相框
+      let facing = 'environment', stream = null, track = null, caps = {}, fr = 'none', timer = 0, torch = false, shot = null, busy = false;
+      let mode = 'live', baseImg = null, z = 1, zMin = 1, zMax = 5, hwZoom = false;
       const I = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
       const v = h(`<div class="lfc-cam${wide ? ' wide' : ''}"><div class="lfc-cam-box">
-        <div class="lfc-cam-view"><video playsinline muted autoplay></video><canvas class="lfc-cam-fr"></canvas><img class="lfc-cam-shotimg" alt="" hidden><b class="lfc-cam-count" hidden></b></div>
+        <div class="lfc-cam-view"><video playsinline muted autoplay></video><img class="lfc-cam-base" alt="" hidden><canvas class="lfc-cam-fr"></canvas><img class="lfc-cam-shotimg" alt="" hidden><b class="lfc-cam-count" hidden></b><i class="lfc-cam-focus" hidden></i></div>
         <button class="lfc-cam-x" data-a="x" aria-label="關閉">${I('<path d="M6 6l12 12M18 6L6 18"/>', 26)}</button>
         <div class="lfc-cam-side">
           <button data-a="flip" aria-label="切換鏡頭">${I('<path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/>')}</button>
@@ -429,67 +431,133 @@
           <button data-a="timer" aria-label="倒數計時">${I('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>')}<small hidden></small></button>
           <button data-a="frames" aria-label="相框">${I('<circle cx="12" cy="8.5" r="4.5"/><circle cx="8.3" cy="15" r="4.5"/><circle cx="15.7" cy="15" r="4.5"/>')}</button>
         </div>
+        <div class="lfc-cam-exp" hidden>☀<input type="range" aria-label="亮度"></div>
         <div class="lfc-cam-panel">
+          <div class="lfc-cam-zoom"></div>
           <div class="lfc-cam-frs" hidden>${FRAMES.map(f => `<button data-fr="${f[0]}" class="${f[0] === 'none' ? 'on' : ''}"><span class="lfc-cam-th" data-th="${f[0]}">${f[0] === 'none' ? '🚫' : f[0] === 'polaroid' ? '🖼️' : ''}</span>${f[1]}</button>`).join('')}</div>
-          <div class="lfc-cam-bar"><button class="lfc-cam-shot" data-a="shot" aria-label="拍照"></button></div>
+          <div class="lfc-cam-bar"><button class="lfc-cam-native" data-a="native" aria-label="用手機相機拍">${I('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', 22)}<span>手機相機</span></button>
+            <button class="lfc-cam-shot" data-a="shot" aria-label="拍照"></button><span></span></div>
           <div class="lfc-cam-after" hidden><button data-a="retake">重拍</button><button data-a="send" class="go">傳送</button></div>
-        </div></div></div>`);
+        </div>
+        <input type="file" accept="image/*" capture="environment" hidden data-native></div></div>`);
       document.body.append(v);
-      // 相框縮圖：角色的臉
       v.querySelectorAll('[data-th]').forEach(t => { const a = frameArt(t.dataset.th); if (a) { t.style.background = a[0]; t.innerHTML = `<img src="${a[1][0]}" alt="">`; } });
-      const q = s => v.querySelector(s), video = q('video'), cv = q('.lfc-cam-fr'), view = q('.lfc-cam-view');
-      const stop = () => { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; };
-      const close = () => { stop(); v.remove(); removeEventListener('resize', paint); };
-      let pid = 0;
-      async function paint() { // 預覽上的相框：對齊影片實際顯示的範圍
-        const vw = video.videoWidth, vh = video.videoHeight; if (!vw) return;
-        const R = view.getBoundingClientRect(), sc = Math.max(R.width / vw, R.height / vh), w = vw * sc, hh = vh * sc;
-        const W = Math.min(w, R.width), H = Math.min(hh, R.height); // object-fit:cover：看得到的範圍
-        Object.assign(cv.style, { width: W + 'px', height: H + 'px', left: (R.width - W) / 2 + 'px', top: (R.height - H) / 2 + 'px' });
-        const id = ++pid; cv.width = W * devicePixelRatio; cv.height = H * devicePixelRatio; const g = cv.getContext('2d');
-        const c2 = document.createElement('canvas'); c2.width = cv.width; c2.height = cv.height; await drawFrame(c2.getContext('2d'), c2.width, c2.height, fr);
-        if (id === pid) { g.clearRect(0, 0, cv.width, cv.height); g.drawImage(c2, 0, 0); }
+      const q = s => v.querySelector(s), video = q('video'), cv = q('.lfc-cam-fr'), view = q('.lfc-cam-view'), baseEl = q('.lfc-cam-base');
+      const stop = () => { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; track = null; };
+      const close = () => { stop(); v.remove(); removeEventListener('resize', paint); if (baseEl.src) URL.revokeObjectURL(baseEl.src); };
+      const setTrack = c => { if (!track) return Promise.resolve(); return track.applyConstraints({ advanced: [c] }).catch(() => {}); };
+      // 畫面上實際看得到的範圍：live 是 cover（裁切填滿），native 是 contain（整張）
+      function shown() {
+        const R = view.getBoundingClientRect(), live = mode === 'live';
+        const sw = live ? video.videoWidth : baseImg.naturalWidth, sh = live ? video.videoHeight : baseImg.naturalHeight; if (!sw) return null;
+        const sc = live ? Math.max(R.width / sw, R.height / sh) : Math.min(R.width / sw, R.height / sh);
+        const W = Math.min(sw * sc, R.width), H = Math.min(sh * sc, R.height);
+        return { R, W, H, x: (R.width - W) / 2, y: (R.height - H) / 2 };
       }
+      let pid = 0;
+      async function paint() {
+        const s = shown(); if (!s) return;
+        Object.assign(cv.style, { width: s.W + 'px', height: s.H + 'px', left: s.x + 'px', top: s.y + 'px' });
+        const id = ++pid, c2 = document.createElement('canvas'); c2.width = Math.round(s.W * devicePixelRatio); c2.height = Math.round(s.H * devicePixelRatio);
+        await drawFrame(c2.getContext('2d'), c2.width, c2.height, fr);
+        if (id !== pid) return; cv.width = c2.width; cv.height = c2.height; cv.getContext('2d').drawImage(c2, 0, 0);
+      }
+      // ---- 縮放：鏡頭有變焦就用鏡頭（畫質好），沒有就裁切放大 ----
+      function zoomUI() {
+        const box = q('.lfc-cam-zoom'), steps = [zMin < 1 ? zMin : null, 1, 2, 5].filter(x => x && x >= zMin - .01 && x <= zMax + .01);
+        const fmt = n => n < 1 ? '.' + Math.round(n * 10) : String(Math.round(n * 10) / 10);
+        const act = steps.reduce((p, x) => Math.abs(x - z) < Math.abs(p - z) ? x : p, steps[0]); // 最接近目前倍率的那顆顯示實際倍率
+        box.innerHTML = steps.map(x => `<button data-z="${x}" class="${x === act ? 'on' : ''}">${x === act ? fmt(z) + '×' : fmt(x)}</button>`).join('');
+        box.hidden = mode !== 'live' || !!shot;
+      }
+      function setZoom(nz) {
+        z = Math.min(zMax, Math.max(zMin, nz));
+        if (hwZoom) setTrack({ zoom: z }); else video.style.transform = `${facing === 'user' ? 'scaleX(-1) ' : ''}scale(${z})`;
+        zoomUI();
+      }
+      let pinch = null;
+      view.addEventListener('touchstart', e => { if (e.touches.length === 2 && mode === 'live' && !shot) pinch = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), z }; }, { passive: true });
+      view.addEventListener('touchmove', e => { if (pinch && e.touches.length === 2) { e.preventDefault(); const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); setZoom(pinch.z * d / pinch.d); } }, { passive: false });
+      view.addEventListener('touchend', e => { if (e.touches.length < 2) setTimeout(() => { pinch = null; }, 50); });
+      view.addEventListener('wheel', e => { if (mode === 'live' && !shot) { e.preventDefault(); setZoom(z * (e.deltaY < 0 ? 1.1 : 0.9)); } }, { passive: false });
+      // ---- 點一下對焦（有支援才真的對焦；都會顯示對焦框） ----
+      view.addEventListener('click', e => {
+        if (mode !== 'live' || shot || pinch) return;
+        const R = view.getBoundingClientRect(), f = q('.lfc-cam-focus');
+        f.style.left = (e.clientX - R.left) + 'px'; f.style.top = (e.clientY - R.top) + 'px'; f.hidden = false; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+        clearTimeout(f._t); f._t = setTimeout(() => { f.hidden = true; }, 1200);
+        let x = (e.clientX - R.left) / R.width, y = (e.clientY - R.top) / R.height; if (facing === 'user') x = 1 - x;
+        if (caps.pointsOfInterest || (caps.focusMode || []).includes('single-shot'))
+          setTrack({ pointsOfInterest: [{ x, y }], focusMode: (caps.focusMode || []).includes('single-shot') ? 'single-shot' : 'continuous' });
+      });
       async function start() {
-        stop(); torch = false; q('[data-a="torch"]').classList.remove('on');
+        stop(); torch = false; q('[data-a="torch"]').classList.remove('on'); mode = 'live'; baseEl.hidden = true; video.hidden = false;
         try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false }); }
         catch (e) { close(); toast(e && e.name === 'NotAllowedError' ? '沒有相機權限，改用相簿選照片' : '打不開相機，改用相簿選照片'); $('lfcFilePic').click(); return; }
-        video.srcObject = stream; video.classList.toggle('mirror', facing === 'user');
-        const tr = stream.getVideoTracks()[0], caps = tr && tr.getCapabilities ? tr.getCapabilities() : {};
+        track = stream.getVideoTracks()[0]; caps = track && track.getCapabilities ? track.getCapabilities() : {};
+        video.srcObject = stream; video.classList.toggle('mirror', facing === 'user'); video.style.transform = '';
         q('[data-a="torch"]').hidden = !caps.torch;
+        hwZoom = !!(caps.zoom && caps.zoom.max > 1); zMin = hwZoom ? caps.zoom.min : 1; zMax = hwZoom ? Math.min(caps.zoom.max, 10) : 5; z = 1;
+        if (hwZoom) setTrack({ zoom: Math.max(zMin, 1) }); zoomUI();
+        const ex = q('.lfc-cam-exp'), ec = caps.exposureCompensation; ex.hidden = !ec;
+        if (ec) { const r = ex.querySelector('input'); Object.assign(r, { min: ec.min, max: ec.max, step: ec.step || .1, value: 0 }); r.oninput = () => setTrack({ exposureMode: 'continuous', exposureCompensation: +r.value }); }
         video.onloadedmetadata = () => { video.play(); paint(); };
       }
-      function capture() { // 拍下看得到的範圍（和預覽一樣），連相框一起
-        const vw = video.videoWidth, vh = video.videoHeight, R = view.getBoundingClientRect(); if (!vw) return;
-        const sc = Math.max(R.width / vw, R.height / vh), sw = Math.min(vw, R.width / sc), sh = Math.min(vh, R.height / sc);
-        const k = Math.min(1, 1600 / Math.max(sw, sh)), c = document.createElement('canvas'); c.width = Math.round(sw * k); c.height = Math.round(sh * k);
-        const g = c.getContext('2d'); if (facing === 'user') { g.translate(c.width, 0); g.scale(-1, 1); }
-        g.drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, c.width, c.height); g.setTransform(1, 0, 0, 1, 0, 0);
-        drawFrame(g, c.width, c.height, fr).then(() => c.toBlob(bl => {
-          if (!bl) return; shot = bl; v.classList.add('flash'); setTimeout(() => v.classList.remove('flash'), 300);
-          const im = q('.lfc-cam-shotimg'); if (im.src) URL.revokeObjectURL(im.src); im.src = URL.createObjectURL(bl); im.hidden = false;
-          v.classList.add('taken'); q('.lfc-cam-after').hidden = false; q('.lfc-cam-bar').hidden = true; q('.lfc-cam-frs').hidden = true;
-        }, 'image/jpeg', .9));
+      // 組合成照片：來源照片（裁成畫面看到的範圍）＋相框
+      async function compose(src, sw, sh, crop, mirror) {
+        let cw = sw, ch = sh;
+        if (crop) { const R = view.getBoundingClientRect(), a = R.width / R.height; if (sw / sh > a) cw = sh * a; else ch = sw / a; if (!hwZoom) { cw /= z; ch /= z; } }
+        const k = Math.min(1, 2000 / Math.max(cw, ch)), c = document.createElement('canvas'); c.width = Math.round(cw * k); c.height = Math.round(ch * k);
+        const g = c.getContext('2d'); if (mirror) { g.translate(c.width, 0); g.scale(-1, 1); }
+        g.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, c.width, c.height); g.setTransform(1, 0, 0, 1, 0, 0);
+        await drawFrame(g, c.width, c.height, fr);
+        return new Promise(ok => c.toBlob(ok, 'image/jpeg', .9));
       }
-      function retake() { shot = null; q('.lfc-cam-shotimg').hidden = true; v.classList.remove('taken'); q('.lfc-cam-after').hidden = true; q('.lfc-cam-bar').hidden = false; }
+      async function capture() {
+        let bl = null;
+        try { // 高畫質：用相機的拍照模式（Android Chrome），套用手機的降噪、HDR
+          if (window.ImageCapture && track && facing !== 'user') {
+            const ph = await new ImageCapture(track).takePhoto(), bm = await createImageBitmap(ph);
+            bl = await compose(bm, bm.width, bm.height, true, false); bm.close && bm.close();
+          }
+        } catch (_) { bl = null; }
+        if (!bl) { if (!video.videoWidth) return; bl = await compose(video, video.videoWidth, video.videoHeight, true, facing === 'user'); }
+        if (!bl) return; shot = bl; v.classList.add('flash'); setTimeout(() => v.classList.remove('flash'), 300);
+        const im = q('.lfc-cam-shotimg'); if (im.src) URL.revokeObjectURL(im.src); im.src = URL.createObjectURL(bl); im.hidden = false;
+        v.classList.add('taken'); q('.lfc-cam-after').hidden = false; q('.lfc-cam-bar').hidden = true; q('.lfc-cam-frs').hidden = true; zoomUI(); q('.lfc-cam-exp').hidden = true;
+      }
+      function retake() { shot = null; q('.lfc-cam-shotimg').hidden = true; v.classList.remove('taken'); q('.lfc-cam-after').hidden = true; q('.lfc-cam-bar').hidden = false; start(); }
+      // 用手機相機拍：Samsung 相機的人像、夜拍、變焦都能用，拍完回來選相框再傳
+      q('[data-native]').onchange = e => {
+        const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+        stop(); mode = 'native'; if (baseEl.src) URL.revokeObjectURL(baseEl.src);
+        baseEl.onload = () => { baseImg = baseEl; video.hidden = true; baseEl.hidden = false; paint(); };
+        baseEl.src = URL.createObjectURL(f);
+        v.classList.add('native'); q('.lfc-cam-frs').hidden = false; q('[data-a="frames"]').classList.add('on'); q('.lfc-cam-bar').hidden = true; q('.lfc-cam-after').hidden = false; zoomUI(); q('.lfc-cam-exp').hidden = true;
+      };
       addEventListener('resize', paint);
       if (wide) v.addEventListener('click', e => { if (e.target === v) close(); });
       v.addEventListener('click', async e => {
         const b = e.target.closest('button'); if (!b) return;
         const a = b.dataset.a;
+        if (b.dataset.z) return setZoom(+b.dataset.z);
         if (b.dataset.fr) { fr = b.dataset.fr; v.querySelectorAll('[data-fr]').forEach(x => x.classList.toggle('on', x === b)); return paint(); }
         if (a === 'x') return close();
+        if (a === 'native') return q('[data-native]').click();
         if (a === 'flip') { facing = facing === 'user' ? 'environment' : 'user'; return start(); }
         if (a === 'frames') { const f = q('.lfc-cam-frs'); f.hidden = !f.hidden; b.classList.toggle('on', !f.hidden); return; }
         if (a === 'timer') { timer = timer === 0 ? 3 : timer === 3 ? 10 : 0; const s = b.querySelector('small'); s.hidden = !timer; s.textContent = timer + 's'; b.classList.toggle('on', !!timer); return; }
-        if (a === 'torch') { const tr = stream && stream.getVideoTracks()[0]; if (!tr) return; torch = !torch; try { await tr.applyConstraints({ advanced: [{ torch }] }); } catch (_) { torch = false; } b.classList.toggle('on', torch); return; }
-        if (a === 'retake') return retake();
-        if (a === 'send') { if (!shot) return; const f = new File([shot], 'photo.jpg', { type: 'image/jpeg' }); close(); return sendFiles([f]); }
+        if (a === 'torch') { if (!track) return; torch = !torch; await setTrack({ torch }); b.classList.toggle('on', torch); return; }
+        if (a === 'retake') { if (mode === 'native') v.classList.remove('native'); return retake(); }
+        if (a === 'send') {
+          if (mode === 'native' && baseImg) { const bl = await compose(baseImg, baseImg.naturalWidth, baseImg.naturalHeight, false, false); if (!bl) return; shot = bl; }
+          if (!shot) return; const f = new File([shot], 'photo.jpg', { type: 'image/jpeg' }); close(); return sendFiles([f]);
+        }
         if (a === 'shot') {
           if (busy) return; busy = true;
           const cnt = q('.lfc-cam-count');
           for (let n = timer; n > 0; n--) { cnt.hidden = false; cnt.textContent = n; await new Promise(r => setTimeout(r, 1000)); if (!v.isConnected) return; }
-          cnt.hidden = true; busy = false; capture();
+          cnt.hidden = true; await capture(); busy = false;
         }
       });
       start();
