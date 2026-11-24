@@ -380,7 +380,7 @@
     input.addEventListener('paste', e => { const fs = Array.from((e.clipboardData && e.clipboardData.items) || []).filter(i => i.kind === 'file' && /^image\//.test(i.type)).map(i => i.getAsFile()); if (fs.length) { e.preventDefault(); sendFiles(fs); } });
 
     // ---------- 相機（照 LINE 的介面）：直接拍照、前後鏡頭、閃光燈（有支援才顯示）、倒數、可愛相框、拍完預覽 ----------
-    // 手機：蓋住留言板那一塊；寬螢幕：像看照片一樣在頁面中間跳出框
+    // 手機：全螢幕；寬螢幕：像看照片一樣在頁面中間跳出框
     const FRAMES = [['none', '無'], ['polaroid', '拍立得'], ['pinky', 'Pinky'], ['blues', 'Blues'], ...AV.map(a => [a[0], a[1]])];
     const imgCache = {};
     const loadImg = src => imgCache[src] || (imgCache[src] = new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }));
@@ -395,8 +395,12 @@
       const u = Math.min(W, H) / 100;
       if (kind === 'polaroid') {
         g.fillStyle = '#fff'; const b = u * 5; g.fillRect(0, 0, W, b); g.fillRect(0, 0, b, H); g.fillRect(W - b, 0, b, H); g.fillRect(0, H - u * 18, W, u * 18);
-        g.fillStyle = '#9ca3af'; g.font = `600 ${u * 6}px "CLC Arial", Arial, "Microsoft JhengHei", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.fillText(new Date().toLocaleDateString('zh-TW'), W / 2, H - u * 9); return;
+        // 手寫字：右下角兩行「2026.11.24」「love you」，從左往右微微上揚
+        const d = new Date(), ds = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
+        g.save(); g.translate(W - u * 8, H - u * 9); g.rotate(-0.07);
+        g.fillStyle = '#6b7280'; g.textAlign = 'right'; g.textBaseline = 'middle';
+        g.font = `${u * 5.6}px "Segoe Script", "Snell Roundhand", "Bradley Hand", "Dancing Script", cursive`;
+        g.fillText(ds, 0, -u * 3.6); g.fillStyle = '#ec4899'; g.fillText('love you ♡', 0, u * 3.8); g.restore(); return;
       }
       const art = frameArt(kind); if (!art) return;
       const [col, srcs] = art, ims = await Promise.all(srcs.map(loadImg));
@@ -427,11 +431,10 @@
         </div>
         <div class="lfc-cam-panel">
           <div class="lfc-cam-frs" hidden>${FRAMES.map(f => `<button data-fr="${f[0]}" class="${f[0] === 'none' ? 'on' : ''}"><span class="lfc-cam-th" data-th="${f[0]}">${f[0] === 'none' ? '🚫' : f[0] === 'polaroid' ? '🖼️' : ''}</span>${f[1]}</button>`).join('')}</div>
-          <div class="lfc-cam-bar"><span></span><button class="lfc-cam-shot" data-a="shot" aria-label="拍照"></button>
-            <button class="lfc-cam-pic" data-a="pic" aria-label="從相簿選">${I('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>')}</button></div>
+          <div class="lfc-cam-bar"><button class="lfc-cam-shot" data-a="shot" aria-label="拍照"></button></div>
           <div class="lfc-cam-after" hidden><button data-a="retake">重拍</button><button data-a="send" class="go">傳送</button></div>
         </div></div></div>`);
-      (wide ? document.body : box).append(v);
+      document.body.append(v);
       // 相框縮圖：角色的臉
       v.querySelectorAll('[data-th]').forEach(t => { const a = frameArt(t.dataset.th); if (a) { t.style.background = a[0]; t.innerHTML = `<img src="${a[1][0]}" alt="">`; } });
       const q = s => v.querySelector(s), video = q('video'), cv = q('.lfc-cam-fr'), view = q('.lfc-cam-view');
@@ -476,7 +479,6 @@
         const a = b.dataset.a;
         if (b.dataset.fr) { fr = b.dataset.fr; v.querySelectorAll('[data-fr]').forEach(x => x.classList.toggle('on', x === b)); return paint(); }
         if (a === 'x') return close();
-        if (a === 'pic') { close(); return $('lfcFilePic').click(); }
         if (a === 'flip') { facing = facing === 'user' ? 'environment' : 'user'; return start(); }
         if (a === 'frames') { const f = q('.lfc-cam-frs'); f.hidden = !f.hidden; b.classList.toggle('on', !f.hidden); return; }
         if (a === 'timer') { timer = timer === 0 ? 3 : timer === 3 ? 10 : 0; const s = b.querySelector('small'); s.hidden = !timer; s.textContent = timer + 's'; b.classList.toggle('on', !!timer); return; }
