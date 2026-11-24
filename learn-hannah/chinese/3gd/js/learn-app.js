@@ -8,7 +8,7 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const app = $('#app');
-  const APP_VER = '20261124t';
+  const APP_VER = '20261124u';
   const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
   const MAX = 3;
   const KEY = id => 'linfamily_learn_3gd_' + id;
@@ -108,8 +108,8 @@
 
   // 手寫判斷：嚴格＝辨識第一名就是正確的字；寬鬆＝前三名裡有就算對
   // 手寫標準：1 寬鬆（辨識前三名有就對）2 標準（第一名＋字形 ≥ 55 分）3 嚴格（第一名＋字形 ≥ 70 分）
-  const hwLevel = () => { try { return +(localStorage.getItem('linfamily_learn_hwlv') || 3); } catch (e) { return 3; } };
-  const SHAPE_MIN = [0, 0, 50, 65];
+  const hwLevel = () => { try { return +(localStorage.getItem('linfamily_learn_hwlv2') || 2); } catch (e) { return 2; } };
+  const SHAPE_MIN = [0, 0, 42, 58];
   const zyLevel = () => { try { return +(localStorage.getItem('linfamily_learn_zylv') || 2); } catch (e) { return 2; } };
   // 只收課本上的繁體字：辨識給出簡體時，比字形看比較像繁體還是簡體
   const SIMP = { 髮: '发', 圍: '围', 視: '视', 籃: '篮', 誤: '误', 數: '数', 經: '经', 機: '机', 會: '会', 鏡: '镜', 齊: '齐', 響: '响', 開: '开', 說: '说', 頭: '头', 還: '还', 長: '长', 難: '难', 過: '过', 麼: '么', 們: '们', 來: '来', 這: '这', 讓: '让', 魔: '魔', 師: '师', 聲: '声', 帶: '带', 輸: '输', 顆: '颗', 準: '准', 誰: '谁', 剛: '刚', 層: '层', 幾: '几', 燃: '燃' };
@@ -129,12 +129,15 @@
     if (top !== ans) return { ok: false, why: TRAD_OF[top] ? 'simp' : lookAlike(ans).includes(top) ? 'look' : 'wrong', got: top };
     // 筆畫數：少寫、多寫或兩筆連成一筆都不算對
     const total = curL && ((curL.strokes || {})[ans] || ((curL.chars.find(x => x.c === ans)) || {}).total);
-    if (total && ink) { const n = realStrokes(ink); if (n !== total) return { ok: false, why: 'strokes', n, total }; }
+    if (total && ink) { const n = realStrokes(ink); if (Math.abs(n - total) > 1) return { ok: false, why: 'strokes', n, total }; }
+    // 重點部件：每個字一定要對的地方（例如眼的「目」中間兩橫、圍的外框要封起來）
+    const bad = ink && keyCheck(ink, ((curL && curL.keys) || {})[ans]);
+    if (bad) return { ok: false, why: 'key', msg: bad };
     // 樣子：和辨識出的其他候選字比，寫得比較像別的字（例如把「失」寫得像「生」）就不算對
     const score = ink ? LearnHW.shapeScore(ink, ans) : 100;
     if (ink) {
       const others = [...new Set([...cands.slice(1, 6), ...lookAlike(ans)])].filter(c => c && c !== ans && c.length === 1 && /[\u3400-\u9fff]/.test(c));
-      const rival = others.find(c => LearnHW.shapeScore(ink, c) >= score + 2);
+      const rival = others.find(c => LearnHW.shapeScore(ink, c) >= score + 5);
       if (rival) return { ok: false, why: 'look', got: rival };
     }
     return score >= SHAPE_MIN[lv] ? { ok: true, score } : { ok: false, why: 'shape', score };
@@ -144,7 +147,43 @@
     數: '樓屢', 垃: '拉啦', 圾: '級及吸', 桶: '捅通痛', 剪: '前煎', 刀: '力刁', 曾: '層增會', 經: '輕徑', 機: '幾磯譏', 會: '曾含', 鏡: '境竟',
     子: '了孑', 整: '正', 齊: '濟擠齋', 果: '菓裸課', 然: '燃燒', 魔: '麼磨摩', 法: '去怯', 理: '裡里埋', 髮: '發廢', 店: '點占站', 失: '矢夫先', 誤: '悟娛務' };
   const lookAlike = ans => [...(LOOK[ans] || ''), ...(((curL && curL.chars.find(c => c.c === ans)) || {}).look || [])];
+  // 重點部件檢查：位置都用這個字自己的範圍換算成 0～1
+  function keyCheck(ink, rules) {
+    if (!rules || !rules.length) return '';
+    const st = ink.filter(s => s[0].length > 2 || Math.max(...s[0]) - Math.min(...s[0]) + Math.max(...s[1]) - Math.min(...s[1]) > 4);
+    const xs = st.flatMap(s => s[0]), ys = st.flatMap(s => s[1]);
+    const X0 = Math.min(...xs), Y0 = Math.min(...ys), W = Math.max(Math.max(...xs) - X0, 1), H = Math.max(Math.max(...ys) - Y0, 1);
+    const nx = x => (x - X0) / W, ny = y => (y - Y0) / H;
+    for (const r of rules) {
+      if (r.t === 'region') {
+        const n = st.filter(s => {
+          const cx = nx((Math.min(...s[0]) + Math.max(...s[0])) / 2), cy = ny((Math.min(...s[1]) + Math.max(...s[1])) / 2);
+          return (!r.x || (cx >= r.x[0] && cx <= r.x[1])) && (!r.y || (cy >= r.y[0] && cy <= r.y[1]));
+        }).length;
+        if (n !== r.n) return r.msg;
+      } else if (r.t === 'edges') {
+        // 只看指定範圍內的點，檢查上下左右邊有沒有夠長的線
+        const inX = p => !r.x || (p[0] >= r.x[0] - .02 && p[0] <= r.x[1] + .02);
+        const strokes = st.map(s => s[0].map((x, k) => [nx(x), ny(s[1][k])]).filter(inX)).filter(a => a.length);
+        const pts = strokes.flat();
+        if (!pts.length) return r.msg;
+        const px0 = Math.min(...pts.map(p => p[0])), px1 = Math.max(...pts.map(p => p[0])), py0 = Math.min(...pts.map(p => p[1])), py1 = Math.max(...pts.map(p => p[1]));
+        const pw = px1 - px0, ph = py1 - py0, band = .16;
+        // 同一筆在邊上的長度（不是好幾筆的端點湊起來）
+        const span = (sel, axis) => Math.max(0, ...strokes.map(a => { const v = a.filter(sel).map(p => p[axis]); return v.length ? Math.max(...v) - Math.min(...v) : 0; }));
+        const has = {
+          top: span(p => p[1] <= py0 + ph * band, 0) >= pw * .55,
+          bottom: span(p => p[1] >= py1 - ph * band, 0) >= pw * .55,
+          left: span(p => p[0] <= px0 + pw * band, 1) >= ph * .55,
+          right: span(p => p[0] >= px1 - pw * band, 1) >= ph * .55
+        };
+        if (r.sides.some(sd => !has[sd])) return r.msg;
+      }
+    }
+    return '';
+  }
   function judgeMsg(j, k, L, got, ans) {
+    if (j.why === 'key') return `${k != null ? `第 ${k + 1} 個字` : '這個字'}的重點：${esc(j.msg)}。`;
     if (j.why === 'look') {
       const r1 = (L.rads || {})[ans], m = RADM[r1] || [r1, ''];
       const look = lookAlike(ans).includes(j.got);
@@ -194,7 +233,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124t').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124u').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -304,7 +343,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124t').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124u').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -357,7 +396,7 @@
           ${segBtns(L, u.id, s.done ? 0 : s.lv)}</div>`; }).join('')}</div>
         <p class="set-h">✍️ 國字手寫標準</p>
         <div class="seg" id="hwlv">${[[1, '寬鬆'], [2, '標準'], [3, '嚴格']].map(([v, t]) => `<button data-s="${v}" class="${hwLevel() === v ? 'on' : ''}">${t}</button>`).join('')}</div>
-        <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">寬鬆：認得出是這個字就對。標準：辨識第一名要是這個字、筆畫數要對，字形 50 分以上。嚴格（預設）：字形 65 分以上，像考試的標準。注音一律只看符號和聲調方向。</p>
+        <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">寬鬆：認得出是這個字就對。標準（預設）：辨識第一名要是這個字、筆畫數差 1 以內、重點部件要對、字形 42 分以上。嚴格：字形 58 分以上。注音一律只看符號和聲調方向。</p>
         <p class="set-h">🔤 注音判定</p>
         <div class="seg" id="zylv">${[[2, '一般'], [1, '寬鬆']].map(([v, t]) => `<button data-s="${v}" class="${zyLevel() === v ? 'on' : ''}">${t}</button>`).join('')}</div>
         <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">一般：整條注音像正確答案、聲調方向大致對。寬鬆：只要符號樣子差不多、有寫聲調就算對。</p>
@@ -367,7 +406,7 @@
         <p class="set-h">重設</p>
         <div class="row"><button class="btn ghost" id="rsAll">清除這一課所有紀錄</button></div>`;
       root.querySelectorAll('#zylv button').forEach(b => b.onclick = () => { try { localStorage.setItem('linfamily_learn_zylv', b.dataset.s); } catch (e) {} draw(root); });
-      root.querySelectorAll('#hwlv button').forEach(b => b.onclick = () => { try { localStorage.setItem('linfamily_learn_hwlv', b.dataset.s); } catch (e) {} draw(root); });
+      root.querySelectorAll('#hwlv button').forEach(b => b.onclick = () => { try { localStorage.setItem('linfamily_learn_hwlv2', b.dataset.s); } catch (e) {} draw(root); });
       const tlog = root.querySelector('#tlog');
       const log = m => { tlog.insertAdjacentHTML('beforeend', `<div>${esc(m)}</div>`); };
       root.querySelector('#t1').onclick = () => { tlog.innerHTML = ''; TTS.test('device', log); };
