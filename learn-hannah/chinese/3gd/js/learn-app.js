@@ -8,7 +8,7 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const app = $('#app');
-  const APP_VER = '20261124w';
+  const APP_VER = '20261124x';
   const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
   const MAX = 3;
   const KEY = id => 'linfamily_learn_3gd_' + id;
@@ -125,19 +125,24 @@
       if (top === simp) return { ok: false, why: 'simp', got: simp };
     }
     if (lv === 1) return { ok: top === ans || cands.slice(0, 3).includes(ans), why: 'wrong' };
-    // 標準、嚴格：辨識第一名一定要是課本的字（例如寫成「藍」就不能算「籃」）
-    if (top !== ans) return { ok: false, why: TRAD_OF[top] ? 'simp' : lookAlike(ans).includes(top) ? 'look' : 'wrong', got: top };
-    // 筆畫數：少寫、多寫或兩筆連成一筆都不算對
     const total = curL && ((curL.strokes || {})[ans] || ((curL.chars.find(x => x.c === ans)) || {}).total);
+    const keys = ((curL && curL.keys) || {})[ans];
+    // 標準、嚴格：辨識第一名要是課本的字（寫成「藍」不能算「籃」）
+    // 例外：第一名是長得像的字（例如歪一點的「子」被認成「了」），但課本的字也在前三名，而且筆畫數完全對、重點部件也對，就算對
+    if (top !== ans) {
+      const rescue = ink && total && cands.slice(0, 3).includes(ans) && lookAlike(ans).includes(top) && realStrokes(ink) === total && !keyCheck(ink, keys);
+      if (!rescue) return { ok: false, why: TRAD_OF[top] ? 'simp' : lookAlike(ans).includes(top) ? 'look' : 'wrong', got: top };
+    }
+    // 筆畫數：少寫、多寫或兩筆連成一筆都不算對
     if (total && ink) { const n = realStrokes(ink); if (Math.abs(n - total) > 1) return { ok: false, why: 'strokes', n, total }; }
     // 重點部件：每個字一定要對的地方（例如眼的「目」中間兩橫、圍的外框要封起來）
-    const bad = ink && keyCheck(ink, ((curL && curL.keys) || {})[ans]);
+    const bad = ink && keyCheck(ink, keys);
     if (bad) return { ok: false, why: 'key', msg: bad };
     // 樣子：和辨識出的其他候選字比，寫得比較像別的字（例如把「失」寫得像「生」）就不算對
     const score = ink ? LearnHW.shapeScore(ink, ans) : 100;
     if (ink) {
-      const others = [...new Set([...cands.slice(1, 6), ...lookAlike(ans)])].filter(c => c && c !== ans && c.length === 1 && /[\u3400-\u9fff]/.test(c));
-      const rival = others.find(c => LearnHW.shapeScore(ink, c) >= score + 5);
+      // 只跟易混淆字比，而且要明顯比較像才算錯
+      const rival = lookAlike(ans).filter(c => c !== ans).find(c => LearnHW.shapeScore(ink, c) >= score + 8);
       if (rival) return { ok: false, why: 'look', got: rival };
     }
     return score >= SHAPE_MIN[lv] ? { ok: true, score } : { ok: false, why: 'shape', score };
@@ -160,7 +165,7 @@
           const cx = nx((Math.min(...s[0]) + Math.max(...s[0])) / 2), cy = ny((Math.min(...s[1]) + Math.max(...s[1])) / 2);
           return (!r.x || (cx >= r.x[0] && cx <= r.x[1])) && (!r.y || (cy >= r.y[0] && cy <= r.y[1]));
         }).length;
-        if (n !== r.n) return r.msg;
+        if (Math.abs(n - r.n) > (r.tol || 0)) return r.msg;
       } else if (r.t === 'edges') {
         // 只看指定範圍內的點，檢查上下左右邊有沒有夠長的線
         const inX = p => !r.x || (p[0] >= r.x[0] - .02 && p[0] <= r.x[1] + .02);
@@ -233,7 +238,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124w').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124x').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -347,7 +352,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124w').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124x').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
