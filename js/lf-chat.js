@@ -3,7 +3,7 @@
      lf_chat_messages/{id}  { uid, text, img, stk, replyTo:{id,name,text}, mentions:[uid], reacts:{uid:emoji}, unsent, ts }
      lf_chat_profiles/{uid} { name, av, email, at }（本人寫）   lf_chat_reads/{uid} { at }（本人寫，算已讀）
      lf_chat_phones/{uid}   { phone }（Superuser 寫）           lf_chat_meta/pin { id, name, text }（公告）
-   用法：const chat = lfChatInit(rootEl, { db, toast, tabDot }); chat.auth(user, role); chat.show(true/false) */
+   用法：const chat = lfChatInit(rootEl, { db, tabDot }); chat.auth(user, role); chat.show(true/false) */
 (function () {
   const AV = [['cat', '小貓', '#f8c8d8', '#e58aa8'], ['bear', '小熊', '#e8c9a0', '#b98a5a'], ['rab', '兔兔', '#eef0f6', '#f2a7c0'], ['dog', '小狗', '#f3dcb5', '#a8774a'],
     ['pen', '企鵝', '#cfe3f7', '#2f3a4a'], ['chk', '小雞', '#fde9a0', '#f0a640'], ['frg', '青蛙', '#c9eab0', '#5a9a3a'], ['pnd', '熊貓', '#f4f4f4', '#333333']];
@@ -34,15 +34,23 @@
     }
     return `<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><rect width="64" height="64" fill="${b}"/>${e}${feat}</svg>`;
   }
-  const STICKER_PACKS = ['Pinky', 'Blues'];
-  const STICKER_LABELS = ['早安', 'Good night', '謝啦！', 'OK!', '辛苦了', 'You got this!'];
-  const STICKERS = new Map(STICKER_PACKS.flatMap(pack =>
-    STICKER_LABELS.map((label, index) => [pack.toLowerCase() + '-' + (index + 1), pack + ' · ' + label])));
+  const PINKY_LABELS = ['早安', 'Good night', '謝啦！', 'OK!', '辛苦了', 'You got this!'];
+  const BLUES_LABELS = ['Good Morning!', '等等我！', 'High Five!', '抱一下', 'On my way!', '掰掰！'];
+  const STICKER_PACKS = {
+    Pinky: PINKY_LABELS.map((_, i) => 'pinky-' + (i + 1)),
+    Blues: BLUES_LABELS.map((_, i) => 'blues-new-' + (i + 1))
+  };
+  const STICKERS = new Map([
+    ...STICKER_PACKS.Pinky.map((id, i) => [id, 'Pinky · ' + PINKY_LABELS[i]]),
+    ...STICKER_PACKS.Blues.map((id, i) => [id, 'Blues · ' + BLUES_LABELS[i]]),
+    // Keep the intended greeting on Blues stickers sent before the redesign.
+    ...PINKY_LABELS.map((label, i) => ['blues-' + (i + 1), 'Blues · ' + label])
+  ]);
   const LEGACY_STICKERS = AV.flatMap(([key, label]) =>
     MOODS.map(mood => ({ id: key + ':' + mood, label })));
   const RECENT_STICKERS_KEY = 'lf-chat-recent-stickers';
   function sticker(id) {
-    if (STICKERS.has(id)) return `<img src="assets/chat-stickers/${id}.webp" alt="${STICKERS.get(id)}" draggable="false">`;
+    if (STICKERS.has(id)) return `<img src="assets/chat-stickers/${id}.webp?v=2" alt="${STICKERS.get(id)}" draggable="false">`;
     const [key, mood] = id.split(':');
     return face(key, mood, true);
   }
@@ -77,7 +85,7 @@
   }
 
   window.lfChatInit = function (root, opt) {
-    const db = opt.db, toast = opt.toast || (m => alert(m)), FV = firebase.firestore.FieldValue;
+    const db = opt.db, FV = firebase.firestore.FieldValue;
     let me = null, role = '', unsubs = [], visible = false, needPick = false, denied = false;
     let msgs = [], members = {}, phones = {}, reads = {}, pin = null, myRead = 0, firstOpen = true, reply = null, menuOpen = false;
     const hidden = new Set(JSON.parse(localStorage.getItem('linfamily_chat_hidden') || '[]'));
@@ -115,6 +123,15 @@
 
     // ---------- 版面：手機全寬貼底；寬螢幕（≥640，跟桌面引擎同一個分界）是浮在 Family 分頁上的卡片，可左右移動、調寬窄 ----------
     const box = root.firstElementChild, wideQ = matchMedia('(min-width:640px)');
+    const notice = h('<div class="lfc-notice" role="status" aria-live="polite"></div>');
+    box.append(notice);
+    let noticeTimer, closeOverlay;
+    function toast(message) {
+      notice.textContent = message;
+      clearTimeout(noticeTimer);
+      noticeTimer = setTimeout(() => { notice.textContent = ''; }, 3500);
+    }
+
     // 留言板位置：先用這台裝置上次的位置（重新整理不會先跳到預設位置再移過去），雲端讀到再校正
     const LAY_KEY = 'lf_chat_layout';
     let lay = { x: null, w: 420 }, layLoaded = false, collapsed = false;
@@ -330,12 +347,12 @@
         ${['貼圖', 'Emoji'].map(tab => `<button type="button" data-sticker-tab="${tab}" aria-pressed="${tab === stickerTab}">${tab}</button>`).join('')}
         <button type="button" class="lfc-stk-close" aria-label="關閉">×</button>
       </div>
-      ${isEmoji ? '' : `<div class="lfc-stk-packs">${['最近使用', ...STICKER_PACKS].map(pack =>
+      ${isEmoji ? '' : `<div class="lfc-stk-packs">${['最近使用', ...Object.keys(STICKER_PACKS)].map(pack =>
         `<button type="button" data-sticker-pack="${pack}" aria-pressed="${pack === stickerPack}">${pack}</button>`).join('')}</div>`}
       <div class="lfc-stk-grid${isEmoji ? ' is-emoji' : ''}"></div>`;
       const grid = stickerBox.querySelector('.lfc-stk-grid');
       const ids = stickerPack === '最近使用' ? recentStickers :
-        [...STICKERS.keys()].filter(id => id.startsWith(stickerPack.toLowerCase() + '-'));
+        STICKER_PACKS[stickerPack];
       const items = isEmoji ? LEGACY_STICKERS : ids.map(id => ({ id, label: STICKERS.get(id) }));
       if (!items.length) grid.append(h('<p>還沒有最近使用的貼圖，選 Pinky 或 Blues 開始。</p>'));
       for (const { id, label } of items) {
@@ -418,7 +435,9 @@
     list.addEventListener('touchend', () => { clearTimeout(pressT); pressT = null; });
     list.addEventListener('contextmenu', e => { const b = e.target.closest('.lfc-bub'); if (!b) return; e.preventDefault(); if (!document.querySelector('.lfc-pop')) actions(b.closest('.lfc-row').dataset.id); });
     $('lfcPin').addEventListener('click', e => { if (e.target.id !== 'lfcUnpin' && pin) go(pin.id); });
-    $('lfcUnpin').onclick = () => { if (confirm('取消這則公告？')) db.collection('lf_chat_meta').doc('pin').set({ id: '' }); };
+    $('lfcUnpin').onclick = () => confirmInChat('取消這則公告？', '取消公告', () => {
+      db.collection('lf_chat_meta').doc('pin').set({ id: '' }).catch(() => toast('無法取消公告'));
+    });
     // 搜尋聊天內容（用分頁列的放大鏡）：打字時標出符合的訊息；Enter 跳到最新一則，再按 Enter 或 ˄ 往舊的找，˅ 往新的
     let findQ = '', findHits = [], findI = -1;
     function findMark() {
@@ -443,11 +462,45 @@
     }
 
     // ---------- 彈出層 ----------
-    function overlay(html, sheet) {
-      const ov = h(`<div class="lfc-ov${sheet ? ' lfc-sheet' : ''}"><div class="lfc-card">${html}</div></div>`);
-      const close = () => { ov.remove(); menuOpen = false; };
+    function overlay(html) {
+      if (closeOverlay) closeOverlay(false);
+      const previousFocus = document.activeElement;
+      const ov = h(`<div class="lfc-ov"><div class="lfc-card" role="dialog" aria-modal="true" tabindex="-1">${html}</div></div>`);
+      const card = ov.firstElementChild;
+      const close = (restoreFocus = true) => {
+        if (closeOverlay !== close) return;
+        ov.remove();
+        closeOverlay = null;
+        menuOpen = false;
+        if (restoreFocus && box.contains(previousFocus)) previousFocus.focus();
+      };
+      const q = selector => ov.querySelector(selector);
       ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
-      document.body.append(ov); menuOpen = true; return { ov, close, q: s => ov.querySelector(s) };
+      ov.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.stopPropagation(); close(); }
+        if (e.key !== 'Tab') return;
+        const controls = [...card.querySelectorAll('button, input, a[href]')];
+        const first = controls[0], last = controls[controls.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === card)) {
+          e.preventDefault(); last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first?.focus();
+        }
+      });
+      box.append(ov);
+      menuOpen = true;
+      closeOverlay = close;
+      card.focus({ preventScroll: true });
+      return { ov, close, q };
+    }
+    function confirmInChat(message, action, onConfirm) {
+      const o = overlay(`<p id="lfcConfirmMessage">${esc(message)}</p><div class="lfc-confirm-buttons">
+        <button type="button" class="lfc-gbtn" data-close>取消</button>
+        <button type="button" class="lfc-pbtn" data-confirm>${esc(action)}</button>
+      </div>`);
+      o.q('[role=dialog]').setAttribute('aria-labelledby', 'lfcConfirmMessage');
+      o.q('[data-close]').focus();
+      o.q('[data-confirm]').onclick = () => { o.close(); onConfirm(); };
     }
     const MI = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
     const MENU = {
@@ -496,12 +549,16 @@
         if (k === 'copy') navigator.clipboard.writeText(m.text).then(() => toast('已複製'), () => toast('無法複製'));
         if (k === 'share') share(m);
         if (k === 'note' || k === 'album') toast(MENU[k][0] + '之後開放');
-        if (k === 'pin') db.collection('lf_chat_meta').doc('pin').set({ id, name: prof(m.uid).name, text: m.text.slice(0, 120) }).then(() => toast('已設為公告'));
-        if (k === 'unsend' && confirm('收回這則訊息？所有人都會看不到。')) {
+        if (k === 'pin') db.collection('lf_chat_meta').doc('pin').set({ id, name: prof(m.uid).name, text: m.text.slice(0, 120) }).then(() => toast('已設為公告'), () => toast('無法設為公告'));
+        if (k === 'unsend') confirmInChat('收回這則訊息？所有人都會看不到。', '收回', () => {
           ref.update({ unsent: true, text: FV.delete(), img: FV.delete(), stk: FV.delete(), replyTo: FV.delete(), mentions: FV.delete(), reacts: FV.delete() }).catch(() => toast('無法收回'));
-          if (pin && pin.id === id) db.collection('lf_chat_meta').doc('pin').set({ id: '' });
-        }
-        if (k === 'del' && confirm('刪除這則訊息？只有你自己看不到，其他人還看得到。')) { hidden.add(id); try { localStorage.setItem('linfamily_chat_hidden', JSON.stringify([...hidden].slice(-500))); } catch (_) {} render(); }
+          if (pin && pin.id === id) db.collection('lf_chat_meta').doc('pin').set({ id: '' }).catch(() => toast('無法取消公告'));
+        });
+        if (k === 'del') confirmInChat('刪除這則訊息？只有你自己看不到，其他人還看得到。', '刪除', () => {
+          hidden.add(id);
+          try { localStorage.setItem('linfamily_chat_hidden', JSON.stringify([...hidden].slice(-500))); } catch {}
+          render();
+        });
       });
     }
     function profile(uid) {
@@ -515,7 +572,7 @@
     }
     function memberList() {
       const ids = Object.keys(members).sort((a, b) => (a === me.uid ? -1 : b === me.uid ? 1 : members[a].name.localeCompare(members[b].name)));
-      const o = overlay(`<h3 style="margin:0 0 8px">成員 (${ids.length})</h3>${ids.map(uid => `<button class="lfc-mem" data-uid="${esc(uid)}"><span class="lfc-av">${face(members[uid].av)}</span>${esc(members[uid].name)}${uid === me.uid ? '（我）' : ''}</button>`).join('')}<button class="lfc-gbtn" data-close>關閉</button>`, true);
+      const o = overlay(`<h3 style="margin:0 0 8px">成員 (${ids.length})</h3>${ids.map(uid => `<button class="lfc-mem" data-uid="${esc(uid)}"><span class="lfc-av">${face(members[uid].av)}</span>${esc(members[uid].name)}${uid === me.uid ? '（我）' : ''}</button>`).join('')}<button class="lfc-gbtn" data-close>關閉</button>`);
       o.ov.addEventListener('click', e => { const b = e.target.closest('.lfc-mem'); if (b) { o.close(); profile(b.dataset.uid); } });
     }
     function avatarPicker(first) {
@@ -560,7 +617,12 @@
       search, findNext: () => findStep(1),
       show(on) {
         visible = on; dot(); document.body.classList.toggle('lf-tab-family', on);
-        if (!on) { closeStickers(); return; }
+        if (!on) {
+          closeStickers();
+          if (closeOverlay) closeOverlay(false);
+          clearTimeout(noticeTimer); notice.textContent = '';
+          return;
+        }
         firstOpen = true; myRead = me ? (reads[me.uid] || 0) : 0;
         if (collapsed) setCollapsed(false);
         fit(); render(); markRead();
