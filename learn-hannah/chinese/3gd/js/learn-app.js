@@ -8,7 +8,7 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const app = $('#app');
-  const APP_VER = '20261124v';
+  const APP_VER = '20261124w';
   const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
   const MAX = 3;
   const KEY = id => 'linfamily_learn_3gd_' + id;
@@ -233,7 +233,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124v').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124w').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -347,7 +347,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124v').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124w').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -542,12 +542,14 @@
   // ---------- 過關小動畫：Pinky 和 Blues 輪流跳出來（貼圖共用 LF 的 assets/chat-stickers）----------
   const STK = '../../../assets/chat-stickers/';
   const CHEERS = ['Good job!', 'Excellent!', '太棒了！', '好厲害！', 'Great!', '過關了！'];
-  function celebrate(big) {
+  const ENCOURAGE = ['加油哦！', '再試一次！', '快成功了！', '你可以的！', '差一點點！', 'You can do it!'];
+  // big：升級或單元完成；cheer：這一輪沒拿到星，出來加油打氣
+  function celebrate(big, cheer) {
     document.querySelectorAll('.cb-ov').forEach(x => x.remove());
     const ov = document.createElement('div'); ov.className = 'cb-ov' + (big ? ' big' : '');
-    const pk = pick(['pinky-4', 'pinky-6']), bl = pick(['blues-4', 'blues-6', 'blues-new-3']);
-    const stars = Array.from({ length: 14 }, (_, i) => `<i style="left:${Math.round(Math.random() * 92)}%;animation-delay:${(Math.random() * .9).toFixed(2)}s">${pick(['✨', '⭐', '🌟', '💖'])}</i>`).join('');
-    ov.innerHTML = `<div class="cb-stars">${stars}</div><div class="cb-text">${big ? '🏆 ' : ''}${pick(CHEERS)}</div>
+    const pk = cheer ? pick(['pinky-6', 'pinky-4']) : pick(['pinky-4', 'pinky-6']), bl = cheer ? pick(['blues-6', 'blues-new-3']) : pick(['blues-4', 'blues-6', 'blues-new-3']);
+    const stars = Array.from({ length: cheer ? 8 : 14 }, (_, i) => `<i style="left:${Math.round(Math.random() * 92)}%;animation-delay:${(Math.random() * .9).toFixed(2)}s">${pick(cheer ? ['💪', '💖', '✨'] : ['✨', '⭐', '🌟', '💖'])}</i>`).join('');
+    ov.innerHTML = `<div class="cb-stars">${stars}</div><div class="cb-text">${big ? '🏆 ' : ''}${pick(cheer ? ENCOURAGE : CHEERS)}</div>
       <img class="cb-chr cb-pinky" src="${STK}${pk}.webp" alt=""><img class="cb-chr cb-blues" src="${STK}${bl}.webp" alt="">`;
     document.body.append(ov);
     const off = () => ov.remove();
@@ -609,6 +611,7 @@
     }
     save(L, p);
     if (star) celebrate(s.done || levelUp);
+    else if (roundOver) celebrate(false, true);
     const title = r.ok ? (r.first ? '✔ 答對了！' : '✔ 找到答案了！') : '🤝 我們一起看看';
     const fb = $('#fb');
     fb.innerHTML = `<div class="fb ${r.ok ? 'ok' : 'bad'}"><b>${title}</b>
