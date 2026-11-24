@@ -8,6 +8,7 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const app = $('#app');
+  const APP_VER = '20261124s';
   const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
   const MAX = 3;
   const KEY = id => 'linfamily_learn_3gd_' + id;
@@ -79,7 +80,7 @@
     // 聲音測試：回報每一步的狀況，方便找出哪裡出問題
     async function test(kind, log) {
       stop(); const my = token;
-      log('版本 20261124k');
+      log('版本 ' + APP_VER);
       if (kind === 'device') {
         if (!ss) return log('❌ 這個瀏覽器不支援語音朗讀');
         await ready;
@@ -192,7 +193,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124r').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124s').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -302,7 +303,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124r').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124s').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -347,6 +348,7 @@
       const p = progress(L);
       const units = L.units.filter(u => u.id !== 'read');
       root.innerHTML = `<div class="row" style="margin-bottom:4px"><h3 style="margin:0">⚙ 設定｜第${L.no}課</h3><span class="spacer"></span><button class="btn" id="cx">完成</button></div>
+        <p class="muted" style="text-align:left;font-size:13px;margin:0">版本 ${APP_VER}</p>
         <p class="set-h">全部單元一起跳到</p>
         <div class="row">${[1, 2, 3].map(lv => `<button class="btn ghost" data-all="${lv}">${LVN[lv]}</button>`).join('')}</div>
         <p class="set-h">個別單元</p>
