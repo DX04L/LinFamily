@@ -8,7 +8,7 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const app = $('#app');
-  const APP_VER = '20261124s';
+  const APP_VER = '20261124t';
   const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
   const MAX = 3;
   const KEY = id => 'linfamily_learn_3gd_' + id;
@@ -110,6 +110,7 @@
   // 手寫標準：1 寬鬆（辨識前三名有就對）2 標準（第一名＋字形 ≥ 55 分）3 嚴格（第一名＋字形 ≥ 70 分）
   const hwLevel = () => { try { return +(localStorage.getItem('linfamily_learn_hwlv') || 3); } catch (e) { return 3; } };
   const SHAPE_MIN = [0, 0, 50, 65];
+  const zyLevel = () => { try { return +(localStorage.getItem('linfamily_learn_zylv') || 2); } catch (e) { return 2; } };
   // 只收課本上的繁體字：辨識給出簡體時，比字形看比較像繁體還是簡體
   const SIMP = { 髮: '发', 圍: '围', 視: '视', 籃: '篮', 誤: '误', 數: '数', 經: '经', 機: '机', 會: '会', 鏡: '镜', 齊: '齐', 響: '响', 開: '开', 說: '说', 頭: '头', 還: '还', 長: '长', 難: '难', 過: '过', 麼: '么', 們: '们', 來: '来', 這: '这', 讓: '让', 魔: '魔', 師: '师', 聲: '声', 帶: '带', 輸: '输', 顆: '颗', 準: '准', 誰: '谁', 剛: '刚', 層: '层', 幾: '几', 燃: '燃' };
   const TRAD_OF = Object.fromEntries(Object.entries(SIMP).filter(([t, s]) => t !== s).map(([t, s]) => [s, t]));
@@ -193,7 +194,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124s').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124t').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -303,7 +304,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124s').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124t').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -357,11 +358,15 @@
         <p class="set-h">✍️ 國字手寫標準</p>
         <div class="seg" id="hwlv">${[[1, '寬鬆'], [2, '標準'], [3, '嚴格']].map(([v, t]) => `<button data-s="${v}" class="${hwLevel() === v ? 'on' : ''}">${t}</button>`).join('')}</div>
         <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">寬鬆：認得出是這個字就對。標準：辨識第一名要是這個字、筆畫數要對，字形 50 分以上。嚴格（預設）：字形 65 分以上，像考試的標準。注音一律只看符號和聲調方向。</p>
+        <p class="set-h">🔤 注音判定</p>
+        <div class="seg" id="zylv">${[[2, '一般'], [1, '寬鬆']].map(([v, t]) => `<button data-s="${v}" class="${zyLevel() === v ? 'on' : ''}">${t}</button>`).join('')}</div>
+        <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">一般：整條注音像正確答案、聲調方向大致對。寬鬆：只要符號樣子差不多、有寫聲調就算對。</p>
         <p class="set-h">🔊 聲音測試</p>
         <div class="row"><button class="btn ghost" id="t1">測試手機語音</button><button class="btn ghost" id="t2">測試線上語音</button></div>
         <div id="tlog" class="tlog"></div>
         <p class="set-h">重設</p>
         <div class="row"><button class="btn ghost" id="rsAll">清除這一課所有紀錄</button></div>`;
+      root.querySelectorAll('#zylv button').forEach(b => b.onclick = () => { try { localStorage.setItem('linfamily_learn_zylv', b.dataset.s); } catch (e) {} draw(root); });
       root.querySelectorAll('#hwlv button').forEach(b => b.onclick = () => { try { localStorage.setItem('linfamily_learn_hwlv', b.dataset.s); } catch (e) {} draw(root); });
       const tlog = root.querySelector('#tlog');
       const log = m => { tlog.insertAdjacentHTML('beforeend', `<div>${esc(m)}</div>`); };
@@ -654,7 +659,7 @@
   }
   function whyZy(r, k) {
     if (!r) return `第 ${k + 1} 個字的注音還沒寫。`;
-    const seen = r.guess && r.guess !== '？' ? `（看起來像「${esc(r.guess)}」）` : '';
+    const seen = `（${r.guess && r.guess !== '？' ? `看起來像「${esc(r.guess)}」，` : ''}相似度 ${r.col || 0}）`;
     if (!r.symOk && !r.toneOk) return `第 ${k + 1} 個字的注音再聽一次${seen}。`;
     if (r.symOk && !r.toneOk) return `第 ${k + 1} 個字的注音符號對了，聲調再聽聽看（聲調寫在虛線右邊，輕聲點寫在最上面）。`;
     if (!r.symOk && r.toneOk) return `第 ${k + 1} 個字的聲調對了，注音符號再聽聽看${seen}。`;
