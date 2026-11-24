@@ -1106,7 +1106,10 @@
         const del = document.createElement('button'); del.type = 'button'; del.setAttribute('role', 'menuitem'); del.className = 'dk-danger'; del.textContent = '刪除';
         del.addEventListener('click', () => { m.remove(); deleteFromCabinet(a); });
         m.append(del); document.body.append(m);
-        const r = m.getBoundingClientRect(); m.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px'; m.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
+        const r = m.getBoundingClientRect(), c = row.getBoundingClientRect(), g = 8; // 同主畫面：選單放在這一列下方（放不下放上方），左邊切齊，不蓋住圖示
+        let top = c.bottom + g + r.height <= innerHeight - g ? c.bottom + g : c.top - g - r.height >= g ? c.top - g - r.height : y;
+        if (top < c.top) m.style.transformOrigin = 'bottom left';
+        m.style.left = Math.max(8, Math.min(c.left, innerWidth - r.width - 8)) + 'px'; m.style.top = Math.max(8, Math.min(top, innerHeight - r.height - 8)) + 'px';
         setTimeout(() => document.addEventListener('pointerdown', function off(e) { if (!m.contains(e.target)) { m.remove(); document.removeEventListener('pointerdown', off, true); } }, true));
       };
       row.addEventListener('contextmenu', e => { e.preventDefault(); open(e.clientX, e.clientY); });
