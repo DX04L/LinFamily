@@ -107,7 +107,7 @@
 
   // 手寫判斷：嚴格＝辨識第一名就是正確的字；寬鬆＝前三名裡有就算對
   // 手寫標準：1 寬鬆（辨識前三名有就對）2 標準（第一名＋字形 ≥ 55 分）3 嚴格（第一名＋字形 ≥ 70 分）
-  const hwLevel = () => { try { return +(localStorage.getItem('linfamily_learn_hwlv') || 2); } catch (e) { return 2; } };
+  const hwLevel = () => { try { return +(localStorage.getItem('linfamily_learn_hwlv') || 3); } catch (e) { return 3; } };
   const SHAPE_MIN = [0, 0, 50, 65];
   // 只收課本上的繁體字：辨識給出簡體時，比字形看比較像繁體還是簡體
   const SIMP = { 髮: '发', 圍: '围', 視: '视', 籃: '篮', 誤: '误', 數: '数', 經: '经', 機: '机', 會: '会', 鏡: '镜', 齊: '齐', 響: '响', 開: '开', 說: '说', 頭: '头', 還: '还', 長: '长', 難: '难', 過: '过', 麼: '么', 們: '们', 來: '来', 這: '这', 讓: '让', 魔: '魔', 師: '师', 聲: '声', 帶: '带', 輸: '输', 顆: '颗', 準: '准', 誰: '谁', 剛: '刚', 層: '层', 幾: '几', 燃: '燃' };
@@ -125,16 +125,16 @@
     if (lv === 1) return { ok: top === ans || cands.slice(0, 3).includes(ans), why: 'wrong' };
     // 標準、嚴格：辨識第一名一定要是課本的字（例如寫成「藍」就不能算「籃」）
     if (top !== ans) return { ok: false, why: TRAD_OF[top] ? 'simp' : lookAlike(ans).includes(top) ? 'look' : 'wrong', got: top };
-    // 第一名雖然對，但易混淆字的字形比較像時也不算對
+    // 筆畫數：少寫、多寫或兩筆連成一筆都不算對
+    const total = curL && ((curL.strokes || {})[ans] || ((curL.chars.find(x => x.c === ans)) || {}).total);
+    if (total && ink) { const n = realStrokes(ink); if (n !== total) return { ok: false, why: 'strokes', n, total }; }
+    // 樣子：和辨識出的其他候選字比，寫得比較像別的字（例如把「失」寫得像「生」）就不算對
+    const score = ink ? LearnHW.shapeScore(ink, ans) : 100;
     if (ink) {
-      const mine = LearnHW.shapeScore(ink, ans);
-      const rival = cands.slice(1, 4).filter(c => lookAlike(ans).includes(c)).find(c => LearnHW.shapeScore(ink, c) > mine + 6);
+      const others = [...new Set([...cands.slice(1, 6), ...lookAlike(ans)])].filter(c => c && c !== ans && c.length === 1 && /[\u3400-\u9fff]/.test(c));
+      const rival = others.find(c => LearnHW.shapeScore(ink, c) >= score + 2);
       if (rival) return { ok: false, why: 'look', got: rival };
     }
-    // 筆畫數（課本有標總筆畫的生字）：少寫、多寫或連在一起都不算對
-    const c = curL && curL.chars.find(x => x.c === ans);
-    if (c && ink) { const n = realStrokes(ink); if (n !== c.total) return { ok: false, why: 'strokes', n, total: c.total }; }
-    const score = ink ? LearnHW.shapeScore(ink, ans) : 100;
     return score >= SHAPE_MIN[lv] ? { ok: true, score } : { ok: false, why: 'shape', score };
   }
   // 易混淆字：生字表的形近字＋圈詞常見的寫錯字
@@ -145,7 +145,8 @@
   function judgeMsg(j, k, L, got, ans) {
     if (j.why === 'look') {
       const r1 = (L.rads || {})[ans], m = RADM[r1] || [r1, ''];
-      return `${k != null ? `第 ${k + 1} 個字` : '這個字'}寫成「${esc(j.got)}」了，它和正確的字長得很像，但部首不一樣。${r1 ? `正確的字部首是「${esc(m[0])}」${m[1] ? '，' + m[1] : ''}。` : ''}`;
+      const look = lookAlike(ans).includes(j.got);
+      return `${k != null ? `第 ${k + 1} 個字` : '這個字'}寫得比較像「${esc(j.got)}」。${look ? '它和正確的字長得很像，但部首不一樣。' : '再看看每一筆的位置和長短。'}${r1 ? `正確的字部首是「${esc(m[0])}」${m[1] ? '，' + m[1] : ''}。` : ''}`;
     }
     const who = k != null ? `第 ${k + 1} 個字` : '這個字';
     if (j.why === 'shape') return shapeMsg(k, j.score);
@@ -191,7 +192,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124q').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124r').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -301,7 +302,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124q').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124r').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -353,7 +354,7 @@
           ${segBtns(L, u.id, s.done ? 0 : s.lv)}</div>`; }).join('')}</div>
         <p class="set-h">✍️ 國字手寫標準</p>
         <div class="seg" id="hwlv">${[[1, '寬鬆'], [2, '標準'], [3, '嚴格']].map(([v, t]) => `<button data-s="${v}" class="${hwLevel() === v ? 'on' : ''}">${t}</button>`).join('')}</div>
-        <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">寬鬆：認得出是這個字就對。標準：辨識第一名要是這個字，還要寫得像標準字（字形 50 分以上）。嚴格：字形 65 分以上，像考試的標準。注音一律只看符號和聲調方向。</p>
+        <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">寬鬆：認得出是這個字就對。標準：辨識第一名要是這個字、筆畫數要對，字形 50 分以上。嚴格（預設）：字形 65 分以上，像考試的標準。注音一律只看符號和聲調方向。</p>
         <p class="set-h">🔊 聲音測試</p>
         <div class="row"><button class="btn ghost" id="t1">測試手機語音</button><button class="btn ghost" id="t2">測試線上語音</button></div>
         <div id="tlog" class="tlog"></div>
