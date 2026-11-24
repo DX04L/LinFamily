@@ -125,7 +125,7 @@
   function showLogin(auth) {
     head('三年級國語', false);
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>請先登入</p></div><div class="row" style="justify-content:center"><button class="btn" id="login">用 Google 登入</button></div>`;
-    $('#login').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => toast('登入沒有完成：' + (e.code || '')));
+    $('#login').onclick = () => auth.signInWithPopup((()=>{const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});return p})()).catch(e => toast('登入沒有完成：' + (e.code || '')));
   }
 
   // ---------- 路由 ----------

@@ -66,7 +66,7 @@
   });
   async function login() {
     try {
-      const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      const res = await auth.signInWithPopup((()=>{const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});return p})());
       const tok = res.credential && res.credential.idToken;
       const share = () => { if (!window.CLCSSO || !tok) return; if (window.CLCSSO.shareLogin) window.CLCSSO.shareLogin(tok); else window.CLCSSO.saveGoogleIdToken(tok); }; // 同時把 DX、YA、SR 登入成同一個帳號
       const email = res.user.email.toLowerCase();

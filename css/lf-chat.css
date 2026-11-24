@@ -30,7 +30,8 @@ body.lf-tab-family footer { display:none; }
 .lfc-pin[hidden] { display:none; }
 .lfc-pin span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lfc-pin button { border:0; background:none; cursor:pointer; color:var(--muted); font-size:15px; }
-.lfc-list { flex:1; min-height:0; overflow-y:auto; padding:8px 12px 12px; background:color-mix(in srgb, var(--cream) 14%, transparent); overscroll-behavior:contain; }
+.lfc-list { flex:1; min-height:0; overflow-y:auto; padding:8px 12px 12px; background:color-mix(in srgb, var(--cream) 14%, transparent); overscroll-behavior:contain;
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 12px); mask-image:linear-gradient(to bottom, transparent 0, #000 12px); } /* 上緣淡出：知道上面還能捲 */
 html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 4%, transparent); }
 .lfc-date, .lfc-sys { text-align:center; margin:12px 0 6px; }
 .lfc-date span, .lfc-sys span { display:inline-block; font-size:11.5px; padding:3px 11px; border-radius:10px; background:var(--btn-h); color:var(--muted); }
@@ -51,8 +52,11 @@ html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 4%, transparent)
 .lfc-bub img.lfc-photo { display:block; max-width:min(230px, 60vw); max-height:300px; border-radius:14px; cursor:zoom-in; }
 .lfc-stk { width:110px; height:110px; }
 .lfc-bub.lfc-stkbub { padding:0 !important; background:none !important; border:0 !important; box-shadow:none !important; } /* 貼圖不要泡泡框 */
-.lfc-row.hit .lfc-bub { box-shadow:0 0 0 2px #fbbf24; }
-.lfc-ment { font-weight:700; color:var(--pine); }
+.lfc-row.hit .lfc-bub { box-shadow:0 0 0 2px #1a73e8; }
+html.dark .lfc-row.hit .lfc-bub { box-shadow:0 0 0 2px #6ea8fe; }
+.lfc-ment { font-weight:700; color:#1a73e8; }
+html.dark .lfc-ment { color:#6ea8fe; }
+.lfc-row.me .lfc-ment { color:inherit; text-decoration:underline; }
 .lfc-row.me .lfc-ment { color:#fff; text-decoration:underline; }
 .lfc-quote { border-left:3px solid var(--sage); padding:2px 8px; margin:-1px 0 5px; font-size:12.5px; opacity:.85; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
 .lfc-row.me .lfc-quote { border-left-color:rgba(255,255,255,.7); }
@@ -156,3 +160,6 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 /* 寬螢幕頂端隱形移動條（手機沒有） */
 .lfc-mv { position:absolute; top:0; left:0; right:48px; height:10px; z-index:2; display:none; }
 @media (min-width:640px) { .lfc-mv { display:block; cursor:grab; } }
+
+/* 留言板英文字型跟全站一致（按鈕/輸入框預設不繼承字型） */
+.lfc, .lfc button, .lfc input, .lfc textarea, .lfc-view, .lfc-view button, .lfc-view input { font-family:"CLC Arial", Arial, "Microsoft JhengHei", "微軟正黑體", "PingFang TC", "Noto Sans TC", sans-serif; }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
   <link rel="stylesheet" href="css/lf-todos.css?v=9">
-  <link rel="stylesheet" href="css/lf-chat.css?v=15">
+  <link rel="stylesheet" href="css/lf-chat.css?v=16">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=12">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
@@ -546,7 +546,7 @@
       loginBusy = true;
       const loginTimer = setTimeout(() => toast('登入回應較慢，請檢查網路；若未出現登入視窗，請重新整理。'), 12000);
       try {
-        const res = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        const res = await auth.signInWithPopup((()=>{const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});return p})());
         clearTimeout(loginTimer);
         try { localStorage.setItem('linfamily_login_at', String(Date.now() + 1000)); } catch (_) {} // 登入時間（強制登出用；+1 秒避免和伺服器時間誤差）
         const tok = res.credential && res.credential.idToken;
