@@ -112,7 +112,7 @@
       bOk.disabled = true;
       const c = await recognize();
       bOk.disabled = false;
-      opt.onResult && opt.onResult(c);
+      opt.onResult && opt.onResult(c, ink.slice());
     };
     function showCands(list, onPick) {
       cands.innerHTML = '';
@@ -348,6 +348,130 @@
     return y1 < y0 ? 'ˊ' : (x1 - x0 < 0 && y1 < y0 ? 'ˊ' : 'ˋ');
   }
 
+  // ---------- 字形比對：把手寫的字和標準字都縮放到同一個框，算兩邊筆畫的平均距離 → 0～100 分 ----------
+  const N = 64;
+  function maskFromInk(ink) {
+    const xs = ink.flatMap(s => s[0]), ys = ink.flatMap(s => s[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    // 長寬各自縮放到同一個框（比例不同不扣分，看的是筆畫位置和連接）；太扁或太細長的保留原比例
+    const bw = Math.max(x1 - x0, 1), bh = Math.max(y1 - y0, 1), big = Math.max(bw, bh);
+    const sx = (N - 8) / (bw < big * .25 ? big : bw), sy = (N - 8) / (bh < big * .25 ? big : bh);
+    const ox = (N - bw * sx) / 2, oy = (N - bh * sy) / 2;
+    const c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
+    g.strokeStyle = '#000'; g.lineWidth = 3; g.lineCap = 'round'; g.lineJoin = 'round';
+    ink.forEach(s => { g.beginPath(); s[0].forEach((x, k) => { const X = ox + (x - x0) * sx, Y = oy + (s[1][k] - y0) * sy; k ? g.lineTo(X, Y) : g.moveTo(X, Y); }); if (s[0].length === 1) g.lineTo(ox + (s[0][0] - x0) * sx + .5, oy + (s[1][0] - y0) * sy); g.stroke(); });
+    return toMask(g);
+  }
+  function maskFromChar(ch) {
+    const S = 200, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+    g.fillStyle = '#000'; g.font = `${S * .8}px "PingFang TC","Noto Sans CJK TC","Noto Sans TC","Microsoft JhengHei",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(ch, S / 2, S / 2);
+    const d = g.getImageData(0, 0, S, S).data; let x0 = S, x1 = 0, y0 = S, y1 = 0;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (d[(y * S + x) * 4 + 3] > 100) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    const c2 = document.createElement('canvas'); c2.width = c2.height = N; const g2 = c2.getContext('2d');
+    const bw = Math.max(x1 - x0, 1), bh = Math.max(y1 - y0, 1), big = Math.max(bw, bh);
+    const w = (N - 8) * (bw < big * .25 ? bw / big : 1), h = (N - 8) * (bh < big * .25 ? bh / big : 1);
+    g2.drawImage(c, x0, y0, bw + 1, bh + 1, (N - w) / 2, (N - h) / 2, w, h);
+    return thin(toMask(g2));
+  }
+  // 把標準字的粗筆畫削細，接近手寫的線條粗細
+  function thin(m) {
+    for (let it = 0; it < 3; it++) {
+      const o = m.slice(); let left = 0;
+      for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) {
+        const i = y * N + x; if (!m[i]) continue;
+        const nb = m[i - 1] + m[i + 1] + m[i - N] + m[i + N];
+        const keepH = !m[i - 1] && !m[i + 1], keepV = !m[i - N] && !m[i + N];
+        if (nb === 4 || (nb >= 2 && !keepH && !keepV && (m[i - 1] + m[i + 1] === 1 || m[i - N] + m[i + N] === 1))) { const solidRow = m[i - 1] && m[i + 1], solidCol = m[i - N] && m[i + N]; if (!(solidRow && !m[i - N] && !m[i + N]) && !(solidCol && !m[i - 1] && !m[i + 1])) o[i] = nb === 4 ? 0 : o[i]; }
+        if (o[i]) left++;
+      }
+      if (left < 20) break; m = o;
+    }
+    return m;
+  }
+  function toMask(g) { const d = g.getImageData(0, 0, N, N).data, m = new Uint8Array(N * N); for (let i = 0; i < N * N; i++) m[i] = d[i * 4 + 3] > 90 ? 1 : 0; return m; }
+  function distMap(m) {   // 3-4 倒角距離
+    const INF = 1e9, D = new Float32Array(N * N);
+    for (let i = 0; i < N * N; i++) D[i] = m[i] ? 0 : INF;
+    const at = (x, y) => (x < 0 || y < 0 || x >= N || y >= N) ? INF : D[y * N + x];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const i = y * N + x; D[i] = Math.min(D[i], at(x - 1, y) + 3, at(x, y - 1) + 3, at(x - 1, y - 1) + 4, at(x + 1, y - 1) + 4); }
+    for (let y = N - 1; y >= 0; y--) for (let x = N - 1; x >= 0; x--) { const i = y * N + x; D[i] = Math.min(D[i], at(x + 1, y) + 3, at(x, y + 1) + 3, at(x + 1, y + 1) + 4, at(x - 1, y + 1) + 4); }
+    for (let i = 0; i < N * N; i++) D[i] /= 3;
+    return D;
+  }
+  function shapeScore(ink, ch) {
+    if (!ink.length) return 0;
+    try {
+      const a = maskFromInk(ink), b = maskFromChar(ch), da = distMap(a), db = distMap(b);
+      let s1 = 0, n1 = 0, s2 = 0, n2 = 0;
+      for (let i = 0; i < N * N; i++) { if (a[i]) { s1 += db[i]; n1++; } if (b[i]) { s2 += da[i]; n2++; } }
+      const d = (s1 / Math.max(n1, 1) + s2 / Math.max(n2, 1)) / 2;
+      return Math.max(0, Math.min(100, Math.round(100 - d * 14)));
+    } catch (e) { return 100; }
+  }
+
+  // ---------- 注音核對：已知正確答案，只確認寫的符號和聲調大致對 ----------
+  async function checkZhuyin(ink, w, h, ans) {
+    const ansSyms = [...ans.replace(/[ˊˇˋ˙]/g, '')], ansTone = (ans.match(/[ˊˇˋ˙]/) || [''])[0];
+    const sym = [], toneS = [];
+    ink.forEach(s => {
+      const b = bbox([s]), cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2, md = Math.max(b.x1 - b.x0, b.y1 - b.y0);
+      if (md < w * .2 && (cy < h * .3 || cx > w * .55)) toneS.push(s);
+      else if (md < w * .42 && cx > w * .6) toneS.push(s);
+      else sym.push(s);
+    });
+    // 依上下位置分組；組數比答案多就把最靠近的兩組合併
+    let groups = [];
+    sym.map(s => ({ s, b: bbox([s]) })).sort((a, b) => a.b.y0 - b.b.y0).forEach(o => {
+      const g = groups[groups.length - 1];
+      if (g && o.b.y0 < g.y1 + h * .02) { g.ss.push(o.s); g.y1 = Math.max(g.y1, o.b.y1); }
+      else groups.push({ ss: [o.s], y0: o.b.y0, y1: o.b.y1 });
+    });
+    while (groups.length > ansSyms.length && groups.length > 1) {
+      let k = 0, best = Infinity;
+      for (let i = 0; i < groups.length - 1; i++) { const gap = groups[i + 1].y0 - groups[i].y1; if (gap < best) { best = gap; k = i; } }
+      const a = groups[k], b = groups[k + 1]; groups.splice(k, 2, { ss: a.ss.concat(b.ss), y0: a.y0, y1: Math.max(a.y1, b.y1) });
+    }
+    const rec = async ss => {
+      const b = bbox(ss), S = Math.max(b.x1 - b.x0, b.y1 - b.y0, 10) * 1.3, ox = (b.x0 + b.x1) / 2 - S / 2, oy = (b.y0 + b.y1) / 2 - S / 2;
+      return recognizeInk(ss.map(s => [s[0].map(x => Math.round(x - ox)), s[1].map(y => Math.round(y - oy)), s[2]]), S, S);
+    };
+    let symOk = false, guess = '';
+    if (sym.length && groups.length === ansSyms.length) {
+      symOk = true;
+      for (let i = 0; i < groups.length; i++) {
+        const c = await rec(groups[i].ss); if (c === null) return null;
+        const mapped = c.map(toBpmf);
+        guess += mapped.find(Boolean) || '？';
+        if (!mapped.includes(ansSyms[i]) && !c.includes(ansSyms[i])) symOk = false;
+      }
+    }
+    if (!symOk && sym.length) {   // 再整格一起辨識一次
+      const t0 = sym[0][2][0];
+      try {
+        const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ options: 'enable_pre_space', requests: [{ writing_guide: { writing_area_width: Math.round(w), writing_area_height: Math.round(h) }, ink: sym.map(s => [s[0], s[1], s[2].map(t => t - t0)]), language: 'zh_TW' }] }) });
+        const j = await r.json();
+        if (j[0] === 'SUCCESS') { const want = ansSyms.join(''); if ((j[1][0][1] || []).some(c => [...c].map(toBpmf).join('') === want)) symOk = true; }
+      } catch (e) {}
+    }
+    // 聲調只看大方向
+    let toneOk;
+    if (!ansTone) toneOk = toneS.length === 0;
+    else if (!toneS.length) toneOk = false;
+    else {
+      const all = toneS.flatMap(s => s[0].map((x, k) => [x, s[1][k]])), b = bbox(toneS), md = Math.max(b.x1 - b.x0, b.y1 - b.y0);
+      const left = all.reduce((p, q) => q[0] < p[0] ? q : p), right = all.reduce((p, q) => q[0] > p[0] ? q : p);
+      const low = all.reduce((p, q) => q[1] > p[1] ? q : p);
+      const dip = low[1] - Math.max(left[1], right[1]);
+      if (ansTone === '˙') toneOk = md < w * .3;
+      else if (ansTone === 'ˊ') toneOk = right[1] < left[1];
+      else if (ansTone === 'ˋ') toneOk = right[1] > left[1] && dip < (b.y1 - b.y0) * .25;
+      else toneOk = dip > (b.y1 - b.y0) * .15 || toneS.length >= 2;
+    }
+    if (!guess) guess = symOk ? ansSyms.join('') : '？';
+    return { ok: symOk && toneOk, symOk, toneOk, guess };
+  }
+
   async function readZhuyin(ink, w, h) {
     if (!ink.length) return '';
     let tone = '';
@@ -462,13 +586,14 @@
     bUndo.onclick = () => { if (lastPad && !lastPad.locked) { lastPad.ink.pop(); lastPad.draw(); } };
     bClr.onclick = () => pads.forEach(p => [p.c, p.z].forEach(P => { if (P && !P.locked) { P.ink = []; P.state = ''; P.draw(); } }));
 
-    async function read() {
+    async function read(zyAns) {
       const out = [];
       for (const p of pads) {
         let c = '', cands = [], zy = '';
         if (p.c.ink.length) { cands = await recognizeInk(p.c.ink, p.c.w, p.c.h); if (cands === null) return null; c = cands[0] || '？'; }
-        if (p.z) { zy = await readZhuyin(p.z.ink, p.z.w, p.z.h); if (zy === null) return null; }
-        out.push({ c, cands, zy, empty: !p.c.ink.length, zyEmpty: p.z ? !p.z.ink.length : true });
+        let zyRes = null;
+        if (p.z && p.z.ink.length && zyAns) { zyRes = await checkZhuyin(p.z.ink, p.z.w, p.z.h, zyAns[pads.indexOf(p)]); if (zyRes === null) return null; }
+        out.push({ c, cands, zy, zyRes, ink: p.c.ink.slice(), empty: !p.c.ink.length, zyEmpty: p.z ? !p.z.ink.length : true });
       }
       return out;
     }
@@ -478,5 +603,5 @@
     return { el, bar, read, mark, clearCell, setGuide, n };
   }
 
-  window.LearnHW = { pad, sheet, cells, zhuyin, normZy };
+  window.LearnHW = { pad, sheet, cells, zhuyin, normZy, shapeScore };
 })();

@@ -106,8 +106,18 @@
   })();
 
   // 手寫判斷：嚴格＝辨識第一名就是正確的字；寬鬆＝前三名裡有就算對
-  const isStrict = () => { try { return localStorage.getItem('linfamily_learn_strict') !== '0'; } catch (e) { return true; } };
-  const charOk = (cands, ans) => isStrict() ? cands[0] === ans : cands.slice(0, 3).includes(ans);
+  // 手寫標準：1 寬鬆（辨識前三名有就對）2 標準（第一名＋字形 ≥ 55 分）3 嚴格（第一名＋字形 ≥ 70 分）
+  const hwLevel = () => { try { return +(localStorage.getItem('linfamily_learn_hwlv') || 2); } catch (e) { return 2; } };
+  const SHAPE_MIN = [0, 0, 50, 65];
+  function judgeChar(cands, ans, ink) {
+    const lv = hwLevel();
+    if (lv === 1) return { ok: cands.slice(0, 3).includes(ans), why: 'wrong' };
+    if (cands[0] !== ans && !(cands.slice(0, 3).includes(ans) && lv === 2)) return { ok: false, why: 'wrong' };
+    const score = ink ? LearnHW.shapeScore(ink, ans) : 100;
+    return score >= SHAPE_MIN[lv] ? { ok: true, score } : { ok: false, why: 'shape', score };
+  }
+  const charOk = (cands, ans, ink) => judgeChar(cands, ans, ink).ok;
+  const shapeMsg = (k, sc) => `${k != null ? `第 ${k + 1} 個字` : '這個字'}寫對了，可是不夠工整（字形 ${sc} 分）：筆畫要連好、寫端正，再寫一次。`;
 
   // ---------- 頁首 ----------
   // 畫面顏色：淺色／深色／護眼（像紙一樣的暖色底，減少藍光）
@@ -144,7 +154,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124m').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124o').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -254,7 +264,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124m').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124o').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -304,15 +314,15 @@
         <p class="set-h">個別單元</p>
         <div class="set-list">${units.map(u => { const s = p.units[u.id]; return `<div class="set-row"><span>${u.icon} ${u.name}<small>${s.done ? '✅ 完成' : lvName(L, u.id, s.lv)}${s.best ? `・❤ ${s.best}` : ''}</small></span>
           ${segBtns(L, u.id, s.done ? 0 : s.lv)}</div>`; }).join('')}</div>
-        <p class="set-h">✍️ 手寫判斷</p>
-        <div class="seg" id="strict"><button data-s="1" class="${isStrict() ? 'on' : ''}">嚴格</button><button data-s="0" class="${isStrict() ? '' : 'on'}">寬鬆</button></div>
-        <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">嚴格：辨識第一個就要是正確的字。寬鬆：前三個候選字有就算對。</p>
+        <p class="set-h">✍️ 國字手寫標準</p>
+        <div class="seg" id="hwlv">${[[1, '寬鬆'], [2, '標準'], [3, '嚴格']].map(([v, t]) => `<button data-s="${v}" class="${hwLevel() === v ? 'on' : ''}">${t}</button>`).join('')}</div>
+        <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">寬鬆：認得出是這個字就對。標準：還要寫得像標準字（字形 50 分以上）。嚴格：字形 65 分以上，像考試的標準。注音一律只看符號和聲調方向。</p>
         <p class="set-h">🔊 聲音測試</p>
         <div class="row"><button class="btn ghost" id="t1">測試手機語音</button><button class="btn ghost" id="t2">測試線上語音</button></div>
         <div id="tlog" class="tlog"></div>
         <p class="set-h">重設</p>
         <div class="row"><button class="btn ghost" id="rsAll">清除這一課所有紀錄</button></div>`;
-      root.querySelectorAll('#strict button').forEach(b => b.onclick = () => { try { localStorage.setItem('linfamily_learn_strict', b.dataset.s); } catch (e) {} draw(root); });
+      root.querySelectorAll('#hwlv button').forEach(b => b.onclick = () => { try { localStorage.setItem('linfamily_learn_hwlv', b.dataset.s); } catch (e) {} draw(root); });
       const tlog = root.querySelector('#tlog');
       const log = m => { tlog.insertAdjacentHTML('beforeend', `<div>${esc(m)}</div>`); };
       root.querySelector('#t1').onclick = () => { tlog.innerHTML = ''; TTS.test('device', log); };
@@ -413,9 +423,10 @@
       <p style="margin:0 0 8px;color:var(--sub)">照著淡淡的字寫寫看：</p><div id="pp"></div>
       <div class="row end" style="margin-top:12px"><button class="btn ghost" id="cl">關閉</button></div>`, root => {
       root.querySelector('#cl').onclick = () => dlg.close();
-      const pd = LearnHW.pad({ guide: c.c, okText: '檢查', onResult: cands => {
+      const pd = LearnHW.pad({ guide: c.c, okText: '檢查', onResult: (cands, inkCopy) => {
         if (cands === null) return toast('辨識服務連不上，自己對照看看');
-        toast(charOk(cands, c.c) ? '寫對了！👍' : `看起來像「${cands[0] || '?'}」，再試一次`);
+        const j = judgeChar(cands, c.c, inkCopy);
+        toast(j.ok ? `寫對了！👍${j.score != null ? `（字形 ${j.score} 分）` : ''}` : j.why === 'shape' ? `字對了，再寫工整一點（字形 ${j.score} 分）` : `看起來像「${cands[0] || '?'}」，再試一次`);
       } });
       root.querySelector('#pp').append(pd.el);
     });
@@ -600,11 +611,10 @@
     const head = got && got !== '？' ? `第 ${k + 1} 個字寫成「${esc(got)}」了。` : `第 ${k + 1} 個字看不太清楚，再寫一次。`;
     return head + (look ? '它和正確的字長得很像，可是部首不一樣喔。' : '') + (r ? `提示：正確的字部首是「${esc(m[0])}」${m[1] ? '，' + m[1] : ''}。` : '');
   }
-  function whyZy(got, ans, k) {
-    const tone = s => (s.match(/[ˊˇˋ˙]/) || [''])[0], base = s => s.replace(/[ˊˇˋ˙]/g, '');
-    if (!got) return `第 ${k + 1} 個字的注音沒寫，或是看不清楚。`;
-    if (base(got) === base(ans)) return `第 ${k + 1} 個字的注音符號對了，聲調再聽聽看。`;
-    if (tone(got) === tone(ans)) return `第 ${k + 1} 個字的聲調對了，注音符號再聽聽看。`;
+  function whyZy(r, k) {
+    if (!r) return `第 ${k + 1} 個字的注音還沒寫。`;
+    if (r.symOk && !r.toneOk) return `第 ${k + 1} 個字的注音符號對了，聲調再聽聽看（聲調寫在虛線右邊，輕聲點寫在最上面）。`;
+    if (!r.symOk && r.toneOk) return `第 ${k + 1} 個字的聲調對了，注音符號再聽聽看。`;
     return `第 ${k + 1} 個字的注音再聽一次。`;
   }
   // 檢查格子：對的格子鎖住變綠，錯的清掉重寫；第二次錯就給淡淡的字描
@@ -613,11 +623,11 @@
     qa.append(box.el);
     const btn = document.createElement('button'); btn.className = 'btn'; btn.type = 'button'; btn.textContent = '寫好了';
     box.bar.append(btn);
-    const okC = Array(w.w.length).fill(false), okZ = Array(w.w.length).fill(!withZy);
+    const okC = Array(w.w.length).fill(false), okZ = Array(w.w.length).fill(!withZy), scores = Array(w.w.length).fill(null);
     let round = 0;
     btn.onclick = async () => {
       btn.disabled = true; btn.textContent = '辨識中…';
-      const res = await box.read();
+      const res = await box.read(withZy ? w.zy : null);
       btn.textContent = '寫好了';
       if (res === null) { btn.disabled = false; return toast('辨識服務連不上，請稍後再試'); }
       // 只看還沒過的格子：國字沒過要有寫、注音沒過要有寫
@@ -626,15 +636,17 @@
       const why = [];
       res.forEach((x, k) => {
         if (!okC[k]) {
-          okC[k] = charOk(x.cands, w.w[k]);
-          if (okC[k]) box.mark(k, 'c', 'ok'); else { box.mark(k, 'c', 'bad'); why.push(x.empty ? `第 ${k + 1} 個字還沒寫。` : whyChar(L, x.c, w.w[k], k)); }
+          const j = x.empty ? { ok: false, why: 'empty' } : judgeChar(x.cands, w.w[k], x.ink);
+          okC[k] = j.ok; if (j.score != null) scores[k] = j.score;
+          if (okC[k]) box.mark(k, 'c', 'ok'); else { box.mark(k, 'c', 'bad'); why.push(j.why === 'empty' ? `第 ${k + 1} 個字還沒寫。` : j.why === 'shape' ? shapeMsg(k, j.score) : whyChar(L, x.c, w.w[k], k)); }
         }
         if (!okZ[k]) {
-          okZ[k] = LearnHW.normZy(x.zy) === LearnHW.normZy(w.zy[k]);
-          if (okZ[k]) box.mark(k, 'z', 'ok'); else { box.mark(k, 'z', 'bad'); if (!(x.empty && x.zyEmpty)) why.push(whyZy(x.zy, w.zy[k], k)); }
+          okZ[k] = !!(x.zyRes && x.zyRes.ok);
+          if (okZ[k]) box.mark(k, 'z', 'ok'); else { box.mark(k, 'z', 'bad'); if (!(x.empty && x.zyEmpty)) why.push(whyZy(x.zyRes, k)); }
         }
       });
-      if (okC.every(Boolean) && okZ.every(Boolean)) return ctl.submit(true, { good: `${zy(w.w)}（${esc(w.zy.join(' '))}）` });
+      const sc = scores.map((v, k) => v != null ? `${esc(w.w[k])} ${v}` : '').filter(Boolean).join('、');
+      if (okC.every(Boolean) && okZ.every(Boolean)) return ctl.submit(true, { good: `${zy(w.w)}（${esc(w.zy.join(' '))}）${sc ? `<br><small>字形分數：${sc}</small>` : ''}` });
       round++;
       const again = ctl.submit(false, { hint: why.join('<br>') + (onAgainExtra ? onAgainExtra(round) : ''), reveal: `正確的是：<span style="font-size:1.4em">${zy(w.w)}</span>（${esc(w.zy.join(' '))}）` });
       if (!again) return;
@@ -826,7 +838,7 @@
     write(q, qa, ctl) {
       const reveal = `正確的字是 <span class="plain" style="font-size:44px">${esc(q.a)}</span>`;
       let pd;
-      pd = LearnHW.pad({ onResult: cands => {
+      pd = LearnHW.pad({ onResult: (cands, inkCopy) => {
         if (cands === null) {
           const box = document.createElement('div');
           box.innerHTML = `<p>辨識服務連不上，請爸爸媽媽幫忙看看寫得對不對：<span class="plain" style="font-size:44px">${esc(q.a)}</span></p>
@@ -835,7 +847,9 @@
           box.querySelectorAll('button').forEach(b => b.onclick = () => { box.remove(); if (b.dataset.k === '1') ctl.submit(true); else { if (ctl.submit(false, { hint: charHint(ctl.L, q.a), reveal })) pd.clear(); } });
           return;
         }
-        if (charOk(cands, q.a)) return ctl.submit(true);
+        const j = judgeChar(cands, q.a, inkCopy);
+        if (j.ok) return ctl.submit(true, j.score != null ? { good: `<small>字形分數：${j.score}</small>` } : null);
+        if (j.why === 'shape') { const again2 = ctl.submit(false, { hint: shapeMsg(null, j.score), reveal }); pd.clear(); return again2; }
         const again = ctl.submit(false, { hint: `看起來像「${esc(cands[0] || '？')}」。${charHint(ctl.L, q.a)}`, reveal });
         pd.clear();
         if (again && pd.tries++ >= 1) { pd.setGuide(q.a); toast('照著淡淡的字描描看'); }
