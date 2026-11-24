@@ -318,7 +318,7 @@
         const hit = !mine && (m.mentions || []).includes(me.uid);
         frag.append(h(`<div class="lfc-row${mine ? ' me' : ''}${hit ? ' hit' : ''}" data-id="${m.id}">
           ${mine ? '' : bot ? `<span class="lfc-av lfc-bot" data-at="Pinky" aria-label="Pinky">${face(p.av)}</span>` : `<button class="lfc-av" data-uid="${esc(m.uid)}" aria-label="${esc(p.name)}">${face(p.av)}</button>`}
-          <div class="lfc-col">${mine ? '' : `<p class="lfc-name">${esc(p.name)}</p>`}<div class="lfc-line">${body}${meta}</div>${reacts}</div></div>`));
+          <div class="lfc-col">${mine ? '' : `<button class="lfc-name" data-at="${esc(p.name)}" title="@${esc(p.name)}">${esc(p.name)}</button>`}<div class="lfc-line">${body}${meta}</div>${reacts}</div></div>`));
       });
       list.replaceChildren(frag); if (findQ) findMark();
       if (firstOpen && visible) {
@@ -893,6 +893,7 @@
     function go(id) { const r = list.querySelector(`[data-id="${CSS.escape(id)}"]`); if (!r) return toast('這則訊息已經太舊或被收回'); r.scrollIntoView({ block: 'center', behavior: 'smooth' }); r.classList.remove('lfc-flash'); void r.offsetWidth; r.classList.add('lfc-flash'); }
     list.addEventListener('click', e => {
       if (menuOpen) return;
+      const nm = e.target.closest('.lfc-name[data-at]'); if (nm) return insertAt(nm.dataset.at); // 點名字直接 @
       const av = e.target.closest('.lfc-av'); if (av) return av.dataset.uid ? profile(av.dataset.uid) : av.dataset.at ? insertAt(av.dataset.at) : undefined;
       const q = e.target.closest('[data-go]'); if (q) return go(q.dataset.go);
       const ph = e.target.closest('.lfc-photo'); if (ph) return viewer(ph.closest('.lfc-row').dataset.id);

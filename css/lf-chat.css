@@ -41,7 +41,8 @@ html.dark .lfc-list { background:color-mix(in srgb, var(--sage) 4%, transparent)
 .lfc-av { width:36px; height:36px; border-radius:50%; overflow:hidden; flex:none; cursor:pointer; border:0; padding:0; background:none; }
 .lfc-col { display:flex; flex-direction:column; min-width:0; max-width:74%; }
 .lfc-row.me .lfc-col { align-items:flex-end; }
-.lfc-name { font-size:11.5px; color:var(--muted); margin:0 0 3px 3px; }
+.lfc-name { display:block; font:inherit; font-size:11.5px; color:var(--muted); margin:0 0 3px 3px; padding:0; border:0; background:none; cursor:pointer; text-align:left; }
+.lfc-name:hover { color:#1a73e8; }
 .lfc-line { display:flex; gap:6px; align-items:flex-end; }
 .lfc-row.me .lfc-line { flex-direction:row-reverse; }
 .lfc-bub { background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:17px; padding:8px 12px; font-size:14.5px; line-height:1.5;
