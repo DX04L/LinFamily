@@ -175,8 +175,8 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-down b { position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#ef4444; color:#fff; font:700 11px/18px "CLC Arial", Arial, sans-serif; }
 .lfc.lfc-drop { outline:3px dashed var(--sage); outline-offset:-6px; }
 /* 相機（照 LINE 的介面，底部用淡粉＋sage 漸層） */
-.lfc-cam { position:fixed; inset:0; z-index:1000; background:#000; color:#fff; }
-.lfc-cam.wide { position:fixed; z-index:95; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; }
+.lfc-cam { position:fixed; inset:0; z-index:2000; background:#000; color:#fff; }
+.lfc-cam.wide { position:fixed; z-index:2000; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; }
 .lfc-cam-box { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; background:#000; }
 .lfc-cam.wide .lfc-cam-box { position:relative; inset:auto; width:min(960px, 88vw); height:min(760px, 86vh); border-radius:16px; box-shadow:0 25px 60px rgba(0,0,0,.45); }
 .lfc-cam-view { position:relative; flex:1; min-height:0; overflow:hidden; }
@@ -236,7 +236,7 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-cam-native { justify-self:start; margin-left:6px; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; text-shadow:0 1px 3px rgba(0,0,0,.7); filter:drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
 /* 照片編輯 */
 .lfc-ed .lfc-cam-box { background:#111; }
-.lfc-ed-stage { position:relative; flex:1; min-height:0; display:grid; place-items:center; overflow:hidden; touch-action:none; }
+.lfc-ed-stage { position:relative; flex:1; min-height:0; box-sizing:border-box; display:grid; place-items:center; overflow:hidden; touch-action:none; }
 .lfc-ed-art { position:relative; }
 .lfc-ed-cv, .lfc-ed-pen { position:absolute; inset:0; width:100%; height:100%; display:block; }
 .lfc-ed-pen { z-index:3; cursor:crosshair; touch-action:none; }
@@ -283,3 +283,7 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-ed-cbox [data-h="sw"] { left:-5px; bottom:-5px; border-right:0; border-top:0; cursor:nesw-resize; }
 .lfc-ed-cbox [data-h="se"] { right:-5px; bottom:-5px; border-left:0; border-top:0; cursor:nwse-resize; }
 .lfc-ed-cbox i::after { content:''; position:absolute; inset:-12px; }
+/* 裁切：上方取消／完成（純文字，照 LINE） */
+.lfc-ed-top { position:absolute; top:0; left:0; right:0; z-index:6; display:flex; justify-content:space-between; padding:calc(12px + env(safe-area-inset-top)) 18px 8px; }
+.lfc-ed-top button { font-size:17px; font-weight:700; padding:6px 4px !important; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+.lfc-ed-cropbar { background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }

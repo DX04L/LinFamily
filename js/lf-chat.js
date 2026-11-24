@@ -421,7 +421,7 @@
       const wide = wideQ.matches;
       const srcUrl = URL.createObjectURL(file), base = await loadImg(srcUrl); URL.revokeObjectURL(srcUrl); delete imgCache[srcUrl];
       if (!base) { if (o.onBack) { toast('照片讀取失敗'); return o.onBack(); } return sendFiles([file]); } // 編輯器讀不了的格式（例如 HEIC）就直接傳
-      let rot = 0, rc = null, crop = { x: 0, y: 0, w: 1, h: 1 }, fr = o.frame || 'none', strokes = [], layers = [], sel = null, mode = 'main';
+      let rot = 0, flip = false, flBefore = false, rc = null, crop = { x: 0, y: 0, w: 1, h: 1 }, fr = o.frame || 'none', strokes = [], layers = [], sel = null, mode = 'main';
       const I = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
       const COLORS = ['#ffffff', '#111827', '#f472b6', '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7'];
       const v = h(`<div class="lfc-cam lfc-ed${wide ? ' wide' : ''}"><div class="lfc-cam-box">
@@ -439,9 +439,10 @@
           <div class="lfc-ed-bar"><button class="lfc-ed-dl" data-a="dl" aria-label="存到手機">${I('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', 30)}</button>
             <button class="lfc-ed-send" data-a="send" aria-label="傳送"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M3 20.5 21 12 3 3.5l2.6 7.2L14 12l-8.4 1.3z" fill="currentColor"/></svg></button></div>
         </div>
+        <div class="lfc-ed-top" data-m="crop" hidden><button data-a="cancel">取消</button><button data-a="done">完成</button></div>
         <div class="lfc-ed-sub lfc-ed-cropbar" data-m="crop" hidden>
-          <div class="lfc-ed-chips"><button data-r="0" class="on">自由</button><button data-r="1">1:1</button><button data-r="1.3333">4:3</button><button data-r="0.75">3:4</button><button data-a="rot" aria-label="旋轉">${I('<path d="M20 12a8 8 0 1 1-2.3-5.7L20 8.6M20 4v4.6h-4.6"/>', 20)} 旋轉</button></div>
-          <div class="lfc-ed-ok"><button data-a="cancel">取消</button><button data-a="done" class="go">完成</button></div></div>
+          <div class="lfc-ed-chips"><button data-r="0" class="on">自由</button><button data-r="1">1:1</button><button data-r="1.3333">4:3</button><button data-r="0.75">3:4</button></div>
+          <div class="lfc-ed-chips"><button data-a="rot" aria-label="旋轉">${I('<path d="M20 12a8 8 0 1 1-2.3-5.7L20 8.6M20 4v4.6h-4.6"/>', 20)} 旋轉</button><button data-a="flip" aria-label="左右翻轉">${I('<path d="M12 3v18M9 7 4 17h5zM15 7l5 10h-5z"/>', 20)} 翻轉</button></div></div>
         <div class="lfc-ed-sub" data-m="draw" hidden>
           <div class="lfc-ed-chips">${COLORS.map((c, i) => `<button class="lfc-ed-col${i === 2 ? ' on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>
           <div class="lfc-ed-chips"><button data-w="0.006">細</button><button data-w="0.012" class="on">中</button><button data-w="0.024">粗</button><button data-a="undo">↶ 上一步</button></div>
@@ -458,16 +459,17 @@
       const q = s => v.querySelector(s), stage = q('.lfc-ed-stage'), art = q('.lfc-ed-art'), cv = q('.lfc-ed-cv'), pen = q('.lfc-ed-pen'), lay = q('.lfc-ed-layers');
       const HAND = '"Segoe Script", "Snell Roundhand", "Bradley Hand", "Dancing Script", cursive', NORM = '"CLC Arial", Arial, "Microsoft JhengHei", sans-serif';
       function rotated() { // 旋轉後的整張照片
-        if (rc && rc._rot === rot) return rc;
+        if (rc && rc._rot === rot && rc._fl === flip) return rc;
         const sw = base.naturalWidth, sh = base.naturalHeight, side = rot % 180 !== 0, k = Math.min(1, 3000 / Math.max(sw, sh));
         const c = document.createElement('canvas'); c.width = Math.round((side ? sh : sw) * k); c.height = Math.round((side ? sw : sh) * k);
-        const g = c.getContext('2d'); g.translate(c.width / 2, c.height / 2); g.rotate(rot * Math.PI / 180); g.drawImage(base, -sw * k / 2, -sh * k / 2, sw * k, sh * k);
-        c._rot = rot; return (rc = c);
+        const g = c.getContext('2d'); g.translate(c.width / 2, c.height / 2); if (flip) g.scale(-1, 1); g.rotate(rot * Math.PI / 180); g.drawImage(base, -sw * k / 2, -sh * k / 2, sw * k, sh * k);
+        c._rot = rot; c._fl = flip; return (rc = c);
       }
       const outSize = () => { const r = rotated(); return [r.width * crop.w, r.height * crop.h]; };
       let dispW = 1, dispH = 1;
       async function render() { // 編輯畫面：照片＋畫線＋相框（貼圖、文字是上面的 DOM 物件）
-        const S = stage.getBoundingClientRect(), [ow, oh] = outSize(), sc = Math.min(S.width / ow, S.height / oh);
+        const bh = mode === 'main' ? q('.lfc-ed-bottom').offsetHeight : 0; stage.style.paddingBottom = bh + 'px'; // 照片放在相框列上面，相框才看得完整
+        const S0 = stage.getBoundingClientRect(), S = { width: S0.width, height: S0.height - bh }, [ow, oh] = outSize(), sc = Math.min(S.width / ow, S.height / oh);
         dispW = ow * sc; dispH = oh * sc; Object.assign(art.style, { width: dispW + 'px', height: dispH + 'px' });
         const dpr = devicePixelRatio; cv.width = Math.round(dispW * dpr); cv.height = Math.round(dispH * dpr);
         await paintTo(cv.getContext('2d'), cv.width, cv.height, false); placeLayers();
@@ -531,9 +533,11 @@
       const cropEl = q('.lfc-ed-crop'), ccv = cropEl.querySelector('canvas'), cbox = q('.lfc-ed-cbox');
       let ck = null, ratio = 0, cBox = null; // cBox：在 crop canvas 上的框（像素）
       function cropShow() {
-        const r = rotated(), S = stage.getBoundingClientRect(), pad = 24, sc = Math.min((S.width - pad * 2) / r.width, (S.height - pad * 2) / r.height);
+        const r = rotated(), S = stage.getBoundingClientRect(), pad = 24;
+        const top = q('.lfc-ed-top').getBoundingClientRect().bottom - S.top + 8, bot = S.bottom - q('.lfc-ed-cropbar').getBoundingClientRect().top + 16; // 上：取消／完成，下：選項列
+        const avH = Math.max(80, S.height - top - bot), sc = Math.min((S.width - pad * 2) / r.width, avH / r.height);
         ccv.width = r.width * sc; ccv.height = r.height * sc; ccv.getContext('2d').drawImage(r, 0, 0, ccv.width, ccv.height);
-        Object.assign(ccv.style, { left: (S.width - ccv.width) / 2 + 'px', top: (S.height - ccv.height) / 2 + 'px' }); cropDraw();
+        Object.assign(ccv.style, { left: (S.width - ccv.width) / 2 + 'px', top: top + (avH - ccv.height) / 2 + 'px' }); cropDraw();
       }
       function cropDraw() {
         const L = parseFloat(ccv.style.left), T = parseFloat(ccv.style.top);
@@ -566,7 +570,7 @@
       function setMode(m) {
         mode = m; v.querySelectorAll('[data-m]').forEach(x => { x.hidden = x.dataset.m !== m; });
         v.classList.toggle('sub', m !== 'main'); pen.hidden = m !== 'draw'; art.hidden = m === 'crop'; cropEl.hidden = m !== 'crop'; q('.lfc-ed-back').hidden = m !== 'main';
-        if (m === 'crop') { ck = { ...crop }; rcBefore = rot; cropShow(); }
+        if (m === 'crop') { ck = { ...crop }; rcBefore = rot; flBefore = flip; cropShow(); }
         if (m !== 'main') { sel = null; placeLayers(); }
       }
       let rcBefore = 0, editing = null;
@@ -615,9 +619,10 @@
         if (a === 'draw') return setMode('draw');
         if (a === 'undo') { strokes.pop(); return render(); }
         if (a === 'rot') { rot = (rot + 90) % 360; ck = { x: 0, y: 0, w: 1, h: 1 }; applyRatio(); return cropShow(); }
+        if (a === 'flip') { flip = !flip; ck = { x: 1 - ck.x - ck.w, y: ck.y, w: ck.w, h: ck.h }; return cropShow(); }
         if (a === 'tok') return textOk();
-        if (a === 'cancel') { if (mode === 'crop' && rot !== rcBefore) { rot = rcBefore; } editing = null; setMode('main'); return render(); }
-        if (a === 'done') { if (mode === 'crop') { if (rot !== rcBefore) { strokes = []; } crop = { ...ck }; } setMode('main'); return render(); }
+        if (a === 'cancel') { if (mode === 'crop') { rot = rcBefore; flip = flBefore; } editing = null; setMode('main'); return render(); }
+        if (a === 'done') { if (mode === 'crop') { if (rot !== rcBefore || flip !== flBefore) { strokes = []; } crop = { ...ck }; } setMode('main'); return render(); }
         if (a === 'back') { close(); return o.onBack ? o.onBack() : o.onClose && o.onClose(); }
         if (a === 'dl') { const bl = await exportBlob(); if (!bl) return; const u = URL.createObjectURL(bl), l = document.createElement('a'); l.href = u; l.download = 'LinFamily-' + Date.now() + '.jpg'; document.body.append(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); return toast('已存到手機'); }
         if (a === 'send') { b.disabled = true; const bl = await exportBlob(); if (!bl) { b.disabled = false; return; } close(); o.onClose && o.onClose(); return sendFiles([new File([bl], 'photo.jpg', { type: 'image/jpeg' })]); }
@@ -631,7 +636,7 @@
       // mode：live＝我們的相機；native＝用手機相機拍完回來加相框
       let facing = 'environment', stream = null, track = null, caps = {}, fr = 'none', timer = 0, torch = false, shot = null, busy = false;
       let mode = 'live', baseImg = null, z = 1, zMin = 1, zMax = 5, hwZoom = false, flashModes = [], flash = 'auto';
-      const TONE = 'saturate(1.1) contrast(1.05) brightness(1.03)'; // 調色：偏 iPhone 原廠的鮮明、明亮一點
+      const TONE = 'saturate(1.25) contrast(1.08) brightness(1.06) sepia(.12)'; // 調色 D：鮮明暖調（偏 iPhone 鮮豔暖色）
       const I = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
       const v = h(`<div class="lfc-cam${wide ? ' wide' : ''}"><div class="lfc-cam-box">
         <div class="lfc-cam-view"><video playsinline muted autoplay></video><img class="lfc-cam-base" alt="" hidden><canvas class="lfc-cam-fr"></canvas><img class="lfc-cam-shotimg" alt="" hidden><b class="lfc-cam-count" hidden></b><i class="lfc-cam-focus" hidden></i></div>
@@ -675,11 +680,12 @@
       // ---- 縮放：鏡頭有變焦就用鏡頭（畫質好），沒有就裁切放大 ----
       function zoomUI() { // 倍率拉桿 1～5 倍
         const box = q('.lfc-cam-zoom'); box.hidden = mode !== 'live' || !!shot;
-        if (!box.firstChild) { box.innerHTML = '<span>1×</span><input type="range" min="1" max="5" step="0.1" aria-label="倍率"><b></b>'; box.querySelector('input').oninput = e => setZoom(+e.target.value); }
-        const hi = Math.min(5, zMax); const rg = box.querySelector('input'); rg.max = hi; rg.value = z; box.querySelector('b').textContent = (Math.round(z * 10) / 10) + '×';
+        if (!box.firstChild) { box.innerHTML = '<span></span><input type="range" min="1" max="5" step="0.05" aria-label="倍率"><b></b>'; box.querySelector('input').oninput = e => setZoom(+e.target.value); }
+        const lo = zLo(), hi = Math.min(5, zMax); const rg = box.querySelector('input'); rg.min = lo; rg.max = hi; rg.value = z; box.querySelector('span').textContent = (Math.round(lo * 10) / 10) + '×'; box.querySelector('b').textContent = (Math.round(z * 10) / 10) + '×';
       }
+      const zLo = () => hwZoom ? Math.max(.5, zMin) : 1;
       function setZoom(nz) {
-        z = Math.min(Math.min(5, zMax), Math.max(1, zMin, nz));
+        z = Math.min(Math.min(5, zMax), Math.max(zLo(), nz));
         if (hwZoom) setTrack({ zoom: z }); else video.style.transform = `${facing === 'user' ? 'scaleX(-1) ' : ''}scale(${z})`;
         zoomUI();
       }
@@ -714,8 +720,8 @@
         // 閃光燈：拍照模式支援「自動／開／關」就用它，不然只有手電筒開關
         flashModes = []; try { if (window.ImageCapture) { const pc = await new ImageCapture(track).getPhotoCapabilities(); flashModes = (pc.fillLightMode || []).filter(m => ['auto', 'flash', 'off'].includes(m)); } } catch (_) {}
         const fb = q('[data-a="torch"]'); fb.hidden = !(flashModes.length > 1 || caps.torch); if (flashModes.length > 1 && !flashModes.includes(flash)) flash = 'off'; flashUI();
-        const ex = q('.lfc-cam-exp'), ec = caps.exposureCompensation; ex.hidden = !ec;
-        if (ec) { const r = ex.querySelector('input'), m = Math.min(-ec.min, ec.max); Object.assign(r, { min: -m, max: m, step: ec.step || .1 }); r.value = 0; setTrack({ exposureCompensation: 0 }); r.oninput = () => setTrack({ exposureMode: 'continuous', exposureCompensation: +r.value }); } // 每次回來都在中間
+        const ex = q('.lfc-cam-exp'), ec = caps.exposureCompensation, em = ec ? Math.min(-ec.min, ec.max) : 0; ex.hidden = !(em > 0);
+        if (em > 0) { const r = ex.querySelector('input'), m = em; Object.assign(r, { min: -m, max: m, step: ec.step || .1 }); r.value = 0; setTrack({ exposureCompensation: 0 }); r.oninput = () => setTrack({ exposureMode: 'continuous', exposureCompensation: +r.value }); } // 每次回來都在中間
         video.onloadedmetadata = () => { video.play(); paint(); };
       }
       // 組合成照片：來源照片（裁成畫面看到的範圍）＋相框
@@ -1092,6 +1098,7 @@
         if (was !== me.uid) start();
       },
       account() { if (me) avatarPicker(false); },
+      _camera: () => camera(), _editor: (f, o) => photoEditor(f, o),
       closePopups() { if (closeOverlay) closeOverlay(false); },
       search, findNext: () => findStep(1),
       show(on) {
