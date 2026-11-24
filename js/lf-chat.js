@@ -504,7 +504,9 @@
         if (restoreFocus && box.contains(previousFocus)) previousFocus.focus();
       };
       const q = selector => ov.querySelector(selector);
-      ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
+      let downOut = false; // 按下和放開都在框外才關（選字拖出框外放開不會跳掉）
+      ov.addEventListener('pointerdown', e => { downOut = e.target === ov; });
+      ov.addEventListener('click', e => { if ((e.target === ov && downOut) || e.target.closest('[data-close]')) close(); downOut = false; });
       ov.addEventListener('keydown', e => {
         if (e.key === 'Escape') { e.stopPropagation(); close(); }
         if (e.key !== 'Tab') return;
@@ -594,10 +596,11 @@
       const p = prof(uid), ph = phones[uid] || '';
       const o = overlay(`<div class="lfc-big">${face(p.av)}</div><h3>${esc(p.name)}</h3><p>${ph ? esc(ph) : '尚未設定電話'}</p>
         ${ph ? `<a class="lfc-pbtn" href="tel:${esc(ph.replace(/[^\d+]/g, ''))}">📞 撥打電話</a>` : ''}
-        ${isSuper() ? `<div class="lfc-field"><input id="lfcPh" type="tel" placeholder="手機號碼（只有 Superuser 能改）" value="${esc(ph)}"><button id="lfcPhSave">儲存</button></div>` : ''}
+        ${isSuper() ? `<div class="lfc-field"><input id="lfcPh" type="tel" enterkeyhint="done" placeholder="手機號碼（只有 Superuser 能改）" value="${esc(ph)}"><button id="lfcPhSave">儲存</button></div>` : ''}
         ${uid !== me.uid ? '<button class="lfc-pbtn" id="lfcAtBtn" style="background:var(--btn);color:var(--text)">＠ 提及</button>' : ''}
         <button class="lfc-gbtn" data-close>關閉</button>`);
       if (uid !== me.uid) o.q('#lfcAtBtn').onclick = () => { o.close(); insertAt(p.name); };
+      if (isSuper()) o.q('#lfcPh').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); o.q('#lfcPhSave').click(); } });
       if (isSuper()) o.q('#lfcPhSave').onclick = () => db.collection('lf_chat_phones').doc(uid).set({ phone: o.q('#lfcPh').value.trim() })
         .then(() => { toast('電話已儲存'); o.close(); }, () => toast('無法儲存（請確認 Firestore 規則已發布）'));
     }
@@ -625,6 +628,7 @@
       o.ov.addEventListener('click', e => { const sb = e.target.closest('[data-src]');
         if (sb) { const k = sb.dataset.src; return k === 'cam' || k === 'file' ? o.q(`[data-in="${k}"]`).click() : crop(k); }
         const b = e.target.closest('[data-k]'); if (!b) return; pick = b.dataset.k; o.q('#lfcCur').innerHTML = face(pick); o.ov.querySelectorAll('[data-k]').forEach(x => x.classList.toggle('on', x === b)); });
+      o.q('#lfcName').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); o.q('#lfcAvSave').click(); } }); // Enter 儲存（注音選字中不算）
       o.q('#lfcAvSave').onclick = () => {
         const name = o.q('#lfcName').value.trim() || p.name;
         db.collection('lf_chat_profiles').doc(me.uid).set({ name, av: pick, email: me.email.toLowerCase(), at: FV.serverTimestamp() }, { merge: true })
