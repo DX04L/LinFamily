@@ -469,7 +469,7 @@ window.clcMountTodos = function (dashboard, {
         if (body.classList.contains('todo-deleting') === on) return;
         body.classList.toggle('todo-deleting', on);
         doneList.classList.toggle('todo-deleting', on);
-        if (on && navigator.vibrate) navigator.vibrate(15);
+        // 震動已在長按浮起時給過一次，這裡不再震（避免連震兩下）
         render();
       }
       document.addEventListener('pointerdown', e => {
