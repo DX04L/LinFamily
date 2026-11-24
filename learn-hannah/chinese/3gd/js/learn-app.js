@@ -59,7 +59,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124c').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124d').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -147,7 +147,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124c').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124d').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -592,18 +592,10 @@
       qa.innerHTML = `<textarea class="ans" placeholder="用鍵盤或手寫寫下你的答案…"></textarea>
         <div class="row" style="margin-top:10px"><button class="btn ghost" id="hwb">✍️ 手寫輸入</button><span class="spacer"></span><button class="btn" id="chk">檢查</button></div><div id="hwbox"></div>`;
       const ta = qa.querySelector('textarea'), hwbox = qa.querySelector('#hwbox'), chk = qa.querySelector('#chk');
-      qa.querySelector('#hwb').onclick = () => {
-        if (hwbox.firstChild) { hwbox.innerHTML = ''; return; }
-        const pd = LearnHW.pad({ okText: '辨識', onResult: cands => {
-          if (!cands) return toast('辨識服務連不上，請用鍵盤輸入');
-          pd.showCands(cands, ch => { ta.value += ch; pd.clear(); });
-        } });
-        hwbox.append(pd.el);
-        const punct = document.createElement('div'); punct.className = 'row'; punct.style.justifyContent = 'center';
-        punct.innerHTML = ['，', '。', '！', '？', '「', '」', '⌫'].map(x => `<button class="btn ghost" style="min-width:52px">${x}</button>`).join('');
-        punct.querySelectorAll('button').forEach(b => b.onclick = () => { ta.value = b.textContent === '⌫' ? [...ta.value].slice(0, -1).join('') : ta.value + b.textContent; });
-        hwbox.append(punct);
-      };
+      qa.querySelector('#hwb').onclick = () => LearnHW.sheet({
+        titleHtml: `<span class="zy">${zy(q.q)}</span>`,
+        onDone: text => { if (text) { ta.value += text; ta.focus(); } }
+      });
       chk.onclick = () => {
         const v = ta.value.trim();
         if (!v) return toast('先寫答案喔');

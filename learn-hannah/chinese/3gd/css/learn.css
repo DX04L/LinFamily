@@ -171,3 +171,19 @@ html.dark .toast { background: #EDEDED; color: #111; }
 .seg button + button { border-left: 1.5px solid var(--main); }
 .seg button.on { background: var(--main); color: #fff; }
 html.dark .seg button.on { color: #111; }
+
+/* 全螢幕稿紙（直書、由右到左） */
+body.sheet-open { overflow: hidden; }
+.sheet { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; background: var(--bg);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.sheet-top { padding: 8px 12px 6px; border-bottom: 1px solid var(--line); }
+.sheet-q { font-size: 17px; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sheet-bar { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+.sheet-bar .btn { min-height: 44px; padding: 6px 12px; font-size: 16px; }
+.sheet-pg { font-size: 14px; color: var(--sub); min-width: 34px; text-align: center; }
+.sheet-grid { flex: 1; position: relative; min-height: 0; }
+.sheet-grid canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.sheet-cands { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
+.sheet-cands .cand { min-width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-size: 26px; font-family: var(--plain); }
+.sheet-res { font-size: 18px; } .sheet-res b { font-family: var(--plain); }
+.sheet-cands small { color: var(--sub); }
