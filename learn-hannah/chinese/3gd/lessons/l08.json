@@ -334,15 +334,13 @@
    "name": "生字",
    "icon": "✏️",
    "desc": "15 個字都會寫",
-   "auto": true,
-   "levels": 5
+   "auto": true
   },
   {
    "id": "ci",
    "name": "圈詞",
    "icon": "⭕",
-   "desc": "聽寫、填空、找錯字",
-   "levels": 9
+   "desc": "聽寫、填空、看解釋、找錯字"
   },
   {
    "id": "poly",

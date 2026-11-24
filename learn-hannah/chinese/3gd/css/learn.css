@@ -269,3 +269,6 @@ html.dark .heart b { color: #111; }
     box-shadow: 0 -6px 24px rgba(0,0,0,.2); font-size: 17px; }
 }
 .tlog { font-size: 15px; line-height: 1.7; color: var(--sub); margin-top: 6px; }
+.heart.star svg { fill: #F2B632; }
+.heart.star b { color: #5a3d00; margin-top: 1px; }
+.lvgrid .opt small { font-size: 14px; }
