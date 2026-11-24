@@ -115,7 +115,7 @@
 
     requestAnimationFrame(setup);
     window.addEventListener('resize', () => el.isConnected && setup());
-    return { el, clear, recognize, showCands, get empty() { return !ink.length; } };
+    return { el, clear, recognize, showCands, setGuide(g) { opt.guide = g; redraw(); }, get empty() { return !ink.length; } };
   }
 
   const INITIALS = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙ';
