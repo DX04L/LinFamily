@@ -285,6 +285,9 @@
     .lf-dialog .lf-err[hidden] { display:none; }
     .lf-dialog .lf-note { color:var(--muted); font-size:13px; line-height:1.6; margin:0; }
     .lf-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+    /* 對話框太高（手機）時內容捲動，底部按鈕固定在最下面不被切掉 */
+    dialog.lf-dialog { max-height:calc(100dvh - 24px); overflow-y:auto; overscroll-behavior:contain; }
+    .lf-dialog .lf-actions { position:sticky; bottom:0; z-index:1; margin:4px -22px -22px; padding:12px 22px calc(22px + env(safe-area-inset-bottom)); background:var(--surface); border-radius:0 0 20px 20px; }
     .lf-actions button { height:42px; padding:0 18px; border-radius:12px; font-weight:700; font-size:15px; border:0; cursor:pointer; background:var(--btn); }
     .lf-actions .lf-primary { background:var(--pine); color:#fff; }
     .lf-actions .lf-primary:disabled { opacity:.5; }
@@ -427,6 +430,20 @@
 
   <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script><!-- 只用 clcSlotGridNormalize（舊 pos 欄位） -->
   <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=20"></script>
+  <script>
+    // 開發準則：確認／操作用的彈出視窗一次只能有一個。開新的對話框時，自動關掉其他對話框和留言板的彈窗。
+    // 例外（刻意疊在上面的設計）：圖片裁切 clc-crop，或 dialog 加 data-stack。
+    (function () {
+      const show = HTMLDialogElement.prototype.showModal;
+      HTMLDialogElement.prototype.showModal = function () {
+        if (!this.classList.contains('clc-crop') && !('stack' in this.dataset)) {
+          document.querySelectorAll('dialog[open]').forEach(d => { if (d !== this && !d.contains(this)) d.close(); });
+          if (window.lfChatApi && window.lfChatApi.closePopups) window.lfChatApi.closePopups();
+        }
+        return show.apply(this, arguments);
+      };
+    })();
+  </script>
   <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261124-crop"></script>
   <script src="js/lf-menu.js?v=5"></script>
@@ -434,7 +451,7 @@
   <script src="js/dashboard-todos.js?v=20261124a"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=21"></script>
+  <script src="js/lf-chat.js?v=22"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';

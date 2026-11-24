@@ -493,6 +493,7 @@
     // ---------- 彈出層 ----------
     function overlay(html) {
       if (closeOverlay) closeOverlay(false);
+      document.querySelectorAll('dialog.lf-dialog[open]').forEach(d => d.close()); // 一次只有一個彈窗
       const previousFocus = document.activeElement;
       const ov = h(`<div class="lfc-ov"><div class="lfc-card" role="dialog" aria-modal="true" tabindex="-1">${html}</div></div>`);
       const card = ov.firstElementChild;
@@ -661,6 +662,7 @@
         if (was !== me.uid) start();
       },
       account() { if (me) avatarPicker(false); },
+      closePopups() { if (closeOverlay) closeOverlay(false); },
       search, findNext: () => findStep(1),
       show(on) {
         visible = on; dot(); document.body.classList.toggle('lf-tab-family', on);

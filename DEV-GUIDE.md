@@ -70,3 +70,8 @@
 - `clcImageSources()` → `{ camera, shot, paste }`：這台裝置可用的來源（拍照只在手機、螢幕截圖／貼上只在電腦）。
 - `await clcCropImage(src, { round, title, tip })`：`src` 是 File（拍照／上傳的 input），或 `'shot'`、`'paste'`。開啟可拖曳、縮放（滑桿、滾輪、雙指）的裁切畫面，回傳 160px WebP data URL，取消回傳 null。`round:true` 為圓形（頭像）。
 - 範例：留言板頭像（js/lf-chat.js 的 avatarPicker）；App 圖示用 `clcIconUploader()`。
+
+## 彈出視窗一次只有一個
+- 確認、操作用的彈出視窗（`<dialog>`、留言板的彈窗）同一時間只能出現一個；開新的要自動關掉舊的。index.html 已統一處理 `showModal()`，留言板 overlay 也會關掉 `dialog.lf-dialog`。
+- 例外：刻意疊在上面的設計（例如圖片裁切 `clc-crop`），或在 dialog 加 `data-stack`。
+- 對話框在手機上太高時內容捲動，底部「完成／儲存」按鈕固定在最下面，不能被切掉（`.lf-dialog .lf-actions` 為 sticky）。
