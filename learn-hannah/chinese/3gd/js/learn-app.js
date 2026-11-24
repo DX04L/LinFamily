@@ -34,6 +34,48 @@
   const dlg = $('#dlg'), dlgBody = $('#dlgBody');
   function openDialog(html, bind) { dlgBody.innerHTML = html; bind && bind(dlgBody); dlg.showModal(); }
 
+  // ---------- 朗讀：先用裝置的中文語音；沒有中文語音、出錯或沒出聲時，改用 Google 線上語音 ----------
+  const TTS = (() => {
+    const ss = window.speechSynthesis;
+    let voice = null, keep = null, audio = null, token = 0;
+    const find = () => { if (!ss) return null; const v = ss.getVoices(); return v.find(x => /zh[-_]TW/i.test(x.lang)) || v.find(x => /zh[-_](HK|Hant)/i.test(x.lang)) || v.find(x => /^(zh|cmn)/i.test(x.lang)) || null; };
+    const ready = new Promise(res => {
+      voice = find(); if (voice || !ss) return res();
+      const t = setTimeout(res, 1500);
+      ss.addEventListener('voiceschanged', () => { voice = find(); if (voice) { clearTimeout(t); res(); } });
+    });
+    function stop() { token++; if (ss) ss.cancel(); if (audio) { audio.pause(); audio = null; } }
+    function online(text, rate, onend, my) {
+      const parts = text.match(/[^。！？]{1,140}[。！？]?/g) || [text];
+      let i = 0;
+      const next = () => {
+        if (my !== token) return;
+        if (i >= parts.length) return onend && onend();
+        audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-TW&client=tw-ob&ttsspeed=${rate < .7 ? .3 : 1}&q=${encodeURIComponent(parts[i++])}`);
+        audio.onended = next;
+        audio.onerror = () => { if (my === token) toast('播放不出聲音：請檢查網路和媒體音量'); };
+        audio.play().catch(() => toast('請再按一次播放'));
+      };
+      next();
+    }
+    async function say(text, opt) {
+      opt = opt || {}; stop(); const my = token;
+      await ready; if (my !== token) return;
+      if (!voice) return online(text, opt.rate || .85, opt.onend, my);
+      setTimeout(() => {
+        if (my !== token) return;
+        const u = new SpeechSynthesisUtterance(text); keep = u;
+        u.voice = voice; u.lang = voice.lang; u.rate = opt.rate || .85;
+        let started = false; u.onstart = () => { started = true; };
+        u.onend = () => { if (my === token && opt.onend) opt.onend(); };
+        u.onerror = e => { if (my !== token || e.error === 'interrupted' || e.error === 'canceled') return; online(text, opt.rate || .85, opt.onend, my); };
+        ss.speak(u);
+        setTimeout(() => { if (my === token && !started && !ss.speaking) { ss.cancel(); online(text, opt.rate || .85, opt.onend, my); } }, 1800);
+      }, 80);
+    }
+    return { say, stop };
+  })();
+
   // ---------- 頁首 ----------
   // 畫面顏色：淺色／深色／護眼（像紙一樣的暖色底，減少藍光）
   function setTheme(m) {
@@ -69,7 +111,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124g').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124h').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -164,7 +206,7 @@
   // ---------- 路由 ----------
   window.addEventListener('hashchange', () => allowed && route());
   async function route() {
-    window.speechSynthesis && speechSynthesis.cancel();
+    TTS.stop();
     const p = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
     try {
       if (!p.length) { curL = null; return listView(); }
@@ -179,7 +221,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124g').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124h').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -304,18 +346,14 @@
     function speak(n) {
       const el = app.querySelector(`.para[data-n="${n}"]`);
       app.querySelectorAll('.para.now').forEach(x => x.classList.remove('now'));
-      if (!el || !window.speechSynthesis) return;
+      if (!el) return;
       el.classList.add('now'); el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const u = new SpeechSynthesisUtterance(clean(L.paras[n - 1]).replace(/[『』]/g, ''));
-      u.lang = 'zh-TW'; u.rate = .85;
-      const v = speechSynthesis.getVoices().find(v => /zh[-_]TW/i.test(v.lang)); if (v) u.voice = v;
-      u.onend = () => { el.classList.remove('now'); markRead(n); const nx = queue.shift(); if (nx) speak(nx); else stopBtn.hidden = true; };
-      speechSynthesis.speak(u); stopBtn.hidden = false;
+      stopBtn.hidden = false;
+      TTS.say(clean(L.paras[n - 1]).replace(/[『』]/g, ''), { rate: .85, onend: () => { el.classList.remove('now'); markRead(n); const nx = queue.shift(); if (nx) speak(nx); else stopBtn.hidden = true; } });
     }
-    if (!window.speechSynthesis) $('#playAll').hidden = true;
-    $('#playAll').onclick = () => { speechSynthesis.cancel(); queue = L.paras.map((_, i) => i + 1); speak(queue.shift()); };
-    stopBtn.onclick = () => { queue = []; speechSynthesis.cancel(); stopBtn.hidden = true; app.querySelectorAll('.para.now').forEach(x => x.classList.remove('now')); };
-    app.querySelectorAll('.para .n').forEach(b => b.onclick = () => { speechSynthesis.cancel(); queue = []; speak(+b.parentNode.dataset.n); });
+    $('#playAll').onclick = () => { queue = L.paras.map((_, i) => i + 1); speak(queue.shift()); };
+    stopBtn.onclick = () => { queue = []; TTS.stop(); stopBtn.hidden = true; app.querySelectorAll('.para.now').forEach(x => x.classList.remove('now')); };
+    app.querySelectorAll('.para .n').forEach(b => b.onclick = () => { queue = []; speak(+b.parentNode.dataset.n); });
     app.querySelectorAll('.ch').forEach(s => s.onclick = () => charDialog(L, s.dataset.c));
     $('#doneRead').onclick = () => {
       L.paras.forEach((_, i) => markRead(i + 1));
@@ -492,13 +530,7 @@
     土: ['土', '土字旁，和泥土有關'], 刀: ['刀', '和刀子、剪切有關'], 日: ['日', ''], 糸: ['糸', '糸字旁，和絲線有關'], 曰: ['曰', ''],
     金: ['金', '金字旁，和金屬有關'], 子: ['子', ''], 齊: ['齊', ''], 火: ['灬', '四點火，和火有關'], 鬼: ['鬼', '和鬼怪、神祕有關'], 水: ['氵', '三點水，和水有關']
   };
-  function say(text, rate) {
-    if (!window.speechSynthesis) return;
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = rate || .8;
-    const v = speechSynthesis.getVoices().find(v => /zh[-_]TW/i.test(v.lang)); if (v) u.voice = v;
-    speechSynthesis.speak(u);
-  }
+  const say = (text, rate) => TTS.say(text, { rate: rate || .8 });
   // 為什麼錯：不直接給答案，說出部首和意思
   function whyChar(L, got, ans, k) {
     const r = (L.rads || {})[ans], m = RADM[r] || [r, ''];
