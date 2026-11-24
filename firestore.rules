@@ -49,7 +49,8 @@ service cloud.firestore {
     match /lf_chat_messages/{id} {
       allow read: if chatMember();
       allow create: if chatMember() && request.resource.data.uid == request.auth.uid
-        && request.resource.data.keys().hasOnly(['uid', 'ts', 'text', 'img', 'stk', 'replyTo', 'mentions'])
+        && request.resource.data.keys().hasOnly(['uid', 'ts', 'text', 'img', 'stk', 'replyTo', 'mentions', 'bot'])
+        && (!('bot' in request.resource.data) || request.resource.data.bot == 'pinky')
         && request.resource.data.ts == request.time;
       // 本人可收回；其他人只能改自己的表情回應
       allow update: if chatMember() && (

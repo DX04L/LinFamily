@@ -90,6 +90,7 @@
     let msgs = [], members = {}, phones = {}, reads = {}, pin = null, myRead = 0, firstOpen = true, reply = null, menuOpen = false;
     const hidden = new Set(JSON.parse(localStorage.getItem('linfamily_chat_hidden') || '[]'));
     const isSuper = () => role === 'superuser';
+    const PINKY = { name: 'Pinky', av: 'cat' }; // AI 小幫手（訊息存成發問者的 uid + bot:'pinky'）
     const prof = uid => members[uid] || { name: '家人', av: 'cat' };
 
     const I = d => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -264,6 +265,7 @@
     function textHtml(m) {
       let s = esc(m.text || '').replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
       (m.mentions || []).forEach(uid => { const n = esc('@' + prof(uid).name); s = s.split(n).join(`<span class="lfc-ment">${n}</span>`); });
+      s = s.replace(/@pinky/gi, x => `<span class="lfc-ment">${x}</span>`);
       return s;
     }
     function readCount(m) { let n = 0; for (const uid in reads) if (uid !== me.uid && reads[uid] >= m.t) n++; return n; }
@@ -277,7 +279,7 @@
         const dl = dayLabel(m.t);
         if (dl !== lastDay) { frag.append(h(`<div class="lfc-date"><span>${dl}</span></div>`)); lastDay = dl; }
         if (!unreadMark && firstOpen && myRead && m.t > myRead && m.uid !== me.uid) { unreadMark = true; frag.append(h('<div class="lfc-sys lfc-unread" id="lfcUnreadMark"><span>以下為尚未閱讀的訊息</span></div>')); }
-        const p = prof(m.uid), mine = m.uid === me.uid;
+        const bot = m.bot === 'pinky', p = bot ? PINKY : prof(m.uid), mine = !bot && m.uid === me.uid;
         if (m.unsent) { frag.append(h(`<div class="lfc-sys"><span>${esc(mine ? '你' : p.name)}已收回訊息</span></div>`)); return; }
         let body;
         if (m.img) body = `<div class="lfc-bub lfc-media"><img class="lfc-photo" src="${m.img}" alt="照片"></div>`;
@@ -290,7 +292,7 @@
         const meta = `<div class="lfc-meta">${mine && n ? '已讀 ' + n + '<br>' : ''}${hm(m.t)}</div>`;
         const hit = !mine && (m.mentions || []).includes(me.uid);
         frag.append(h(`<div class="lfc-row${mine ? ' me' : ''}${hit ? ' hit' : ''}" data-id="${m.id}">
-          ${mine ? '' : `<button class="lfc-av" data-uid="${esc(m.uid)}" aria-label="${esc(p.name)}">${face(p.av)}</button>`}
+          ${mine ? '' : bot ? `<span class="lfc-av lfc-bot" aria-label="Pinky">${face(p.av)}</span>` : `<button class="lfc-av" data-uid="${esc(m.uid)}" aria-label="${esc(p.name)}">${face(p.av)}</button>`}
           <div class="lfc-col">${mine ? '' : `<p class="lfc-name">${esc(p.name)}</p>`}<div class="lfc-line">${body}${meta}</div>${reacts}</div></div>`));
       });
       list.replaceChildren(frag); if (findQ) findMark();
@@ -313,7 +315,24 @@
       const text = input.value.trim(); if (!text) return;
       const mentions = Object.keys(members).filter(uid => text.includes('@' + members[uid].name));
       input.value = ''; grow(); $('lfcSugg').hidden = true;
-      send(mentions.length ? { text, mentions } : { text });
+      send(mentions.length ? { text, mentions } : { text }).then(ok => { if (ok && /@pinky/i.test(text)) askPinky(text); });
+    }
+    // ---------- @Pinky AI 小幫手（只在聊天室裡回覆文字） ----------
+    let pinkyBusy = false;
+    async function askPinky(text) {
+      if (pinkyBusy) return toast('Pinky 還在想上一題，請稍等');
+      pinkyBusy = true; toast('Pinky 思考中…');
+      try {
+        const history = msgs.filter(m => !m.unsent && m.text).slice(-20).map(m => ({ name: m.bot === 'pinky' ? 'Pinky' : prof(m.uid).name, text: m.text }));
+        const url = (/^\/lf(\/|$)/.test(location.pathname) ? '/lf' : '') + '/api/pinky';
+        const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ idToken: await me.getIdToken(), name: prof(me.uid).name, prompt: text, history }) });
+        const d = await res.json().catch(() => ({}));
+        if (!d.ok) throw new Error(d.error || ('HTTP ' + res.status));
+        await db.collection('lf_chat_messages').add({ uid: me.uid, bot: 'pinky', ts: FV.serverTimestamp(), text: d.text });
+        clearTimeout(noticeTimer); notice.textContent = '';
+      } catch (e) { toast('Pinky 暫時沒辦法回答：' + String(e.message || e).slice(0, 80)); console.warn(e); }
+      finally { pinkyBusy = false; }
     }
     async function sendFiles(files) {
       for (const f of Array.from(files || []).slice(0, 10)) {
@@ -406,14 +425,18 @@
       const box = $('lfcSugg'), m = input.value.slice(0, input.selectionStart).match(/@([^\s@]*)$/);
       if (!m) { box.hidden = true; return; }
       const q = m[1].toLowerCase(), hits = Object.keys(members).filter(uid => uid !== me.uid && members[uid].name.toLowerCase().includes(q));
-      if (!hits.length) { box.hidden = true; return; }
-      box.replaceChildren(...hits.map(uid => { const b = h(`<button><span class="lfc-av">${face(members[uid].av)}</span>${esc(members[uid].name)}</button>`);
+      const pk = 'pinky'.includes(q);
+      if (!hits.length && !pk) { box.hidden = true; return; }
+      const pick = name => { const pos = input.selectionStart, before = input.value.slice(0, pos).replace(/@[^\s@]*$/, '@' + name + ' ');
+        input.value = before + input.value.slice(pos); input.focus(); input.selectionStart = input.selectionEnd = before.length; box.hidden = true; };
+      const pb = h(`<button><span class="lfc-av">${face('cat')}</span>Pinky（AI）</button>`); pb.onclick = () => pick('Pinky');
+      box.replaceChildren(...(pk ? [pb] : []), ...hits.map(uid => { const b = h(`<button><span class="lfc-av">${face(members[uid].av)}</span>${esc(members[uid].name)}</button>`);
         b.onclick = () => { const pos = input.selectionStart, before = input.value.slice(0, pos).replace(/@[^\s@]*$/, '@' + members[uid].name + ' ');
           input.value = before + input.value.slice(pos); input.focus(); input.selectionStart = input.selectionEnd = before.length; box.hidden = true; }; return b; }));
       box.hidden = false;
     }
     function setReply(m) {
-      reply = m ? { id: m.id, name: prof(m.uid).name, text: m.text ? m.text.slice(0, 60) : m.img ? '照片' : '貼圖' } : null;
+      reply = m ? { id: m.id, name: m.bot === 'pinky' ? 'Pinky' : prof(m.uid).name, text: m.text ? m.text.slice(0, 60) : m.img ? '照片' : '貼圖' } : null;
       $('lfcReply').hidden = !reply; if (reply) { $('lfcReplyText').textContent = '回覆 ' + reply.name + '：' + reply.text; input.focus(); }
       fit();
     }
@@ -423,7 +446,7 @@
     function go(id) { const r = list.querySelector(`[data-id="${CSS.escape(id)}"]`); if (!r) return toast('這則訊息已經太舊或被收回'); r.scrollIntoView({ block: 'center', behavior: 'smooth' }); r.classList.remove('lfc-flash'); void r.offsetWidth; r.classList.add('lfc-flash'); }
     list.addEventListener('click', e => {
       if (menuOpen) return;
-      const av = e.target.closest('.lfc-av'); if (av) return profile(av.dataset.uid);
+      const av = e.target.closest('.lfc-av'); if (av) return av.dataset.uid ? profile(av.dataset.uid) : undefined;
       const q = e.target.closest('[data-go]'); if (q) return go(q.dataset.go);
       const ph = e.target.closest('.lfc-photo'); if (ph) return viewer(ph.closest('.lfc-row').dataset.id);
       const em = e.target.closest('[data-emo]'); if (em) return react(em.closest('.lfc-row').dataset.id, em.dataset.emo);
