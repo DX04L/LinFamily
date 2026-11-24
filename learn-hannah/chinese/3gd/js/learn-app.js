@@ -105,6 +105,10 @@
     return { say, stop, test };
   })();
 
+  // 手寫判斷：嚴格＝辨識第一名就是正確的字；寬鬆＝前三名裡有就算對
+  const isStrict = () => { try { return localStorage.getItem('linfamily_learn_strict') !== '0'; } catch (e) { return true; } };
+  const charOk = (cands, ans) => isStrict() ? cands[0] === ans : cands.slice(0, 3).includes(ans);
+
   // ---------- 頁首 ----------
   // 畫面顏色：淺色／深色／護眼（像紙一樣的暖色底，減少藍光）
   function setTheme(m) {
@@ -140,7 +144,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124l').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124m').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -250,7 +254,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124l').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124m').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -300,11 +304,15 @@
         <p class="set-h">個別單元</p>
         <div class="set-list">${units.map(u => { const s = p.units[u.id]; return `<div class="set-row"><span>${u.icon} ${u.name}<small>${s.done ? '✅ 完成' : lvName(L, u.id, s.lv)}${s.best ? `・❤ ${s.best}` : ''}</small></span>
           ${segBtns(L, u.id, s.done ? 0 : s.lv)}</div>`; }).join('')}</div>
+        <p class="set-h">✍️ 手寫判斷</p>
+        <div class="seg" id="strict"><button data-s="1" class="${isStrict() ? 'on' : ''}">嚴格</button><button data-s="0" class="${isStrict() ? '' : 'on'}">寬鬆</button></div>
+        <p class="muted" style="text-align:left;font-size:14px;margin:6px 0 0">嚴格：辨識第一個就要是正確的字。寬鬆：前三個候選字有就算對。</p>
         <p class="set-h">🔊 聲音測試</p>
         <div class="row"><button class="btn ghost" id="t1">測試手機語音</button><button class="btn ghost" id="t2">測試線上語音</button></div>
         <div id="tlog" class="tlog"></div>
         <p class="set-h">重設</p>
         <div class="row"><button class="btn ghost" id="rsAll">清除這一課所有紀錄</button></div>`;
+      root.querySelectorAll('#strict button').forEach(b => b.onclick = () => { try { localStorage.setItem('linfamily_learn_strict', b.dataset.s); } catch (e) {} draw(root); });
       const tlog = root.querySelector('#tlog');
       const log = m => { tlog.insertAdjacentHTML('beforeend', `<div>${esc(m)}</div>`); };
       root.querySelector('#t1').onclick = () => { tlog.innerHTML = ''; TTS.test('device', log); };
@@ -407,7 +415,7 @@
       root.querySelector('#cl').onclick = () => dlg.close();
       const pd = LearnHW.pad({ guide: c.c, okText: '檢查', onResult: cands => {
         if (cands === null) return toast('辨識服務連不上，自己對照看看');
-        toast(cands.slice(0, 3).includes(c.c) ? '寫對了！👍' : `看起來像「${cands[0] || '?'}」，再試一次`);
+        toast(charOk(cands, c.c) ? '寫對了！👍' : `看起來像「${cands[0] || '?'}」，再試一次`);
       } });
       root.querySelector('#pp').append(pd.el);
     });
@@ -612,11 +620,13 @@
       const res = await box.read();
       btn.textContent = '寫好了';
       if (res === null) { btn.disabled = false; return toast('辨識服務連不上，請稍後再試'); }
-      if (res.every((x, k) => okC[k] || x.empty)) { btn.disabled = false; return toast('先把字寫進格子裡'); }
+      // 只看還沒過的格子：國字沒過要有寫、注音沒過要有寫
+      const nothing = res.every((x, k) => (okC[k] || x.empty) && (okZ[k] || x.zyEmpty));
+      if (nothing) { btn.disabled = false; return toast('先把字寫進格子裡'); }
       const why = [];
       res.forEach((x, k) => {
         if (!okC[k]) {
-          okC[k] = x.cands.slice(0, 3).includes(w.w[k]);
+          okC[k] = charOk(x.cands, w.w[k]);
           if (okC[k]) box.mark(k, 'c', 'ok'); else { box.mark(k, 'c', 'bad'); why.push(x.empty ? `第 ${k + 1} 個字還沒寫。` : whyChar(L, x.c, w.w[k], k)); }
         }
         if (!okZ[k]) {
@@ -825,7 +835,7 @@
           box.querySelectorAll('button').forEach(b => b.onclick = () => { box.remove(); if (b.dataset.k === '1') ctl.submit(true); else { if (ctl.submit(false, { hint: charHint(ctl.L, q.a), reveal })) pd.clear(); } });
           return;
         }
-        if (cands.slice(0, 3).includes(q.a)) return ctl.submit(true);
+        if (charOk(cands, q.a)) return ctl.submit(true);
         const again = ctl.submit(false, { hint: `看起來像「${esc(cands[0] || '？')}」。${charHint(ctl.L, q.a)}`, reveal });
         pd.clear();
         if (again && pd.tries++ >= 1) { pd.setGuide(q.a); toast('照著淡淡的字描描看'); }
