@@ -637,6 +637,8 @@
       let facing = 'environment', stream = null, track = null, caps = {}, fr = 'none', timer = 0, torch = false, shot = null, busy = false;
       let mode = 'live', baseImg = null, z = 1, zMin = 1, zMax = 5, hwZoom = false, flashModes = [], flash = 'auto';
       const TONE = 'saturate(1.25) contrast(1.08) brightness(1.06) sepia(.12)'; // 調色 D：鮮明暖調（偏 iPhone 鮮豔暖色）
+      const COARSE = matchMedia('(pointer: coarse)').matches; let swB = 1;
+      const toneStr = () => TONE + (swB !== 1 ? ` brightness(${swB.toFixed(2)})` : ''), tone = () => { video.style.filter = toneStr(); };
       const I = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
       const v = h(`<div class="lfc-cam${wide ? ' wide' : ''}"><div class="lfc-cam-box">
         <div class="lfc-cam-view"><video playsinline muted autoplay></video><img class="lfc-cam-base" alt="" hidden><canvas class="lfc-cam-fr"></canvas><img class="lfc-cam-shotimg" alt="" hidden><b class="lfc-cam-count" hidden></b><i class="lfc-cam-focus" hidden></i></div>
@@ -713,16 +715,18 @@
         try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false }); }
         catch (e) { close(); toast(e && e.name === 'NotAllowedError' ? '沒有相機權限，改用相簿選照片' : '打不開相機，改用相簿選照片'); $('lfcFilePic').click(); return; }
         track = stream.getVideoTracks()[0]; caps = track && track.getCapabilities ? track.getCapabilities() : {};
-        video.srcObject = stream; video.classList.toggle('mirror', facing === 'user'); video.style.transform = ''; video.style.filter = TONE;
+        video.onloadedmetadata = () => { video.play().catch(() => {}); paint(); }; // 先接好再等其他設定，畫面不會卡黑
+        video.srcObject = stream; video.classList.toggle('mirror', facing === 'user'); video.style.transform = ''; swB = 1; tone();
         q('[data-a="torch"]').hidden = !caps.torch;
         hwZoom = !!(caps.zoom && caps.zoom.max > 1); zMin = hwZoom ? caps.zoom.min : 1; zMax = hwZoom ? Math.min(caps.zoom.max, 10) : 5; z = 1;
         if (hwZoom) setTrack({ zoom: Math.max(zMin, 1) }); zoomUI();
         // 閃光燈：拍照模式支援「自動／開／關」就用它，不然只有手電筒開關
-        flashModes = []; try { if (window.ImageCapture) { const pc = await new ImageCapture(track).getPhotoCapabilities(); flashModes = (pc.fillLightMode || []).filter(m => ['auto', 'flash', 'off'].includes(m)); } } catch (_) {}
+        flashModes = []; try { if (window.ImageCapture && COARSE) { const pc = await Promise.race([new ImageCapture(track).getPhotoCapabilities(), new Promise((_, no) => setTimeout(no, 1500))]); flashModes = (pc.fillLightMode || []).filter(m => ['auto', 'flash', 'off'].includes(m)); } } catch (_) {}
         const fb = q('[data-a="torch"]'); fb.hidden = !(flashModes.length > 1 || caps.torch); if (flashModes.length > 1 && !flashModes.includes(flash)) flash = 'off'; flashUI();
-        const ex = q('.lfc-cam-exp'), ec = caps.exposureCompensation, em = ec ? Math.min(-ec.min, ec.max) : 0; ex.hidden = !(em > 0);
-        if (em > 0) { const r = ex.querySelector('input'), m = em; Object.assign(r, { min: -m, max: m, step: ec.step || .1 }); r.value = 0; setTrack({ exposureCompensation: 0 }); r.oninput = () => setTrack({ exposureMode: 'continuous', exposureCompensation: +r.value }); } // 每次回來都在中間
-        video.onloadedmetadata = () => { video.play(); paint(); };
+        const ex = q('.lfc-cam-exp'), ec = caps.exposureCompensation, em = ec ? Math.min(-ec.min, ec.max) : 0, rg = ex.querySelector('input'); ex.hidden = false;
+        Object.assign(rg, { min: -1, max: 1, step: .05 }); rg.value = 0; // 每次回來都在中間
+        if (em > 0) setTrack({ exposureCompensation: 0 });
+        rg.oninput = () => { const x = +rg.value; if (em > 0) setTrack({ exposureMode: 'continuous', exposureCompensation: x * em }); else { swB = 1 + x * .45; tone(); } }; // 相機不能調就用軟體調亮暗
       }
       // 組合成照片：來源照片（裁成畫面看到的範圍）＋相框
       async function compose(src, sw, sh, crop, mirror) {
@@ -730,14 +734,14 @@
         if (crop) { const R = view.getBoundingClientRect(), a = R.width / R.height; if (sw / sh > a) cw = sh * a; else ch = sw / a; if (!hwZoom) { cw /= z; ch /= z; } }
         const k = Math.min(1, 2000 / Math.max(cw, ch)), c = document.createElement('canvas'); c.width = Math.round(cw * k); c.height = Math.round(ch * k);
         const g = c.getContext('2d'); if (mirror) { g.translate(c.width, 0); g.scale(-1, 1); }
-        if (crop) g.filter = TONE;
+        if (crop) g.filter = toneStr();
         g.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, c.width, c.height); g.setTransform(1, 0, 0, 1, 0, 0); g.filter = 'none';
         return new Promise(ok => c.toBlob(ok, 'image/jpeg', .92));
       }
       async function capture() {
         let bl = null;
         try { // 高畫質：用相機的拍照模式（Android Chrome），套用手機的降噪、HDR
-          if (window.ImageCapture && track && facing !== 'user') {
+          if (window.ImageCapture && COARSE && track && facing !== 'user') {
             const ph = await new ImageCapture(track).takePhoto(flashModes.length > 1 ? { fillLightMode: flash } : undefined), bm = await createImageBitmap(ph);
             bl = await compose(bm, bm.width, bm.height, true, false); bm.close && bm.close();
           }
