@@ -266,3 +266,4 @@ html.dark .heart b { color: #111; }
   #hint .fb.hint { position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 30; max-height: 48vh; overflow: auto; margin: 0;
     box-shadow: 0 -6px 24px rgba(0,0,0,.2); font-size: 17px; }
 }
+.tlog { font-size: 15px; line-height: 1.7; color: var(--sub); margin-top: 6px; }

@@ -70,10 +70,35 @@
         u.onend = () => { if (my === token && opt.onend) opt.onend(); };
         u.onerror = e => { if (my !== token || e.error === 'interrupted' || e.error === 'canceled') return; online(text, opt.rate || .85, opt.onend, my); };
         ss.speak(u);
+        if (ss.paused) ss.resume();   // 有些 Android 會卡在暫停狀態
         setTimeout(() => { if (my === token && !started && !ss.speaking) { ss.cancel(); online(text, opt.rate || .85, opt.onend, my); } }, 1800);
       }, 80);
     }
-    return { say, stop };
+    // 聲音測試：回報每一步的狀況，方便找出哪裡出問題
+    async function test(kind, log) {
+      stop(); const my = token;
+      if (kind === 'device') {
+        if (!ss) return log('❌ 這個瀏覽器不支援語音朗讀');
+        await ready;
+        const all = ss.getVoices();
+        log(`語音數量：${all.length}，中文語音：${voice ? `${voice.name}（${voice.lang}）` : '沒有'}`);
+        if (!voice) return log('❌ 手機沒有中文語音，會改用線上語音');
+        const u = new SpeechSynthesisUtterance('你好，我是語音測試。'); keep = u; u.voice = voice; u.lang = voice.lang;
+        let st = false;
+        u.onstart = () => { st = true; log('✅ 開始唸了（如果還是沒聲音，請調高「媒體音量」）'); };
+        u.onerror = e => log('❌ 錯誤：' + e.error);
+        u.onend = () => log('結束');
+        ss.speak(u); if (ss.paused) ss.resume();
+        setTimeout(() => { if (my === token && !st) log('❌ 等了 2 秒還沒開始唸'); }, 2000);
+      } else {
+        const a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-TW&client=tw-ob&q=' + encodeURIComponent('你好，這是線上語音測試。'));
+        audio = a;
+        a.onplaying = () => log('✅ 線上語音開始播放（如果沒聲音，請調高「媒體音量」）');
+        a.onerror = () => log('❌ 線上語音載入失敗（可能被擋或沒網路）');
+        a.play().catch(e => log('❌ 無法播放：' + e.name));
+      }
+    }
+    return { say, stop, test };
   })();
 
   // ---------- 頁首 ----------
@@ -111,7 +136,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124i').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124j').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -221,7 +246,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124i').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124j').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -265,14 +290,21 @@
     const draw = root => {
       const p = progress(L);
       const units = L.units.filter(u => u.id !== 'read');
-      root.innerHTML = `<h3 style="margin-top:0">⚙ 設定｜第${L.no}課</h3>
+      root.innerHTML = `<div class="row" style="margin-bottom:4px"><h3 style="margin:0">⚙ 設定｜第${L.no}課</h3><span class="spacer"></span><button class="btn" id="cx">完成</button></div>
         <p class="set-h">全部單元一起跳到</p>
         <div class="row">${[1, 2, 3].map(lv => `<button class="btn ghost" data-all="${lv}">${LVN[lv]}</button>`).join('')}</div>
         <p class="set-h">個別單元</p>
         <div class="set-list">${units.map(u => { const s = p.units[u.id]; return `<div class="set-row"><span>${u.icon} ${u.name}<small>${s.done ? '✅ 完成' : lvName(L, u.id, s.lv)}${s.best ? `・❤ ${s.best}` : ''}</small></span>
           ${segBtns(L, u.id, s.done ? 0 : s.lv)}</div>`; }).join('')}</div>
+        <p class="set-h">🔊 聲音測試</p>
+        <div class="row"><button class="btn ghost" id="t1">測試手機語音</button><button class="btn ghost" id="t2">測試線上語音</button></div>
+        <div id="tlog" class="tlog"></div>
         <p class="set-h">重設</p>
-        <div class="row"><button class="btn ghost" id="rsAll">清除這一課所有紀錄</button><span class="spacer"></span><button class="btn" id="cx">完成</button></div>`;
+        <div class="row"><button class="btn ghost" id="rsAll">清除這一課所有紀錄</button></div>`;
+      const tlog = root.querySelector('#tlog');
+      const log = m => { tlog.insertAdjacentHTML('beforeend', `<div>${esc(m)}</div>`); };
+      root.querySelector('#t1').onclick = () => { tlog.innerHTML = ''; TTS.test('device', log); };
+      root.querySelector('#t2').onclick = () => { tlog.innerHTML = ''; TTS.test('online', log); };
       const setUnit = (p, id, lv) => p.units[id] = newUnit(lv);
       root.querySelectorAll('[data-all]').forEach(b => b.onclick = () => {
         const p = progress(L); units.forEach(u => setUnit(p, u.id, tierLv(L, u.id, +b.dataset.all))); p.done = false; save(L, p);
