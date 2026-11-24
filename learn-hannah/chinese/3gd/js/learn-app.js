@@ -8,7 +8,7 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const app = $('#app');
-  const APP_VER = '20261124x';
+  const APP_VER = '20261124y';
   const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
   const MAX = 3;
   const KEY = id => 'linfamily_learn_3gd_' + id;
@@ -172,15 +172,18 @@
         const strokes = st.map(s => s[0].map((x, k) => [nx(x), ny(s[1][k])]).filter(inX)).filter(a => a.length);
         const pts = strokes.flat();
         if (!pts.length) return r.msg;
-        const px0 = Math.min(...pts.map(p => p[0])), px1 = Math.max(...pts.map(p => p[0])), py0 = Math.min(...pts.map(p => p[1])), py1 = Math.max(...pts.map(p => p[1]));
-        const pw = px1 - px0, ph = py1 - py0, band = .16;
+        // 邊界用長筆畫來算，不被旁邊伸進來的小點（例如「木」旁的點）拉走
+        const longS = strokes.filter(a => { const xs = a.map(p => p[0]), ys = a.map(p => p[1]); return Math.max(...xs) - Math.min(...xs) > .25 || Math.max(...ys) - Math.min(...ys) > .25; });
+        const ref = (longS.length ? longS : strokes).flat();
+        const px0 = Math.min(...ref.map(p => p[0])), px1 = Math.max(...ref.map(p => p[0])), py0 = Math.min(...ref.map(p => p[1])), py1 = Math.max(...ref.map(p => p[1]));
+        const pw = px1 - px0, ph = py1 - py0, band = .15;
         // 同一筆在邊上的長度（不是好幾筆的端點湊起來）
         const span = (sel, axis) => Math.max(0, ...strokes.map(a => { const v = a.filter(sel).map(p => p[axis]); return v.length ? Math.max(...v) - Math.min(...v) : 0; }));
         const has = {
-          top: span(p => p[1] <= py0 + ph * band, 0) >= pw * .55,
-          bottom: span(p => p[1] >= py1 - ph * band, 0) >= pw * .55,
-          left: span(p => p[0] <= px0 + pw * band, 1) >= ph * .55,
-          right: span(p => p[0] >= px1 - pw * band, 1) >= ph * .55
+          top: span(p => p[1] <= py0 + ph * band, 0) >= pw * .45,
+          bottom: span(p => p[1] >= py1 - ph * band, 0) >= pw * .45,
+          left: span(p => p[0] <= px0 + pw * band, 1) >= ph * .45,
+          right: span(p => p[0] >= px1 - pw * band, 1) >= ph * .45
         };
         if (r.sides.some(sd => !has[sd])) return r.msg;
       }
@@ -238,7 +241,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124x').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124y').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -352,7 +355,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124x').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124y').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
