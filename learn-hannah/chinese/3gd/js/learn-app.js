@@ -140,7 +140,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124k').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124l').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -250,7 +250,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124k').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124l').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -288,7 +288,7 @@
   const tierLv = (L, uid, t) => { const m = levelsOf(L, uid); return m === 3 ? t : t === 1 ? 1 : t === 2 ? Math.ceil(m / 3) + 1 : Math.floor(m * 2 / 3) + 1; };
   function segBtns(L, uid, on) {
     const m = levelsOf(L, uid);
-    return `<span class="seg ${m > 3 ? 'many' : ''}">${Array.from({ length: m }, (_, i) => i + 1).map(lv => `<button data-u="${uid}" data-lv="${lv}" class="${on === lv ? 'on' : ''}">${m === 3 ? LVN[lv][0] : lv}</button>`).join('')}</span>`;
+    return `<span class="seg ${m > 3 ? 'many' : ''}" style="--n:${m}">${Array.from({ length: m }, (_, i) => i + 1).map(lv => `<button data-u="${uid}" data-lv="${lv}" class="${on === lv ? 'on' : ''}">${m === 3 ? LVN[lv][0] : lv}</button>`).join('')}</span>`;
   }
   function settingsDialog(L) {
     const draw = root => {

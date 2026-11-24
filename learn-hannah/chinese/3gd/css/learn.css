@@ -200,8 +200,10 @@ body.sheet-open { overflow: hidden; }
 .heart svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--accent); }
 .heart b { position: relative; color: #fff; font-size: 15px; margin-top: -3px; }
 html.dark .heart b { color: #111; }
-.seg.many { flex-wrap: wrap; max-width: 240px; }
-.seg.many button { width: 34px; height: 38px; font-size: 15px; }
+.set-row:has(.seg.many) { flex-direction: column; align-items: stretch; gap: 6px; }
+.seg.many { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 4px; border: 0; border-radius: 0; overflow: visible; max-width: none; }
+.seg.many button { width: auto; height: 40px; border: 1.5px solid var(--main); border-radius: 10px; font-size: 15px; }
+.seg.many button + button { border-left: 1.5px solid var(--main); }
 
 /* 圈詞 */
 .ci-mean { font-size: 22px; line-height: 1.9; margin: 12px 0; }
