@@ -12,6 +12,11 @@
   --bg: #F6F3EC; --card: #FFFFFF; --line: #E2DED5; --text: #1C1C1C; --sub: #6B6B6B;
   --r: 18px;
 }
+html.paper {
+  --main: #5B7D6C; --main-soft: #E3E6D3; --accent: #C8754F; --accent-soft: #F3DFCC;
+  --ok: #4F8A57; --bad: #B9563F;
+  --bg: #F3EAD6; --card: #FBF4E3; --line: #E2D4B6; --text: #3A2F22; --sub: #7B6B55;
+}
 html.dark {
   --main: #8FBFB0; --main-soft: #24342F; --accent: #F0A08B; --accent-soft: #3A2924;
   --ok: #6CC489; --bad: #F07D68;
@@ -35,7 +40,7 @@ html.nozy .zy, .plain, .plain .zy { font-family: var(--plain) !important; }
 .icon-btn { min-width: 44px; height: 44px; border: 0; border-radius: 22px; background: transparent; font-size: 26px; line-height: 1; }
 .icon-btn:hover { background: var(--main-soft); }
 .pill { height: 36px; padding: 0 14px; border-radius: 18px; border: 1.5px solid var(--main); background: var(--main); color: #fff; font-size: 15px; font-weight: 700; align-self: center; }
-html.dark .pill { color: #111; }
+html.dark .pill:not([aria-pressed="false"]) { color: #111; }
 html.nozy .pill#zyBtn { background: transparent; color: var(--main); }
 
 main { max-width: 760px; margin: 0 auto; padding: 18px 16px calc(env(safe-area-inset-bottom) + 40px); }
@@ -43,8 +48,8 @@ main { max-width: 760px; margin: 0 auto; padding: 18px 16px calc(env(safe-area-i
 
 /* 卡片與按鈕 */
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; margin: 0 0 14px; }
-.btn { min-height: 48px; padding: 10px 20px; border-radius: 14px; border: 0; background: var(--main); color: #fff; font-size: 18px; font-weight: 700; transition: transform .2s; }
-html.dark .btn { color: #111; }
+.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 20px; border-radius: 14px; border: 0; background: var(--main); color: #fff; font-size: 18px; font-weight: 700; transition: transform .2s; }
+html.dark .btn:not(.ghost) { color: #111; }
 .btn:hover { transform: scale(1.03); } .btn:active { transform: scale(.96); }
 .btn.ghost { background: transparent; color: var(--main); border: 1.5px solid var(--main); }
 .btn.accent { background: var(--accent); }

@@ -35,10 +35,20 @@
   function openDialog(html, bind) { dlgBody.innerHTML = html; bind && bind(dlgBody); dlg.showModal(); }
 
   // ---------- 頁首 ----------
+  // 畫面顏色：淺色／深色／護眼（像紙一樣的暖色底，減少藍光）
+  function setTheme(m) {
+    const H = document.documentElement;
+    H.classList.toggle('dark', m === 'dark'); H.classList.toggle('paper', m === 'paper');
+    try { localStorage.setItem('linfamily_theme', m === 'dark' ? 'dark' : 'light'); localStorage.setItem('linfamily_learn_paper', m === 'paper' ? '1' : '0'); } catch (e) {}
+  }
+  const curTheme = () => document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('paper') ? 'paper' : 'light';
   $('#themeBtn').onclick = () => {
-    const dark = !document.documentElement.classList.contains('dark');
-    document.documentElement.classList.toggle('dark', dark);
-    try { localStorage.setItem('linfamily_theme', dark ? 'dark' : 'light'); } catch (e) {}
+    const opts = [['light', '☀️ 淺色'], ['dark', '🌙 深色'], ['paper', '📜 護眼（紙張色）']];
+    openDialog(`<h3 style="margin-top:0">畫面顏色</h3><div class="opts">${opts.map(([k, t]) => `<button class="opt ${curTheme() === k ? 'sel' : ''}" data-m="${k}">${t}</button>`).join('')}</div>
+      <div class="row end" style="margin-top:14px"><button class="btn ghost" id="cx">關閉</button></div>`, root => {
+      root.querySelector('#cx').onclick = () => dlg.close();
+      root.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { setTheme(b.dataset.m); dlg.close(); if (location.hash.includes('/u/')) route(); });
+    });
   };
   const zyBtn = $('#zyBtn');
   const syncZy = () => zyBtn.setAttribute('aria-pressed', String(!document.documentElement.classList.contains('nozy')));
@@ -59,7 +69,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124f').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124g').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -169,7 +179,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124f').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124g').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;

@@ -13,11 +13,12 @@
       var t = localStorage.getItem('linfamily_theme');
       var dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.classList.toggle('dark', dark);
+      if (!dark && localStorage.getItem('linfamily_learn_paper') === '1') document.documentElement.classList.add('paper');
       if (localStorage.getItem('linfamily_learn_zy') === 'off') document.documentElement.classList.add('nozy');
     } catch (e) {}
   })();
 </script>
-<link rel="stylesheet" href="css/learn.css?v=20261124f">
+<link rel="stylesheet" href="css/learn.css?v=20261124g">
 </head>
 <body>
 <header class="top">
@@ -26,7 +27,7 @@
   <div class="top-r">
     <button class="pill" id="zyBtn" aria-pressed="true" title="注音開關">注音</button>
     <button class="icon-btn" id="setBtn" aria-label="設定" hidden>⚙</button>
-    <button class="icon-btn" id="themeBtn" aria-label="深淺模式">◐</button>
+    <button class="icon-btn" id="themeBtn" aria-label="畫面顏色">◐</button>
   </div>
 </header>
 
@@ -39,8 +40,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="js/learn-hw.js?v=20261124f"></script>
-<script src="js/learn-app.js?v=20261124f"></script>
+<script src="js/learn-hw.js?v=20261124g"></script>
+<script src="js/learn-app.js?v=20261124g"></script>
 <script defer src="../../../js/lf-menu.js?v=3"></script>
 </body>
 </html>

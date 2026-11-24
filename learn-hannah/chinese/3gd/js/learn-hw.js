@@ -400,7 +400,7 @@
       const P = { kind, idx, cv, ctx, w, h: hgt, ink: [], cur: null, locked: false, guide: '', state: '' };
       P.draw = () => {
         ctx.clearRect(0, 0, w, hgt);
-        ctx.fillStyle = P.state === 'ok' ? (dark() ? '#1f3326' : '#EAF5EC') : P.state === 'bad' ? (dark() ? '#3a2420' : '#FBEAE6') : (dark() ? '#1F1F1F' : '#FFFFFF');
+        ctx.fillStyle = P.state === 'ok' ? (dark() ? '#1f3326' : '#EAF5EC') : P.state === 'bad' ? (dark() ? '#3a2420' : '#FBEAE6') : (getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#FFFFFF');
         ctx.fillRect(0, 0, w, hgt);
         ctx.setLineDash([4, 5]); ctx.strokeStyle = dark() ? '#3a3a3a' : '#E3DACB'; ctx.lineWidth = 1; ctx.beginPath();
         if (kind === 'c') { for (const t of [1 / 3, 2 / 3]) { ctx.moveTo(w * t, 0); ctx.lineTo(w * t, hgt); ctx.moveTo(0, hgt * t); ctx.lineTo(w, hgt * t); } }
