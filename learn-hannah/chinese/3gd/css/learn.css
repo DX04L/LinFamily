@@ -187,3 +187,26 @@ body.sheet-open { overflow: hidden; }
 .sheet-cands .cand { min-width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-size: 26px; font-family: var(--plain); }
 .sheet-res { font-size: 18px; } .sheet-res b { font-family: var(--plain); }
 .sheet-cands small { color: var(--sub); }
+
+/* 愛心徽章 */
+.unit { position: relative; }
+.unit .ut { flex: 1; min-width: 0; }
+.heart { flex: none; position: relative; width: 38px; height: 35px; display: grid; place-items: center; }
+.heart svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--accent); }
+.heart b { position: relative; color: #fff; font-size: 15px; margin-top: -3px; }
+html.dark .heart b { color: #111; }
+.seg.many { flex-wrap: wrap; max-width: 240px; }
+.seg.many button { width: 34px; height: 38px; font-size: 15px; }
+
+/* 圈詞 */
+.ci-mean { font-size: 22px; line-height: 1.9; margin: 12px 0; }
+.ci-sent { font-size: 24px; line-height: 2; margin: 4px 0 8px; }
+.ci-blank { color: var(--accent); letter-spacing: .1em; }
+.ci-zy { font-size: 26px; letter-spacing: .05em; margin: 0 0 8px; }
+.ci-q { min-width: 48px; font-size: 22px; }
+.ci-tip { font-size: 19px; line-height: 1.8; }
+.cells { display: grid; justify-items: center; margin-top: 10px; }
+.cells-col { display: grid; gap: 6px; }
+.cells-row { display: flex; gap: 4px; }
+.cell { display: block; border: 2px solid var(--line); border-radius: 8px; touch-action: none; }
+.cell-z { border-style: dashed; }

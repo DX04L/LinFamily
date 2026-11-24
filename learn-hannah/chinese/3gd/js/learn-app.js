@@ -59,42 +59,64 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124d').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124e').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
     const p = store.get(KEY(L.id), null) || { read: [], readDone: false, units: {}, extend: {} };
-    L.units.forEach(u => { if (u.id !== 'read' && !p.units[u.id]) p.units[u.id] = { lv: 1, wrong: 0, cov: [], done: false, last: '' }; });
+    L.units.forEach(u => {
+      if (u.id === 'read') return;
+      p.units[u.id] = Object.assign(newUnit(1), p.units[u.id] || {});
+      if (p.units[u.id].lv > levelsOf(L, u.id)) p.units[u.id].lv = levelsOf(L, u.id);
+    });
     return p;
+  }
+  const newUnit = lv => ({ lv, wrong: 0, set: null, cov: [], best: Math.max(0, lv - 1), done: false, last: '' });
+  const levelsOf = (L, uid) => (L.units.find(u => u.id === uid) || {}).levels || 3;
+  const PER = 5;   // 每一級 5 題，5 題都第一次就答對才過這一級
+  function levelSet(L, s, uid) {
+    const list = bank(L, uid, s.lv);
+    const ids = new Set(list.map(q => q.id));
+    if (!s.set || !s.set.length || s.set.some(id => !ids.has(id))) { s.set = (list.length <= PER ? list : shuffle(list).slice(0, PER)).map(q => q.id); s.cov = []; }
+    return s.set.map(id => list.find(q => q.id === id));
   }
   const save = (L, p) => store.set(KEY(L.id), p);
   const lessonDone = (L, p) => p.readDone && L.units.every(u => u.id === 'read' || p.units[u.id].done);
 
-  // 題庫（生字單元由資料自動產生）
+  // 題庫（生字、圈詞由資料自動產生）
   function bank(L, unit, lv) {
-    let list;
-    if (unit === 'chars') list = charBank(L, lv);
-    else list = ((L.bank[unit] || {})[lv] || []).map((q, i) => Object.assign({ id: `${unit}-${lv}-${i}` }, q));
-    return list;
+    if (unit === 'chars') return charBank(L, lv);
+    if (unit === 'ci') return ciBank(L, lv);
+    return ((L.bank[unit] || {})[lv] || []).map((q, i) => Object.assign({ id: `${unit}-${lv}-${i}` }, q));
   }
+  // 生字 5 級：1 選字與部首；2 句中選字與筆畫；3–5 看注音手寫（每級 5 個字，15 個字都要寫過）
   function charBank(L, lv) {
     const C = L.chars, out = [];
     const rads = [...new Set(C.map(c => c.rad))];
-    C.forEach(c => {
+    C.forEach((c, k) => {
       const w = clean(c.words[0]);
       const opts = [c.c, ...c.look.slice(0, 3)];
       if (lv === 1) {
-        out.push({ id: 'chars-1-' + c.c, t: 'choice', big: true, plain: true, q: `選出正確的字：${w.replace(c.c, '＿')}（${c.zy}）`, opts, a: 0, ex: `${w}：${c.c}（${c.zy}）` });
-        out.push({ id: 'chars-1r-' + c.c, t: 'choice', plain: true, q: `「${c.c}」的部首是什麼？`, opts: [c.rad, ...shuffle(rads.filter(r => r !== c.rad)).slice(0, 2)], a: 0, ex: `「${c.c}」的部首是「${c.rad}」，部首外 ${c.rs} 畫。` });
+        out.push({ id: 'chars-1-' + c.c, t: 'choice', big: true, plain: true, q: `選出正確的字：${w.replace(c.c, '＿')}（${c.zy}）`, opts, a: 0, hint: `想一想「${w.replace(c.c, '＿')}」的意思，部首是「${c.rad}」。`, ex: `${w}：${c.c}（${c.zy}）` });
+        out.push({ id: 'chars-1r-' + c.c, t: 'choice', plain: true, q: `「${c.c}」的部首是什麼？`, opts: [c.rad, ...shuffle(rads.filter(r => r !== c.rad)).slice(0, 2)], a: 0, hint: '部首常在字的左邊、上面或外框，看看是哪一部分？', ex: `「${c.c}」的部首是「${c.rad}」，部首外 ${c.rs} 畫。` });
       } else if (lv === 2) {
-        out.push({ id: 'chars-2-' + c.c, t: 'choice', big: true, q: c.blank, optsPlain: true, opts, a: 0, ex: `答案是「${c.c}」（${c.zy}）。` });
+        out.push({ id: 'chars-2-' + c.c, t: 'choice', big: true, q: c.blank, optsPlain: true, opts, a: 0, hint: `這個字的部首是「${c.rad}」。`, ex: `答案是「${c.c}」（${c.zy}）。` });
         const n = c.total;
-        out.push({ id: 'chars-2s-' + c.c, t: 'choice', plain: true, q: `「${c.c}」總共有幾畫？`, opts: [String(n), String(n + 1), String(Math.max(1, n - 1))], a: 0, ex: `「${c.c}」總共 ${n} 畫。` });
-      } else {
+        out.push({ id: 'chars-2s-' + c.c, t: 'choice', plain: true, q: `「${c.c}」總共有幾畫？`, opts: [String(n), String(n + 1), String(Math.max(1, n - 1))], a: 0, hint: `用手指在空中寫一次「${c.c}」，一邊寫一邊數。`, ex: `「${c.c}」總共 ${n} 畫。` });
+      } else if (Math.floor(k / 5) === lv - 3) {
         out.push({ id: 'chars-3-' + c.c, t: 'write', q: `寫出「${c.zy}」：${c.blank}`, a: c.c, char: c });
       }
     });
     return out;
+  }
+  // 圈詞 9 級：1–3 聽寫（國字＋注音）；4–6 課文填空；7 看解釋寫詞；8–9 找錯字改正
+  function ciBank(L, lv) {
+    const W = L.ci || [];
+    const grp = g => W.map((w, i) => ({ w, i })).filter(o => Math.floor(o.i / 5) === g);
+    if (lv <= 3) return grp(lv - 1).map(o => ({ id: 'ci-d-' + o.i, t: 'ci-dict', wi: o.i, q: '聽一聽，寫出這個圈詞（國字和注音都要寫）' }));
+    if (lv <= 6) return grp(lv - 4).map(o => ({ id: 'ci-f-' + o.i, t: 'ci-fill', wi: o.i, q: '把課文缺的圈詞寫出來' }));
+    if (lv === 7) return W.map((w, i) => ({ id: 'ci-m-' + i, t: 'ci-mean', wi: i, q: '看解釋和注音，寫出圈詞' }));
+    return W.map((w, i) => ({ id: `ci-w${lv}-` + i, t: 'ci-wrong', wi: i, plain: true, q: '句子裡的圈詞有一個錯字，點出來，再寫出正確的字' }));
   }
 
   // ---------- 登入 ----------
@@ -147,7 +169,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124d').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124e').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -165,7 +187,6 @@
       <div class="units">${L.units.map(u => unitCard(L, p, u)).join('')}</div>
       <div class="row" style="margin-top:18px"><a class="btn ghost" href="#/${L.id}/cards">字卡</a>${done ? '' : `<a class="btn ghost" href="#/${L.id}/extend">延伸討論</a>`}<span class="spacer"></span>${isSuper ? '<button class="btn ghost" id="testBtn">🧪 測試</button>' : ''}<button class="btn ghost" id="restart">⚙ 設定</button></div>`;
     app.querySelectorAll('.unit').forEach(b => b.onclick = () => {
-      if (b.classList.contains('locked')) return toast('先把課文讀一遍喔');
       location.hash = b.dataset.u === 'read' ? `#/${L.id}/read` : `#/${L.id}/u/${b.dataset.u}`;
     });
     const rs = () => settingsDialog(L);
@@ -174,14 +195,20 @@
   }
   function unitCard(L, p, u) {
     if (u.id === 'read') {
-      return `<button class="unit ${p.readDone ? 'done' : ''}" data-u="read"><span class="ic">${u.icon}</span><span><b>${u.name}</b><small>${p.readDone ? '✅ 讀完了' : u.desc}</small></span></button>`;
+      return `<button class="unit ${p.readDone ? 'done' : ''}" data-u="read"><span class="ic">${u.icon}</span><span class="ut"><b>${u.name}</b><small>${p.readDone ? '✅ 讀完了' : u.desc}</small></span></button>`;
     }
-    const s = p.units[u.id];
-    const dots = [1, 2, 3].map(i => `<i class="${s.done || i <= s.lv ? 'on' : ''}"></i>`).join('');
-    return `<button class="unit ${p.readDone ? '' : 'locked'} ${s.done ? 'done' : ''}" data-u="${u.id}"><span class="ic">${u.icon}</span><span><b>${u.name}</b><small>${s.done ? '✅ 完成' : u.desc}</small><span class="lv">${dots}</span></span></button>`;
+    const s = p.units[u.id], max = levelsOf(L, u.id);
+    const heart = s.best ? `<span class="heart" title="完成 ${s.best} 級"><svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21.3S2.4 15.6.9 9.4C-.3 4.6 2.6 1 6.4 1c2.4 0 4.2 1.4 5.6 3.3C13.4 2.4 15.2 1 17.6 1c3.8 0 6.7 3.6 5.5 8.4C21.6 15.6 12 21.3 12 21.3z"/></svg><b>${s.best}</b></span>` : '';
+    return `<button class="unit ${s.done ? 'done' : ''}" data-u="${u.id}"><span class="ic">${u.icon}</span><span class="ut"><b>${u.name}</b><small>${s.done ? `✅ ${max} 級全部完成` : `第 ${s.lv} 級 / ${max}`}</small></span>${heart}</button>`;
   }
   // ---------- 設定（重設、跳級）----------
   const LVN = ['', '初級', '中級', '高級'];
+  const lvName = (L, uid, lv) => levelsOf(L, uid) === 3 ? LVN[lv] : `第 ${lv} 級`;
+  const tierLv = (L, uid, t) => { const m = levelsOf(L, uid); return m === 3 ? t : t === 1 ? 1 : t === 2 ? Math.ceil(m / 3) + 1 : Math.floor(m * 2 / 3) + 1; };
+  function segBtns(L, uid, on) {
+    const m = levelsOf(L, uid);
+    return `<span class="seg ${m > 3 ? 'many' : ''}">${Array.from({ length: m }, (_, i) => i + 1).map(lv => `<button data-u="${uid}" data-lv="${lv}" class="${on === lv ? 'on' : ''}">${m === 3 ? LVN[lv][0] : lv}</button>`).join('')}</span>`;
+  }
   function settingsDialog(L) {
     const draw = root => {
       const p = progress(L);
@@ -190,13 +217,13 @@
         <p class="set-h">全部單元一起跳到</p>
         <div class="row">${[1, 2, 3].map(lv => `<button class="btn ghost" data-all="${lv}">${LVN[lv]}</button>`).join('')}</div>
         <p class="set-h">個別單元</p>
-        <div class="set-list">${units.map(u => { const s = p.units[u.id]; return `<div class="set-row"><span>${u.icon} ${u.name}<small>${s.done ? '✅ 完成' : LVN[s.lv]}</small></span>
-          <span class="seg">${[1, 2, 3].map(lv => `<button data-u="${u.id}" data-lv="${lv}" class="${!s.done && s.lv === lv ? 'on' : ''}">${LVN[lv][0]}</button>`).join('')}</span></div>`; }).join('')}</div>
+        <div class="set-list">${units.map(u => { const s = p.units[u.id]; return `<div class="set-row"><span>${u.icon} ${u.name}<small>${s.done ? '✅ 完成' : lvName(L, u.id, s.lv)}${s.best ? `・❤ ${s.best}` : ''}</small></span>
+          ${segBtns(L, u.id, s.done ? 0 : s.lv)}</div>`; }).join('')}</div>
         <p class="set-h">重設</p>
         <div class="row"><button class="btn ghost" id="rsAll">清除這一課所有紀錄</button><span class="spacer"></span><button class="btn" id="cx">完成</button></div>`;
-      const setUnit = (p, id, lv) => p.units[id] = { lv, wrong: 0, cov: [], done: false, last: '' };
+      const setUnit = (p, id, lv) => p.units[id] = newUnit(lv);
       root.querySelectorAll('[data-all]').forEach(b => b.onclick = () => {
-        const p = progress(L); units.forEach(u => setUnit(p, u.id, +b.dataset.all)); p.done = false; save(L, p);
+        const p = progress(L); units.forEach(u => setUnit(p, u.id, tierLv(L, u.id, +b.dataset.all))); p.done = false; save(L, p);
         toast(`全部單元跳到${LVN[b.dataset.all]}`); draw(root);
       });
       root.querySelectorAll('[data-u]').forEach(b => b.onclick = () => {
@@ -216,14 +243,14 @@
   function testDialog(L) {
     const units = L.units.filter(u => u.id !== 'read');
     openDialog(`<h3 style="margin-top:0">🧪 測試｜直接跳到</h3>
-      <div class="set-list">${units.map(u => `<div class="set-row"><span>${u.icon} ${u.name}</span><span class="seg">${[1, 2, 3].map(lv => `<button data-u="${u.id}" data-lv="${lv}">${LVN[lv][0]}</button>`).join('')}</span></div>`).join('')}</div>
-      <p class="muted" style="text-align:left;font-size:14px">手寫題：生字「高」、句子醫生「高」；注音鍵盤：一字多音「高」。</p>
+      <div class="set-list">${units.map(u => `<div class="set-row"><span>${u.icon} ${u.name}</span>${segBtns(L, u.id, 0)}</div>`).join('')}</div>
+      <p class="muted" style="text-align:left;font-size:14px">手寫：生字 3–5 級、圈詞全部、句子醫生「高」；注音鍵盤：一字多音「高」。</p>
       <div class="row end"><button class="btn" id="cx">關閉</button></div>`, root => {
       root.querySelector('#cx').onclick = () => dlg.close();
       root.querySelectorAll('[data-u]').forEach(b => b.onclick = () => {
         const p = progress(L);
         p.readDone = true;
-        p.units[b.dataset.u] = { lv: +b.dataset.lv, wrong: 0, cov: [], done: false, last: '' };
+        p.units[b.dataset.u] = newUnit(+b.dataset.lv);
         save(L, p); dlg.close();
         location.hash = `#/${L.id}/u/${b.dataset.u}`;
       });
@@ -323,45 +350,45 @@
   function unitView(L, uid) {
     const u = L.units.find(x => x.id === uid); if (!u) return lessonView(L);
     const p = progress(L);
-    if (!p.readDone) { toast('先把課文讀一遍喔'); location.hash = `#/${L.id}/read`; return; }
     head(u.name, true);
-    const s = p.units[uid];
+    const s = p.units[uid], max = levelsOf(L, uid);
     if (s.done) return unitDone(L, u, true);
-    const list = bank(L, uid, s.lv);
-    let cand = list;
-    if (s.lv === MAX) cand = list.filter(q => !s.cov.includes(q.id));
-    else if (list.length > 1) cand = list.filter(q => q.id !== s.last);
-    if (!cand.length) { s.done = true; save(L, p); return unitDone(L, u); }
+    const set = levelSet(L, s, uid);
+    let cand = set.filter(q => !s.cov.includes(q.id));
+    if (cand.length > 1) cand = cand.filter(q => q.id !== s.last);
     const q = pick(cand);
     s.last = q.id; save(L, p);
-    const top = bank(L, uid, MAX).length;
-    const info = s.lv === MAX ? `${LVN[MAX]}・完成 ${s.cov.length} / ${top}` : `${LVN[s.lv]}`;
-    app.innerHTML = `<div class="card"><div class="qhead"><span>${u.icon} ${u.name}</span><span>${info}</span></div>
-      ${s.lv === MAX ? `<div class="progress"><i style="width:${Math.round(s.cov.length / top * 100)}%"></i></div>` : ''}
+    app.innerHTML = `<div class="card"><div class="qhead"><span>${u.icon} ${u.name}</span><span>${lvName(L, uid, s.lv)}${max > 3 ? ` / ${max}` : ''}・${s.cov.length} / ${set.length}</span></div>
+      <div class="progress"><i style="width:${Math.round(s.cov.length / set.length * 100)}%"></i></div>
       <div id="qbox"></div><div id="fb"></div></div>`;
     renderQ(L, q, $('#qbox'), result => finish(L, p, u, q, result));
   }
 
-  // 第一次就答對＝過關（升級或完成一題）；需要提示才答對＝留在同級，之後再考；連兩題沒有一次答對＝降一級
+  // 第一次就答對＝這題過關；一級 5 題都過關＝完成這一級（❤ 加一）並升級
+  // 需要提示才答對＝這題之後再考；連兩題沒有一次答對＝降一級
   function finish(L, p, u, q, r) {
-    const s = p.units[u.id];
-    let msg = '';
+    const s = p.units[u.id], max = levelsOf(L, u.id);
+    let msg = '', levelDone = false;
     if (r.ok && r.first) {
       s.wrong = 0;
-      if (s.lv < MAX) { s.lv++; msg = `<p class="levelup">⬆ 升到${LVN[s.lv]}！</p>`; }
-      else if (!s.cov.includes(q.id)) s.cov.push(q.id);
-      if (s.lv === MAX && bank(L, u.id, MAX).every(x => s.cov.includes(x.id))) s.done = true;
+      if (!s.cov.includes(q.id)) s.cov.push(q.id);
+      if (s.set.every(id => s.cov.includes(id))) {
+        levelDone = true; s.best = Math.max(s.best || 0, s.lv);
+        msg = `<p class="levelup">❤ ${lvName(L, u.id, s.lv)}完成！</p>`;
+        if (s.lv < max) { s.lv++; s.set = null; s.cov = []; msg += `<p class="levelup">⬆ 接下來是${lvName(L, u.id, s.lv)}</p>`; }
+        else s.done = true;
+      }
     } else {
       s.wrong++;
-      if (s.wrong >= 2) { s.wrong = 0; if (s.lv > 1) { s.lv--; msg = `<p class="levelup">回到${LVN[s.lv]}，多練習幾題就會了。</p>`; } }
-      if (r.ok) msg += '<p>這題用了提示，等一下還會再遇到類似的題目喔。</p>';
+      if (s.wrong >= 2) { s.wrong = 0; if (s.lv > 1) { s.lv--; s.set = null; s.cov = []; msg = `<p class="levelup">回到${lvName(L, u.id, s.lv)}，多練習幾題就會了。</p>`; } }
+      if (r.ok) msg += '<p>這題用了提示，等一下還會再考一次喔。</p>';
     }
     save(L, p);
     const title = r.ok ? (r.first ? '✔ 答對了！' : '✔ 找到答案了！') : '🤝 我們一起看看';
     const fb = $('#fb');
     fb.innerHTML = `<div class="fb ${r.ok ? 'ok' : 'bad'}"><b>${title}</b>
       ${!r.ok && r.show ? `<p class="${q.plain ? 'plain' : 'zy'}">${r.show}</p>` : ''}${r.ok && r.show ? `<p class="zy">${r.show}</p>` : ''}${q.ex ? `<p class="zy">${zy(q.ex)}</p>` : ''}${msg}</div>
-      <div class="row end" style="margin-top:12px"><button class="btn" id="next">${s.done ? '完成 🎉' : '下一題 ›'}</button></div>`;
+      <div class="row end" style="margin-top:12px"><button class="btn" id="next">${s.done ? '完成 🎉' : levelDone ? '下一級 ›' : '下一題 ›'}</button></div>`;
     fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     $('#next').onclick = () => s.done ? unitDone(L, u) : unitView(L, u.id);
   }
@@ -413,11 +440,11 @@
     const qa = box.querySelector('#qa'), hint = box.querySelector('#hint');
     let tries = 0, over = false;
     const ctl = {
-      L,
+      L, hinted: false,
       submit(ok, extra) {
         if (over) return false;
         tries++;
-        if (ok) { over = true; hint.innerHTML = ''; done({ ok: true, first: tries === 1, show: extra && extra.good }); return false; }
+        if (ok) { over = true; hint.innerHTML = ''; done({ ok: true, first: tries === 1 && !ctl.hinted, show: extra && extra.good }); return false; }
         if (tries < MAXTRY) {
           hint.innerHTML = `<div class="fb hint"><b>💡 再想想</b>${hintFor(L, q, tries, extra)}</div>`;
           hint.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -428,8 +455,131 @@
         return false;
       }
     };
-    (TYPES[q.t] || TYPES.choice)(q, qa, ctl, cls);
+    (TYPES[q.t] || CI_TYPES[q.t] || TYPES.choice)(q, qa, ctl, cls);
   }
+
+  // ---------- 圈詞 ----------
+  const RADM = {
+    玉: ['王', '和玉石有關'], 髟: ['髟', '和頭髮有關'], 广: ['广', '和房子有關'], 囗: ['囗', '大口框，和圍起來有關'], 巾: ['巾', '和布有關'],
+    辵: ['辶', '走馬旁，和走路、遠近有關'], 見: ['見', '和看有關'], 目: ['目', '和眼睛有關'], 竹: ['⺮', '竹字頭，和竹子有關'], 木: ['木', '木字旁，和木頭有關'],
+    大: ['大', ''], 言: ['言', '言字旁，和說話有關'], 心: ['忄', '豎心旁，和心情有關'], 入: ['入', ''], 攴: ['攵', '反文旁，和動作有關'],
+    土: ['土', '土字旁，和泥土有關'], 刀: ['刀', '和刀子、剪切有關'], 日: ['日', ''], 糸: ['糸', '糸字旁，和絲線有關'], 曰: ['曰', ''],
+    金: ['金', '金字旁，和金屬有關'], 子: ['子', ''], 齊: ['齊', ''], 火: ['灬', '四點火，和火有關'], 鬼: ['鬼', '和鬼怪、神祕有關'], 水: ['氵', '三點水，和水有關']
+  };
+  function say(text, rate) {
+    if (!window.speechSynthesis) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = rate || .8;
+    const v = speechSynthesis.getVoices().find(v => /zh[-_]TW/i.test(v.lang)); if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  }
+  // 為什麼錯：不直接給答案，說出部首和意思
+  function whyChar(L, got, ans, k) {
+    const r = (L.rads || {})[ans], m = RADM[r] || [r, ''];
+    const look = ((L.chars.find(c => c.c === ans) || {}).look || []).includes(got);
+    const head = got && got !== '？' ? `第 ${k + 1} 個字寫成「${esc(got)}」了。` : `第 ${k + 1} 個字看不太清楚，再寫一次。`;
+    return head + (look ? '它和正確的字長得很像，可是部首不一樣喔。' : '') + (r ? `提示：正確的字部首是「${esc(m[0])}」${m[1] ? '，' + m[1] : ''}。` : '');
+  }
+  function whyZy(got, ans, k) {
+    const tone = s => (s.match(/[ˊˇˋ˙]/) || [''])[0], base = s => s.replace(/[ˊˇˋ˙]/g, '');
+    if (!got) return `第 ${k + 1} 個字的注音沒寫，或是看不清楚。`;
+    if (base(got) === base(ans)) return `第 ${k + 1} 個字的注音符號對了，聲調再聽聽看。`;
+    if (tone(got) === tone(ans)) return `第 ${k + 1} 個字的聲調對了，注音符號再聽聽看。`;
+    return `第 ${k + 1} 個字的注音再聽一次。`;
+  }
+  // 檢查格子：對的格子鎖住變綠，錯的清掉重寫；第二次錯就給淡淡的字描
+  function ciWrite(L, w, qa, ctl, withZy, chk, onAgainExtra) {
+    const box = LearnHW.cells({ n: w.w.length, zhuyin: withZy });
+    qa.append(box.el);
+    const row = document.createElement('div'); row.className = 'row end'; row.style.marginTop = '12px';
+    row.innerHTML = '<button class="btn">寫好了</button>'; qa.append(row);
+    const btn = row.querySelector('button');
+    const okC = Array(w.w.length).fill(false), okZ = Array(w.w.length).fill(!withZy);
+    let round = 0;
+    btn.onclick = async () => {
+      btn.disabled = true; btn.textContent = '辨識中…';
+      const res = await box.read();
+      btn.textContent = '寫好了';
+      if (res === null) { btn.disabled = false; return toast('辨識服務連不上，請稍後再試'); }
+      if (res.every((x, k) => okC[k] || x.empty)) { btn.disabled = false; return toast('先把字寫進格子裡'); }
+      const why = [];
+      res.forEach((x, k) => {
+        if (!okC[k]) {
+          okC[k] = x.cands.slice(0, 3).includes(w.w[k]);
+          if (okC[k]) box.mark(k, 'c', 'ok'); else { box.mark(k, 'c', 'bad'); why.push(whyChar(L, x.c, w.w[k], k)); }
+        }
+        if (!okZ[k]) {
+          okZ[k] = LearnHW.normZy(x.zy) === LearnHW.normZy(w.zy[k]);
+          if (okZ[k]) box.mark(k, 'z', 'ok'); else { box.mark(k, 'z', 'bad'); why.push(whyZy(x.zy, w.zy[k], k)); }
+        }
+      });
+      if (okC.every(Boolean) && okZ.every(Boolean)) return ctl.submit(true, { good: `${zy(w.w)}（${esc(w.zy.join(' '))}）` });
+      round++;
+      const again = ctl.submit(false, { hint: why.join('<br>') + (onAgainExtra ? onAgainExtra(round) : ''), reveal: `正確的是：<span style="font-size:1.4em">${zy(w.w)}</span>（${esc(w.zy.join(' '))}）` });
+      if (!again) return;
+      setTimeout(() => {
+        okC.forEach((ok, k) => { if (!ok) { box.clearCell(k, 'c'); if (round >= 2) box.setGuide(k, w.w[k]); } });
+        okZ.forEach((ok, k) => { if (!ok) box.clearCell(k, 'z'); });
+        if (round >= 2 && okC.some(x => !x)) toast('照著淡淡的字描描看');
+        btn.disabled = false;
+      }, 900);
+    };
+  }
+  const blankOf = w => '＿'.repeat(w.w.length);
+  const CI_TYPES = {
+    'ci-dict'(q, qa, ctl) {
+      const w = ctl.L.ci[q.wi];
+      const speak = r => say(`${w.w}。${w.w}。`, r);
+      const top = document.createElement('div');
+      top.innerHTML = `<div class="row"><button class="btn accent" type="button">🔊 再聽一次</button><button class="btn ghost" type="button">🐢 慢慢唸</button></div>
+        <p class="ci-mean zy">解釋：${zy(w.mean)}</p>`;
+      const [b1, b2] = top.querySelectorAll('button'); b1.onclick = () => speak(.8); b2.onclick = () => speak(.5);
+      qa.append(top); setTimeout(() => speak(.8), 300);
+      ciWrite(ctl.L, w, qa, ctl, true, null, round => round === 1 ? '<br>按「🔊 再聽一次」仔細聽。' : '');
+    },
+    'ci-fill'(q, qa, ctl) {
+      const w = ctl.L.ci[q.wi];
+      const top = document.createElement('div');
+      top.innerHTML = `<p class="ci-sent zy">${zy(w.sent).replace('[]', `<span class="ci-blank">${blankOf(w)}</span>`)}</p>
+        <div class="row"><button class="btn ghost ci-q" type="button" aria-label="提示">？</button><span class="ci-tip zy"></span></div>`;
+      let n = 0; const tip = top.querySelector('.ci-tip');
+      top.querySelector('.ci-q').onclick = () => {
+        n++; ctl.hinted = true;
+        tip.innerHTML = n === 1 ? `意思是：${zy(w.mean)}` : `意思是：${zy(w.mean)}<br>注音：<span class="plain">${esc(w.zy.join(' '))}</span>`;
+      };
+      qa.append(top);
+      ciWrite(ctl.L, w, qa, ctl, false);
+    },
+    'ci-mean'(q, qa, ctl) {
+      const w = ctl.L.ci[q.wi];
+      const top = document.createElement('div');
+      top.innerHTML = `<p class="ci-mean zy">解釋：${zy(w.mean)}</p><p class="ci-zy plain">${esc(w.zy.join('　'))}</p>`;
+      qa.append(top);
+      ciWrite(ctl.L, w, qa, ctl, false);
+    },
+    'ci-wrong'(q, qa, ctl) {
+      const w = ctl.L.ci[q.wi];
+      const bad = w.w.slice(0, w.wrong.i) + w.wrong.c + w.w.slice(w.wrong.i + 1);
+      const sent = clean(w.sent).replace('[]', `\u0000${bad}\u0000`);
+      const [pre, mid, post] = sent.split('\u0000');
+      const toks = [...pre].map(c => ({ c })).concat([...mid].map((c, k) => ({ c, wrong: k === w.wrong.i }))).concat([...post].map(c => ({ c })));
+      qa.innerHTML = `<div class="tokens plain">${toks.map((t, i) => `<button class="tok ${PUNCT.test(t.c) ? 'punct' : ''}" data-i="${i}">${esc(t.c)}</button>`).join('')}</div><div id="s2"></div>`;
+      const btns = [...qa.querySelectorAll('.tok')];
+      btns.forEach(b => b.onclick = () => {
+        const t = toks[+b.dataset.i];
+        if (!t.wrong) {
+          b.classList.add('bad'); b.disabled = true;
+          const again = ctl.submit(false, { hint: `「${esc(t.c)}」沒有錯喔。再慢慢讀一次句子，有一個字長得很像，但意思不對。`, reveal: `錯字是「${esc(w.wrong.c)}」，正確是「${esc(w.w[w.wrong.i])}」，圈詞是「${esc(w.w)}」。` });
+          if (!again) btns.forEach(x => x.disabled = true);
+          return;
+        }
+        btns.forEach(x => x.disabled = true); b.classList.add('ok');
+        const s2 = qa.querySelector('#s2');
+        s2.innerHTML = `<p class="q" style="font-size:20px;margin-top:16px">找到了！寫出正確的字：</p>`;
+        ciWrite(ctl.L, { w: w.w[w.wrong.i], zy: [w.zy[w.wrong.i]] }, s2, ctl, false);
+      });
+    }
+  };
 
   const PUNCT = /^[，。、！？：；「」]$/;
   const TYPES = {

@@ -325,5 +325,142 @@
     return { close };
   }
 
-  window.LearnHW = { pad, sheet, zhuyin, normZy };
+  // ---------- 作業簿格子：直書，每個字一列＝左邊國字格（九宮格）＋右邊注音格 ----------
+  const BPMF = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ';
+  // 手寫辨識常把注音認成長得像的字，換回注音
+  const ZY_LIKE = { '勹': 'ㄅ', '夂': 'ㄆ', '夕': 'ㄆ', '冂': 'ㄇ', '门': 'ㄇ', '匚': 'ㄈ', '力': 'ㄉ', '去': 'ㄊ', '士': 'ㄊ', '乃': 'ㄋ', '为': 'ㄌ', 'カ': 'ㄌ',
+    '巜': 'ㄍ', '《': 'ㄍ', '丂': 'ㄎ', '万': 'ㄎ', '厂': 'ㄏ', '丩': 'ㄐ', '<': 'ㄑ', '＜': 'ㄑ', 'く': 'ㄑ', 'T': 'ㄒ', '丁': 'ㄒ', '业': 'ㄓ', '彳': 'ㄔ',
+    '尸': 'ㄕ', '户': 'ㄕ', '日': 'ㄖ', '曰': 'ㄖ', 'P': 'ㄗ', 'p': 'ㄗ', '卩': 'ㄗ', '方': 'ㄘ', 'ム': 'ㄙ', '厶': 'ㄙ', 'Y': 'ㄚ', 'y': 'ㄚ', '丫': 'ㄚ',
+    'こ': 'ㄛ', 'さ': 'ㄜ', 'せ': 'ㄝ', '历': 'ㄞ', '乁': 'ㄟ', '幺': 'ㄠ', '又': 'ㄡ', '马': 'ㄢ', '与': 'ㄣ', '尢': 'ㄤ', '九': 'ㄤ', '∠': 'ㄥ', '儿': 'ㄦ', 'ル': 'ㄦ',
+    '一': 'ㄧ', '-': 'ㄧ', '—': 'ㄧ', '|': 'ㄧ', '丨': 'ㄧ', 'l': 'ㄧ', '1': 'ㄧ', 'I': 'ㄧ', 'X': 'ㄨ', 'x': 'ㄨ', 'メ': 'ㄨ', '乂': 'ㄨ', '×': 'ㄨ', '凵': 'ㄩ', 'U': 'ㄩ', 'u': 'ㄩ' };
+  const toBpmf = c => BPMF.includes(c) ? c : ZY_LIKE[c] || '';
+  const bbox = ss => { const xs = ss.flatMap(s => s[0]), ys = ss.flatMap(s => s[1]); return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }; };
+
+  // 聲調用形狀判斷：短點＝輕聲；往右上＝ˊ；先下後上＝ˇ；往右下＝ˋ
+  function toneOf(ss, w) {
+    const s = ss.reduce((a, b) => (b[0].length > a[0].length ? b : a));
+    const b = bbox(ss), size = Math.max(b.x1 - b.x0, b.y1 - b.y0);
+    if (size < w * .14) return '˙';
+    const n = s[0].length, x0 = s[0][0], y0 = s[1][0], x1 = s[0][n - 1], y1 = s[1][n - 1];
+    let lo = 0; s[1].forEach((y, k) => { if (y > s[1][lo]) lo = k; });
+    const h = b.y1 - b.y0;
+    if (lo > 0 && lo < n - 1 && s[1][lo] - y0 > h * .3 && s[1][lo] - y1 > h * .3) return 'ˇ';
+    return y1 < y0 ? 'ˊ' : (x1 - x0 < 0 && y1 < y0 ? 'ˊ' : 'ˋ');
+  }
+
+  async function readZhuyin(ink, w, h) {
+    if (!ink.length) return '';
+    let tone = '';
+    const toneS = [], sym = [];
+    ink.forEach(s => {
+      const b = bbox([s]), cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2, bw = b.x1 - b.x0, bh = b.y1 - b.y0;
+      if (Math.max(bw, bh) < w * .14 && cy < h * .28) toneS.push(s);              // 上方小點＝輕聲
+      else if (cx > w * .66 && bw < w * .5 && bh < h * .3) toneS.push(s);        // 右側小筆畫＝聲調
+      else sym.push(s);
+    });
+    if (toneS.length) tone = toneOf(toneS, w);
+    // 依上下位置分組，每組是一個注音符號
+    const groups = [];
+    sym.map(s => ({ s, b: bbox([s]) })).sort((a, b) => a.b.y0 - b.b.y0).forEach(o => {
+      const g = groups[groups.length - 1];
+      if (g && o.b.y0 < g.y1 + h * .02) { g.ss.push(o.s); g.y1 = Math.max(g.y1, o.b.y1); }
+      else groups.push({ ss: [o.s], y1: o.b.y1 });
+    });
+    let out = '';
+    for (const g of groups) {
+      const b = bbox(g.ss), S = Math.max(b.x1 - b.x0, b.y1 - b.y0, 10) * 1.3;
+      const ox = (b.x0 + b.x1) / 2 - S / 2, oy = (b.y0 + b.y1) / 2 - S / 2;
+      const c = await recognizeInk(g.ss.map(s => [s[0].map(x => Math.round(x - ox)), s[1].map(y => Math.round(y - oy)), s[2]]), S, S);
+      if (c === null) return null;
+      const hit = c.map(toBpmf).find(Boolean);
+      out += hit || '？';
+    }
+    if (tone === '˙') return out + '˙';
+    return out + tone;
+  }
+
+  function cells(opt) {
+    opt = opt || {};
+    const n = opt.n || 1, withZy = !!opt.zhuyin;
+    const el = h('div', { class: 'cells' });
+    const col = h('div', { class: 'cells-col' });
+    const bar = h('div', { class: 'row', style: 'justify-content:center;margin-top:8px' });
+    el.append(col, bar);
+    const bs = Math.min(150, Math.floor((Math.min(window.innerWidth, 560) - 60) / (withZy ? 1.45 : 1)));
+    const zw = Math.round(bs * .42);
+    const pads = [];
+    let lastPad = null;
+    const dark = () => document.documentElement.classList.contains('dark');
+
+    function mk(kind, w, hgt, idx) {
+      const cv = h('canvas', { class: 'cell cell-' + kind });
+      cv.style.width = w + 'px'; cv.style.height = hgt + 'px';
+      const dpr = window.devicePixelRatio || 1; cv.width = w * dpr; cv.height = hgt * dpr;
+      const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const P = { kind, idx, cv, ctx, w, h: hgt, ink: [], cur: null, locked: false, guide: '', state: '' };
+      P.draw = () => {
+        ctx.clearRect(0, 0, w, hgt);
+        ctx.fillStyle = P.state === 'ok' ? (dark() ? '#1f3326' : '#EAF5EC') : P.state === 'bad' ? (dark() ? '#3a2420' : '#FBEAE6') : (dark() ? '#1F1F1F' : '#FFFFFF');
+        ctx.fillRect(0, 0, w, hgt);
+        ctx.setLineDash([4, 5]); ctx.strokeStyle = dark() ? '#3a3a3a' : '#E3DACB'; ctx.lineWidth = 1; ctx.beginPath();
+        if (kind === 'c') { for (const t of [1 / 3, 2 / 3]) { ctx.moveTo(w * t, 0); ctx.lineTo(w * t, hgt); ctx.moveTo(0, hgt * t); ctx.lineTo(w, hgt * t); } }
+        else { ctx.moveTo(w * .66, 0); ctx.lineTo(w * .66, hgt); }
+        ctx.stroke(); ctx.setLineDash([]);
+        if (P.guide) {
+          ctx.fillStyle = dark() ? 'rgba(255,255,255,.13)' : 'rgba(0,0,0,.10)';
+          ctx.font = `${Math.round(w * .8)}px "PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(P.guide, w / 2, hgt / 2 + w * .03);
+        }
+        ctx.strokeStyle = dark() ? '#EDEDED' : '#1C1C1C'; ctx.lineWidth = Math.max(2.5, bs / 42); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (const s of P.ink) {
+          ctx.beginPath(); s[0].forEach((x, k) => k ? ctx.lineTo(x, s[1][k]) : ctx.moveTo(x, s[1][k]));
+          if (s[0].length === 1) ctx.lineTo(s[0][0] + .1, s[1][0]); ctx.stroke();
+        }
+      };
+      const pos = e => { const r = cv.getBoundingClientRect(); return [Math.round(e.clientX - r.left), Math.round(e.clientY - r.top)]; };
+      cv.addEventListener('pointerdown', e => {
+        e.preventDefault(); if (P.locked || palmReject(e)) return;
+        cv.setPointerCapture(e.pointerId); const [x, y] = pos(e);
+        P.cur = [[x], [y], [Date.now()]]; P.ink.push(P.cur); lastPad = P; if (P.state) P.state = ''; P.draw();
+      });
+      cv.addEventListener('pointermove', e => {
+        if (!P.cur) return; e.preventDefault();
+        for (const ev of (e.getCoalescedEvents ? e.getCoalescedEvents() : [e])) { const [x, y] = pos(ev); P.cur[0].push(x); P.cur[1].push(y); P.cur[2].push(Date.now()); }
+        P.draw();
+      });
+      const end = () => { P.cur = null; };
+      cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+      P.draw();
+      return P;
+    }
+
+    for (let i = 0; i < n; i++) {
+      const row = h('div', { class: 'cells-row' });
+      const c = mk('c', bs, bs, i); row.append(c.cv);
+      let z = null; if (withZy) { z = mk('z', zw, bs, i); row.append(z.cv); }
+      col.append(row); pads.push({ c, z });
+    }
+    const bUndo = h('button', { class: 'btn ghost', type: 'button' }, '↶');
+    const bClr = h('button', { class: 'btn ghost', type: 'button' }, '重寫');
+    bar.append(bUndo, bClr);
+    bUndo.onclick = () => { if (lastPad && !lastPad.locked) { lastPad.ink.pop(); lastPad.draw(); } };
+    bClr.onclick = () => pads.forEach(p => [p.c, p.z].forEach(P => { if (P && !P.locked) { P.ink = []; P.state = ''; P.draw(); } }));
+
+    async function read() {
+      const out = [];
+      for (const p of pads) {
+        let c = '', cands = [], zy = '';
+        if (p.c.ink.length) { cands = await recognizeInk(p.c.ink, p.c.w, p.c.h); if (cands === null) return null; c = cands[0] || '？'; }
+        if (p.z) { zy = await readZhuyin(p.z.ink, p.z.w, p.z.h); if (zy === null) return null; }
+        out.push({ c, cands, zy, empty: !p.c.ink.length, zyEmpty: p.z ? !p.z.ink.length : true });
+      }
+      return out;
+    }
+    function mark(i, part, state) { const P = pads[i][part]; if (!P) return; P.state = state; P.locked = state === 'ok'; P.draw(); }
+    function clearCell(i, part) { const P = pads[i][part]; if (!P || P.locked) return; P.ink = []; P.draw(); }
+    function setGuide(i, ch) { pads[i].c.guide = ch; pads[i].c.draw(); }
+    return { el, read, mark, clearCell, setGuide, n };
+  }
+
+  window.LearnHW = { pad, sheet, cells, zhuyin, normZy };
 })();
