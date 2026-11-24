@@ -40,13 +40,13 @@
   const BLUES_LABELS = ['Good Morning!', '等等我！', 'High Five!', '抱一下', 'On my way!', '掰掰！'];
   const STICKER_PACKS = {
     Pinky: PINKY_LABELS.map((_, i) => 'pinky-' + (i + 1)),
-    Blues: BLUES_LABELS.map((_, i) => 'blues-new-' + (i + 1))
+    Bluezi: BLUES_LABELS.map((_, i) => 'blues-new-' + (i + 1))
   };
   const STICKERS = new Map([
     ...STICKER_PACKS.Pinky.map((id, i) => [id, 'Pinky · ' + PINKY_LABELS[i]]),
-    ...STICKER_PACKS.Blues.map((id, i) => [id, 'Blues · ' + BLUES_LABELS[i]]),
-    // Keep the intended greeting on Blues stickers sent before the redesign.
-    ...PINKY_LABELS.map((label, i) => ['blues-' + (i + 1), 'Blues · ' + label])
+    ...STICKER_PACKS.Bluezi.map((id, i) => [id, 'Bluezi · ' + BLUES_LABELS[i]]),
+    // Keep the intended greeting on Bluezi stickers sent before the redesign.
+    ...PINKY_LABELS.map((label, i) => ['blues-' + (i + 1), 'Bluezi · ' + label])
   ]);
   const LEGACY_STICKERS = AV.flatMap(([key, label]) =>
     MOODS.map(mood => ({ id: key + ':' + mood, label })));
@@ -381,7 +381,7 @@
 
     // ---------- 相機（照 LINE 的介面）：直接拍照、前後鏡頭、閃光燈（有支援才顯示）、倒數、可愛相框、拍完預覽 ----------
     // 手機：全螢幕；寬螢幕：像看照片一樣在頁面中間跳出框
-    const FRAMES = [['none', '無'], ['polaroid', '拍立得'], ['pinky', 'Pinky'], ['blues', 'Blues'], ...AV.map(a => [a[0], a[1]])];
+    const FRAMES = [['none', '無'], ['polaroid', '拍立得'], ['pinky', 'Pinky'], ['blues', 'Bluezi'], ...AV.map(a => [a[0], a[1]])];
     const imgCache = {};
     const loadImg = src => imgCache[src] || (imgCache[src] = new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }));
     const svgSrc = svg => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '));
@@ -589,7 +589,7 @@
       q('.lfc-ed-tin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); textOk(); } });
       function stickerSheet() {
         const g = q('.lfc-ed-sgrid'); if (!g.firstChild) {
-          const items = [...STICKER_PACKS.Pinky, ...STICKER_PACKS.Blues].map(id => `assets/chat-stickers/${id}.webp?v=2`)
+          const items = [...STICKER_PACKS.Pinky, ...STICKER_PACKS.Bluezi].map(id => `assets/chat-stickers/${id}.webp?v=2`)
             .concat(AV.flatMap(([k]) => MOODS.map(m => svgSrc(face(k, m, true)))));
           g.innerHTML = items.map(s => `<button data-s="${esc(s)}"><img src="${esc(s)}" alt="" loading="lazy"></button>`).join('') + EMOS.map(e => `<button data-emo="${e}" class="emo">${e}</button>`).join('');
         }
@@ -816,7 +816,7 @@
       const ids = stickerPack === '最近使用' ? recentStickers :
         STICKER_PACKS[stickerPack];
       const items = isEmoji ? LEGACY_STICKERS : ids.map(id => ({ id, label: STICKERS.get(id) }));
-      if (!items.length) grid.append(h('<p>還沒有最近使用的貼圖，選 Pinky 或 Blues 開始。</p>'));
+      if (!items.length) grid.append(h('<p>還沒有最近使用的貼圖，選 Pinky 或 Bluezi 開始。</p>'));
       for (const { id, label } of items) {
         const button = h(`<button type="button" aria-label="${label}" title="${label}">${sticker(id)}</button>`);
         button.onclick = async () => {
