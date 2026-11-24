@@ -42,7 +42,7 @@
     const cands = h('div', { class: 'cands' });
     const bar = h('div', { class: 'row' });
     const bClear = h('button', { class: 'btn ghost', type: 'button' }, '重寫');
-    const bUndo = h('button', { class: 'btn ghost', type: 'button' }, '↶');
+    const bUndo = h('button', { class: 'btn ghost', type: 'button' }, '↶ 上一筆');
     const bOk = h('button', { class: 'btn', type: 'button' }, opt.okText || '寫好了');
     bar.append(bUndo, bClear, bOk);
     el.append(cv, bar, cands);
@@ -384,20 +384,25 @@
     const n = opt.n || 1, withZy = !!opt.zhuyin;
     const el = h('div', { class: 'cells' });
     const col = h('div', { class: 'cells-col' });
-    const bar = h('div', { class: 'row', style: 'justify-content:center;margin-top:8px' });
+    const bar = h('div', { class: 'cells-bar' });
     el.append(col, bar);
-    const bs = Math.min(150, Math.floor((Math.min(window.innerWidth, 560) - 60) / (withZy ? 1.45 : 1)));
-    const zw = Math.round(bs * .42);
+    let bs = Math.min(150, Math.floor((Math.min(window.innerWidth, 560) - 60) / (withZy ? 1.45 : 1)));
+    const zw = () => Math.round(bs * .42);
     const pads = [];
     let lastPad = null;
     const dark = () => document.documentElement.classList.contains('dark');
 
-    function mk(kind, w, hgt, idx) {
+    function mk(kind, w0, h0, idx) {
+      let w = w0, hgt = h0;
       const cv = h('canvas', { class: 'cell cell-' + kind });
-      cv.style.width = w + 'px'; cv.style.height = hgt + 'px';
-      const dpr = window.devicePixelRatio || 1; cv.width = w * dpr; cv.height = hgt * dpr;
-      const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const ctx = cv.getContext('2d');
       const P = { kind, idx, cv, ctx, w, h: hgt, ink: [], cur: null, locked: false, guide: '', state: '' };
+      P.size = (W, H) => {
+        w = W; hgt = H; P.w = W; P.h = H;
+        cv.style.width = W + 'px'; cv.style.height = H + 'px';
+        const dpr = window.devicePixelRatio || 1; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        P.draw();
+      };
       P.draw = () => {
         ctx.clearRect(0, 0, w, hgt);
         ctx.fillStyle = P.state === 'ok' ? (dark() ? '#1f3326' : '#EAF5EC') : P.state === 'bad' ? (dark() ? '#3a2420' : '#FBEAE6') : (getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#FFFFFF');
@@ -430,19 +435,30 @@
       });
       const end = () => { P.cur = null; };
       cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
-      P.draw();
+      P.size(w, hgt);
       return P;
     }
 
     for (let i = 0; i < n; i++) {
       const row = h('div', { class: 'cells-row' });
       const c = mk('c', bs, bs, i); row.append(c.cv);
-      let z = null; if (withZy) { z = mk('z', zw, bs, i); row.append(z.cv); }
+      let z = null; if (withZy) { z = mk('z', zw(), bs, i); row.append(z.cv); }
       col.append(row); pads.push({ c, z });
     }
-    const bUndo = h('button', { class: 'btn ghost', type: 'button' }, '↶');
+    const bUndo = h('button', { class: 'btn ghost', type: 'button' }, '↶ 上一筆');
     const bClr = h('button', { class: 'btn ghost', type: 'button' }, '重寫');
     bar.append(bUndo, bClr);
+    // 依手機畫面剩下的高度調整格子大小，盡量不用捲動
+    function fit() {
+      const top = col.getBoundingClientRect().top + window.scrollY;
+      const avail = window.innerHeight - top - 70;
+      const wLim = Math.floor((Math.min(window.innerWidth, 560) - 60) / (withZy ? 1.45 : 1));
+      const b = Math.max(72, Math.min(150, wLim, Math.floor((avail - (n - 1) * 6) / n)));
+      if (b === bs) return;
+      bs = b;
+      pads.forEach(p => { p.c.size(bs, bs); if (p.z) p.z.size(zw(), bs); });
+    }
+    requestAnimationFrame(fit);
     bUndo.onclick = () => { if (lastPad && !lastPad.locked) { lastPad.ink.pop(); lastPad.draw(); } };
     bClr.onclick = () => pads.forEach(p => [p.c, p.z].forEach(P => { if (P && !P.locked) { P.ink = []; P.state = ''; P.draw(); } }));
 
@@ -459,7 +475,7 @@
     function mark(i, part, state) { const P = pads[i][part]; if (!P) return; P.state = state; P.locked = state === 'ok'; P.draw(); }
     function clearCell(i, part) { const P = pads[i][part]; if (!P || P.locked) return; P.ink = []; P.draw(); }
     function setGuide(i, ch) { pads[i].c.guide = ch; pads[i].c.draw(); }
-    return { el, read, mark, clearCell, setGuide, n };
+    return { el, bar, read, mark, clearCell, setGuide, n };
   }
 
   window.LearnHW = { pad, sheet, cells, zhuyin, normZy };

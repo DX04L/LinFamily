@@ -111,7 +111,7 @@
   // ---------- 課程資料與進度 ----------
   const cache = {};
   async function loadLesson(id) {
-    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124h').then(r => r.json());
+    if (!cache[id]) cache[id] = fetch('lessons/' + id + '.json?v=20261124i').then(r => r.json());
     return cache[id];
   }
   function progress(L) {
@@ -221,7 +221,7 @@
 
   async function listView() {
     head('三年級國語', false);
-    const list = await fetch('lessons/index.json?v=20261124h').then(r => r.json());
+    const list = await fetch('lessons/index.json?v=20261124i').then(r => r.json());
     app.innerHTML = `<div class="hero"><h2>📚 三年級國語</h2><p>選一課開始</p></div><div class="units">${list.map(l => {
       const p = store.get(KEY(l.id), null);
       return `<a class="unit" href="#/${l.id}" style="text-decoration:none;color:inherit"><span class="ic">${l.no}</span><span><b class="zy">${zy(l.title)}</b><small>第${l.no}課${p && p.done ? '・✅ 完成' : ''}</small></span></a>`;
@@ -421,10 +421,26 @@
     if (cand.length > 1) cand = cand.filter(q => q.id !== s.last);
     const q = pick(cand);
     s.last = q.id; save(L, p);
-    app.innerHTML = `<div class="card"><div class="qhead"><span>${u.icon} ${u.name}</span><span>${lvName(L, uid, s.lv)}${max > 3 ? ` / ${max}` : ''}・${s.cov.length} / ${set.length}</span></div>
+    window.scrollTo(0, 0);
+    app.innerHTML = `<div class="card"><div class="qhead"><span>${u.icon} ${u.name}</span><button class="lvbtn" id="lvBtn">${lvName(L, uid, s.lv)}${max > 3 ? ` / ${max}` : ''}・${s.cov.length} / ${set.length} ▾</button></div>
       <div class="progress"><i style="width:${Math.round(s.cov.length / set.length * 100)}%"></i></div>
       <div id="qbox"></div><div id="fb"></div></div>`;
+    $('#lvBtn').onclick = () => levelDialog(L, u);
     renderQ(L, q, $('#qbox'), result => finish(L, p, u, q, result));
+  }
+  // 單元裡選級數：從第 1 級重新開始，或從中間開始；已拿到的愛心保留
+  function levelDialog(L, u) {
+    const p = progress(L), s = p.units[u.id], max = levelsOf(L, u.id);
+    openDialog(`<h3 style="margin-top:0">${u.icon} ${u.name}｜從第幾級開始？</h3>
+      <div class="lvgrid">${Array.from({ length: max }, (_, i) => i + 1).map(lv => `<button class="opt ${lv === s.lv ? 'sel' : ''}" data-lv="${lv}">${lvName(L, u.id, lv)}${lv <= (s.best || 0) ? ' ❤' : ''}</button>`).join('')}</div>
+      <div class="row" style="margin-top:14px"><button class="btn ghost" data-lv="1">↺ 從頭開始</button><span class="spacer"></span><button class="btn ghost" id="cx">取消</button></div>`, root => {
+      root.querySelector('#cx').onclick = () => dlg.close();
+      root.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => {
+        const best = s.best || 0;
+        p.units[u.id] = Object.assign(newUnit(+b.dataset.lv), { best });
+        save(L, p); dlg.close(); toast(`從${lvName(L, u.id, +b.dataset.lv)}開始`); unitView(L, u.id);
+      });
+    });
   }
 
   // 第一次就答對＝這題過關；一級 5 題都過關＝完成這一級（❤ 加一）並升級
@@ -467,7 +483,9 @@
       <div class="row" style="justify-content:center">
         ${nx ? `<a class="btn" href="#/${L.id}/u/${nx.id}">下一個：${nx.icon} ${nx.name} ›</a>` : ''}
         ${all ? `<a class="btn" href="#/${L.id}/extend">延伸討論 ›</a>` : ''}
+        <button class="btn ghost" id="again">↺ 重新練習</button>
         <a class="btn ghost" href="#/${L.id}">回到課程</a></div></div>`;
+    $('#again').onclick = () => levelDialog(L, u);
   }
 
   // ---------- 引導提示 ----------
@@ -510,8 +528,8 @@
         tries++;
         if (ok) { over = true; hint.innerHTML = ''; done({ ok: true, first: tries === 1 && !ctl.hinted, show: extra && extra.good }); return false; }
         if (tries < MAXTRY) {
-          hint.innerHTML = `<div class="fb hint"><b>💡 再想想</b>${hintFor(L, q, tries, extra)}</div>`;
-          hint.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          hint.innerHTML = `<div class="fb hint"><b>💡 再想想</b>${hintFor(L, q, tries, extra)}<div class="row end"><button class="btn ghost" type="button">知道了</button></div></div>`;
+          hint.querySelector('.fb.hint .btn').onclick = () => { hint.innerHTML = ''; };
           return true;
         }
         over = true; hint.innerHTML = '';
@@ -549,9 +567,8 @@
   function ciWrite(L, w, qa, ctl, withZy, chk, onAgainExtra) {
     const box = LearnHW.cells({ n: w.w.length, zhuyin: withZy });
     qa.append(box.el);
-    const row = document.createElement('div'); row.className = 'row end'; row.style.marginTop = '12px';
-    row.innerHTML = '<button class="btn">寫好了</button>'; qa.append(row);
-    const btn = row.querySelector('button');
+    const btn = document.createElement('button'); btn.className = 'btn'; btn.type = 'button'; btn.textContent = '寫好了';
+    box.bar.append(btn);
     const okC = Array(w.w.length).fill(false), okZ = Array(w.w.length).fill(!withZy);
     let round = 0;
     btn.onclick = async () => {
@@ -564,11 +581,11 @@
       res.forEach((x, k) => {
         if (!okC[k]) {
           okC[k] = x.cands.slice(0, 3).includes(w.w[k]);
-          if (okC[k]) box.mark(k, 'c', 'ok'); else { box.mark(k, 'c', 'bad'); why.push(whyChar(L, x.c, w.w[k], k)); }
+          if (okC[k]) box.mark(k, 'c', 'ok'); else { box.mark(k, 'c', 'bad'); why.push(x.empty ? `第 ${k + 1} 個字還沒寫。` : whyChar(L, x.c, w.w[k], k)); }
         }
         if (!okZ[k]) {
           okZ[k] = LearnHW.normZy(x.zy) === LearnHW.normZy(w.zy[k]);
-          if (okZ[k]) box.mark(k, 'z', 'ok'); else { box.mark(k, 'z', 'bad'); why.push(whyZy(x.zy, w.zy[k], k)); }
+          if (okZ[k]) box.mark(k, 'z', 'ok'); else { box.mark(k, 'z', 'bad'); if (!(x.empty && x.zyEmpty)) why.push(whyZy(x.zy, w.zy[k], k)); }
         }
       });
       if (okC.every(Boolean) && okZ.every(Boolean)) return ctl.submit(true, { good: `${zy(w.w)}（${esc(w.zy.join(' '))}）` });

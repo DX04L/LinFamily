@@ -246,3 +246,23 @@ html.dark .heart b { color: #111; }
   @keyframes cbJump2 { 0% { transform: translateY(-380px); } 30% { transform: translateY(-470px) rotate(-4deg); } 60%, 100% { transform: translateY(-380px); } }
 }
 @media (prefers-reduced-motion: reduce) { .cb-chr, .cb-text, .cb-stars i { animation-duration: .01s !important; animation-delay: 0s !important; } }
+
+/* 手機：盡量一頁不捲動 */
+.cells-bar { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 8px; flex-wrap: nowrap; }
+.cells-bar .btn { min-height: 46px; padding: 8px 14px; font-size: 17px; white-space: nowrap; }
+.lvbtn { border: 1px solid var(--line); background: transparent; color: var(--sub); border-radius: 999px; padding: 4px 10px; min-height: 34px; font-size: 14px; }
+.lvbtn:hover { border-color: var(--main); color: var(--main); }
+.lvgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.lvgrid .opt { text-align: center; font-size: 17px; min-height: 48px; padding: 8px; }
+@media (max-width: 700px) {
+  main { padding: 10px 10px calc(env(safe-area-inset-bottom) + 24px); }
+  .card { padding: 12px 14px; }
+  .qhead { margin-bottom: 4px; }
+  .progress { margin: 4px 0 8px; }
+  .q { font-size: 20px; line-height: 1.7; margin: 2px 0 8px; }
+  .ci-mean { font-size: 18px; line-height: 1.8; margin: 6px 0; }
+  .ci-sent { font-size: 20px; line-height: 1.9; }
+  .ci-zy { font-size: 22px; }
+  #hint .fb.hint { position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 30; max-height: 48vh; overflow: auto; margin: 0;
+    box-shadow: 0 -6px 24px rgba(0,0,0,.2); font-size: 17px; }
+}
