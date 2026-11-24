@@ -3,7 +3,7 @@
 const PinkyCharacters = [
   {id:'pinky', name:'Pinky', color:'#bc317a',
     zh:'粉紅魔法貓，額頭有藍寶石，最愛在棉花雲上奔跑。'},
-  {id:'blues', name:'Blues', color:'#1f45a8',
+  {id:'blues', name:'Bluezi', color:'#1f45a8',
     zh:'戴竹蜻蜓帽的藍兔子，肚子上有最愛的紅蘿蔔。'} // English text lives in locale.js
 ];
 

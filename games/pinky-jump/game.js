@@ -530,7 +530,7 @@ const player = {
     ctx.scale(1 - this.squash * 0.6, 1 + this.squash);
     ctx.rotate(tilt);
 
-    if (currentCharacter === 'blues') drawBlues(ctx,this);
+    if (currentCharacter === 'blues') drawBluezi(ctx,this);
     else this.drawBody();
     ctx.restore();
   },
@@ -1774,7 +1774,7 @@ const pinkyCharacter = (() => {
     c.fill();
     c.translate(0, -lift);
     c.scale(1 - squash*.6, 1 + squash);
-    if (id === 'blues') drawBlues(c, state);
+    if (id === 'blues') drawBluezi(c, state);
     else {
       const saved = ctx;
       ctx = c;

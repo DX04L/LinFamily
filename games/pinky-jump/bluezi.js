@@ -1,5 +1,5 @@
-/* Blues' articulated artwork. Coordinates are relative to the same ground anchor as Pinky. */
-const drawBlues = (() => {
+/* Bluezi's articulated artwork. Coordinates are relative to the same ground anchor as Pinky. */
+const drawBluezi = (() => {
   const blue = '#5b8bf0'; // lighter blue (Darren 11/24) so it stands apart from the dark outline
   const outline = '#1f45a8';
   const pink = '#ff689e';
