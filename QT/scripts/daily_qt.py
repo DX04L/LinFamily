@@ -407,6 +407,27 @@ def discover_gemini_models(api_key: str) -> list:
     return candidates
 
 # 5. 透過 Gemini API 生成保守福音派解經、學者註腳、神學議題與兒童故事
+def format_generated_paragraphs(text):
+    if re.search(r"\n[ \t]*\n", text):
+        return text
+    sentences = re.split(r"(?<=[。！？])(?=[^。！？」』”’）)])", text)
+    if len(sentences) < 2 or len(text) < 55:
+        return text
+    paragraphs = []
+    pending = ""
+    for sentence in sentences:
+        pending += sentence
+        if len(pending.strip()) >= 45:
+            paragraphs.append(pending.strip())
+            pending = ""
+    if pending.strip():
+        if paragraphs and len(pending.strip()) < 22:
+            paragraphs[-1] += pending
+        else:
+            paragraphs.append(pending.strip())
+    return "\n\n".join(paragraphs)
+
+
 def generate_ai_devotional(ref_info: dict, scripture: dict):
     fallback_adult = {
         "book_background": f"今日靈修進度為《{ref_info['reference']}》（{ref_info['eng_reference']}）。點擊下方按鈕可隨時與 AI 深入探討本段經文的歷史背景與神學意義。",
@@ -441,6 +462,9 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
 1. 立場：完全立足於大公教會正統信仰與保守福音派釋經立場（肯定聖經無誤、歷史文法釋經法、救贖歷史脈絡）。
 2. 零幻覺與寧缺勿濫：凡是史料有爭議、不確定、或你沒有百分之百把握的細節與書名，**絕對不要寫出來**！寧可精簡少寫，也絕不可猜測或編造不存在的書名與引言。
 3. 多重權威學者支持：大人版的「全書背景」、「當日文化背景(或上下文處境)」、「重要解經」與「神學議題」，每項核心論證都必須有**超過一位（至少兩位）**著名學者支持，且**其中至少一位必須是當代著名保守福音派釋經學者**（例如：D. A. Carson、Bruce Waltke、Gordon Fee、Tremper Longman III、Douglas Moo、F. F. Bruce、John Stott、Wayne Grudem、Leon Morris、I. Howard Marshall、G. K. Beale、Craig Blomberg、Richard Bauckham、Willem VanGemeren 等），並可搭配早期教父或改教家（如奧古斯丁、屈梭多模、加爾文、馬丁路德），且在括號或註腳中標明**真實確定的著述／註釋書名稱**（例如：`[註：參 Bruce Waltke《舊約神學》；加爾文《聖經註釋》]`）。
+
+【段落格式】
+book_background、daily_context、key_exegesis、每項 theology_points 的 summary，以及 kids_story 都應依意思分成 2–3 個短段。kids_plain_explanation 和 kids_prayer 如有兩個完整意思，也分成 2 段。每段之間使用 JSON 字串的兩個換行符號（\\n\\n），不要加子標題、編號或條列。書名註腳留在對應段落末尾。
 
 【今日經文】
 {verses_text}
@@ -518,14 +542,14 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
             if p.get("title") and p.get("summary"):
                 points.append({
                     "title": str(p["title"]).strip(),
-                    "summary": str(p["summary"]).strip(),
+                    "summary": format_generated_paragraphs(str(p["summary"]).strip()),
                     "deep_dive_prompt": str(p.get("deep_dive_prompt") or f"請以保守福音派立場解析《{ref_info['reference']}》中的「{p['title']}」，並列出相關保守派學者著述。").strip()
                 })
 
         adult_content = {
-            "book_background": str(ai.get("book_background") or fallback_adult["book_background"]).strip(),
-            "daily_context": str(ai.get("daily_context") or fallback_adult["daily_context"]).strip(),
-            "key_exegesis": str(ai.get("key_exegesis") or fallback_adult["key_exegesis"]).strip(),
+            "book_background": format_generated_paragraphs(str(ai.get("book_background") or fallback_adult["book_background"]).strip()),
+            "daily_context": format_generated_paragraphs(str(ai.get("daily_context") or fallback_adult["daily_context"]).strip()),
+            "key_exegesis": format_generated_paragraphs(str(ai.get("key_exegesis") or fallback_adult["key_exegesis"]).strip()),
             "theology_points": points or fallback_adult["theology_points"]
         }
 
@@ -535,11 +559,11 @@ def generate_ai_devotional(ref_info: dict, scripture: dict):
         prayer_body = str(ai.get("kids_prayer") or "").strip()
 
         kids_content = {
-            "plain_explanation_ruby": to_zhuyin_ruby(plain_exp or story_body or fallback_kids["plain_explanation_ruby"]),
+            "plain_explanation_ruby": to_zhuyin_ruby(format_generated_paragraphs(plain_exp or story_body or fallback_kids["plain_explanation_ruby"])),
             "bible_story_title": story_title,
             "bible_story_title_ruby": to_zhuyin_ruby(story_title),
-            "bible_story_ruby": to_zhuyin_ruby(story_body),
-            "prayer_ruby": to_zhuyin_ruby(prayer_body) if prayer_body else fallback_kids["prayer_ruby"]
+            "bible_story_ruby": to_zhuyin_ruby(format_generated_paragraphs(story_body)),
+            "prayer_ruby": to_zhuyin_ruby(format_generated_paragraphs(prayer_body)) if prayer_body else fallback_kids["prayer_ruby"]
         }
         print("✅ Gemini AI 保守派釋經、學者註腳與兒童故事生成成功！")
         return adult_content, kids_content

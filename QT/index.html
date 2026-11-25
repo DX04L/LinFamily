@@ -93,6 +93,9 @@ h3{font-size:18px}
 .eng-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:6px;background:var(--panel);color:var(--accent);margin-right:6px;vertical-align:middle}
 
 p{line-height:1.85;white-space:pre-line}
+.qt-ai-paragraph{display:block}
+.qt-ai-paragraph + .qt-ai-paragraph{margin-block-start:.75em}
+.qt-mode-swipe{touch-action:pan-y pinch-zoom}
 details{border-top:1px solid var(--line);padding-top:14px;color:var(--muted);margin-top:16px}
 summary{cursor:pointer;font-weight:600;width:fit-content;font-size:14px}
 details[open] .context{animation:appear .25s ease-out}
@@ -145,7 +148,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <style>footer { display:none !important; }</style><!-- LF 全站不顯示 footer -->
 </head>
 <body>
-<header><div class="bar shell">
+<header class="qt-mode-swipe"><div class="bar shell">
   <div class="qt-brand-group"><a id="home" class="brand" data-lf-menu-trigger href="./"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a><span id="qt-welcome" hidden><span id="qt-welcome-name"></span><span id="qt-welcome-extra" hidden></span></span></div>
   <div class="qt-header-actions">
     <button id="export-word" type="button" aria-label="匯出 Word" title="匯出 Word" hidden>
@@ -159,7 +162,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 </div></header>
 <div id="reading-sheet">
 <main class="shell">
-  <div class="hero">
+  <div class="hero qt-mode-swipe">
     <div class="hero-copy">
       <div class="date-nav">
         <button id="previous" disabled aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
@@ -211,7 +214,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   <div class="actions"><a class="action" id="manual-ai" target="_blank" rel="noopener noreferrer">前往 AI 對話</a><form method="dialog"><button class="action">關閉</button></form></div>
 </dialog>
 <noscript><p class="shell">請啟用 JavaScript 以閱讀每日靈修內容。</p></noscript>
-<script src="reader.js?v=7"></script>
+<script src="reader.js?v=8"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
@@ -288,6 +291,27 @@ function rubyMarkup(value) {
   return escapeText(plain);
 }
 
+function formatAiText(value, annotate = false) {
+  const escaped = (annotate ? rubyMarkup : escapeText)(value);
+  if (/\n[\t ]*\n/.test(escaped)) return escaped;
+
+  // Preserve text offsets so saved annotations still match older entries.
+  const sentences = escaped.match(/[^。！？]+[。！？]+[」』”’）)]*|[^。！？]+$|[。！？]+/g) || [];
+  if (sentences.join('') !== escaped || sentences.length < 2) return escaped;
+  const paragraphs = [];
+  let pending = '';
+  for (const sentence of sentences) {
+    pending += sentence;
+    if (pending.trim().length >= 45) {
+      paragraphs.push(pending);
+      pending = '';
+    }
+  }
+  if (pending.trim().length < 22 && paragraphs.length) paragraphs[paragraphs.length - 1] += pending;
+  else if (pending) paragraphs.push(pending);
+  return paragraphs.map(text => `<span class="qt-ai-paragraph">${text}</span>`).join('');
+}
+
 function render(data, node = $) {
   const bible = data.scripture;
   const crossesChapters = bible.verses?.[0]?.chapter !== bible.verses?.at(-1)?.chapter;
@@ -311,12 +335,12 @@ function render(data, node = $) {
       </div></details>
     </section>
     <div class="split">
-      <section class="card"><h3>全書背景</h3><p>${escapeText(grownUp.book_background)}</p></section>
-      <section class="card"><h3>當日文化背景與上下文處境</h3><p>${escapeText(grownUp.daily_context)}</p></section>
+      <section class="card"><h3>全書背景</h3><p>${formatAiText(grownUp.book_background)}</p></section>
+      <section class="card"><h3>當日文化背景與上下文處境</h3><p>${formatAiText(grownUp.daily_context)}</p></section>
     </div>
-    ${grownUp.key_exegesis ? `<section class="card"><h3>重要解經</h3><p>${escapeText(grownUp.key_exegesis)}</p></section>` : ''}
+    ${grownUp.key_exegesis ? `<section class="card"><h3>重要解經</h3><p>${formatAiText(grownUp.key_exegesis)}</p></section>` : ''}
     <section class="card"><h2>重要神學議題</h2>
-      ${grownUp.theology_points.map((point,i) => `<div class="point"><h3>${escapeText(point.title)}</h3><p>${escapeText(point.summary)}</p>
+      ${grownUp.theology_points.map((point,i) => `<div class="point"><h3>${escapeText(point.title)}</h3><p>${formatAiText(point.summary)}</p>
         <div class="actions"><button class="action" data-point="${i}" data-ai="chatgpt">與 ChatGPT 深入探討 ↗</button>
         <button class="action" data-point="${i}" data-ai="claude">Claude ↗</button></div></div>`).join('')}
     </section>`;
@@ -339,9 +363,9 @@ function render(data, node = $) {
       ${kids.bible_story_ruby ? `
         <p class="eyebrow">用聖經說故事</p>
         <h2 class="zhuyin">${rubyMarkup(kids.bible_story_title_ruby || kids.bible_story_title)}</h2>
-        <p class="zhuyin">${rubyMarkup(kids.bible_story_ruby)}</p>
+        <p class="zhuyin">${formatAiText(kids.bible_story_ruby, true)}</p>
       ` : ''}
-      ${kids.prayer_ruby ? `<div class="prayer"><h3>♡ 今日小禱告</h3><p class="zhuyin">${rubyMarkup(kids.prayer_ruby)}</p></div>` : ''}
+      ${kids.prayer_ruby ? `<div class="prayer"><h3>♡ 今日小禱告</h3><p class="zhuyin">${formatAiText(kids.prayer_ruby, true)}</p></div>` : ''}
     </section>` : ''}`;
 }
 
@@ -657,6 +681,7 @@ QTReader.init({
   getMode: () => mode === 'kids-cute' ? 'kids' : 'grown-up',
   copy: copyPrompt,
   turn: shiftDate,
+  switchMode: () => setTheme(mode === 'kids-cute' ? 'literary' : 'kids-cute'),
   adjacent: adjacentDate,
   preview: previewDate,
 });

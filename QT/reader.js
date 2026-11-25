@@ -397,15 +397,18 @@ const QTReader = (() => {
       }
     });
 
-    const main = document.querySelector('main');
-    main.addEventListener('touchstart', event => {
+    const gestureSurface = document.body;
+    gestureSurface.addEventListener('touchstart', event => {
       cancelDrag();
-      if (event.touches.length !== 1 || active || paper || dialog.open || $('date-picker').open ||
-          event.target.closest('a,button,summary,input,textarea,select,mark') || !selection()?.isCollapsed) return;
+      const modeSwipe = Boolean(event.target.closest('.qt-mode-swipe'));
+      if ((!modeSwipe && !event.target.closest('main')) || event.touches.length !== 1 ||
+          active || paper || document.querySelector('dialog[open]') || $('date-picker').open ||
+          event.target.closest('a,button:not([data-mode]),summary,input,textarea,select,mark,.date-nav') ||
+          !selection()?.isCollapsed) return;
       const {clientX:x, clientY:y} = event.touches[0];
-      if (x >= innerWidth * .1 && x <= innerWidth * .9) touch = {x,y,started:performance.now()};
+      if (x >= innerWidth * .1 && x <= innerWidth * .9) touch = {x,y,modeSwipe,started:performance.now()};
     }, {passive:true});
-    main.addEventListener('touchmove', event => {
+    gestureSurface.addEventListener('touchmove', event => {
       if (!touch) return;
       const point = event.touches[0];
       const dx = point.clientX - touch.x, dy = point.clientY - touch.y;
@@ -417,25 +420,34 @@ const QTReader = (() => {
       if (!touch.direction && Math.abs(dx) > Math.max(12, Math.abs(dy) * 1.5)) {
         if (performance.now() - touch.started > 360) return cancelDrag();
         touch.direction = dx < 0 ? 1 : -1;
+        if (touch.modeSwipe) return;
         const next = options.adjacent(touch.direction);
         if (!next) return cancelDrag();
         if (!reducedMotion()) beginPaper(next, touch.direction === 1);
       }
       if (paper && touch.direction) drawPaper(Math.max(0, -dx * touch.direction) / paper.width);
     }, {passive:true});
-    main.addEventListener('touchcancel', cancelDrag);
-    main.addEventListener('touchend', event => {
+    gestureSurface.addEventListener('touchcancel', cancelDrag);
+    gestureSurface.addEventListener('touchend', event => {
       const start = touch;
       touch = null;
       if (!start?.direction) return;
       const end = event.changedTouches[0];
       const travel = (start.x - end.clientX) * start.direction;
-      const threshold = Math.min(100, innerWidth * .22);
+      const threshold = start.modeSwipe ? Math.max(40, innerWidth * .11) : Math.min(100, innerWidth * .22);
+      if (start.modeSwipe) {
+        const fast = travel >= 28 && performance.now() - start.started < 320;
+        if (!active && !customRange && Math.abs(end.clientY - start.y) < travel && (travel >= threshold || fast)) {
+          if (event.cancelable) event.preventDefault();
+          options.switchMode();
+        }
+        return;
+      }
       const velocity = travel / Math.max(1, performance.now() - start.started);
       const commit = !active && !customRange && (travel >= threshold || (travel >= 52 && velocity > .45));
       if (commit) options.turn(start.direction);
       else if (paper) animatePaper(0);
-    }, {passive:true});
+    }, {passive:false});
 
     $('export-word').addEventListener('click', async () => {
       const entry = options.getCurrent();
