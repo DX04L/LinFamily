@@ -87,7 +87,7 @@ function openEntry(row) {
   form.reset();
   $('entry-heading').textContent = row ? '修改紀錄' : '新增一筆';
   $('save-entry').textContent = row ? '確認送出' : '儲存';
-  entryFields.kind.value = row?.kind || 'expense';
+  if (row) entryFields.kind.value = row.kind;
   entryFields.label.value = row?.label || '';
   entryFields.amount.value = row?.amount ?? '';
   entryFields.date.value = row ? row.date || '' : dateFormat.format(new Date());

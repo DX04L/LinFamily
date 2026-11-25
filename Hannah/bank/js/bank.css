@@ -47,7 +47,8 @@ li{border-bottom:1px solid var(--line)}
 .empty{padding:10px 0 20px}
 #import{font-size:14px;padding-inline:0}
 #notice{min-height:24px;padding-top:10px}
-dialog{border:1px solid var(--line);border-radius:22px;color:var(--ink);background:var(--paper);width:min(440px,calc(100% - 24px));padding:23px;max-height:calc(100dvh - 24px)}
+html:has(dialog[open]),html:has(dialog[open]) body{overflow:hidden;overscroll-behavior:none}
+dialog{overflow:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:22px;color:var(--ink);background:var(--paper);width:min(440px,calc(100% - 24px));padding:23px;max-height:calc(100dvh - 24px)}
 dialog::backdrop{background:#35254377}
 form,fieldset{display:grid;gap:14px}
 fieldset{padding:0;margin:0;border:0}
