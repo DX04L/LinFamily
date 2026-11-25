@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f4edf9">
+<title>Hannah Bank</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="js/bank.css?v=1">
+<script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script type="module" src="js/bank.mjs?v=1"></script>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand"><img src="apple-touch-icon.png" alt=""><h1>Hannah Bank</h1></div>
+    <a class="quiet" href="../../" target="_top">LinFamily 首頁</a>
+  </header>
+  <section id="gate" class="sheet">
+    <h2>我的零用錢</h2>
+    <p id="gate-message" role="status">正在確認 LinFamily 登入狀態…</p>
+    <button id="sign-in" class="primary" hidden>使用 Google 登入</button>
+  </section>
+  <div id="ledger" hidden>
+    <section class="balance" aria-labelledby="balance-label">
+      <div><h2 id="balance-label">目前餘額</h2><strong id="balance"></strong></div>
+      <dl><div><dt>收入</dt><dd id="income"></dd></div><div><dt>支出</dt><dd id="expense"></dd></div></dl>
+    </section>
+    <p class="account" id="account"></p>
+    <section class="sheet">
+      <div class="section-head"><h2>記帳紀錄</h2><button type="button" class="primary" id="add">＋ 新增一筆</button></div>
+      <ul id="entries"></ul>
+      <p id="empty" class="empty">還沒有紀錄。</p>
+      <button type="button" class="quiet" id="import">匯入舊帳 PDF</button>
+    </section>
+  </div>
+  <p id="notice" role="status" aria-live="polite"></p>
+</main>
+<dialog id="entry-dialog" aria-labelledby="entry-heading">
+  <form id="entry-form">
+    <h2 id="entry-heading">新增一筆</h2>
+    <fieldset><legend>類型</legend><div class="segmented">
+      <label><input type="radio" name="kind" value="income" required>收入</label>
+      <label><input type="radio" name="kind" value="expense" required>支出</label>
+    </div></fieldset>
+    <label>項目<input name="label" required maxlength="100" placeholder="例如：零用錢"></label>
+    <div class="fields">
+      <label>金額（NT$）<input name="amount" type="number" inputmode="numeric" min="1" max="99999999" step="1" required></label>
+      <label>日期<input name="date" type="date" required><span id="old-date" hidden></span></label>
+    </div>
+    <p class="message" role="status"></p>
+    <div class="actions">
+      <button type="button" class="danger" id="delete" hidden>刪除</button>
+      <button type="button" class="quiet" data-close>取消</button>
+      <button class="primary" type="submit">儲存</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="import-dialog" aria-labelledby="import-heading">
+  <form id="import-form">
+    <h2 id="import-heading">匯入舊帳 PDF</h2>
+    <label>選擇 Hannah Bank PDF<input type="file" id="pdf" accept="application/pdf,.pdf" required></label>
+    <p class="message" id="import-preview" role="status">匯入前會核對筆數與金額。舊帳未標年份的日期會保留原樣。</p>
+    <div class="actions"><button type="button" class="quiet" data-close>取消</button><button class="primary" id="apply-import" disabled>匯入</button></div>
+  </form>
+</dialog>
+</body>
+</html>

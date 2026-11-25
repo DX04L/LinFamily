@@ -651,9 +651,10 @@
     // ---------- App 清單 ----------
     const CACHE_KEY = 'linfamily_apps_v2';
     const HANNAH = { id: 'hannah', name: "Hannah's Studio", url: 'HannahProjects/', icon: 'HannahProjects/apple-touch-icon.png', pos: 0 };
+    const HANNAH_BANK = { id: 'hannah-bank', name: 'Hannah Bank', url: 'Hannah/bank/', icon: 'Hannah/bank/apple-touch-icon.png' };
     const DX04 = { id: 'dx04', name: 'CLC DX04', url: 'https://clc-dx04.pages.dev/', icon: 'https://clc-dx04.pages.dev/apple-touch-icon.png' };
     const PRESET_EMOJI = { photos:'📷', calendar:'📅', home:'🏠', cloud:'☁️', notes:'📝', finance:'💰', security:'📹', map:'📍', media:'🎬', link:'🔗' };
-    let apps = [HANNAH, Object.assign({}, DX04, { pos: 1 })], needsSeed = false, seeding = false, seededList = ['hannah', 'dx04'];
+    let apps = [HANNAH, Object.assign({}, DX04, { pos: 1 }), { ...HANNAH_BANK, pos: 2 }], needsSeed = false, seeding = false, seededList = ['hannah', 'dx04', 'hannah-bank'];
     try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (Array.isArray(c) && c.length) apps = c; } catch (_) {}
     // 個人桌面：linfamily_desktops/{email}（每人自己排列、新增、移除）。沒有個人桌面時顯示預設桌面（Superuser 編的全部 App）。
     // Superuser 永遠看、編預設桌面＝全部 App。之後要做「哪些 App 給哪些人」時，在預設桌面的 App 上加權限欄位即可。
@@ -711,8 +712,19 @@
     } });
     let globalApps = apps, myDesk = null, mySeen = [], deskUnsub = null, deskEmail = '', finishDeskWait;
     const deskKey = () => 'linfamily_desk_' + deskEmail;
+    function withHannahBank(items, app = HANNAH_BANK) {
+      if (items.some(item => item.id === app.id)) return items;
+      const normalized = window.clcSlotGridNormalize(items);
+      const occupied = new Set(normalized.map(item => item.pos));
+      let pos = 0;
+      while (occupied.has(pos)) pos++;
+      return normalized.concat({ ...app, pos });
+    }
     function showApps() {
-      apps = (myDesk || globalApps).filter(a => !hiddenFor(a)); // App 櫃刪除的大家都不見；關閉的（DX、YA、SR 預設關）只有 Superuser 看得到
+      const bank = globalApps.find(a => a.id === HANNAH_BANK.id);
+      const showBank = myDesk && bank && !mySeen.includes(bank.id) && !hiddenFor(bank);
+      const items = showBank ? withHannahBank(myDesk, bank) : (myDesk || globalApps);
+      apps = items.filter(a => !hiddenFor(a));
       if (slots) { slots.render(); renderNews(); if (!$('panelAll').hidden) renderAll(); }
     }
     function watchDesk() {
@@ -921,7 +933,7 @@
     async function removeApp(id) {
       const app = apps.find(a => a.id === id);
       if (!app) return; // 已在刪除確認框確認過
-      try { await persist(withPos().filter(a => a.id !== id)); } catch (err) { toast('移除失敗：' + errText(err)); }
+      try { await persist(withPos().filter(a => a.id !== id), id === HANNAH_BANK.id ? [id] : []); } catch (err) { toast('移除失敗：' + errText(err)); }
     }
     // 預設 App 只自動加一次（記在雲端 seeded 清單；之後刪掉也不會再跑回來）：
     // Hannah's Studio 放第一格（其餘往後），CLC DX04 放到第一個空格。由 Superuser 登入時寫回雲端。
@@ -945,6 +957,11 @@
           items = items.concat(Object.assign({}, DX04, { pos }));
           changed = true;
         }
+      }
+      if (!seeded.has(HANNAH_BANK.id)) {
+        seeded.add(HANNAH_BANK.id);
+        items = withHannahBank(items);
+        changed = true;
       }
       return { items, seed: changed || !Array.isArray(d.seeded) || d.seeded.length !== seeded.size, seeded: Array.from(seeded) };
     }
