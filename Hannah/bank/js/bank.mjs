@@ -16,7 +16,7 @@ function totals(rows) {
 }
 
 let db, auth, ref, unsubscribe, entries = [], recentLabels = [], editing, pendingImport;
-let ownEmail = '', canEdit = false, ownLedger = false;
+let canEdit = false, editMode = false;
 let session = 0;
 function gate(message, canSignIn = false) {
   $('ledger').hidden = true;
@@ -38,7 +38,7 @@ function render() {
     const amount = line.querySelector('b');
     amount.className = row.kind;
     amount.textContent = (row.kind === 'income' ? '+' : '−') + money.format(row.amount);
-    if (canEdit) {
+    if (canEdit && editMode) {
       const edit = document.createElement('button');
       edit.type = 'button';
       edit.className = 'quiet edit-entry';
@@ -82,7 +82,7 @@ function renderSuggestions() {
 entryFields.label.addEventListener('input', renderSuggestions);
 
 function openEntry(row) {
-  if (!ref || (row ? !canEdit : !ownLedger)) return;
+  if (!ref || (row && (!canEdit || !editMode))) return;
   editing = row || null;
   form.reset();
   $('entry-heading').textContent = row ? '修改紀錄' : '新增一筆';
@@ -94,7 +94,7 @@ function openEntry(row) {
   entryFields.date.required = !row?.legacyDate;
   $('old-date').hidden = !row?.legacyDate;
   $('old-date').textContent = row?.legacyDate ? '原始日期：' + row.legacyDate : '';
-  $('delete').hidden = !row || !ownLedger;
+  $('delete').hidden = !row;
   renderSuggestions();
   form.querySelector('.message').textContent = '';
   entryDialog.showModal();
@@ -102,7 +102,7 @@ function openEntry(row) {
 
 async function changeEntry(remove = false) {
   const previous = editing;
-  if (!ref || (previous ? !canEdit || (remove && !ownLedger) : !ownLedger)) return;
+  if (!ref || ((previous || remove) && (!canEdit || !editMode))) return;
   const row = {
     id: previous?.id || crypto.randomUUID(),
     kind: entryFields.kind.value,
@@ -139,6 +139,18 @@ async function changeEntry(remove = false) {
   }
 }
 
+function setEditMode(enabled) {
+  editMode = canEdit && enabled;
+  const button = $('edit-mode');
+  button.hidden = !canEdit;
+  button.setAttribute('aria-pressed', String(editMode));
+  button.textContent = editMode ? '完成編輯' : '編輯';
+}
+$('edit-mode').onclick = () => {
+  if (!canEdit || !ref) return;
+  setEditMode(!editMode);
+  render();
+};
 $('add').onclick = () => openEntry();
 form.onsubmit = event => { event.preventDefault(); changeEntry(); };
 $('delete').onclick = () => {
@@ -213,17 +225,11 @@ async function start() {
     try { await auth.signInWithPopup(provider); }
     catch (_) { gate('登入未完成，請重試或先從 LinFamily 首頁登入。', true); }
   };
-  $('switch-ledger').onsubmit = event => {
-    event.preventDefault();
-    if (!canEdit) return;
-    watchLedger($('ledger-email').value.trim().toLowerCase());
-  };
   auth.onAuthStateChanged(user => {
-    ownEmail = user?.emailVerified && user.email ? user.email.toLowerCase() : '';
-    canEdit = SUPERUSERS.includes(ownEmail);
-    $('switch-ledger').hidden = !canEdit;
-    $('ledger-email').value = canEdit ? ownEmail : '';
-    watchLedger(ownEmail);
+    const email = user?.emailVerified && user.email ? user.email.toLowerCase() : '';
+    canEdit = SUPERUSERS.includes(email);
+    setEditMode(false);
+    watchLedger(email);
   });
 }
 function watchLedger(email) {
@@ -237,8 +243,6 @@ function watchLedger(email) {
   pendingImport = null;
   $('entries').replaceChildren();
   $('notice').textContent = '';
-  ownLedger = !!email && email === ownEmail;
-  $('add').hidden = $('import').hidden = !ownLedger;
   if (!email) {
     gate('使用 LinFamily 的 Google 帳號登入，就能開啟帳本。', true);
     return;
@@ -248,14 +252,9 @@ function watchLedger(email) {
   unsubscribe = accountRef.onSnapshot(snap => {
     if (active !== session) return;
     const bank = snap.data()?.hannahBank;
-    if (!ownLedger && !bank) {
-      gate('這個帳號還沒有 Hannah Bank 紀錄。');
-      return;
-    }
     ref = accountRef;
     entries = bank?.entries || [];
     recentLabels = bank?.recentLabels || [];
-    $('account').textContent = email;
     render();
     $('gate').hidden = true;
     $('ledger').hidden = false;
@@ -264,7 +263,7 @@ function watchLedger(email) {
     ref = null;
     entryDialog.close();
     importDialog.close();
-    gate('無法開啟帳本。請確認此帳號有 LinFamily 使用權限。', ownLedger);
+    gate('無法開啟帳本。請確認此帳號有 LinFamily 使用權限。', true);
   });
 }
 if (document.readyState === 'loading') await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }));

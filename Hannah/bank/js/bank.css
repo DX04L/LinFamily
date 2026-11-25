@@ -27,9 +27,10 @@ button:disabled{opacity:.55;cursor:wait}
 .balance h2{font-size:14px;font-weight:600;color:var(--muted)}
 .balance strong{font:600 clamp(27px,7vw,46px)/1.35 Georgia,serif;overflow-wrap:anywhere}
 .balance dl{display:flex;flex-wrap:wrap;gap:7px 24px}
-.balance dt,.account,.empty,.message,#notice{font-size:14px;color:var(--muted)}
+.balance dt,.empty,.message,#notice{font-size:14px;color:var(--muted)}
 .balance dd{font-weight:bold}
-.account{padding:8px 2px 14px;overflow-wrap:anywhere;text-align:right}
+#ledger>.sheet{margin-top:20px}
+#edit-mode{margin-inline-start:auto}
 ul{list-style:none;margin:12px 0 8px;padding:0}
 li{border-bottom:1px solid var(--line)}
 .entry{display:flex;gap:10px;align-items:center;padding:11px 4px}
@@ -39,9 +40,6 @@ li{border-bottom:1px solid var(--line)}
 .suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:-7px}
 .suggestions button{min-height:29px;padding:3px 9px;background:var(--lilac);color:var(--accent);font-size:13px}
 .suggestions button:hover{background:#e2ceef}
-.switch-ledger{display:flex;align-items:end;gap:8px;margin-bottom:16px}
-.switch-ledger label{flex:1}
-.switch-ledger button{white-space:nowrap}
 .entry span{overflow-wrap:anywhere}
 .entry small{display:block;color:var(--muted)}
 .income{color:var(--green)}
