@@ -173,16 +173,21 @@ function beginMusic() {
   backgroundMusic.playbackRate = 1;
   prepareMusicAudio();
   setMusicVolume(MUSIC_VOLUME);
-  updateMediaSession('playing');
-  const result = backgroundMusic.play();
-  if (result && typeof result.catch === 'function') {
-    result.catch(error => {
-      updateMediaSession('paused');
-      console.warn('Pinky Jump Music could not play:', error);
-    });
-  }
+  resumeMusic();
+}
+let musicPlayPending = false;
+function resumeMusic() {
+  if (!backgroundMusic || sfx.muted || gameState !== 'PLAYING' || document.hidden) return;
+  if (musicGain && sfx.ctx.state !== 'running') sfx.ctx.resume().catch(() => {});
+  if (!backgroundMusic.paused || musicPlayPending) return;
+  musicPlayPending = true;
+  backgroundMusic.play().then(() => {
+    if (gameState === 'PLAYING' && !sfx.muted && !document.hidden) updateMediaSession('playing');
+  }).catch(() => {}).finally(() => { musicPlayPending = false; });
 }
 if (backgroundMusic) {
+  backgroundMusic.addEventListener('pause', resumeMusic);
+  backgroundMusic.addEventListener('ended', resumeMusic);
   backgroundMusic.addEventListener('error', () => {
     updateMediaSession('paused');
     console.warn('Pinky Jump Music file unavailable:', MUSIC_FILE);
@@ -209,7 +214,9 @@ function endMusic() {
 }
 function updateMusic() {
   if (backgroundMusic && !backgroundMusic.paused) {
-    backgroundMusic.playbackRate = Math.min(1.07, 1 + Math.max(0, gameSpeed - 7) * .007);
+    // Quantize small changes so iOS isn't asked to reset the media rate every frame.
+    const rate = Math.min(1.07, 1 + Math.floor(Math.max(0, gameSpeed - 7) * .7) / 100);
+    if (backgroundMusic.playbackRate !== rate) backgroundMusic.playbackRate = rate;
   }
 }
 
@@ -289,7 +296,7 @@ hiScoreEl.textContent = '-----';
 const prevState = {valid:false, camY:0, px:0, py:0, dist:0, speed:0};
 function resizeCanvas() {
   prevState.valid = false;
-  const screenW = window.innerWidth, screenH = window.innerHeight;
+  const screenW = canvas.clientWidth || window.innerWidth, screenH = canvas.clientHeight || window.innerHeight;
   // Phones zoom in ×1.3 so the cat isn't tiny (rules stay in world units). In landscape the camera
   // follows the cat up near the top of a jump (Super Mario style).
   const phone = Math.min(screenW, screenH) < 600;
@@ -354,14 +361,7 @@ muteBtn.addEventListener('click', () => {
   } else if (gameState === 'PLAYING') {
     prepareMusicAudio();
     setMusicVolume(MUSIC_VOLUME);
-    updateMediaSession('playing');
-    const result = backgroundMusic.play();
-    if (result && typeof result.catch === 'function') {
-      result.catch(error => {
-        updateMediaSession('paused');
-        console.warn('Pinky Jump Music could not resume:', error);
-      });
-    }
+    resumeMusic();
   }
 });
 // Mild, occasional rolling terrain. The shape is shared by rendering and physics.
@@ -1602,7 +1602,7 @@ function setGamePaused(paused) {
     document.dispatchEvent(new Event('pinky-play-start'));
     if (!sfx.muted) {
       prepareMusicAudio();
-      backgroundMusic?.play()?.then(()=>updateMediaSession('playing'),()=>{});
+      resumeMusic();
     }
   }
   window.pinkyArcade?.onPause(paused, Math.floor(score));
@@ -1872,7 +1872,6 @@ requestAnimationFrame(update);
 for (const type of ['pointerdown', 'touchend', 'keydown']) {
   document.addEventListener(type, () => {
     sfx.unlock();
-    if (backgroundMusic && backgroundMusic.paused && gameState === 'PLAYING' && !sfx.muted)
-      backgroundMusic.play()?.catch(() => {});
+    resumeMusic();
   }, {capture: true, passive: true});
 }

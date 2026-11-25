@@ -30,6 +30,13 @@ html, body {
   background: linear-gradient(180deg, #ffd6ea 0%, #fff4fa 65%, #e6f4ff 100%);
 }
 
+/* Fill the installed app viewport, including the iOS home-indicator area. */
+@media (display-mode: standalone) {
+  html { background: linear-gradient(#ffeef6 75%, #f591a9 75%); }
+  body { background: transparent; }
+  #game-wrapper:not([hidden]) { position: fixed; inset: 0; width: auto; height: auto; }
+}
+
 #game-canvas {
   display: block;
   width: 100%;
