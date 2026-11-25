@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
   <link rel="stylesheet" href="css/lf-todos.css?v=9">
-  <link rel="stylesheet" href="css/lf-chat.css?v=28">
+  <link rel="stylesheet" href="css/lf-chat.css?v=29">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=13">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
@@ -381,6 +381,7 @@
     </section>
 
     <section id="panelFamily" aria-label="家庭留言板" hidden>
+      <div class="lf-family-scroll"><div id="lfFamilyDesk" aria-label="家庭桌面"></div></div>
       <div id="lfChat"></div><!-- 家庭留言板 js/lf-chat.js -->
     </section>
   </main>
@@ -452,7 +453,7 @@
   <script src="js/dashboard-todos.js?v=20261124a"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=34"></script>
+  <script src="js/lf-chat.js?v=35"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -864,7 +865,7 @@
       onEnter: () => { if (tb.tab() === 'family') return window.lfChatApi && window.lfChatApi.findNext(); const id = applySearch().find(x => apps.some(a => a.id === x)); const a = id && desk.element(id) && desk.element(id).querySelector('a[href]'); if (a) location.href = a.href; }
     });
     // 家庭留言板（Family 分頁）：有新訊息時 Family 分頁標籤亮紅點
-    window.lfChatApi = db && window.lfChatInit ? window.lfChatInit($('lfChat'), { db, onBack: () => tb.setTab('apps', true), tabDot: on => {
+    window.lfChatApi = db && window.lfChatInit ? window.lfChatInit($('lfChat'), { db, desktop: $('lfFamilyDesk'), toast, tabDot: on => {
       const b = Array.from($('lfToolbar').querySelectorAll('button, [role="tab"]')).find(x => x.textContent.trim() === 'Family');
       if (!b) return; let d = b.querySelector('.lfc-tabdot'); // on＝未讀數（0＝不顯示），像 LINE 的紅色數字徽章
       if (on && !d) { b.style.position = 'relative'; d = b.appendChild(Object.assign(document.createElement('span'), { className: 'lfc-tabdot' })); }

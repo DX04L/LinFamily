@@ -3,7 +3,7 @@
      lf_chat_messages/{id}  { uid, text, img, stk, replyTo:{id,name,text}, mentions:[uid], reacts:{uid:emoji}, unsent, ts }
      lf_chat_profiles/{uid} { name, av, email, at }（本人寫）   lf_chat_reads/{uid} { at }（本人寫，算已讀）
      lf_chat_phones/{uid}   { phone }（Superuser 寫）           lf_chat_meta/pin { id, name, text }（公告）
-   用法：const chat = lfChatInit(rootEl, { db, tabDot }); chat.auth(user, role); chat.show(true/false) */
+   用法：const chat = lfChatInit(rootEl, { db, desktop, toast, tabDot }); chat.auth(user, role); chat.show(true/false) */
 (function () {
   const AV = [['cat', '小貓', '#f8c8d8', '#e58aa8'], ['bear', '小熊', '#e8c9a0', '#b98a5a'], ['rab', '兔兔', '#eef0f6', '#f2a7c0'], ['dog', '小狗', '#f3dcb5', '#a8774a'],
     ['pen', '企鵝', '#cfe3f7', '#2f3a4a'], ['chk', '小雞', '#fde9a0', '#f0a640'], ['frg', '青蛙', '#c9eab0', '#5a9a3a'], ['pnd', '熊貓', '#f4f4f4', '#333333']];
@@ -105,7 +105,15 @@
     };
     root.innerHTML = `
       <div class="lfc">
-        <div class="lfc-mv" id="lfcHead" title="按住左右拖曳可移動"></div><button class="lfc-min" id="lfcMin" title="收合留言板" aria-label="收合留言板"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+        <div class="lfc-top" id="lfcHead">
+          <button class="lfc-ibtn" id="lfcMin" title="收合留言板" aria-label="收合留言板">${IC.back}</button>
+          <strong id="lfcMyName"></strong>
+          <button class="lfc-ibtn" id="lfcOptions" aria-label="留言板選單" aria-expanded="false" aria-controls="lfcOptionsList">${IC.menu}</button>
+          <div class="dk-menu lfc-options" id="lfcOptionsList" hidden>
+            <button type="button" data-feature="photo">Photo</button>
+            <button type="button" data-feature="note">Note</button>
+          </div>
+        </div>
         <div class="lfc-findbar" id="lfcFindBar" hidden><span id="lfcFindN"></span><button id="lfcFindUp" title="上一則（較舊）">˄</button><button id="lfcFindDn" title="下一則（較新）">˅</button></div>
         <div class="lfc-pin" id="lfcPin" hidden>📢<span id="lfcPinText"></span><button id="lfcUnpin" title="取消公告">✕</button></div>
         <div class="lfc-list" id="lfcList"></div>
@@ -216,19 +224,127 @@
       });
     }
     // 收合鈕；寬螢幕按住頂端隱形條左右拖 = 移動位置
-    $('lfcMin').onclick = () => setCollapsed(true);
+    $('lfcMin').onclick = () => { setOptions(false); setCollapsed(true); };
     drag($('lfcHead'), (dx, st) => { lay.x = st.x + dx; });
     drag(rzR, (dx, st) => { lay.x = st.x; lay.w = Math.max(360, Math.min(st.W - st.x, st.w + dx)); });
     drag(rzL, (dx, st) => { const w = Math.max(360, Math.min(st.x + st.w, st.w - dx)); lay.x = st.x + st.w - w; lay.w = w; });
     wideQ.addEventListener && wideQ.addEventListener('change', fit);
 
+    const options = $('lfcOptionsList'), optionsButton = $('lfcOptions');
+    function setOptions(open) {
+      options.hidden = !open;
+      optionsButton.setAttribute('aria-expanded', String(open));
+    }
+    optionsButton.onclick = () => setOptions(options.hidden);
+    document.addEventListener('pointerdown', e => {
+      if (!options.hidden && !options.contains(e.target) && !optionsButton.contains(e.target)) setOptions(false);
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !options.hidden) {
+        e.stopPropagation();
+        setOptions(false);
+        optionsButton.focus();
+      }
+    });
+
+    const widgets = [
+      ['note', 'Notes', I('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm0 0v6h6M8 13h8m-8 4h5"/>')],
+      ['photo', 'Photo', IC.pic]
+    ];
+    let familyLayoutUid = null;
+    const desktopDoc = () => db.collection('linfamily_desktops').doc(me.email.toLowerCase());
+    const familyDesk = window.clcDesktop(opt.desktop, {
+      cols: { desktop: 16, phone: 4 }, cell: { desktop: 104, phone: 88 }, ratio: 1.3, margin: { desktop: 11, phone: 8 },
+      waitLayout: true,
+      canEdit: () => !!familyLayoutUid,
+      menu: ({ id }) => id
+        ? [{ label: '開啟', run: () => openFeature(id) }]
+        : [{ label: '往上整理', run: () => familyDesk.compact() }],
+      saveLayout: (mode, map) => {
+        if (!familyLayoutUid || familyLayoutUid !== me?.uid) return;
+        const field = 'familyLayout_' + mode;
+        return desktopDoc().set({ [field]: map }, { mergeFields: [field] });
+      },
+      error: () => opt.toast('家庭桌面排列儲存失敗')
+    });
+    for (const [id, label, icon] of widgets) {
+      const widget = h(`<article class="lf-family-widget lf-family-${id}">
+        <div class="lf-family-handle dk-handle" title="移動 ${label}">${icon}<strong>${label}</strong></div>
+        <button type="button" aria-label="開啟 ${label}" data-dk-nopress>${IC.more}</button>
+      </article>`);
+      widget.querySelector('button').onclick = () => openFeature(id);
+      familyDesk.put(id, widget, { type: 'card', w: 1, h: 2, minW: 1, minH: 1 });
+    }
+
+    let note = '';
+    const feature = h('<dialog class="lf-dialog lf-family-feature" aria-labelledby="lfFamilyFeatureTitle"></dialog>');
+    root.after(feature);
+    function openFeature(id) {
+      if (!me || feature.open) return;
+      setOptions(false);
+      const photo = id === 'photo';
+      if (!photo && familyLayoutUid !== me.uid) return opt.toast('筆記尚未載入');
+      feature.innerHTML = `<form><h3 id="lfFamilyFeatureTitle">${photo ? 'Photo' : 'Notes'}</h3>
+        ${photo ? '<div class="lf-family-gallery"></div>' : '<textarea aria-label="筆記內容" rows="7" maxlength="10000" placeholder="寫下筆記…"></textarea><p class="lf-err" role="status" hidden></p>'}
+        <div class="lf-family-actions"><button class="lfc-gbtn" type="button" data-close>關閉</button>
+        ${photo ? '' : '<button class="lfc-pbtn" type="submit">儲存</button>'}</div></form>`;
+      feature.querySelector('[data-close]').onclick = () => feature.close();
+      const form = feature.querySelector('form');
+      form.onsubmit = async e => {
+        e.preventDefault();
+        if (photo || !me) return;
+        const area = form.querySelector('textarea'), button = form.querySelector('[type=submit]');
+        const status = form.querySelector('.lf-err');
+        const uid = me.uid;
+        button.disabled = area.readOnly = true;
+        status.hidden = true;
+        try {
+          await desktopDoc().set({ familyNote: area.value }, { merge: true });
+          if (me?.uid === uid) note = area.value;
+          if (feature.contains(form) && feature.open) feature.close();
+        } catch (_) {
+          status.textContent = '筆記儲存失敗，請再試一次。';
+          status.hidden = false;
+          button.disabled = area.readOnly = false;
+        }
+      };
+      if (photo) {
+        const gallery = feature.querySelector('.lf-family-gallery');
+        for (const m of chatPhotos().reverse()) {
+          const thumb = h('<button type="button"><img alt="查看照片" loading="lazy"></button>');
+          thumb.firstElementChild.src = m.img;
+          thumb.onclick = () => { feature.close(); viewer(m.id); };
+          gallery.append(thumb);
+        }
+        if (!gallery.childElementCount) gallery.textContent = '最近的聊天沒有照片。';
+      } else {
+        feature.querySelector('textarea').value = note;
+      }
+      feature.showModal();
+    }
+    options.querySelectorAll('[data-feature]').forEach(b => {
+      b.onclick = () => { optionsButton.focus(); openFeature(b.dataset.feature); };
+    });
+    function updateName() {
+      $('lfcMyName').textContent = me ? members[me.uid]?.name || me.displayName || me.email.split('@')[0] : '';
+    }
+    const chatPhotos = () => msgs.filter(m => m.img && !m.unsent && !hidden.has(m.id));
+
     // ---------- 資料 ----------
     function stop() { unsubs.forEach(u => u()); unsubs = []; }
     function start() {
       stop(); firstOpen = true; denied = false;
+      unsubs.push(desktopDoc().onSnapshot({ includeMetadataChanges: true }, s => {
+        if (s.metadata.hasPendingWrites || (s.metadata.fromCache && !s.exists)) return;
+        const data = s.data() || {};
+        note = typeof data.familyNote === 'string' ? data.familyNote : '';
+        for (const mode of ['desktop', 'phone']) familyDesk.setLayout(mode, data['familyLayout_' + mode]);
+        familyLayoutUid = me.uid;
+      }, () => opt.toast('家庭桌面讀取失敗')));
       const col = n => db.collection(n);
       unsubs.push(col('lf_chat_profiles').onSnapshot(s => {
         members = {}; s.forEach(d => members[d.id] = d.data());
+        updateName();
         if (!layLoaded && members[me.uid]) { layLoaded = true; const L = members[me.uid].layout; if (L && L.w) { lay = { x: L.x, w: L.w }; keepLay(); place(); } }
         if (!members[me.uid]) col('lf_chat_profiles').doc(me.uid).set({ name: me.displayName || me.email.split('@')[0], av: 'cat', email: me.email.toLowerCase(), at: FV.serverTimestamp() }).then(() => { needPick = true; if (visible) { needPick = false; avatarPicker(true); } });
         render();
@@ -1080,7 +1196,10 @@
       };
     }
     function viewer(id) {
-      const pics = msgs.filter(m => m.img && !m.unsent && !hidden.has(m.id)); let i = Math.max(0, pics.findIndex(m => m.id === id));
+      const pics = chatPhotos();
+      const index = pics.findIndex(m => m.id === id);
+      if (index < 0) return;
+      let i = index;
       const v = h(`<div class="lfc-view"><div class="lfc-vbox"><img alt="照片"><span class="lfc-vcount"></span>
         <button class="lfc-vbtn" data-v="x" style="top:12px;right:12px" aria-label="關閉">✕</button>
         <a class="lfc-vbtn" data-v="dl" style="bottom:14px;right:14px" title="下載">⬇</a>
@@ -1101,6 +1220,17 @@
     return {
       auth(u, r) {
         const was = me && me.uid; me = r ? u : null; role = r || '';
+        if (was !== (me && me.uid)) {
+          if (feature.open) feature.close();
+          setOptions(false);
+          members = {};
+          msgs = [];
+          familyLayoutUid = null;
+          note = '';
+          familyDesk.setLayout('desktop', null);
+          familyDesk.setLayout('phone', null);
+          updateName();
+        }
         if (!me) { stop(); msgs = []; list.replaceChildren(); opt.tabDot && opt.tabDot(false); return; }
         if (was !== me.uid) start();
       },
@@ -1111,6 +1241,9 @@
       show(on) {
         visible = on; dot(); document.body.classList.toggle('lf-tab-family', on);
         if (!on) {
+          if (feature.open) feature.close();
+          familyDesk.closeMenu();
+          setOptions(false);
           closeStickers();
           if (closeOverlay) closeOverlay(false);
           clearTimeout(noticeTimer); notice.textContent = '';
@@ -1118,6 +1251,7 @@
         }
         firstOpen = true; myRead = seenTs = me ? (reads[me.uid] || 0) : 0;
         if (collapsed) setCollapsed(false);
+        familyDesk.relayout();
         fit(); render(); markRead();
         if (needPick) { needPick = false; avatarPicker(true); }
       }
