@@ -279,10 +279,20 @@
       },
       error: () => opt.toast('家庭桌面排列儲存失敗')
     });
+    const landscape = 'assets/family-landscape-v1.webp';
+    let photoPreview;
     for (const [id, label] of [['note', 'Notes'], ['photo', 'Photo']]) {
-      const widget = h(`<div role="button" tabindex="0" class="lf-family-widget lf-family-${id} dk-handle">
-        <span class="lf-family-art" aria-hidden="true"><i></i></span><strong>${label}</strong>
+      const photo = id === 'photo';
+      const image = photo ? landscape : 'assets/family-notebook-v1.webp';
+      const widget = h(`<div role="button" tabindex="0" aria-label="${label}" class="lf-family-widget lf-family-${id} dk-handle">
+        <img alt="" src="${image}" draggable="false">
       </div>`);
+      if (photo) {
+        photoPreview = widget.firstElementChild;
+        photoPreview.addEventListener('error', () => {
+          if (photoPreview.getAttribute('src') !== landscape) photoPreview.src = landscape;
+        });
+      }
       activateTile(widget, () => openFeature(id));
       familyDesk.put(id, widget, widgetSize);
     }
@@ -396,6 +406,11 @@
       $('lfcMyName').textContent = me ? members[me.uid]?.name || me.displayName || me.email.split('@')[0] : '';
     }
     const chatPhotos = () => msgs.filter(m => m.img && !m.unsent && !hidden.has(m.id));
+    function updatePhotoPreview() {
+      const latest = chatPhotos().pop();
+      const src = latest?.img || landscape;
+      if (photoPreview.getAttribute('src') !== src) photoPreview.src = src;
+    }
 
     // ---------- 資料 ----------
     function stop() { unsubs.forEach(u => u()); unsubs = []; }
@@ -479,6 +494,7 @@
     function readCount(m) { let n = 0; for (const uid in reads) if (uid !== me.uid && reads[uid] >= m.t) n++; return n; }
     function render() {
       if (!me || denied) return;
+      updatePhotoPreview();
       const keep = nearBottom(), top = list.scrollTop, newest = msgs.length ? msgs[msgs.length - 1].id : '', fresh = newest !== lastId; lastId = newest;
       const nm = msgs[msgs.length - 1], ownNew = !!nm && nm.uid === me.uid && nm.bot !== 'pinky';
       const frag = document.createDocumentFragment(); let lastDay = '', unreadMark = false;
@@ -1296,6 +1312,7 @@
           setOptions(false);
           members = {};
           msgs = [];
+          updatePhotoPreview();
           familyLayoutUid = null;
           syncPinnedPhotos();
           note = '';
