@@ -1,9 +1,7 @@
-import { readLegacyPdf } from './legacy.mjs?v=1';
-
 const $ = id => document.getElementById(id);
 const money = new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', maximumFractionDigits: 0 });
 const dateFormat = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' });
-const form = $('entry-form'), entryDialog = $('entry-dialog'), importDialog = $('import-dialog');
+const form = $('entry-form'), entryDialog = $('entry-dialog');
 const entryFields = form.elements;
 const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
 const defaultLabels = ['零用錢', '獎學金'];
@@ -15,7 +13,7 @@ function totals(rows) {
   }, { income: 0, expense: 0 });
 }
 
-let db, auth, ref, unsubscribe, entries = [], recentLabels = [], editing, pendingImport;
+let db, auth, ref, unsubscribe, entries = [], recentLabels = [], editing;
 let canEdit = false, editMode = false;
 let session = 0;
 function gate(message, canSignIn = false) {
@@ -57,7 +55,7 @@ async function save(change) {
   if (!accountRef) throw new Error('請先登入。');
   await db.runTransaction(async tx => {
     const snap = await tx.get(accountRef);
-    const current = snap.data()?.hannahBank || { entries: [], imports: [] };
+    const current = snap.data()?.hannahBank || { entries: [] };
     const next = change(current);
     if (!next) return;
     if (new TextEncoder().encode(JSON.stringify(next)).length > 420000) throw new Error('帳本容量已滿。');
@@ -160,57 +158,6 @@ document.querySelectorAll('[data-close]').forEach(button => {
   button.onclick = () => button.closest('dialog').close();
 });
 
-$('import').onclick = () => {
-  pendingImport = null;
-  $('import-form').reset();
-  $('apply-import').disabled = true;
-  $('import-preview').textContent = '匯入前會顯示筆數和金額。舊帳未標年份的日期會保留原樣。';
-  importDialog.showModal();
-};
-$('pdf').onchange = async () => {
-  pendingImport = null;
-  $('apply-import').disabled = true;
-  const file = $('pdf').files[0];
-  if (!file) return;
-  const active = session;
-  $('import-preview').textContent = '正在讀取 PDF…';
-  try {
-    if (file.size > 8 * 1024 * 1024) throw new Error('請選擇 8 MB 以內的 PDF。');
-    const parsed = await readLegacyPdf(file);
-    if (active !== session || file !== $('pdf').files[0]) return;
-    pendingImport = parsed;
-    const sum = totals(parsed.rows);
-    $('import-preview').textContent = `找到 ${parsed.rows.length} 筆。收入 ${money.format(sum.income)}，支出 ${money.format(sum.expense)}。將匯入 ${auth.currentUser.email} 的帳本。`;
-    $('apply-import').disabled = false;
-  } catch (error) {
-    if (active === session && file === $('pdf').files[0]) $('import-preview').textContent = error.message || '無法讀取此 PDF。';
-  }
-};
-$('import-form').onsubmit = async event => {
-  event.preventDefault();
-  if (!pendingImport) return;
-  const { rows, key } = pendingImport;
-  const active = session;
-  $('apply-import').disabled = true;
-  $('pdf').disabled = true;
-  try {
-    await save(current => {
-      if (current.imports.includes(key)) throw new Error('這份舊帳已匯入過。');
-      const imported = rows.map((row, order) => ({ ...row, id: key + '-' + order, created: order }));
-      return { ...current, entries: current.entries.concat(imported), imports: [...current.imports, key] };
-    });
-    if (active === session) {
-      importDialog.close();
-      $('notice').textContent = `已匯入 ${rows.length} 筆舊帳。`;
-    }
-  } catch (error) {
-    if (active === session) $('import-preview').textContent = error.message || '匯入失敗，請再試一次。';
-  } finally {
-    $('pdf').disabled = false;
-    if (active === session) $('apply-import').disabled = false;
-  }
-};
-
 async function start() {
   const config = await fetch('../../clc-site.json').then(response => {
     if (!response.ok) throw new Error('LinFamily 設定載入失敗。');
@@ -239,8 +186,6 @@ function watchLedger(email) {
   entries = [];
   recentLabels = [];
   entryDialog.close();
-  importDialog.close();
-  pendingImport = null;
   $('entries').replaceChildren();
   $('notice').textContent = '';
   if (!email) {
@@ -262,7 +207,6 @@ function watchLedger(email) {
     if (active !== session) return;
     ref = null;
     entryDialog.close();
-    importDialog.close();
     gate('無法開啟帳本。請確認此帳號有 LinFamily 使用權限。', true);
   });
 }
