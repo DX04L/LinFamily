@@ -179,6 +179,16 @@ async function start() {
     watchLedger(email);
   });
 }
+function isOldTestPrize(row) {
+  return row.label === 'Prize for Test' && (row.legacyDate || /^[a-f0-9]{64}-[0-9]+$/.test(row.id));
+}
+function renameOldTestPrizes(bank) {
+  if (!bank.entries.some(isOldTestPrize)) return;
+  return {
+    ...bank,
+    entries: bank.entries.map(row => isOldTestPrize(row) ? { ...row, label: '獎學金' } : row)
+  };
+}
 function watchLedger(email) {
   const active = ++session;
   unsubscribe?.();
@@ -194,12 +204,19 @@ function watchLedger(email) {
   }
   gate('正在讀取帳本…');
   const accountRef = db.collection('linfamily_desktops').doc(email);
+  let renamingOldPrizes = false;
   unsubscribe = accountRef.onSnapshot(snap => {
     if (active !== session) return;
     const bank = snap.data()?.hannahBank;
     ref = accountRef;
     entries = bank?.entries || [];
     recentLabels = bank?.recentLabels || [];
+    if (!renamingOldPrizes && entries.some(isOldTestPrize)) {
+      renamingOldPrizes = true;
+      save(renameOldTestPrizes).catch(() => {
+        if (active === session) $('notice').textContent = '舊帳名稱同步未完成，重新開啟帳本時會重試。';
+      }).finally(() => { renamingOldPrizes = false; });
+    }
     render();
     $('gate').hidden = true;
     $('ledger').hidden = false;
