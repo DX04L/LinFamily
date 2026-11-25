@@ -7,11 +7,11 @@
 <title>Hannah Bank</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="stylesheet" href="js/bank.css?v=1">
+<link rel="stylesheet" href="js/bank.css?v=2">
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script type="module" src="js/bank.mjs?v=1"></script>
+<script type="module" src="js/bank.mjs?v=2"></script>
 </head>
 <body>
 <main>
@@ -24,6 +24,10 @@
     <p id="gate-message" role="status">正在確認 LinFamily 登入狀態…</p>
     <button id="sign-in" class="primary" hidden>使用 Google 登入</button>
   </section>
+  <form id="switch-ledger" class="switch-ledger" hidden>
+    <label>帳本的 LinFamily 帳號<input type="email" id="ledger-email" required autocomplete="off"></label>
+    <button type="submit" class="quiet">開啟帳本</button>
+  </form>
   <div id="ledger" hidden>
     <section class="balance" aria-labelledby="balance-label">
       <div><h2 id="balance-label">目前餘額</h2><strong id="balance"></strong></div>
@@ -47,6 +51,7 @@
       <label><input type="radio" name="kind" value="expense" required>支出</label>
     </div></fieldset>
     <label>項目<input name="label" required maxlength="100" placeholder="例如：零用錢"></label>
+    <div id="suggestions" class="suggestions" aria-label="常用記帳項目"></div>
     <div class="fields">
       <label>金額（NT$）<input name="amount" type="number" inputmode="numeric" min="1" max="99999999" step="1" required></label>
       <label>日期<input name="date" type="date" required><span id="old-date" hidden></span></label>
@@ -55,7 +60,7 @@
     <div class="actions">
       <button type="button" class="danger" id="delete" hidden>刪除</button>
       <button type="button" class="quiet" data-close>取消</button>
-      <button class="primary" type="submit">儲存</button>
+      <button class="primary" id="save-entry" type="submit">儲存</button>
     </div>
   </form>
 </dialog>

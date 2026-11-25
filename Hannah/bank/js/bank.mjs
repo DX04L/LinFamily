@@ -5,6 +5,8 @@ const money = new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD
 const dateFormat = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' });
 const form = $('entry-form'), entryDialog = $('entry-dialog'), importDialog = $('import-dialog');
 const entryFields = form.elements;
+const SUPERUSERS = ['darren710404@gmail.com', 'darren.lin@twclc.org'];
+const defaultLabels = ['零用錢', '獎學金'];
 
 function totals(rows) {
   return rows.reduce((sum, row) => {
@@ -13,7 +15,8 @@ function totals(rows) {
   }, { income: 0, expense: 0 });
 }
 
-let db, auth, ref, unsubscribe, entries = [], editing, pendingImport;
+let db, auth, ref, unsubscribe, entries = [], recentLabels = [], editing, pendingImport;
+let ownEmail = '', canEdit = false, ownLedger = false;
 let session = 0;
 function gate(message, canSignIn = false) {
   $('ledger').hidden = true;
@@ -28,14 +31,22 @@ function render() {
   const list = entries.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.created - a.created);
   $('entries').replaceChildren(...list.map(row => {
     const li = document.createElement('li');
-    li.innerHTML = '<button type="button" class="entry"><span><strong></strong><small></small></span><b></b></button>';
-    const button = li.firstElementChild;
-    button.querySelector('strong').textContent = row.label;
-    button.querySelector('small').textContent = row.date || row.legacyDate + ' · 舊帳';
-    const amount = button.querySelector('b');
+    li.innerHTML = '<div class="entry"><span><strong></strong><small></small></span><b></b></div>';
+    const line = li.firstElementChild;
+    line.querySelector('strong').textContent = row.label;
+    line.querySelector('small').textContent = row.date || row.legacyDate + ' · 舊帳';
+    const amount = line.querySelector('b');
     amount.className = row.kind;
     amount.textContent = (row.kind === 'income' ? '+' : '−') + money.format(row.amount);
-    button.onclick = () => openEntry(row);
+    if (canEdit) {
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'quiet edit-entry';
+      edit.setAttribute('aria-label', '修改 ' + row.label);
+      edit.textContent = '修改';
+      edit.onclick = () => openEntry(row);
+      line.append(edit);
+    }
     return li;
   }));
   $('empty').hidden = !!entries.length;
@@ -54,10 +65,28 @@ async function save(change) {
   });
 }
 
+function renderSuggestions() {
+  const input = entryFields.label;
+  const query = input.value.trim().toLowerCase();
+  const previous = entries.slice().sort((a, b) => b.created - a.created).map(row => row.label);
+  const labels = [...new Set([...defaultLabels, ...recentLabels, ...previous])]
+    .filter(label => defaultLabels.includes(label) || label.toLowerCase().includes(query)).slice(0, 7);
+  $('suggestions').replaceChildren(...labels.map(label => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.onclick = () => { input.value = label; input.focus(); renderSuggestions(); };
+    return button;
+  }));
+}
+entryFields.label.addEventListener('input', renderSuggestions);
+
 function openEntry(row) {
+  if (!ref || (row ? !canEdit : !ownLedger)) return;
   editing = row || null;
   form.reset();
-  $('entry-heading').textContent = row ? '編輯紀錄' : '新增一筆';
+  $('entry-heading').textContent = row ? '修改紀錄' : '新增一筆';
+  $('save-entry').textContent = row ? '確認送出' : '儲存';
   entryFields.kind.value = row?.kind || 'expense';
   entryFields.label.value = row?.label || '';
   entryFields.amount.value = row?.amount ?? '';
@@ -65,13 +94,15 @@ function openEntry(row) {
   entryFields.date.required = !row?.legacyDate;
   $('old-date').hidden = !row?.legacyDate;
   $('old-date').textContent = row?.legacyDate ? '原始日期：' + row.legacyDate : '';
-  $('delete').hidden = !row;
+  $('delete').hidden = !row || !ownLedger;
+  renderSuggestions();
   form.querySelector('.message').textContent = '';
   entryDialog.showModal();
 }
 
 async function changeEntry(remove = false) {
   const previous = editing;
+  if (!ref || (previous ? !canEdit || (remove && !ownLedger) : !ownLedger)) return;
   const row = {
     id: previous?.id || crypto.randomUUID(),
     kind: entryFields.kind.value,
@@ -93,7 +124,9 @@ async function changeEntry(remove = false) {
       if (previous && !current.entries.some(entry => entry.id === row.id)) throw new Error('這筆紀錄已移除，請重新整理。');
       const next = current.entries.filter(entry => entry.id !== row.id);
       if (!remove) next.push(row);
-      return { ...current, entries: next };
+      const history = current.recentLabels || [];
+      const recent = remove ? history : [row.label, ...history.filter(label => label !== row.label)].slice(0, 30);
+      return { ...current, entries: next, recentLabels: recent };
     });
     if (active === session) {
       entryDialog.close();
@@ -152,7 +185,7 @@ $('import-form').onsubmit = async event => {
     await save(current => {
       if (current.imports.includes(key)) throw new Error('這份舊帳已匯入過。');
       const imported = rows.map((row, order) => ({ ...row, id: key + '-' + order, created: order }));
-      return { entries: current.entries.concat(imported), imports: [...current.imports, key] };
+      return { ...current, entries: current.entries.concat(imported), imports: [...current.imports, key] };
     });
     if (active === session) {
       importDialog.close();
@@ -180,37 +213,58 @@ async function start() {
     try { await auth.signInWithPopup(provider); }
     catch (_) { gate('登入未完成，請重試或先從 LinFamily 首頁登入。', true); }
   };
+  $('switch-ledger').onsubmit = event => {
+    event.preventDefault();
+    if (!canEdit) return;
+    watchLedger($('ledger-email').value.trim().toLowerCase());
+  };
   auth.onAuthStateChanged(user => {
-    const active = ++session;
-    unsubscribe?.();
-    ref = null;
-    entries = [];
-    entryDialog.close();
-    importDialog.close();
-    pendingImport = null;
-    $('entries').replaceChildren();
-    $('notice').textContent = '';
-    if (!user?.emailVerified || !user.email) {
-      gate('使用 LinFamily 的 Google 帳號登入，就能開啟帳本。', true);
+    ownEmail = user?.emailVerified && user.email ? user.email.toLowerCase() : '';
+    canEdit = SUPERUSERS.includes(ownEmail);
+    $('switch-ledger').hidden = !canEdit;
+    $('ledger-email').value = canEdit ? ownEmail : '';
+    watchLedger(ownEmail);
+  });
+}
+function watchLedger(email) {
+  const active = ++session;
+  unsubscribe?.();
+  ref = null;
+  entries = [];
+  recentLabels = [];
+  entryDialog.close();
+  importDialog.close();
+  pendingImport = null;
+  $('entries').replaceChildren();
+  $('notice').textContent = '';
+  ownLedger = !!email && email === ownEmail;
+  $('add').hidden = $('import').hidden = !ownLedger;
+  if (!email) {
+    gate('使用 LinFamily 的 Google 帳號登入，就能開啟帳本。', true);
+    return;
+  }
+  gate('正在讀取帳本…');
+  const accountRef = db.collection('linfamily_desktops').doc(email);
+  unsubscribe = accountRef.onSnapshot(snap => {
+    if (active !== session) return;
+    const bank = snap.data()?.hannahBank;
+    if (!ownLedger && !bank) {
+      gate('這個帳號還沒有 Hannah Bank 紀錄。');
       return;
     }
-    gate('正在讀取帳本…');
-    const accountRef = db.collection('linfamily_desktops').doc(user.email.toLowerCase());
-    unsubscribe = accountRef.onSnapshot(snap => {
-      if (active !== session) return;
-      ref = accountRef;
-      entries = snap.data()?.hannahBank?.entries || [];
-      $('account').textContent = user.email;
-      render();
-      $('gate').hidden = true;
-      $('ledger').hidden = false;
-    }, () => {
-      if (active !== session) return;
-      ref = null;
-      entryDialog.close();
-      importDialog.close();
-      gate('無法開啟帳本。請確認此帳號有 LinFamily 使用權限。', true);
-    });
+    ref = accountRef;
+    entries = bank?.entries || [];
+    recentLabels = bank?.recentLabels || [];
+    $('account').textContent = email;
+    render();
+    $('gate').hidden = true;
+    $('ledger').hidden = false;
+  }, () => {
+    if (active !== session) return;
+    ref = null;
+    entryDialog.close();
+    importDialog.close();
+    gate('無法開啟帳本。請確認此帳號有 LinFamily 使用權限。', ownLedger);
   });
 }
 if (document.readyState === 'loading') await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }));
