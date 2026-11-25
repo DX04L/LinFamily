@@ -1,5 +1,5 @@
 /* LF 下拉重新整理：主畫面只有下方 App 區會捲動（body 不捲），瀏覽器原生的下拉更新失效，安裝成 App 後也沒有，所以自己做。
- * 在 Home／Family／Apps 區塊捲到最上面時往下拉 → 出現 ↻，拉夠放開就重新整理。編輯（晃動）中或對話框開著時不作用。 */
+ * 從上方頁首或已捲到頂端的 Home／Family／Apps 區塊往下拉 → 出現 ↻，拉夠放開就重新整理。編輯（晃動）中或對話框開著時不作用。 */
 (function () {
   const TRIGGER = 70, MAX = 110;
   const ind = document.createElement('div');
@@ -12,8 +12,14 @@
   let startY = null, dy = 0;
   const busy = () => document.querySelector('dialog[open]') || document.querySelector('.slot-grid.is-editing') || !document.getElementById('lfWelcome')?.hidden;
   document.addEventListener('touchstart', e => {
-    const sec = e.target.closest && !e.target.closest('#lfChat') && e.target.closest('main > section'); // 留言板卡片裡（拖小橫條、捲訊息）不觸發
-    startY = sec && sec.scrollTop <= 0 && e.touches.length === 1 && !busy() ? e.touches[0].clientY : null; dy = 0;
+    const target = e.target;
+    const header = target.closest?.('.lf-top') &&
+      !target.closest('button, a, input, select, textarea, [role="button"], [role="tab"], [role="menu"], [contenteditable]');
+    // 留言板內的拖動和捲動交由留言板處理。
+    const section = !target.closest?.('#lfChat') && target.closest?.('main > section');
+    const canStart = header || (section && section.scrollTop <= 0);
+    startY = canStart && e.touches.length === 1 && !busy() ? e.touches[0].clientY : null;
+    dy = 0;
   }, { passive: true });
   function reset() {
     startY = null;
