@@ -46,6 +46,10 @@ main{touch-action:pan-y pinch-zoom}
 .qt-brand-group .brand img{position:absolute;inset-inline-start:0;top:50%;transform:translateY(-50%)}
 #qt-welcome{color:var(--muted);font:inherit}
 #qt-welcome-extra{display:inline-block;white-space:nowrap;vertical-align:baseline}
+@media (max-width: 640px), (pointer: coarse){
+  #qt-welcome:not([hidden]){display:block}
+  #qt-welcome-name{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+}
 .qt-header-actions{display:flex;align-items:center;gap:7px;flex:none}
 #export-word{
   display:grid;place-items:center;width:36px;height:36px;padding:0;
