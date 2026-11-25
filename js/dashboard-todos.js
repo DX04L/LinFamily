@@ -12,7 +12,7 @@ window.clcBuildTodoFields = function (area) {
           <button type="button" id="todoMicBtn" class="todo-mic hidden" aria-label="語音輸入" title="語音輸入">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
           </button>
-          <button type="submit" id="todoSendBtn" class="hidden shrink-0 w-9 h-9 rounded-full bg-[#007E8A] text-white grid place-items-center" aria-label="新增" title="新增">
+          <button type="submit" id="todoSendBtn" class="todo-send hidden" aria-label="新增" title="新增">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
           </button>
         </form>
@@ -228,13 +228,6 @@ window.clcMountTodos = function (dashboard, {
         const li = document.createElement('li');
         li.className = 'todo-row';
         li.dataset.sortId = todo.id;
-        if (!todo.done) {
-          const handle = document.createElement('button');
-          handle.type = 'button'; handle.className = 'reorder-handle'; handle.textContent = '⠿';
-          handle.setAttribute('aria-label', '拖曳排序：' + todo.title);
-          handle.title = '';
-          li.append(handle);
-        }
         const label = document.createElement('div');
         label.className = 'todo-item';
         const hit = document.createElement('label');
@@ -267,7 +260,15 @@ window.clcMountTodos = function (dashboard, {
           if (touchDownAt && performance.now() - touchDownAt >= 350) return;
           startEdit(todo, text);
         });
-        text.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); startEdit(todo, text); } });
+        text.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); startEdit(todo, text); }
+          if (e.key === 'Delete') {
+            e.preventDefault();
+            setTodoDeleteMode(true);
+            const target = [...scroll.querySelectorAll('.todo-row')].find(row => row.dataset.sortId === todo.id);
+            target?.querySelector('.todo-minus')?.focus();
+          }
+        });
         const title = document.createElement('span');
         title.className = 'todo-title';
         title.textContent = todo.title;
@@ -288,13 +289,6 @@ window.clcMountTodos = function (dashboard, {
           text.append(meta);
         }
         label.append(hit, text);
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'todo-del';
-        del.setAttribute('aria-label', '刪除：' + todo.title);
-        del.title = '刪除';
-        del.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-        del.addEventListener('click', () => removeTodo(todo));
         const move = document.createElement('select');
         move.className = 'todo-move-area';
         move.setAttribute('aria-label', '移動到其他待辦區：' + todo.title);
@@ -316,7 +310,7 @@ window.clcMountTodos = function (dashboard, {
           catch (err) { setStatus(errText(err)); }
           finally { move.disabled = false; }
         });
-        li.append(label, move, del);
+        li.append(label, move);
         if (body.classList.contains('todo-deleting')) {
           const minus = document.createElement('button');
           minus.type = 'button';
@@ -385,7 +379,7 @@ window.clcMountTodos = function (dashboard, {
       window.clcReorder(scroll, {
         item: '.todo-row', directMouse: true, scroll, allowed: canUse,
         crossTarget, crossMove, signal,
-        hold: () => setTodoDeleteMode(true), // 手機長按不動：每一項右上角出現「−」
+        hold: () => setTodoDeleteMode(true), // 長按不動：每一項右上角出現「−」
         move(from, to, after) {
           const rows = Array.from(body.querySelectorAll('.todo-row'));
           const ids = rows.map(el => el.dataset.sortId).filter(id => id !== from);
@@ -463,7 +457,7 @@ window.clcMountTodos = function (dashboard, {
         update();
       })();
       const byNewest = (a, b) => b.created - a.created || b.id.localeCompare(a.id);
-      // 刪除模式（手機）：長按任一項 → 每項右上角出現「−」（跟 App 一樣），點旁邊或 Esc 結束。
+      // 刪除模式：長按任一項 → 每項右上角出現「−」（跟 App 一樣），點旁邊或 Esc 結束。
       function setTodoDeleteMode(on) {
         on = !!on && canUse();
         if (body.classList.contains('todo-deleting') === on) return;
@@ -595,16 +589,15 @@ window.clcMountTodos = function (dashboard, {
           undoBar.className = 'todo-undo-bar';
           undoBar.setAttribute('role', 'status');
           undoBar.setAttribute('aria-live', 'polite');
-          undoBar.style.cssText = 'position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));right:16px;z-index:1000;max-width:calc(100vw - 32px);padding:6px 6px 6px 14px;border-radius:10px;background:#242a38;color:#e5e7eb;box-shadow:0 4px 16px #0005;display:flex;align-items:center;gap:6px;font-size:13px;'; // 右下角小小一條（像 Gmail），5 秒後自動消失
           const message = document.createElement('span'); message.className = 'todo-undo-message';
           const button = document.createElement('button'); button.type = 'button';
-          button.textContent = '復原'; button.style.cssText = 'flex:none;background:none;border:0;color:#67e8f9;font:700 13px Arial,sans-serif;padding:6px 8px;cursor:pointer;';
+          button.className = 'todo-undo-action';
+          button.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a5 5 0 0 1 0 10h-2"/></svg>復原';
           button.addEventListener('click', undoDelete);
           undoBar.append(message, button); document.body.append(undoBar);
         }
         undoBar.hidden = !undoEntries.size;
         if (undoEntries.size) document.body.append(undoBar);
-        undoBar.style.display = undoEntries.size ? 'flex' : 'none';
         undoBar.querySelector('.todo-undo-message').textContent = `已刪除 ${undoEntries.size} 項`;
         undoBar.querySelector('button').disabled = undoBusy;
       }
@@ -632,12 +625,12 @@ window.clcMountTodos = function (dashboard, {
             try { await setTodo(id, entry.data); undoEntries.delete(id); }
             catch (err) {
               entry.timer = setTimeout(() => expireUndo(id), 5000);
-              console.warn('待辦復原失敗', err); setStatus('復原未完成，請再按一次 Undo。' + errText(err));
+              console.warn('待辦復原失敗', err); setStatus('復原未完成，請再按一次「復原」。' + errText(err));
             }
           }
         } finally { undoBusy = false; showUndo(); }
       }
-      // ---------- 修改：點文字變成輸入框，Enter／離開存檔，Esc 取消，清空等於刪除 ----------
+      // ---------- 修改：點文字變成輸入框，Enter／離開存檔，Esc 取消，清空保留原待辦 ----------
       const TAG_SHORT = { 'CLC YA': 'YA', 'CLC SR': 'SR', 'CLC DX04': 'DX04', 'Christmas': '聖誕' };
       function rawText(todo) {
         const parts = [todo.title];
@@ -660,13 +653,10 @@ window.clcMountTodos = function (dashboard, {
           if (finished) return;
           finished = true;
           const v = box.value.trim();
-          if (!save || v === rawText(todo)) { render(); return; }
+          if (!save || !v || v === rawText(todo)) { render(); return; }
           try {
-            if (!v) await deleteTodo(todo.id);
-            else {
-              const p = parse(v);
-              await updateTodo(todo.id, { title: p.title.slice(0, 200), due: p.due, time: p.time, tag: p.tag.slice(0, 20), updatedAt: timestamp() });
-            }
+            const p = parse(v);
+            await updateTodo(todo.id, { title: p.title.slice(0, 200), due: p.due, time: p.time, tag: p.tag.slice(0, 20), updatedAt: timestamp() });
           } catch (err) { console.warn('待辦修改失敗', err); setStatus(errText(err)); render(); }
         };
         box.addEventListener('keydown', e => {
@@ -715,7 +705,7 @@ window.clcMountTodos = function (dashboard, {
         input.value = '';
         shrink();
         try { await addTodo(text); }
-        catch (err) { console.warn('待辦新增失敗', err); if (!input.value) input.value = text; setStatus(errText(err)); }
+        catch (err) { console.warn('待辦新增失敗', err); if (!input.value) input.value = text; grow(); setStatus(errText(err)); }
       });
 
       // ---------- 語音輸入：預設用瀏覽器內建語音辨識（快）；不支援或失敗（Brave、Firefox 等）時自動改用錄音 + Gemini AI 判讀 ----------
