@@ -145,7 +145,7 @@ form .todo-send.hidden { display: none; }
   margin-inline-start: auto;
 }
 .todo-undo-bar[hidden] { display: none; }
-.todo-undo-action {
+.todo-undo-bar .todo-undo-action {
   min-height: 32px;
   display: inline-flex;
   align-items: center;
@@ -153,9 +153,11 @@ form .todo-send.hidden { display: none; }
   padding: 0;
   border: 0;
   background: none;
-  color: inherit;
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: .16em;
   font: inherit;
   cursor: pointer;
 }
-.todo-undo-action:hover { text-decoration: underline; }
+.dark .todo-undo-action { color: #67e8f9; }
 .todo-undo-action:disabled { opacity: .6; cursor: wait; }
