@@ -121,7 +121,9 @@
       .clc-crop-prev span{font-size:12px;font-weight:700;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
       .clc-crop-tip{flex:1;font-size:12px;line-height:1.5;color:rgba(255,255,255,.65)}
       .clc-crop-ok{flex:none;height:42px;padding:0 22px;border:0;border-radius:10px;background:#06C755;color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
-      .clc-crop-ok:hover{filter:brightness(1.05)}`;
+      .clc-crop-ok:hover{filter:brightness(1.05)}
+      .clc-crop-app .clc-crop-zoom input{accent-color:var(--pine,#4E8B7E)}
+      .clc-crop-app .clc-crop-ok{background:var(--pine,#4E8B7E);color:#111}`;
     document.head.appendChild(st);
   }
 
@@ -130,7 +132,7 @@
     injectStyle();
     return new Promise(resolve => {
       const d = document.createElement('dialog');
-      d.className = 'clc-crop';
+      d.className = o.appIcon ? 'clc-crop clc-crop-app' : 'clc-crop';
       d.innerHTML = `
         <div class="clc-crop-in">
           <div class="clc-crop-top"><b>${o.title || '調整圖示'}</b><button type="button" class="clc-crop-x" data-c="x" aria-label="取消">${CROSS}</button></div>
@@ -249,7 +251,7 @@
       let img = null;
       try {
         img = await loadImage(f);
-        const data = await openCropper(img, nameOf());
+        const data = await openCropper(img, nameOf(), { appIcon: true });
         if (data) onIcon(data);
       } catch (e) { onError && onError(e.message || '圖片處理失敗。'); }
       finally { if (img) URL.revokeObjectURL(img.src); }
