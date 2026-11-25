@@ -37,3 +37,7 @@
 ```
 
 以上路徑適用於 LF 的第一層子 App。獨立部署的自家 App 改用 `https://clc-dx04.pages.dev/lf/js/lf-menu.js?v=3`。若頁首的品牌連結也要開啟選單，可在該連結加 `data-lf-menu-trigger`，一般點擊仍會照常。新增 App 時請引用共用檔案，避免另寫一份選單。
+
+## 離線導覽
+
+四站共用固定版本的 Service Worker 導覽程式，依 LF → DX → SR → YA 逐站啟用。第一階段支援離線入口及 🏠 返回，後續再做子頁閱讀與離線同步。[開發原則與驗收方式](DEV-GUIDE.md)

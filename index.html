@@ -46,6 +46,7 @@
   </script>
 
   <script src="https://clc-dx04.pages.dev/verse-wait.js?v=2" defer></script>
+  <script src="js/firebase-config.js?v=1" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js" defer></script>
@@ -458,17 +459,9 @@
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
     // ---------- Firebase（LinFamily 自己的專案） ----------
-    const firebaseConfig = {
-      apiKey: "AIzaSyBPcURIjgwtEVi_nTaZT569e_nwJb4IsUs",
-      authDomain: "linfamily-31cb6.firebaseapp.com",
-      projectId: "linfamily-31cb6",
-      storageBucket: "linfamily-31cb6.firebasestorage.app",
-      messagingSenderId: "299667187224",
-      appId: "1:299667187224:web:8df32264698caad761c56d"
-    };
     let auth = null, db = null;
     try {
-      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      if (!firebase.apps.length) firebase.initializeApp(lfFirebaseConfig);
       auth = firebase.auth(); db = firebase.firestore();
       auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
     } catch (err) { console.warn('Firebase 無法啟動', err); }
@@ -548,7 +541,11 @@
         if (d && d.forceLogoutAt && d.forceLogoutAt.toMillis && d.forceLogoutAt.toMillis() > loginAt) {
           toast('管理員已將這個帳號登出'); (window.CLCSSO && window.CLCSSO.logoutAll ? window.CLCSSO.logoutAll() : Promise.resolve()).finally(() => auth.signOut()); return;
         }
-        applyRole(d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role) ? d.role : '');
+        const nextRole = d && d.active !== false && ['admin', 'viewer', 'user'].includes(d.role) ? d.role : '';
+        if (!nextRole && !snap.metadata.fromCache) {
+          try { localStorage.removeItem('linfamily_offline_desktop_' + user.uid); } catch (_) {}
+        }
+        applyRole(nextRole);
       }, () => { applyRole(''); toast('無法確認帳號權限，請檢查網路後再試。'); });
     }, err => {
       authReady = true;
@@ -725,6 +722,14 @@
       const showBank = myDesk && bank && !mySeen.includes(bank.id) && !hiddenFor(bank);
       const items = showBank ? withHannahBank(myDesk, bank) : (myDesk || globalApps);
       apps = items.filter(a => !hiddenFor(a));
+      if (role && user && entered) {
+        try {
+          const items = window.clcSlotGridNormalize(apps).map(a => ({
+            id: a.id, name: a.name, href: tileHref(a), pos: a.pos
+          }));
+          localStorage.setItem('linfamily_offline_desktop_' + user.uid, JSON.stringify(items));
+        } catch (_) {}
+      }
       if (slots) { slots.render(); renderNews(); if (!$('panelAll').hidden) renderAll(); }
     }
     function watchDesk() {

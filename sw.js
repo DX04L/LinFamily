@@ -1,6 +1,13 @@
-const CACHE_NAME = 'linfamily-v1';
-self.addEventListener('install', () => { self.skipWaiting(); });
-self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
-self.addEventListener('fetch', () => {
-  // 交由網路直接處理
+importScripts('./offline-navigation.v1.js');
+
+installOfflineNavigation({
+  title: 'LinFamily',
+  version: '1',
+  family: true,
+  assets: [
+    'js/vendor/firebase-app-compat.10.8.0.js',
+    'js/vendor/firebase-auth-compat.10.8.0.js',
+    'js/firebase-config.js?v=1',
+    'js/offline-desktop.js?v=1'
+  ]
 });
