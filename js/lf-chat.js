@@ -203,13 +203,33 @@
         bubble.hidden = true; bubble.getAnimations().forEach(a => a.cancel());
       }
     }
-    function setCollapsed(c) {
+    function applyCollapsed(c, animate = false) {
       if (c === collapsed) return;
       collapsed = c; place();
       if (!c) { box.classList.remove('is-collapsed'); fit(); firstOpen = true; myRead = seenTs = me ? (reads[me.uid] || 0) : 0; render(); markRead(); }
       dot();
-      if (calm()) { box.classList.toggle('is-collapsed', c); bubble.hidden = !c; return; }
+      if (!animate || calm()) {
+        ++warpId;
+        box.getAnimations?.().forEach(a => a.cancel());
+        bubble.getAnimations?.().forEach(a => a.cancel());
+        box.classList.toggle('is-collapsed', c);
+        bubble.hidden = !c;
+        return;
+      }
       bubble.hidden = false; warp(c);
+    }
+    const collapsedKey = uid => 'linfamily_messenger_collapsed_' + uid;
+    function cacheCollapsed(c) {
+      if (!me) return;
+      try { localStorage.setItem(collapsedKey(me.uid), c ? '1' : '0'); } catch (_) {}
+    }
+    function setCollapsed(c) {
+      if (c === collapsed) return;
+      applyCollapsed(c, true);
+      if (!me) return;
+      cacheCollapsed(c);
+      desktopDoc().set({ messengerCollapsed: c }, { merge: true })
+        .catch(() => opt.toast('Messenger 狀態同步失敗'));
     }
     tab.onclick = () => setCollapsed(false);
     function saveLay() { keepLay(); if (me) db.collection('lf_chat_profiles').doc(me.uid).set({ layout: { x: Math.round(lay.x), w: Math.round(lay.w) } }, { merge: true }).catch(() => {}); }
@@ -356,10 +376,24 @@
     let note = '';
     const feature = h('<dialog class="lf-dialog lf-family-feature" aria-labelledby="lfFamilyFeatureTitle"></dialog>');
     root.after(feature);
+    let startedOutsideAlbum = false;
+    function outsideAlbum(e) {
+      if (!feature.hasAttribute('data-photo') || e.target !== feature) return false;
+      const r = feature.getBoundingClientRect();
+      return e.clientX < r.left || e.clientX >= r.right || e.clientY < r.top || e.clientY >= r.bottom;
+    }
+    feature.addEventListener('pointerdown', e => { startedOutsideAlbum = outsideAlbum(e); });
+    feature.addEventListener('click', e => {
+      if (startedOutsideAlbum && outsideAlbum(e)) feature.close();
+      startedOutsideAlbum = false;
+    });
     function openFeature(id) {
       if (!me || feature.open) return;
       setOptions(false);
       const photo = id === 'photo';
+      feature.toggleAttribute('data-photo', photo);
+      feature.setAttribute('closedby', photo ? 'any' : 'closerequest');
+      startedOutsideAlbum = false;
       if (!photo && familyLayoutUid !== me.uid) return opt.toast('筆記尚未載入');
       feature.innerHTML = `<form><h3 id="lfFamilyFeatureTitle">${photo ? 'Photo' : 'Notes'}</h3>
         ${photo ? '<div class="lf-family-gallery"></div>' : '<textarea aria-label="筆記內容" rows="7" maxlength="10000" placeholder="寫下筆記…"></textarea><p class="lf-err" role="status" hidden></p>'}
@@ -423,6 +457,9 @@
         note = typeof data.familyNote === 'string' ? data.familyNote : '';
         for (const mode of ['desktop', 'phone']) familyDesk.setLayout(mode, familyLayout(data['familyLayout_' + mode]));
         familyLayoutUid = me.uid;
+        const savedCollapsed = data.messengerCollapsed === true;
+        cacheCollapsed(savedCollapsed);
+        applyCollapsed(savedCollapsed);
       }, () => opt.toast('家庭桌面讀取失敗')));
       const col = n => db.collection(n);
       unsubs.push(col('lf_chat_profiles').onSnapshot(s => {
@@ -1313,6 +1350,9 @@
           members = {};
           msgs = [];
           updatePhotoPreview();
+          let cachedCollapsed = false;
+          try { cachedCollapsed = !!me && localStorage.getItem(collapsedKey(me.uid)) === '1'; } catch (_) {}
+          applyCollapsed(cachedCollapsed);
           familyLayoutUid = null;
           syncPinnedPhotos();
           note = '';
@@ -1339,7 +1379,6 @@
           return;
         }
         firstOpen = true; myRead = seenTs = me ? (reads[me.uid] || 0) : 0;
-        if (collapsed) setCollapsed(false);
         familyDesk.relayout();
         fit(); render(); markRead();
         if (needPick) { needPick = false; avatarPicker(true); }
