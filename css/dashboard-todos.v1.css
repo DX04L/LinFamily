@@ -105,42 +105,57 @@ form button.todo-send {
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #007e8a;
+  background: var(--todo-send-bg, #007e8a);
   color: white;
   cursor: pointer;
 }
 form .todo-send.hidden { display: none; }
 .todo-send svg { width: 20px; height: 20px; }
 
-.todo-undo-bar {
-  position: fixed;
-  right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom));
-  z-index: 1000;
-  max-width: calc(100vw - 32px);
+.todo-done-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 12px;
-  border-radius: 10px;
-  background: #242a38;
-  color: #e5e7eb;
-  box-shadow: 0 4px 16px rgb(0 0 0 / .33);
-  font-size: 13px;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  font-size: .75rem;
+  color: #64748b;
+}
+.dark .todo-done-bar { color: #8a92a6; }
+.todo-done-bar > button {
+  width: auto;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.todo-done-bar > button svg { width: 16px; height: 16px; flex: none; }
+.todo-undo-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
 }
 .todo-undo-bar[hidden] { display: none; }
 .todo-undo-action {
-  min-height: 36px;
-  flex: none;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   padding: 0;
   border: 0;
   background: none;
-  color: #67e8f9;
+  color: inherit;
   font: inherit;
-  font-weight: 700;
   cursor: pointer;
 }
+.todo-undo-action:hover { text-decoration: underline; }
 .todo-undo-action:disabled { opacity: .6; cursor: wait; }

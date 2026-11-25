@@ -24,7 +24,7 @@ window.clcBuildTodoFields = function (area) {
         </div>
 
         <div class="todo-done-bar shrink-0 border-t border-slate-100 dark:border-white/[0.06]">
-          <button type="button" id="todoDoneToggle" class="w-full h-8 flex items-center justify-start gap-1.5 text-xs text-slate-500 dark:text-brand-muted" aria-expanded="false" aria-controls="todoDoneList">
+          <button type="button" id="todoDoneToggle" class="h-8 flex items-center justify-start gap-1.5" aria-expanded="false" aria-controls="todoDoneList">
             <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
             <span>今天已完成 <span id="todoDoneCount">0</span> 項</span>
           </button>
@@ -594,10 +594,10 @@ window.clcMountTodos = function (dashboard, {
           button.className = 'todo-undo-action';
           button.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a5 5 0 0 1 0 10h-2"/></svg>復原';
           button.addEventListener('click', undoDelete);
-          undoBar.append(message, button); document.body.append(undoBar);
+          undoBar.append(message, button);
+          doneToggle.parentElement.append(undoBar);
         }
         undoBar.hidden = !undoEntries.size;
-        if (undoEntries.size) document.body.append(undoBar);
         undoBar.querySelector('.todo-undo-message').textContent = `已刪除 ${undoEntries.size} 項`;
         undoBar.querySelector('button').disabled = undoBusy;
       }

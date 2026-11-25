@@ -2,6 +2,7 @@
 #lfApps .lf-todo-card .todo-scroll { flex: 1 1 0; min-height: 0; }
 #lfApps .lf-todo-card > :not(.todo-scroll) { flex-shrink: 0; }
 :is(.lf-todo-card, .lf-todo-drawer) {
+  --todo-send-bg: var(--pine);
   min-width: 0;
   padding: 16px;
   border: 1px solid var(--border);
@@ -37,9 +38,7 @@
 :is(.lf-todo-card, .lf-todo-drawer) { padding: 18px 18px 14px; }
 :is(.lf-todo-card, .lf-todo-drawer) h2 { font-size: 20px; line-height: 28px; font-weight: 800; }
 :is(.lf-todo-card, .lf-todo-drawer) .todo-add-input { font-size: 15px; line-height: 1.5; }
-:is(.lf-todo-card, .lf-todo-drawer) [data-todo-field="todoDoneToggle"] { width: 100%; height: 32px; display: flex; align-items: center; justify-content: flex-start; gap: 6px; padding: 0; font-size: 12px; color: var(--muted); }
-:is(.lf-todo-card, .lf-todo-drawer) [data-todo-field="todoDoneToggle"] svg { width: 16px; height: 16px; flex-shrink: 0; }
-:is(.lf-todo-card, .lf-todo-drawer) .todo-done-bar { border-top: 1px solid var(--border); }
+html :is(.lf-todo-card, .lf-todo-drawer) .todo-done-bar { border-top: 1px solid var(--border); color: var(--muted); }
 :is(.lf-todo-card, .lf-todo-drawer) [data-todo-field="todoDoneList"] { padding-top: 8px; border-top: 1px solid var(--border); }
 /* 同 DX：標題左、未完成數右 */
 .lf-todo-card > div:first-of-type { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -74,5 +73,5 @@ body:has(#lfApps .dk-card ~ .dk-card) .lf-todo-drawer .todo-move-area {
 #lfApps .lf-todo-card h2.dk-handle { cursor:grab; }
 
 #lfApps .lf-todo-card { gap: 12px; }
-:is(.lf-todo-card, .lf-todo-drawer) form:focus-within { border-color: #007e8a; }
+:is(.lf-todo-card, .lf-todo-drawer) form:focus-within { border-color: var(--teal); }
 :is(.lf-todo-card, .lf-todo-drawer) .todo-scroll { overflow: auto; }
