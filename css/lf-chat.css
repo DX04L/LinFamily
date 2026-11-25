@@ -155,9 +155,9 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-bubble[hidden], .lfc-bnum[hidden], .lfc-x[hidden] { display:none; }
 .lfc-bnum { position:absolute; top:-4px; right:-4px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:#ef4444; color:#fff; font:700 11.5px/20px Arial, sans-serif; text-align:center; box-shadow:0 0 0 2px var(--surface); }
 /* 浮在訊息上方，保留清單的捲動高度。 */
-.lfc-top { position:absolute; inset:0 0 auto; z-index:4; height:48px; display:flex; align-items:center; gap:2px; padding:0 6px;
-  background:linear-gradient(to bottom, var(--surface) 65%, color-mix(in srgb, var(--surface) 84%, transparent)); }
+.lfc-top { position:absolute; inset:0 0 auto; z-index:4; height:48px; display:flex; align-items:center; gap:2px; padding:0 6px; }
 .lfc-top .lfc-ibtn { width:44px; height:44px; }
+.lfc-top .lfc-ibtn:hover { background:transparent; color:var(--pine); }
 .lfc-top strong { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:16px; }
 .lfc-top .lfc-options { position:absolute; top:100%; left:auto; right:8px; transform-origin:top right; background:var(--surface); }
 .lfc-options[hidden] { display:none; }
@@ -165,15 +165,30 @@ html.dark .lfc-menu button:hover { background:rgba(255,255,255,.05); }
 .lfc-findbar[hidden] + .lfc-pin[hidden] + .lfc-list { padding-top:48px; }
 @media (min-width:640px) { .lfc-top { cursor:grab; } .lfc-top:active { cursor:grabbing; } }
 
-.lf-family-widget { box-sizing:border-box; height:100%; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; align-content:center; gap:4px;
-  padding:4px; text-align:center; border:1px solid var(--border); border-radius:18px; color:var(--text); background:var(--surface); }
-.lf-family-handle { width:100%; display:grid; justify-items:center; gap:4px; cursor:grab; font-size:13px; }
-.lf-family-handle svg { box-sizing:content-box; padding:6px; border-radius:12px; color:var(--pine); background:color-mix(in srgb, var(--pine) 14%, var(--surface)); }
-.lf-family-photo .lf-family-handle svg { color:var(--teal); background:color-mix(in srgb, var(--teal) 13%, var(--surface)); }
-.lf-family-widget button, .lf-family-gallery button { display:grid; place-items:center; border:0; padding:0; color:var(--text); background:var(--btn); cursor:pointer; }
-.lf-family-widget button { width:30px; height:26px; border-radius:8px; }
-.lf-family-widget button svg { width:18px; height:18px; }
-.lf-family-widget button:hover, .lf-family-gallery button:hover { background:var(--btn-h); }
+.lf-family-widget, .lf-family-pinned { box-sizing:border-box; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+  gap:10px; padding:4px; border-radius:16px; color:var(--text); background:transparent; cursor:pointer; }
+.lf-family-widget strong { font-size:14px; }
+.lf-family-art { position:relative; flex:none; display:grid; place-items:center; box-sizing:border-box; width:48px; height:38px; }
+.lf-family-photo .lf-family-art { border:2px solid var(--pine); border-radius:5px; }
+.lf-family-photo .lf-family-art::before, .lf-family-photo .lf-family-art::after {
+  content:""; position:absolute; inset-block:2px; width:4px;
+  background:repeating-linear-gradient(to bottom, var(--pine) 0 4px, transparent 4px 8px); }
+.lf-family-photo .lf-family-art::before { left:3px; }
+.lf-family-photo .lf-family-art::after { right:3px; }
+.lf-family-photo .lf-family-art i { width:23px; height:20px; border:1px solid var(--pine); border-radius:2px;
+  background:radial-gradient(circle at 71% 28%, var(--cream) 0 2px, transparent 2.5px),
+    linear-gradient(145deg, transparent 49%, var(--sage) 50%) left bottom / 68% 65% no-repeat,
+    linear-gradient(220deg, transparent 49%, var(--pine) 50%) right bottom / 68% 54% no-repeat; }
+.lf-family-note .lf-family-art { width:35px; height:40px; margin-left:4px; border:2px solid var(--pine); border-radius:6px;
+  background:var(--sage); box-shadow:inset -4px 0 var(--cream); }
+.lf-family-note .lf-family-art::before { content:""; position:absolute; inset-block:4px; left:-7px; width:9px;
+  background:repeating-linear-gradient(to bottom, transparent 0 3px, var(--pine) 3px 5px, transparent 5px 8px); }
+.lf-family-note .lf-family-art i { width:15px; height:10px; margin-right:3px; border-radius:2px; background:var(--cream); }
+.lf-family-pinned { padding:0; overflow:hidden; }
+.lf-family-pinned img { width:100%; height:100%; object-fit:cover; user-select:none; -webkit-user-drag:none; }
+.lf-family-pinned span { font-size:13px; color:var(--muted); }
+.lf-family-gallery button { display:grid; place-items:center; border:0; padding:0; color:var(--text); background:var(--btn); cursor:pointer; }
+.lf-family-gallery button:hover { background:var(--btn-h); }
 .lf-family-feature textarea { box-sizing:border-box; width:100%; resize:vertical; padding:10px; border:1px solid var(--border);
   border-radius:12px; background:var(--btn); color:var(--text); font:inherit; }
 .lf-family-actions { display:flex; gap:8px; }

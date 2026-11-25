@@ -247,19 +247,31 @@
       }
     });
 
-    const widgets = [
-      ['note', 'Notes', I('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm0 0v6h6M8 13h8m-8 4h5"/>')],
-      ['photo', 'Photo', IC.pic]
-    ];
+    function activateTile(tile, action) {
+      tile.onclick = action;
+      tile.onkeydown = e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        action();
+      };
+    }
+    const pinnedPhotos = new Map();
+    const widgetSize = { type: 'card', w: 2, h: 1, minW: 2, minH: 1 };
     let familyLayoutUid = null;
     const desktopDoc = () => db.collection('linfamily_desktops').doc(me.email.toLowerCase());
     const familyDesk = window.clcDesktop(opt.desktop, {
       cols: { desktop: 16, phone: 4 }, cell: { desktop: 104, phone: 88 }, ratio: 1.3, margin: { desktop: 11, phone: 8 },
       waitLayout: true,
       canEdit: () => !!familyLayoutUid,
-      menu: ({ id }) => id
-        ? [{ label: '開啟', run: () => openFeature(id) }]
-        : [{ label: '往上整理', run: () => familyDesk.compact() }],
+      menu: ({ id }) => {
+        if (!id) return [{ label: '往上整理', run: () => familyDesk.compact() }];
+        const photo = pinnedPhotos.get(id);
+        if (!photo) return [{ label: '開啟', run: () => openFeature(id) }];
+        return [
+          { label: '開啟照片', run: () => photo.message && viewer(photo.message.id, photo.message) },
+          { label: '從桌面移除', run: () => savePinnedPhoto(photo.id, false) }
+        ];
+      },
       saveLayout: (mode, map) => {
         if (!familyLayoutUid || familyLayoutUid !== me?.uid) return;
         const field = 'familyLayout_' + mode;
@@ -267,13 +279,68 @@
       },
       error: () => opt.toast('家庭桌面排列儲存失敗')
     });
-    for (const [id, label, icon] of widgets) {
-      const widget = h(`<article class="lf-family-widget lf-family-${id}">
-        <div class="lf-family-handle dk-handle" title="移動 ${label}">${icon}<strong>${label}</strong></div>
-        <button type="button" aria-label="開啟 ${label}" data-dk-nopress>${IC.more}</button>
-      </article>`);
-      widget.querySelector('button').onclick = () => openFeature(id);
-      familyDesk.put(id, widget, { type: 'card', w: 1, h: 2, minW: 1, minH: 1 });
+    for (const [id, label] of [['note', 'Notes'], ['photo', 'Photo']]) {
+      const widget = h(`<div role="button" tabindex="0" class="lf-family-widget lf-family-${id} dk-handle">
+        <span class="lf-family-art" aria-hidden="true"><i></i></span><strong>${label}</strong>
+      </div>`);
+      activateTile(widget, () => openFeature(id));
+      familyDesk.put(id, widget, widgetSize);
+    }
+
+    function familyLayout(layout) {
+      if (!layout) return layout;
+      const updated = { ...layout };
+      for (const id of ['note', 'photo']) {
+        const pos = layout[id];
+        if (pos?.w === 1 && pos.h === 2) updated[id] = { ...pos, w: 2, h: 1 };
+      }
+      if (layout.__byCols) updated.__byCols = Object.fromEntries(
+        Object.entries(layout.__byCols).map(([cols, map]) => [cols, familyLayout(map)])
+      );
+      return updated;
+    }
+
+    async function savePinnedPhoto(id, add) {
+      if (!me || familyLayoutUid !== me.uid) return opt.toast('家庭桌面尚未載入');
+      if (add && pinnedPhotos.has('pinned-' + id)) return opt.toast('這張照片已在 Family 桌面');
+      try {
+        await desktopDoc().set({ familyPinnedPhotos: { [id]: add ? true : FV.delete() } }, { merge: true });
+        opt.toast(add ? '已加入 Family 桌面' : '已從 Family 桌面移除');
+      } catch (_) {
+        opt.toast(add ? '無法將照片加入 Family 桌面' : '無法從 Family 桌面移除照片');
+      }
+    }
+    function syncPinnedPhotos(saved = {}) {
+      for (const [key, entry] of pinnedPhotos) {
+        if (saved[entry.id] === true) continue;
+        entry.stop();
+        pinnedPhotos.delete(key);
+        familyDesk.drop(key);
+      }
+      for (const id of Object.keys(saved)) {
+        const key = 'pinned-' + id;
+        if (saved[id] !== true || pinnedPhotos.has(key)) continue;
+        const tile = h('<div role="button" tabindex="0" class="lf-family-pinned dk-handle" aria-label="開啟原始照片"><img alt="" hidden><span>載入照片…</span></div>');
+        const entry = { id, message: null };
+        const img = tile.querySelector('img'), status = tile.querySelector('span');
+        pinnedPhotos.set(key, entry);
+        familyDesk.put(key, tile, widgetSize);
+        activateTile(tile, () => entry.message && viewer(id, entry.message));
+        const showPhoto = m => {
+          entry.message = m?.img && !m.unsent ? { id, img: m.img, t: ms(m.ts) } : null;
+          img.hidden = status.hidden = false;
+          if (entry.message) {
+            img.src = entry.message.img;
+            status.hidden = true;
+          } else {
+            img.removeAttribute('src');
+            img.hidden = true;
+            status.textContent = '照片已無法顯示';
+          }
+          tile.setAttribute('aria-disabled', String(!entry.message));
+        };
+        entry.stop = db.collection('lf_chat_messages').doc(id).onSnapshot(s => showPhoto(s.data()), () => showPhoto(null));
+      }
     }
 
     let note = '';
@@ -337,8 +404,9 @@
       unsubs.push(desktopDoc().onSnapshot({ includeMetadataChanges: true }, s => {
         if (s.metadata.hasPendingWrites || (s.metadata.fromCache && !s.exists)) return;
         const data = s.data() || {};
+        syncPinnedPhotos(data.familyPinnedPhotos || {});
         note = typeof data.familyNote === 'string' ? data.familyNote : '';
-        for (const mode of ['desktop', 'phone']) familyDesk.setLayout(mode, data['familyLayout_' + mode]);
+        for (const mode of ['desktop', 'phone']) familyDesk.setLayout(mode, familyLayout(data['familyLayout_' + mode]));
         familyLayoutUid = me.uid;
       }, () => opt.toast('家庭桌面讀取失敗')));
       const col = n => db.collection(n);
@@ -1099,6 +1167,7 @@
       copy: ['複製', MI('<rect x="8" y="8" width="11" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h1"/>')],
       share: ['分享', MI('<circle cx="17" cy="5.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><circle cx="17" cy="18.5" r="2.5"/><path d="m8.7 10.8 6-3.9M8.7 13.2l6 3.9"/>')],
       note: ['記事本', MI('<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/>')],
+      desktop: ['放到 Family 桌面', MI('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 21h6m-3-4v4M12 7v7m-3.5-3.5h7"/>')],
       album: ['相簿', MI('<rect x="4" y="5" width="16" height="14" rx="2"/><path d="m4 16 4.5-4 3.5 3 2.5-2 5.5 4.5"/><path d="M15 9h3M16.5 7.5v3"/>')],
       pin: ['設為公告', MI('<path d="M4 10v4h3l7 4V6l-7 4z"/><path d="M17.5 9.5a3.5 3.5 0 0 1 0 5"/>')],
       unsend: ['收回', MI('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>')],
@@ -1119,7 +1188,7 @@
       const m = msgs.find(x => x.id === id), row = list.querySelector(`[data-id="${CSS.escape(id)}"]`); if (!m || m.unsent || !row) return;
       if (navigator.vibrate) navigator.vibrate(15);
       const mine = m.uid === me.uid, canUnsend = mine && Date.now() - m.t < DAY;
-      const keys = m.img ? ['reply', 'share', 'note', 'album'] : m.stk ? ['reply', 'note'] : ['reply', 'copy', 'share', 'note', 'pin'];
+      const keys = m.img ? ['reply', 'share', 'note', 'album', 'desktop'] : m.stk ? ['reply', 'note'] : ['reply', 'copy', 'share', 'note', 'pin'];
       if (canUnsend) keys.push('unsend'); keys.push('del');
       const bg = h('<div class="lfc-pop-bg"></div>');
       const pop = h(`<div class="lfc-pop"><div class="lfc-emos">${EMOS.map(e => `<button data-e="${e}">${e}</button>`).join('')}</div>
@@ -1139,6 +1208,7 @@
         if (k === 'reply') setReply(m);
         if (k === 'copy') navigator.clipboard.writeText(m.text).then(() => toast('已複製'), () => toast('無法複製'));
         if (k === 'share') share(m);
+        if (k === 'desktop') savePinnedPhoto(id, true);
         if (k === 'note' || k === 'album') toast(MENU[k][0] + '之後開放');
         if (k === 'pin') db.collection('lf_chat_meta').doc('pin').set({ id, name: prof(m.uid).name, text: m.text.slice(0, 120) }).then(() => toast('已設為公告'), () => toast('無法設為公告'));
         if (k === 'unsend') confirmInChat('收回這則訊息？所有人都會看不到。', '收回', () => {
@@ -1195,8 +1265,9 @@
           .then(() => o.close(), () => toast('無法儲存頭像'));
       };
     }
-    function viewer(id) {
-      const pics = chatPhotos();
+    function viewer(id, pinnedPhoto) {
+      const recent = chatPhotos();
+      const pics = pinnedPhoto && !recent.some(m => m.id === id) ? [pinnedPhoto] : recent;
       const index = pics.findIndex(m => m.id === id);
       if (index < 0) return;
       let i = index;
@@ -1226,6 +1297,7 @@
           members = {};
           msgs = [];
           familyLayoutUid = null;
+          syncPinnedPhotos();
           note = '';
           familyDesk.setLayout('desktop', null);
           familyDesk.setLayout('phone', null);
