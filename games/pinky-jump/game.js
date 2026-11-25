@@ -959,14 +959,16 @@ function spawnEntity() {
       w:62*size, h:30*size, flap:0
     });
   } else if (score > 600 && r < 0.51) {
-    const shift = baseGroundY() - Math.max(WORLD_H*.78, WORLD_H-90);
-    const gapY = Math.max(82, (groundY - shift)*0.28) + shift;
+    const gateW = 100 + Math.random() * 40;
     const gapH = Math.max(105, Math.min(165, WORLD_H*0.27));
-    obstacles.push({type:'cloudGate',x,y:gapY,w:100,h:gapH});
+    // Keep the lower cloud above the road across the entire gate, including on slopes.
+    const highRoad = Math.min(getGroundY(x-24), getGroundY(x+gateW/2), getGroundY(x+gateW+24));
+    const gapY = highRoad - (110 + Math.random() * 40) - gapH;
+    obstacles.push({type:'cloudGate',x,y:gapY,w:gateW,h:gapH});
     // Boost gate: 1 / 2 / 3 stars (100 each) in a row through the middle.
     const stars = score < 1500 ? 1 : score < 3000 ? 2 : 3;
     for (let i = 0; i < stars; i++)
-      coins.push({type:'star',x:x+50+(i-(stars-1)/2)*32,y:gapY+gapH/2,r:13,collected:false,spin:i*.6});
+      coins.push({type:'star',x:x+gateW/2+(i-(stars-1)/2)*32,y:gapY+gapH/2,r:13,collected:false,spin:i*.6});
   } else if (score > 200 && r < 0.70) {
     // A few slightly higher mountains; rare tall peaks remain jumpable with one tap.
     const tall = Math.random() < [0, 0.06, 0.12][tier()];
@@ -997,7 +999,7 @@ function updateGatePass(gate, pBox) {
   const midY = gate.y + gate.h / 2;
   if (!gate.entered && inX && !player.isGrounded) {
     const catMid = player.y - CAT_HEIGHT / 2;
-    if (catMid > gate.y - 70 && catMid < gate.y + gate.h + 70) {
+    if (catMid > gate.y && catMid < gate.y + gate.h) {
       gate.entered = true; gatePass = gate; gateBoost = GATE_BOOST_FRAMES;
       sfx.star();
     }
@@ -1163,8 +1165,12 @@ function drawObstacles(ctx, objects, groundAt = getGroundY) {
       ctx.moveTo(cx-obs.w*.15,peak+obs.h*.28);
       ctx.lineTo(cx,peak);ctx.lineTo(cx+obs.w*.15,peak+obs.h*.28);ctx.fill();
     }else if(obs.type==='cloudGate'){
-      const cloud=(cy)=>{ctx.fillStyle='#fff';for(let j=0;j<4;j++){ctx.beginPath();ctx.arc(obs.x+17+j*23,cy+(j%2)*6,20,0,Math.PI*2);ctx.fill();}};
+      ctx.save();
+      ctx.translate(obs.x, 0);
+      ctx.scale(obs.w / 100, 1);
+      const cloud=(cy)=>{ctx.fillStyle='#fff';for(let j=0;j<4;j++){ctx.beginPath();ctx.arc(17+j*23,cy+(j%2)*6,20,0,Math.PI*2);ctx.fill();}};
       cloud(obs.y-15);cloud(obs.y+obs.h+15);
+      ctx.restore();
     }else if (obs.type === 'crystal') {
       // 寶藍與洋紅魔法水晶柱 (呼應角色配色)
       for (let i = 0; i < obs.count; i++) {
@@ -1474,33 +1480,11 @@ function paintScene(shift) {
   ctx.translate(shift,0); // obstacles and coins were this much further right a moment ago
   drawCoins(ctx,coins);
   drawObstacles(ctx,obstacles);
-  drawIncomingHints();
   ctx.restore();
   player.draw();
   drawParticles();
   ctx.restore();
   ctx.restore();
-}
-
-// Zoomed-in portrait phones see less road ahead: a small "!" at the right edge marks an obstacle
-// that is about to enter the screen (shown for up to ~0.6 s before it appears).
-function drawIncomingHints() {
-  if (viewZoom <= 1 || height < width || gameState !== 'PLAYING') return; // portrait phones only
-  for (const o of obstacles) {
-    const lead = o.x - width;
-    if (lead <= 0 || lead > gameSpeed * 36) continue;
-    const midY = o.type === 'mountain' || o.type === 'crystal' ? o.y - Math.min(o.h, 120) / 2 : o.type === 'cloudGate' ? o.y + o.h / 2 : o.y;
-    const x = width - 22, alpha = 1 - lead / (gameSpeed * 36) * .6;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#e2558f';
-    ctx.beginPath(); ctx.arc(x, midY, 15, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.font = '700 20px system-ui, sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('!', x, midY + 1);
-    ctx.restore();
-  }
 }
 
 function update(timestamp = performance.now()) {
