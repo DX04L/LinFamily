@@ -28,6 +28,7 @@
       const item = document.createElement('li');
       const link = document.createElement('a');
       link.href = target.href;
+      if (app.newTab) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
       link.textContent = app.name;
       item.append(link);
       list.append(item);

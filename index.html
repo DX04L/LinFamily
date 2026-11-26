@@ -434,7 +434,7 @@
 
   <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script><!-- 只用 clcSlotGridNormalize（舊 pos 欄位） -->
   <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=28"></script>
-  <script src="https://clc-dx04.pages.dev/shared/desktop/app-entries.v1.js?v=3"></script>
+  <script src="https://clc-dx04.pages.dev/shared/desktop/app-entries.v1.js?v=4"></script>
   <script>
     // 開發準則：確認／操作用的彈出視窗一次只能有一個。開新的對話框時，自動關掉其他對話框和留言板的彈窗。
     // 例外（刻意疊在上面的設計）：圖片裁切 clc-crop，或 dialog 加 data-stack。
@@ -729,9 +729,10 @@
       apps = items.filter(a => !hiddenFor(a));
       if (role && user && entered) {
         try {
-          const items = window.clcSlotGridNormalize(apps).map(a => ({
-            id: a.id, name: a.name, href: tileHref(a), pos: a.pos
-          }));
+          const items = window.clcSlotGridNormalize(apps).map(a => {
+            const { href,newTab } = lfLink(a);
+            return { id:a.id,name:a.name,href,newTab,pos:a.pos };
+          });
           localStorage.setItem('linfamily_offline_desktop_' + user.uid, JSON.stringify(items));
         } catch (_) {}
       }
@@ -864,10 +865,34 @@
       if (app.embeddable === false || (app.embeddable !== true && NO_FRAME.test(host))) return url;
       return 'open.html?u=' + encodeURIComponent(url) + '&n=' + encodeURIComponent(app.name || '');
     }
+    function lfLink(app) {
+      const url = safeUrl(app.url);
+      if (!url) return { href:'#', newTab:false };
+      const fallback = { href:tileHref(app), newTab:false };
+      const shared = window.clcAppEntries;
+      let destinationUrl = url;
+      if (app.openMode === 'external') {
+        let direct;
+        try { direct = new URL(url,location.href); } catch (_) { return fallback; }
+        if (OWN_HOSTS.includes(direct.hostname)) direct.searchParams.delete('lfhome');
+        destinationUrl = direct.href;
+      }
+      return shared?.resolveLink?.(app, destinationUrl, fallback, inside => {
+        const legacy = tileHref({ ...app, embeddable:true });
+        if (legacy !== url) return { href:legacy, newTab:false };
+        const target = new URL(inside, location.href);
+        return { href:'open.html?' + new URLSearchParams({u:target.href,n:app.name || ''}), newTab:false };
+      }) || fallback;
+    }
+    function bindLfLink(link, app) {
+      const destination = lfLink(app);
+      if (window.clcAppEntries?.applyLink) window.clcAppEntries.applyLink(link,destination);
+      else link.href = destination.href;
+    }
     function renderTile(app, editing) {
       const a = document.createElement('a');
       a.className = 'lf-app';
-      a.href = tileHref(app); // 同一個視窗換頁（不開新分頁、不用左右滑）
+      bindLfLink(a,app);
       a.setAttribute('aria-label', editing ? '編輯 ' + app.name : app.name);
       const name = document.createElement('span'); name.className = 'lf-name'; name.setAttribute('data-dk-app-name', ''); name.textContent = app.name;
       const icon = iconEl(app);
@@ -881,10 +906,13 @@
       const rows = (window.clcAppEntries?.entries(app) || []).flatMap(row => {
         const url = safeUrl(row.url);
         if (!url || (role === 'user' && isOwnSite({ url }))) return [];
-        const href = url === safeUrl(app.url) ? tileHref(app) : tileHref({ name: row.name, url });
-        return [{ name: row.name, href }];
+        const entry = url === safeUrl(app.url) ? { ...app, ...row, url } : { ...row, url };
+        return [{ ...lfLink(entry), name:row.name }];
       });
-      if (rows.length === 1) a.href = rows[0].href;
+      if (rows.length === 1) {
+        if (window.clcAppEntries?.applyLink) window.clcAppEntries.applyLink(a,rows[0]);
+        else a.href = rows[0].href;
+      }
       return window.clcAppEntries?.mount(a, rows, app.name) || a;
     }
     let addPos = null; // 舊格子用；新桌面由右鍵/長按的格子位置決定
@@ -1010,7 +1038,7 @@
     }
 
     // ---------- 新增／修改對話框 ----------
-    const dlg = $('lfAppDialog'); let editingId = null, uploadedIcon = '';
+    const dlg = $('lfAppDialog'); let editingId = null, uploadedIcon = '', modeField;
     const placeholderIcon = $('lfAppIcon').placeholder;
     function setUploaded(icon) {
       uploadedIcon = icon || '';
@@ -1024,6 +1052,8 @@
       editingId = app ? app.id : null; if (app) { addPos = null; cabinetOnly = false; }
       $('lfAppTitle').textContent = app ? '修改 App' : '新增 App';
       $('lfAppUrl').value = app ? normalizeHannahUrl(app.url || '') : '';
+      modeField?.parentElement.remove();
+      modeField = window.clcAppEntries?.modeField(dlg.querySelector('form'), app, $('lfAppUrl').closest('label'));
       $('lfAppName').value = app ? app.name : '';
       const curIcon = app && !isGoogleIcon(app.icon || app.iconUrl) ? (app.icon || app.iconUrl || '') : '';
       $('lfAppIcon').value = isDataIcon(curIcon) ? '' : curIcon;
@@ -1096,6 +1126,7 @@
       $('lfAppSave').disabled = true;
       const base = withPos(), old = editingId && base.find(a => a.id === editingId);
       const patch = { name, url, icon, iconUrl: '' };
+      if (modeField) patch.openMode = window.clcAppEntries.modeValue(modeField,url,old);
       if (typeof auto.embeddable === 'boolean') patch.embeddable = auto.embeddable; else if (old) patch.embeddable = null;
       const next = old
         ? base.map(a => a.id === old.id ? Object.assign({}, a, patch) : a)
@@ -1142,7 +1173,7 @@
       ordered.forEach(a => {
         if (a === firstClosed) box.append(Object.assign(document.createElement('h3'), { className: 'lf-all-sec', textContent: '已關閉（其他帳號看不到）' }));
         const row = document.createElement('div'); row.className = 'lf-all-row';
-        const link = document.createElement('a'); link.href = tileHref(a);
+        const link = document.createElement('a'); bindLfLink(link,a);
         const name = document.createElement('span'); name.textContent = a.name;
         link.append(iconEl(a), name);
         row.append(link);
