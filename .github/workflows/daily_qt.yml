@@ -6,6 +6,10 @@ on:
     - cron: '37 17 * * *' # 台灣時間 01:37 提早補跑一次
   workflow_dispatch:
     inputs:
+      retry_if_missing:
+        description: '只補抓缺漏，保留完整內容'
+        type: boolean
+        default: false
       date:
         description: '匯入日期（YYYY-MM-DD，預設台灣今天）'
         type: string
@@ -39,7 +43,7 @@ jobs:
       - name: Run Daily QT Script
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          QT_RETRY_IF_MISSING: ${{ github.event_name == 'schedule' }}
+          QT_RETRY_IF_MISSING: ${{ github.event_name == 'schedule' || inputs.retry_if_missing == true }}
           QT_DATE: ${{ inputs.date }}
           QT_YOUTUBE_ONLY: ${{ inputs.youtube_only }}
           QT_RECHECK_DATE: ${{ inputs.recheck_date }}

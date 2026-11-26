@@ -15,3 +15,8 @@
    - `LLM_MODEL`：`gemini-2.5-flash`
    - `FIREBASE_SERVICE_ACCOUNT`：Firebase 服務帳戶私密金鑰 JSON 全部內容
 3. **Cloudflare Pages**：連結此 GitHub 倉庫，建置命令與輸出目錄皆留白，直接部署上線。
+
+### 英文閱讀偏好與今日補抓
+
+- 重新發布根目錄的 `firestore.rules` 後，已驗證電子郵件的 LF 登入帳號會把英文經文偏好同步到自己的 `qt_preferences/{uid}` 文件。訪客的偏好儲存在瀏覽器。
+- 在 LF 的 Cloudflare Pages 正式環境加入機密 `QT_WORKFLOW_TOKEN`。使用只授權 `DX04L/LinFamily` 且具有 Actions 讀寫權限的 fine-grained GitHub token。重新部署後，Super User 才能從缺少今日內容的頁面啟動 Daily QT 補抓工作。

@@ -53,16 +53,15 @@ header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;back
 .modes [aria-pressed="true"]{color:var(--on-button);background:var(--button)}
 
 /* 精簡版 Hero Banner */
-.hero{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 0 16px;border-bottom:1px solid var(--line);margin-bottom:20px}
-.hero-copy{min-width:0;flex:1}
-.date-nav{gap:8px;color:var(--muted);font-size:13px;font-weight:600}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 20px;padding:18px 0 16px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.date-nav{grid-column:1 / -1;gap:8px;color:var(--muted);font-size:13px;font-weight:600}
 .date-nav button{
   width:30px;height:30px;padding:0;border-radius:50%;border:1px solid var(--line);
   background:var(--surface);color:var(--ink);
   display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .date-nav button svg{width:14px;height:14px;display:block}
-.title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
+.title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px}
 .eyebrow{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.14em;margin:0}
 h1,h2,h3{font-family:var(--heading);line-height:1.35;margin:0}
 h1{font-size:clamp(26px,3.6vw,40px);letter-spacing:.02em;font-weight:700}
@@ -131,10 +130,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 
 @media(max-width:670px){
   .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;padding:14px 0 12px;gap:12px}
-  .hero-copy{display:contents}
-  .date-nav{grid-column:1 / -1;flex-wrap:wrap}
   .date-nav time,.date-nav .eyebrow{white-space:nowrap}
-  .title-row{margin-top:0}
   .title-row h1,.story h2{text-wrap:balance}
   .art{width:96px}
   .art svg{max-height:92px}
@@ -144,7 +140,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
-<link rel="stylesheet" href="reader.css?v=8">
+<link rel="stylesheet" href="reader.css?v=9">
   <style>footer { display:none !important; }</style><!-- LF 全站不顯示 footer -->
 </head>
 <body>
@@ -163,20 +159,19 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 <div id="reading-sheet">
 <main class="shell">
   <div class="hero qt-mode-swipe">
-    <div class="hero-copy">
       <div class="date-nav">
         <button id="previous" disabled aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
         <details class="date-picker" id="date-picker">
-          <summary aria-label="選擇日期"><time id="date"></time></summary>
+          <summary aria-label="選擇日期"><time id="date"></time><span class="qt-date-short" aria-hidden="true"></span></summary>
           <div id="date-list" aria-label="最近七天的經文"></div>
         </details>
         <button id="next" disabled aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+        <button id="english-toggle" type="button" role="switch" aria-label="英文經文" aria-checked="true">英文</button>
       </div>
       <div class="title-row">
         <h1 id="hero-title">每日靈修</h1>
         <p class="lead" id="hero-lead" hidden></p>
       </div>
-    </div>
     <div class="art"><div class="grown-up-art"><svg viewBox="0 0 620 510" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
 <linearGradient id="sky" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#f9f6e9"/><stop offset="1" stop-color="#d5ded0"/></linearGradient>
 <linearGradient id="paper" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#f8edcf"/><stop offset="1" stop-color="#a88e63"/></linearGradient>
@@ -200,6 +195,10 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 </svg></div><div class="kids-art"><svg viewBox="0 0 620 510" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><ellipse cx="312" cy="268" rx="224" ry="181" fill="#f6e6fa"/><circle cx="435" cy="134" r="52" fill="#ffe4ae"/><path d="M91 253q59-42 128 1t151-7q111-53 167 28l-4 85q-103 97-223 91Q155 443 88 353Z" fill="#d8c6ef"/><path d="M87 310q85-37 225 13t221-23v58q-99 92-223 94Q154 445 87 352Z" fill="#f9c7da"/><path d="M157 211h78q10-15-11-22-5-19-24-16-11-15-28 1-21-1-19 18-16 7 4 19m292 18h61q13-10-1-18-3-15-20-14-12-9-22 4-13 0-14 13-13 5-4 15" fill="#fffaf1"/><ellipse cx="307" cy="371" rx="98" ry="15" fill="#ab719b" opacity=".2"/><g transform="translate(156 125) scale(1.7)"><path d="M64 118v17m51-17v17" stroke="#8f587a" stroke-width="9" stroke-linecap="round"/><path d="M57 104q-28 0-29-21 0-13 16-13l19 8m60 26q28 0 29-21 0-13-16-13l-19 8" fill="#a66583"/><path d="M48 77q-8-19 13-27 8-17 28-12 17-8 29 9 22 4 16 28 16 15 3 32-2 19-23 21-13 15-29 6-19 6-28-11-18-1-19-22-6-15 10-24Z" fill="#fff8e5"/><ellipse cx="90" cy="94" rx="34" ry="29" fill="#f5c6c3"/><path d="M76 92h.1m28 0h.1" stroke="#543547" stroke-width="6" stroke-linecap="round"/><path d="M83 104q7 8 14 0" fill="none" stroke="#543547" stroke-width="3" stroke-linecap="round"/><ellipse cx="68" cy="103" rx="5" ry="3" fill="#e894a6"/><ellipse cx="112" cy="103" rx="5" ry="3" fill="#e894a6"/></g><g fill="#fffbef"><path d="M140 288l5 11 12 2-9 8 2 12-10-6-10 6 2-12-9-8 12-2Z"/><path d="M480 283l4 9 10 2-7 7 1 9-8-5-8 5 1-9-7-7 10-2Z"/></g><path d="M243 118c-12-15-30 2 0 20 30-18 12-35 0-20Z" fill="#df8dad"/></svg></div></div>
   </div>
   <p id="status" role="status" hidden></p>
+  <div id="retry-panel" hidden>
+    <button class="action" id="retry-today" type="button">↻ 重新抓取今日內容</button>
+    <p id="retry-status" role="status"></p>
+  </div>
   <div id="grown-up" class="content" hidden></div>
   <div id="kids" class="content" hidden></div>
   <div id="warning-banner" role="alert" hidden></div>
@@ -272,6 +271,102 @@ let toastTimer;
 let firestore;
 let firebaseApp;
 let recent = [];
+let account;
+let superuser;
+let englishRevision = 0;
+let todayMissing = false;
+let retrying = false;
+
+function englishKey(user) {
+  return user ? 'qt-english:' + user.uid : 'qt-english';
+}
+
+function localEnglish(user) {
+  try { return localStorage.getItem(englishKey(user)) !== 'off'; }
+  catch { return true; }
+}
+
+function showEnglish(enabled) {
+  root.classList.toggle('qt-hide-english', !enabled);
+  $('english-toggle').setAttribute('aria-checked', String(enabled));
+}
+
+async function loadEnglish(user) {
+  account = user;
+  const revision = ++englishRevision;
+  showEnglish(localEnglish(user));
+  if (!user?.emailVerified) return;
+  try {
+    const db = await getDatabase();
+    const snapshot = await db.getDoc(db.doc(db.instance, 'qt_preferences', user.uid));
+    const enabled = snapshot.data()?.showEnglish;
+    if (revision !== englishRevision || typeof enabled !== 'boolean') return;
+    showEnglish(enabled);
+    try { localStorage.setItem(englishKey(user), enabled ? 'on' : 'off'); } catch {}
+  } catch { /* The browser preference remains available offline. */ }
+}
+
+$('english-toggle').addEventListener('click', async () => {
+  ++englishRevision;
+  const user = account;
+  const enabled = $('english-toggle').getAttribute('aria-checked') !== 'true';
+  showEnglish(enabled);
+  try { localStorage.setItem(englishKey(user), enabled ? 'on' : 'off'); } catch {}
+  if (!user?.emailVerified) return;
+  try {
+    const db = await getDatabase();
+    if (account === user) {
+      await db.setDoc(db.doc(db.instance, 'qt_preferences', user.uid), {showEnglish: enabled});
+    }
+  } catch { /* The choice is still saved in this browser. */ }
+});
+
+function updateRetry() {
+  $('retry-panel').hidden = !superuser || !todayMissing;
+}
+
+async function retryToday() {
+  const user = superuser;
+  if (!user || !todayMissing || retrying) return;
+  const date = taipeiDate();
+  const selection = request;
+  const button = $('retry-today');
+  const status = $('retry-status');
+  retrying = button.disabled = true;
+  status.textContent = '正在送出補抓請求…';
+  try {
+    const token = await user.getIdToken();
+    if (user !== superuser) return;
+    const response = await fetch('../api/qt-retry', {
+      method: 'POST', headers: {Authorization: 'Bearer ' + token},
+    });
+    if (!response.ok) {
+      status.textContent = response.status === 503 ? '補抓服務尚未設定。' : '無法啟動補抓，請稍後再試。';
+      return;
+    }
+    status.textContent = '已啟動補抓，等待今日內容更新…';
+    const deadline = Date.now() + 180000;
+    while (Date.now() < deadline && user === superuser && date === taipeiDate()) {
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      if (user !== superuser) return;
+      let updated;
+      try { updated = await readRecent(true); } catch { continue; }
+      if (!updated.some(entry => entry.date === date)) continue;
+      recent = updated;
+      todayMissing = false;
+      updateRetry();
+      if (selection === request) await selectDate(date, false);
+      else updateDates();
+      return;
+    }
+    status.textContent = '補抓已送出，目前仍未收到今日內容。';
+  } catch {
+    status.textContent = '無法確認補抓狀態，請稍後再試。';
+  } finally {
+    retrying = button.disabled = false;
+  }
+}
+$('retry-today').addEventListener('click', retryToday);
 
 function escapeText(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -321,7 +416,7 @@ function render(data, node = $) {
 
   node('grown-up').innerHTML = `
     <section class="card">
-      <p class="eyebrow">今日經文 · 和合本 &amp; NIV</p>
+      <p class="eyebrow">今日經文 · 和合本<span class="english-edition"> &amp; NIV</span></p>
       <ol class="verses">${bible.verses.map(v => `
         <li>
           <small>${escapeText(verseLabel(v))}</small>
@@ -349,7 +444,7 @@ function render(data, node = $) {
   node('kids').innerHTML = `
     ${hasKidsVerses ? `
     <section class="card">
-      <p class="eyebrow">今日經文 · 注音 &amp; NIrV</p>
+      <p class="eyebrow">今日經文 · 注音<span class="english-edition"> &amp; NIrV</span></p>
         <ol class="kids-verses">${bible.verses.map(v => `
           <li>
             <small>${escapeText(verseLabel(v))}</small>
@@ -414,6 +509,7 @@ function renderView(data, node = $) {
     node('hero-title').innerHTML = rubyMarkup(data.kids_content.bible_story_title_ruby);
   }
   node('hero-lead').hidden = !data;
+  node('hero-lead').classList.toggle('english-edition', Boolean(data?.scripture.eng_reference));
   node('hero-lead').textContent = !data ? '' : (data.scripture.eng_reference || data.scripture.verses[0]?.text || '');
   node('source').textContent = data?.source_channel ? ' · ' + data.source_channel : '';
 }
@@ -472,6 +568,9 @@ async function watchLinFamilyAuth() {
     welcome.hidden = true;
     welcomeName.textContent = '';
     welcomeExtra.textContent = '';
+    superuser = null;
+    updateRetry();
+    loadEnglish(null);
     QTReader.setAccount(undefined, true);
   };
   try {
@@ -479,6 +578,12 @@ async function watchLinFamilyAuth() {
     sdk.onAuthStateChanged(sdk.getAuth(app), user => {
       const signedIn = user && !user.isAnonymous;
       welcome.hidden = !signedIn;
+      const nextSuperuser = signedIn && user.emailVerified &&
+        ['darren710404@gmail.com', 'darren.lin@twclc.org'].includes(user.email?.toLowerCase()) ? user : null;
+      if (superuser !== nextSuperuser) $('retry-status').textContent = '';
+      superuser = nextSuperuser;
+      updateRetry();
+      loadEnglish(signedIn ? user : null);
       if (signedIn) {
         const day = Math.floor(Date.parse(taipeiDate()) / 86400000);
         const name = user.displayName?.trim() || '朋友';
@@ -513,9 +618,9 @@ async function watchLinFamilyAuth() {
   }
 }
 
-async function readRecent() {
-  const {collection, query, orderBy, limit, getDocs, instance} = await getDatabase();
-  const snapshot = await getDocs(query(collection(instance, collectionName), orderBy('date', 'desc'), limit(7)));
+async function readRecent(serverOnly = false) {
+  const {collection, query, orderBy, limit, getDocs, getDocsFromServer, instance} = await getDatabase();
+  const snapshot = await (serverOnly ? getDocsFromServer : getDocs)(query(collection(instance, collectionName), orderBy('date', 'desc'), limit(7)));
   return snapshot.docs.filter(doc => /^\d{4}-\d{2}-\d{2}$/.test(doc.id))
     .map(doc => {
       const data = doc.data();
@@ -544,9 +649,13 @@ function updateDates() {
 
 function renderDate(element, date) {
   element.dateTime = date;
+  const day = new Date(date + 'T00:00:00Z');
   element.textContent = new Intl.DateTimeFormat('zh-TW', {
     timeZone:'UTC', year:'numeric', month:'long', day:'numeric', weekday:'short'
-  }).format(new Date(date + 'T00:00:00Z'));
+  }).format(day);
+  element.parentElement.setAttribute('aria-label', '選擇日期，' + element.textContent);
+  element.nextElementSibling.textContent =
+    (day.getUTCMonth() + 1) + '/' + day.getUTCDate() + '（' + '日一二三四五六'[day.getUTCDay()] + '）';
 }
 
 function previewDate(data) {
@@ -554,6 +663,7 @@ function previewDate(data) {
   const node = id => preview.querySelector('#' + id);
   node('date-picker').open = false;
   node('status').hidden = true;
+  node('retry-panel').hidden = true;
   renderDate(node('date'), data.date);
   render(data, node);
   renderView(data, node);
@@ -587,6 +697,8 @@ async function selectDate(date, animate = true, fallbackWithinWeek = false) {
   try {
     if (!recent.length) recent = await readRecent();
     if (id !== request) return;
+    todayMissing = !recent.some(entry => entry.date === taipeiDate());
+    updateRetry();
     const start = fallbackWithinWeek ? weekStart(date) : date;
     const data = recent.find(entry => entry.date === date)
       || (fallbackWithinWeek ? recent.find(entry => start <= entry.date && entry.date < date) : null);
@@ -687,6 +799,7 @@ QTReader.init({
 });
 try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; } catch {}
 setTheme(mode);
+showEnglish(localEnglish(null));
 selectDate(taipeiDate(), false, true);
 watchLinFamilyAuth();
 </script>

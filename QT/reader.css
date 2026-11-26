@@ -60,3 +60,26 @@ main{touch-action:pan-y pinch-zoom}
   .qt-header-actions{gap:5px}
   #export-word{width:32px;height:32px}
 }
+
+.date-nav #english-toggle{
+  margin-inline-start:auto;width:auto;height:30px;padding:0 8px;gap:5px;
+  border-radius:8px;font:inherit;white-space:nowrap
+}
+#english-toggle::after{
+  content:"";width:22px;height:12px;border-radius:10px;border:1px solid currentColor;
+  background:radial-gradient(circle at 5px 50%,currentColor 3px,transparent 3.5px)
+}
+#english-toggle[aria-checked="true"]::after{
+  color:var(--accent);
+  background:radial-gradient(circle at calc(100% - 5px) 50%,currentColor 3px,transparent 3.5px)
+}
+.qt-hide-english :is(.eng-verse,.english-edition){display:none}
+#retry-panel{margin:0 0 20px}
+#status:has(+ #retry-panel:not([hidden])){margin-bottom:8px}
+#retry-status{margin:6px 0 0;color:var(--muted)}
+#retry-status:empty{display:none}
+.qt-date-short{display:none}
+@media(max-width:360px){
+  .date-picker time{display:none}
+  .qt-date-short{display:inline}
+}

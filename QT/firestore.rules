@@ -50,6 +50,20 @@ service cloud.firestore {
       allow write: if isSuper();
     }
 
+    // QT reading preferences: one private document per Firebase user.
+    match /qt_preferences/{uid} {
+      function ownsPreferences() {
+        return signedIn() && request.auth.uid == uid;
+      }
+      function validPreferences() {
+        let data = request.resource.data;
+        return data.keys().hasAll(['showEnglish']) && data.keys().hasOnly(['showEnglish'])
+          && data.showEnglish is bool;
+      }
+      allow get: if ownsPreferences();
+      allow create, update: if ownsPreferences() && validPreferences();
+    }
+
     // QT marks are private to the UID in the path. Each document holds one mark.
     match /qt_readers/{uid}/annotations/{annotationId} {
       function ownsAnnotations() {
