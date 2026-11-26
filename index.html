@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="css/lf-todos.css?v=11">
   <link rel="stylesheet" href="css/dashboard-todos.v1.css?v=20261125c">
   <link rel="stylesheet" href="css/lf-chat.css?v=31">
-  <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=15">
+  <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=16">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
   <script>
@@ -433,7 +433,8 @@
   </dialog>
 
   <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script><!-- 只用 clcSlotGridNormalize（舊 pos 欄位） -->
-  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=24"></script>
+  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=25"></script>
+  <script src="https://clc-dx04.pages.dev/shared/desktop/app-entries.v1.js?v=1"></script>
   <script>
     // 開發準則：確認／操作用的彈出視窗一次只能有一個。開新的對話框時，自動關掉其他對話框和留言板的彈窗。
     // 例外（刻意疊在上面的設計）：圖片裁切 clc-crop，或 dialog 加 data-stack。
@@ -667,7 +668,10 @@
       appMenu: id => apps.find(a => a.id === id)?.name,
       menu: ({ id, type }) => {
         if (!role) return [];
-        if (type === 'app') return [{ label: '編輯 App', run: () => openApp(id) }];
+        if (type === 'app') return [
+          { label: '編輯 App', run: () => openApp(id) },
+          { label: '新增選項', run: () => openAppEntries(id) }
+        ];
         return id ? [] : [{ label: '往上整理', run: () => desk.compact() }];
       },
       onDelete: (id, type) => type === 'card' ? desktopTodos.removeArea(id) : removeApp(id),
@@ -873,7 +877,15 @@
         a.href = '#'; a.style.opacity = '.4'; a.title = '此帳號不能開啟 ' + app.name;
         a.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + app.name + '。'); });
       }
-      return a;
+      if (editing || (role === 'user' && isOwnSite(app))) return a;
+      const rows = (window.clcAppEntries?.entries(app) || []).flatMap(row => {
+        const url = safeUrl(row.url);
+        if (!url || (role === 'user' && isOwnSite({ url }))) return [];
+        const href = url === safeUrl(app.url) ? tileHref(app) : tileHref({ name: row.name, url });
+        return [{ name: row.name, href }];
+      });
+      if (rows.length === 1) a.href = rows[0].href;
+      return window.clcAppEntries?.mount(a, rows, app.name) || a;
     }
     let addPos = null; // 舊格子用；新桌面由右鍵/長按的格子位置決定
     let curTab = 'apps', cabinetOnly = false;
@@ -882,7 +894,7 @@
       active: 'apps', onTab: t => onTab(t), placeholder: '搜尋 App 或卡片內容…', searchHost: document.querySelector('main'),
       addItems: t => addMenu(t),
       onSearch: () => applySearch(),
-      onEnter: () => { if (tb.tab() === 'family') return window.lfChatApi && window.lfChatApi.findNext(); const id = applySearch().find(x => apps.some(a => a.id === x)); const a = id && desk.element(id) && desk.element(id).querySelector('a[href]'); if (a) location.href = a.href; }
+      onEnter: () => { if (tb.tab() === 'family') return window.lfChatApi && window.lfChatApi.findNext(); const id = applySearch().find(x => apps.some(a => a.id === x)); const a = id && desk.element(id) && desk.element(id).querySelector('a[href]'); if (a) a.click(); }
     });
     // 家庭留言板（Family 分頁）：有新訊息時 Family 分頁標籤亮紅點
     window.lfChatApi = db && window.lfChatInit ? window.lfChatInit($('lfChat'), { db, desktop: $('lfFamilyDesk'), toast, tabDot: on => {
@@ -912,7 +924,7 @@
       let downAt = 0;
       $('lfApps').addEventListener('pointerdown', () => { downAt = Date.now(); }, true);
       $('lfApps').addEventListener('click', e => {
-        if (downAt && Date.now() - downAt >= 400 && e.target.closest('a[href]')) { e.preventDefault(); e.stopPropagation(); }
+        if (downAt && Date.now() - downAt >= 400 && e.target.closest('a[href], .dk-entry-trigger')) { e.preventDefault(); e.stopPropagation(); }
         downAt = 0;
       }, true);
     })();
@@ -985,6 +997,17 @@
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(globalApps)); } catch (_) {}
       showApps(); seedIfNeeded();
     }, err => { finishAppsWait?.(); console.warn('App 清單讀取失敗（沿用快取）', err); });
+
+    function openAppEntries(id) {
+      const app = apps.find(item => item.id === id);
+      if (!role || !app) return;
+      window.clcAppEntries?.edit(app, safeUrl(app.url), safeUrl, async menu => {
+        if (isSuper() && globalApps.some(item => item.id === id)) {
+          await saveGlobal(window.clcSlotGridNormalize(globalApps).map(item => item.id === id ? { ...item, menu } : item));
+        }
+        await persist(withPos().map(item => item.id === id ? { ...item, menu } : item));
+      });
+    }
 
     // ---------- 新增／修改對話框 ----------
     const dlg = $('lfAppDialog'); let editingId = null, uploadedIcon = '';
