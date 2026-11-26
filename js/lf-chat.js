@@ -886,6 +886,7 @@
           <button data-a="flip" aria-label="切換鏡頭">${I('<path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/>')}</button>
           <button data-a="torch" aria-label="閃光燈" hidden>${I('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>')}<small hidden></small></button>
           <button data-a="timer" aria-label="倒數計時">${I('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>')}<small hidden></small></button>
+          <button data-a="voice" aria-label="語音快門" aria-pressed="false">${I('<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>')}</button>
           <button data-a="frames" class="on" aria-label="相框">${I('<circle cx="12" cy="8.5" r="4.5"/><circle cx="8.3" cy="15" r="4.5"/><circle cx="15.7" cy="15" r="4.5"/>')}</button>
         </div>
         <div class="lfc-cam-exp" hidden>☀<input type="range" aria-label="亮度"></div>
@@ -900,8 +901,19 @@
       v.querySelectorAll('[data-th]').forEach(t => { const a = frameArt(t.dataset.th); if (a) { t.style.background = a[0]; t.innerHTML = `<img src="${a[1][0]}" alt="">`; } });
       const q = s => v.querySelector(s), video = q('video'), cv = q('.lfc-cam-fr'), view = q('.lfc-cam-view'), baseEl = q('.lfc-cam-base');
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const voiceButton = q('[data-a="voice"]'), voiceKey = 'linfamily_chat_voice_shutter';
+      let voiceEnabled = !!SpeechRecognition;
+      try { voiceEnabled = voiceEnabled && localStorage.getItem(voiceKey) !== '0'; } catch (_) {}
+      voiceButton.disabled = !SpeechRecognition;
+      function updateVoiceButton() {
+        voiceButton.classList.toggle('on', voiceEnabled);
+        voiceButton.classList.toggle('off', !voiceEnabled);
+        voiceButton.setAttribute('aria-pressed', String(voiceEnabled));
+        voiceButton.title = SpeechRecognition ? (voiceEnabled ? '語音快門已開啟（Smile）' : '語音快門已關閉') : '此瀏覽器不支援語音快門';
+      }
+      updateVoiceButton();
       let recognition = null, voiceRetry = 0, voiceUnavailable = false, nativePickerOpen = false;
-      const canListen = () => v.isConnected && !document.hidden && !nativePickerOpen &&
+      const canListen = () => voiceEnabled && v.isConnected && !document.hidden && !nativePickerOpen &&
         track?.readyState === 'live' && !video.paused && video.videoWidth > 0;
       function stopVoice() {
         clearTimeout(voiceRetry);
@@ -1070,6 +1082,13 @@
         if (a === 'flip') { facing = facing === 'user' ? 'environment' : 'user'; return start(); }
         if (a === 'frames') { const f = q('.lfc-cam-frs'); f.hidden = !f.hidden; b.classList.toggle('on', !f.hidden); return; }
         if (a === 'timer') { timer = timer === 0 ? 3 : timer === 3 ? 10 : 0; const s = b.querySelector('small'); s.hidden = !timer; s.textContent = timer + 's'; b.classList.toggle('on', !!timer); return; }
+        if (a === 'voice' && SpeechRecognition) {
+          voiceEnabled = !voiceEnabled;
+          if (voiceEnabled) voiceUnavailable = false;
+          try { localStorage.setItem(voiceKey, voiceEnabled ? '1' : '0'); } catch (_) {}
+          updateVoiceButton();
+          return syncVoice();
+        }
         if (a === 'torch') {
           if (!track) return;
           if (flashModes.length > 1) { const order = ['auto', 'flash', 'off'].filter(m => flashModes.includes(m)); flash = order[(order.indexOf(flash) + 1) % order.length]; return flashUI(); }
