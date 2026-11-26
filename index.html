@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="css/lf-todos.css?v=11">
   <link rel="stylesheet" href="css/dashboard-todos.v1.css?v=20261125c">
   <link rel="stylesheet" href="css/lf-chat.css?v=31">
-  <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=13">
+  <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=15">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
   <script>
@@ -433,7 +433,7 @@
   </dialog>
 
   <script src="js/clc-slot-grid.js?v=confirm-drag-1"></script><!-- 只用 clcSlotGridNormalize（舊 pos 欄位） -->
-  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=22"></script>
+  <script src="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.js?v=24"></script>
   <script>
     // 開發準則：確認／操作用的彈出視窗一次只能有一個。開新的對話框時，自動關掉其他對話框和留言板的彈窗。
     // 例外（刻意疊在上面的設計）：圖片裁切 clc-crop，或 dialog 加 data-stack。
@@ -664,11 +664,11 @@
       waitLayout: true,
       canEdit: () => !!role,
       label: id => (apps.find(a => a.id === id) || {}).name || '這個待辦區域',
+      appMenu: id => apps.find(a => a.id === id)?.name,
       menu: ({ id, type }) => {
         if (!role) return [];
-        const m = [];
-        if (type === 'app') m.push({ label: '編輯 App', run: () => openApp(id) });
-        return m.concat(addMenu('apps'), id ? [] : [{ label: '往上整理', run: () => desk.compact() }]); // 點空白處：排太長時把空列往上補齊
+        if (type === 'app') return [{ label: '編輯 App', run: () => openApp(id) }];
+        return id ? [] : [{ label: '往上整理', run: () => desk.compact() }];
       },
       onDelete: (id, type) => type === 'card' ? desktopTodos.removeArea(id) : removeApp(id),
       saveLayout: (mode, map) => {
@@ -865,8 +865,10 @@
       a.className = 'lf-app';
       a.href = tileHref(app); // 同一個視窗換頁（不開新分頁、不用左右滑）
       a.setAttribute('aria-label', editing ? '編輯 ' + app.name : app.name);
-      const name = document.createElement('span'); name.className = 'lf-name'; name.textContent = app.name;
-      a.append(iconEl(app), name);
+      const name = document.createElement('span'); name.className = 'lf-name'; name.setAttribute('data-dk-app-name', ''); name.textContent = app.name;
+      const icon = iconEl(app);
+      icon.setAttribute('data-dk-app-icon', '');
+      a.append(icon, name);
       if (role === 'user' && !editing && isOwnSite(app)) { // User 不能開 DX、YA、SR
         a.href = '#'; a.style.opacity = '.4'; a.title = '此帳號不能開啟 ' + app.name;
         a.addEventListener('click', e => { e.preventDefault(); toast('此帳號（User）不能開啟 ' + app.name + '。'); });
