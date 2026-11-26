@@ -899,8 +899,64 @@
       document.body.append(v);
       v.querySelectorAll('[data-th]').forEach(t => { const a = frameArt(t.dataset.th); if (a) { t.style.background = a[0]; t.innerHTML = `<img src="${a[1][0]}" alt="">`; } });
       const q = s => v.querySelector(s), video = q('video'), cv = q('.lfc-cam-fr'), view = q('.lfc-cam-view'), baseEl = q('.lfc-cam-base');
-      const stop = () => { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; track = null; };
-      const close = () => { stop(); v.remove(); removeEventListener('resize', paint); if (baseEl.src) URL.revokeObjectURL(baseEl.src); };
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let recognition = null, voiceRetry = 0, voiceUnavailable = false, nativePickerOpen = false;
+      const canListen = () => v.isConnected && !document.hidden && !nativePickerOpen &&
+        track?.readyState === 'live' && !video.paused && video.videoWidth > 0;
+      function stopVoice() {
+        clearTimeout(voiceRetry);
+        voiceRetry = 0;
+        const active = recognition;
+        recognition = null;
+        if (active) active.abort();
+      }
+      function startVoice() {
+        if (!SpeechRecognition || voiceUnavailable || recognition || voiceRetry || !canListen()) return;
+        try {
+          const active = new SpeechRecognition();
+          recognition = active;
+          active.lang = 'en-US';
+          active.continuous = true;
+          active.onresult = e => {
+            if (recognition !== active || !canListen() || busy) return;
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+              const result = e.results[i];
+              if (result.isFinal && /^smile[.!?]*$/i.test(result[0].transcript.trim())) {
+                q('[data-a="shot"]').click();
+                return;
+              }
+            }
+          };
+          active.onerror = e => {
+            if (recognition !== active || e.error === 'no-speech') return;
+            voiceUnavailable = true;
+            stopVoice();
+          };
+          active.onend = () => {
+            if (recognition !== active) return;
+            recognition = null;
+            if (canListen()) voiceRetry = setTimeout(() => {
+              voiceRetry = 0;
+              startVoice();
+            }, 300);
+          };
+          active.start();
+        } catch (_) {
+          recognition = null;
+          voiceUnavailable = true;
+        }
+      }
+      function syncVoice() { if (canListen()) startVoice(); else stopVoice(); }
+      if (SpeechRecognition) {
+        video.addEventListener('playing', startVoice);
+        document.addEventListener('visibilitychange', syncVoice);
+      }
+      const stop = () => { stopVoice(); if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; track = null; };
+      const close = () => {
+        stop(); v.remove(); removeEventListener('resize', paint);
+        document.removeEventListener('visibilitychange', syncVoice);
+        if (baseEl.src) URL.revokeObjectURL(baseEl.src);
+      };
       const setTrack = c => { if (!track) return Promise.resolve(); return track.applyConstraints({ advanced: [c] }).catch(() => {}); };
       // 畫面上實際看得到的範圍：live 是 cover（裁切填滿），native 是 contain（整張）
       function shown() {
@@ -992,7 +1048,13 @@
       // 拍完 → 編輯畫面（可再選相框、裁切、貼圖、文字、畫畫）；‹ 回到相機
       function toEditor(file) { stop(); v.style.display = 'none'; photoEditor(file, { frame: fr, onBack: () => { v.style.display = ''; start(); }, onClose: close }); }
       // 用手機相機拍：Samsung 相機的人像、夜拍、變焦都能用，拍完回來一樣進編輯畫面
-      q('[data-native]').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) toEditor(f); };
+      const nativeInput = q('[data-native]');
+      nativeInput.oncancel = () => { nativePickerOpen = false; startVoice(); };
+      nativeInput.onchange = e => {
+        nativePickerOpen = false;
+        const f = e.target.files[0]; e.target.value = '';
+        if (f) toEditor(f); else startVoice();
+      };
       addEventListener('resize', paint);
       if (wide) v.addEventListener('click', e => { if (e.target === v) close(); });
       v.addEventListener('click', async e => {
@@ -1000,7 +1062,11 @@
         const a = b.dataset.a;
         if (b.dataset.fr) { fr = b.dataset.fr; v.querySelectorAll('[data-fr]').forEach(x => x.classList.toggle('on', x === b)); return paint(); }
         if (a === 'x') return close();
-        if (a === 'native') return q('[data-native]').click();
+        if (a === 'native') {
+          nativePickerOpen = true;
+          stopVoice();
+          return nativeInput.click();
+        }
         if (a === 'flip') { facing = facing === 'user' ? 'environment' : 'user'; return start(); }
         if (a === 'frames') { const f = q('.lfc-cam-frs'); f.hidden = !f.hidden; b.classList.toggle('on', !f.hidden); return; }
         if (a === 'timer') { timer = timer === 0 ? 3 : timer === 3 ? 10 : 0; const s = b.querySelector('small'); s.hidden = !timer; s.textContent = timer + 's'; b.classList.toggle('on', !!timer); return; }
