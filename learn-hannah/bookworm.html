@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>小書蟲的童話城堡 | Little Bookworm's Fairytale Castle</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-blush: #fdf3f4;
+      --bg-cream: #faf0ea;
+      --gold-light: #f6e299;
+      --gold-mid: #d6a85a;
+      --gold-dark: #a67c37;
+      --rose-ink: #6d4c55;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      margin: 0;
+      font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+      color: var(--rose-ink);
+      background-color: var(--bg-blush);
+      background-image:
+        radial-gradient(circle at 18% 22%, rgba(255, 226, 232, 0.75) 0%, transparent 45%),
+        radial-gradient(circle at 82% 18%, rgba(252, 236, 218, 0.8) 0%, transparent 48%),
+        radial-gradient(circle at 50% 78%, rgba(244, 224, 235, 0.75) 0%, transparent 55%),
+        radial-gradient(rgba(214, 168, 90, 0.16) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 26px 26px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .font-serif-title {
+      font-family: 'Playfair Display', 'Noto Sans TC', serif;
+    }
+    /* Sticker die-cut white border effect */
+    .sticker-diecut {
+      filter:
+        drop-shadow(0 0 2px #ffffff)
+        drop-shadow(0 0 2px #ffffff)
+        drop-shadow(0 0 3px #ffffff)
+        drop-shadow(0 8px 14px rgba(132, 86, 98, 0.18));
+    }
+    .sticker-diecut-sm {
+      filter:
+        drop-shadow(0 0 1.5px #ffffff)
+        drop-shadow(0 0 2px #ffffff)
+        drop-shadow(0 4px 8px rgba(132, 86, 98, 0.14));
+    }
+    /* Scalloped Rosette Badge */
+    .rosette-badge {
+      background: radial-gradient(circle at 30% 25%, #f3c6ce 0%, #df9aa7 62%, #cb8190 100%);
+      box-shadow:
+        inset 0 0 0 3px #f6e299,
+        inset 0 0 0 5px rgba(255, 255, 255, 0.55),
+        0 8px 18px rgba(154, 92, 108, 0.28);
+    }
+    /* Metallic Gold Foil Text & Border */
+    .gold-foil-bg {
+      background: linear-gradient(135deg, #f9e8a6 0%, #d8ab5c 45%, #f5df94 75%, #b9893c 100%);
+    }
+    .gold-text {
+      background: linear-gradient(180deg, #fff6cc 0%, #e4b968 55%, #b08032 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    /* 2.5D Book Drop Animation */
+    @keyframes bookDrop25D {
+      0% {
+        opacity: 0;
+        transform: translateY(-230px) rotate(-9deg) scale(1.12);
+      }
+      58% {
+        opacity: 1;
+        transform: translateY(10px) rotate(2.5deg) scale(0.97);
+      }
+      76% {
+        transform: translateY(-14px) rotate(-1.5deg) scale(1.02);
+      }
+      90% {
+        transform: translateY(4px) rotate(0.6deg) scale(0.99);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0px) rotate(0deg) scale(1);
+      }
+    }
+    .animate-book-drop {
+      animation: bookDrop25D 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes twinkleStar {
+      0%, 100% { transform: scale(0.85) rotate(0deg); opacity: 0.55; }
+      50% { transform: scale(1.18) rotate(12deg); opacity: 1; }
+    }
+    .animate-twinkle {
+      animation: twinkleStar 3.4s ease-in-out infinite;
+    }
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .animate-float {
+      animation: floatSlow 4.5s ease-in-out infinite;
+    }
+    @keyframes burstOut {
+      0% { opacity: 1; transform: translate(0, 0) scale(0.4); }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(1.25) rotate(45deg); }
+    }
+    .animate-burst {
+      animation: burstOut 0.9s ease-out forwards;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #e7b5c0;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // Pastel Fairytale Book Palettes inspired by watercolor sticker aesthetic
+    const BOOK_PALETTES = [
+      {
+        id: 'rose',
+        spineMain: '#F2B8C6',
+        spineDark: '#DC96A8',
+        spineLight: '#FAD4DE',
+        coverTop: '#E7A3B4',
+        border: '#B97889',
+        text: '#7A4654',
+        ribbon: '#E38B9E',
+        goldBand: '#E5BE73'
+      },
+      {
+        id: 'lavender',
+        spineMain: '#D5C2E8',
+        spineDark: '#B9A0D3',
+        spineLight: '#E8DCF5',
+        coverTop: '#C5AEDD',
+        border: '#9378B0',
+        text: '#584173',
+        ribbon: '#C89CE0',
+        goldBand: '#E5BE73'
+      },
+      {
+        id: 'sky',
+        spineMain: '#BAD8F2',
+        spineDark: '#99BFE0',
+        spineLight: '#D8EAFA',
+        coverTop: '#A8CBEB',
+        border: '#759EC2',
+        text: '#3F6385',
+        ribbon: '#8CBCE6',
+        goldBand: '#E5BE73'
+      },
+      {
+        id: 'butter',
+        spineMain: '#F5E4A8',
+        spineDark: '#DFCA82',
+        spineLight: '#FBF2CE',
+        coverTop: '#ECD68E',
+        border: '#B8A158',
+        text: '#6E5B24',
+        ribbon: '#E6B86A',
+        goldBand: '#D4A24C'
+      },
+      {
+        id: 'sage',
+        spineMain: '#C5DFC4',
+        spineDark: '#A4C7A3',
+        spineLight: '#DEF0DD',
+        coverTop: '#B3D3B2',
+        border: '#7DA37C',
+        text: '#416340',
+        ribbon: '#96C295',
+        goldBand: '#E5BE73'
+      },
+      {
+        id: 'peach',
+        spineMain: '#F7C9B6',
+        spineDark: '#E2A891',
+        spineLight: '#FDE1D5',
+        coverTop: '#EDB7A1',
+        border: '#BF836B',
+        text: '#754634',
+        ribbon: '#E89B7E',
+        goldBand: '#E5BE73'
+      }
+    ];
+
+    // Translations (Traditional Chinese & English)
+    const I18N = {
+      zh: {
+        castleTitle: '小書蟲的童話城堡',
+        subtitle: '每讀完一本書，就為城堡疊上一層魔法故事！',
+        langBtn: 'English',
+        thisWeek: '本週書堆',
+        allTime: '全部城堡高塔',
+        weekRangeLabel: '本週閱讀週期（週日 ～ 週六）',
+        dayNames: ['日', '一', '二', '三', '四', '五', '六'],
+        scholarshipBadgeTitle: '本週獎學金',
+        booksCountUnit: '本',
+        ruleShort: '滿2本 $100｜多1本 +$50',
+        ruleModalTitle: '✨ 城堡閱讀獎學金規則 ✨',
+        ruleLines: [
+          '每週計算週期為「禮拜天（第1天）～ 禮拜六（第7天）」。',
+          '讀滿 2 本書：獲得 $100 元基礎獎學金！',
+          '少於 2 本書：本週暫無獎學金，繼續加油喔！',
+          '超過 2 本後：每多讀 1 本再加 $50 元（例如讀 5 本 = $100 + $150 = $250 元）。'
+        ],
+        enStackTitle: '英文故事書堆',
+        enStackSub: 'English Fairytales',
+        zhStackTitle: '中文故事書堆',
+        zhStackSub: 'Chinese Stories',
+        emptyStack: '還沒有疊書喔，快拍一本放上來！',
+        addBookBtn: '拍一本新書疊上去！',
+        modalTitle: '📸 記錄新讀完的童話書',
+        step1Photo: '1. 拍攝或選擇書本封面',
+        takePhoto: '開啟相機拍照 / 選照片',
+        useSample: '使用可愛範例書封測試',
+        cropHint: '拖曳圖片對位 · 滑動縮放 · 可旋轉角度',
+        zoomLabel: '縮放',
+        rotateLabel: '旋轉 90°',
+        bookTitleLabel: '2. 書名（會印在 2.5D 書背上喔！）',
+        bookTitlePlaceholder: '例如：夏綠蒂的網 / Magic Tree House',
+        langSelectLabel: '3. 這是哪一種語言的書？',
+        langEn: '英文書（疊左邊）',
+        langZh: '中文書（疊右邊）',
+        saveAndDrop: '✨ 完成！讓書掉下來疊高 ✨',
+        cancel: '取消',
+        bookDetailTitle: '📖 閱讀小檔案',
+        readDate: '完成日期',
+        deleteBook: '從書堆移除這本書',
+        confirmDelete: '確定要從書堆拿走這本書嗎？',
+        close: '關閉',
+        newTag: 'NEW!',
+        goalProgress2: '還差 {n} 本就能拿到 $100 獎學金囉！',
+        goalUnlocked: '太棒了！已解鎖獎學金，每多讀 1 本再 +$50！'
+      },
+      en: {
+        castleTitle: "Little Bookworm's Castle",
+        subtitle: 'Stack a magical hardcover book every time you finish reading!',
+        langBtn: '繁體中文',
+        thisWeek: 'This Week',
+        allTime: 'All-Time Tower',
+        weekRangeLabel: 'Weekly Cycle (Sun – Sat)',
+        dayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        scholarshipBadgeTitle: 'Weekly Reward',
+        booksCountUnit: 'books',
+        ruleShort: '2 books = $100 | +$50 each extra',
+        ruleModalTitle: '✨ Castle Reading Reward Rules ✨',
+        ruleLines: [
+          'Each reading week runs from Sunday (Day 1) through Saturday (Day 7).',
+          'Read 2 books in a week: Earn $100 base reward!',
+          'Fewer than 2 books: $0 reward for that week — keep reading!',
+          'More than 2 books: +$50 for every extra book (e.g., 5 books = $100 + $150 = $250).'
+        ],
+        enStackTitle: 'English Book Stack',
+        enStackSub: 'Left Tower',
+        zhStackTitle: 'Chinese Book Stack',
+        zhStackSub: 'Right Tower',
+        emptyStack: 'No books stacked yet! Snap a book to start.',
+        addBookBtn: 'Snap & Stack a New Book!',
+        modalTitle: '📸 Add a Finished Book',
+        step1Photo: '1. Snap or Upload Book Cover',
+        takePhoto: 'Camera / Choose Photo',
+        useSample: 'Try Cute Sample Cover',
+        cropHint: 'Drag to position · Slide to zoom · Rotate',
+        zoomLabel: 'Zoom',
+        rotateLabel: 'Rotate 90°',
+        bookTitleLabel: '2. Book Title (Printed on the 2.5D Spine!)',
+        bookTitlePlaceholder: 'e.g., Charlotte’s Web / 小王子',
+        langSelectLabel: '3. Which stack does it belong to?',
+        langEn: 'English Book (Left Stack)',
+        langZh: 'Chinese Book (Right Stack)',
+        saveAndDrop: '✨ Drop Book onto Stack! ✨',
+        cancel: 'Cancel',
+        bookDetailTitle: '📖 Storybook Memory',
+        readDate: 'Finished On',
+        deleteBook: 'Remove from stack',
+        confirmDelete: 'Remove this book from the stack?',
+        close: 'Close',
+        newTag: 'NEW!',
+        goalProgress2: '{n} more book(s) to unlock $100 reward!',
+        goalUnlocked: 'Awesome! Reward unlocked — +$50 for every extra book!'
+      }
+    };
+
+    // Helper: Sunday to Saturday week boundaries
+    function getWeekBounds(baseDate = new Date(), offsetWeeks = 0) {
+      const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+      const dayOfWeek = d.getDay(); // 0 = Sunday, 6 = Saturday
+      const sunday = new Date(d);
+      sunday.setDate(d.getDate() - dayOfWeek + offsetWeeks * 7);
+      sunday.setHours(0, 0, 0, 0);
+
+      const saturday = new Date(sunday);
+      saturday.setDate(sunday.getDate() + 6);
+      saturday.setHours(23, 59, 59, 999);
+      return { sunday, saturday };
+    }
+
+    function formatDateShort(dateObj) {
+      const m = dateObj.getMonth() + 1;
+      const d = dateObj.getDate();
+      return `${m}/${d}`;
+    }
+
+    function calculateScholarship(bookCount) {
+      if (bookCount < 2) return 0;
+      return 100 + (bookCount - 2) * 50;
+    }
+
+    // Generate illustrated sample book cover DataURL
+    function createSampleCoverDataUrl(titleText = 'Forest Fairytales', paletteIndex = 0) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 500;
+      const ctx = canvas.getContext('2d');
+      const colors = [
+        ['#F9D5DF', '#E89EB2'],
+        ['#E2D4F4', '#B497D6'],
+        ['#D2E8FA', '#8CBCE6'],
+        ['#FBF0C9', '#DFC26D']
+      ][paletteIndex % 4];
+
+      const grad = ctx.createLinearGradient(0, 0, 400, 500);
+      grad.addColorStop(0, colors[0]);
+      grad.addColorStop(1, colors[1]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 400, 500);
+
+      // Gold ornate frame
+      ctx.strokeStyle = '#FFF5D6';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(24, 24, 352, 452);
+      ctx.strokeStyle = '#C99A45';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(32, 32, 336, 436);
+
+      // Decorative crown circle
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.beginPath();
+      ctx.arc(200, 175, 76, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = '64px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('👑', 200, 196);
+
+      ctx.fillStyle = '#6D4C55';
+      ctx.font = 'bold 28px Georgia, serif';
+      const displayTitle = (titleText || 'Princess Tales').slice(0, 18);
+      ctx.fillText(displayTitle, 200, 315);
+
+      ctx.fillStyle = '#9E737E';
+      ctx.font = '18px sans-serif';
+      ctx.fillText('✨ Fairytale Collection ✨', 200, 360);
+
+      return canvas.toDataURL('image/png');
+    }
+
+    // Initial seed books in the current Sunday-Saturday week (3 books = $150)
+    function createInitialBooks() {
+      const now = new Date();
+      const { sunday } = getWeekBounds(now, 0);
+      const day0 = new Date(sunday.getTime() + 10 * 3600 * 1000).toISOString();
+      const day1 = new Date(sunday.getTime() + 34 * 3600 * 1000).toISOString();
+      const day2 = new Date(Math.min(now.getTime(), sunday.getTime() + 58 * 3600 * 1000)).toISOString();
+
+      return [
+        {
+          id: 'seed-en-1',
+          title: 'Forest Fairytales',
+          language: 'en',
+          paletteIndex: 0,
+          createdAt: day0,
+          coverDataUrl: createSampleCoverDataUrl('Forest Fairytales', 0)
+        },
+        {
+          id: 'seed-en-2',
+          title: 'Once Upon a Nap',
+          language: 'en',
+          paletteIndex: 3,
+          createdAt: day1,
+          coverDataUrl: createSampleCoverDataUrl('Once Upon a Nap', 3)
+        },
+        {
+          id: 'seed-zh-1',
+          title: '長髮公主的星星燈',
+          language: 'zh',
+          paletteIndex: 1,
+          createdAt: day2,
+          coverDataUrl: createSampleCoverDataUrl('長髮公主的星星燈', 1)
+        }
+      ];
+    }
+
+    // Gold Foil Four-Point Star SVG
+    function GoldStar({ className = '', size = 22, style = {} }) {
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 32 32"
+          className={`pointer-events-none select-none ${className}`}
+          style={style}
+        >
+          <defs>
+            <linearGradient id="goldStarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FFF7CC" />
+              <stop offset="45%" stopColor="#DFB25C" />
+              <stop offset="100%" stopColor="#A9792B" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M16 1 C17.4 10.5, 21.5 14.6, 31 16 C21.5 17.4, 17.4 21.5, 16 31 C14.6 21.5, 10.5 17.4, 1 16 C10.5 14.6, 14.6 10.5, 16 1 Z"
+            fill="url(#goldStarGrad)"
+            stroke="#FFFDF2"
+            strokeWidth="0.8"
+          />
+        </svg>
+      );
+    }
+
+    // Fairytale Pastel Castle Header Artwork
+    function CastleHeaderArt() {
+      return (
+        <svg viewBox="0 0 560 135" className="w-full max-w-[520px] h-auto mx-auto drop-shadow-sm select-none">
+          <defs>
+            <linearGradient id="roofPink" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#F6B8C8" />
+              <stop offset="100%" stopColor="#DC8DA2" />
+            </linearGradient>
+            <linearGradient id="roofLav" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#DFCEF2" />
+              <stop offset="100%" stopColor="#B89ED6" />
+            </linearGradient>
+            <linearGradient id="wallCream" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FFFDF9" />
+              <stop offset="100%" stopColor="#F9E8EC" />
+            </linearGradient>
+            <linearGradient id="goldTrim" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#F9E59E" />
+              <stop offset="50%" stopColor="#D6A654" />
+              <stop offset="100%" stopColor="#F5DC8E" />
+            </linearGradient>
+          </defs>
+
+          {/* Soft Pastel Clouds behind Castle */}
+          <g fill="#FFFFFF" opacity="0.92">
+            <circle cx="95" cy="98" r="24" />
+            <circle cx="122" cy="92" r="28" />
+            <circle cx="152" cy="99" r="22" />
+            <circle cx="410" cy="96" r="23" />
+            <circle cx="440" cy="90" r="29" />
+            <circle cx="468" cy="98" r="22" />
+          </g>
+
+          {/* Left Turret */}
+          <rect x="148" y="62" width="38" height="58" rx="4" fill="url(#wallCream)" stroke="#E3BAC4" strokeWidth="2" />
+          <polygon points="142,64 167,26 192,64" fill="url(#roofLav)" stroke="#B094CE" strokeWidth="2" />
+          <line x1="167" y1="26" x2="167" y2="14" stroke="url(#goldTrim)" strokeWidth="2.5" />
+          <path d="M167,14 L181,18 L167,22 Z" fill="#F4B2C2" />
+          <path d="M162,84 A5,5 0 0,1 172,84 L172,96 L162,96 Z" fill="#D5C2E8" />
+
+          {/* Right Turret */}
+          <rect x="374" y="62" width="38" height="58" rx="4" fill="url(#wallCream)" stroke="#E3BAC4" strokeWidth="2" />
+          <polygon points="368,64 393,26 418,64" fill="url(#roofLav)" stroke="#B094CE" strokeWidth="2" />
+          <line x1="393" y1="26" x2="393" y2="14" stroke="url(#goldTrim)" strokeWidth="2.5" />
+          <path d="M393,14 L407,18 L393,22 Z" fill="#F4B2C2" />
+          <path d="M388,84 A5,5 0 0,1 398,84 L398,96 L388,96 Z" fill="#D5C2E8" />
+
+          {/* Center Keep */}
+          <rect x="184" y="52" width="192" height="68" rx="6" fill="url(#wallCream)" stroke="#E3BAC4" strokeWidth="2" />
+          {/* Battlements */}
+          <rect x="184" y="45" width="16" height="10" rx="2" fill="#FFFDF9" stroke="#E3BAC4" strokeWidth="1.5" />
+          <rect x="210" y="45" width="16" height="10" rx="2" fill="#FFFDF9" stroke="#E3BAC4" strokeWidth="1.5" />
+          <rect x="334" y="45" width="16" height="10" rx="2" fill="#FFFDF9" stroke="#E3BAC4" strokeWidth="1.5" />
+          <rect x="360" y="45" width="16" height="10" rx="2" fill="#FFFDF9" stroke="#E3BAC4" strokeWidth="1.5" />
+
+          {/* Center Tall Spire */}
+          <rect x="242" y="34" width="76" height="36" fill="url(#wallCream)" stroke="#E3BAC4" strokeWidth="2" />
+          <polygon points="234,36 280,4 326,36" fill="url(#roofPink)" stroke="#CE7D93" strokeWidth="2" />
+          <circle cx="280" cy="4" r="4" fill="url(#goldTrim)" />
+          {/* Gold Heart Emblem */}
+          <path d="M280,25 C276,20 270,22 270,27 C270,32 280,37 280,37 C280,37 290,32 290,27 C290,22 284,20 280,25 Z" fill="url(#goldTrim)" />
+
+          {/* Foreground Cloud Pillow */}
+          <g fill="#FFFFFF">
+            <ellipse cx="280" cy="122" rx="195" ry="16" />
+            <circle cx="130" cy="116" r="18" />
+            <circle cx="175" cy="114" r="20" />
+            <circle cx="385" cy="114" r="20" />
+            <circle cx="430" cy="116" r="18" />
+          </g>
+        </svg>
+      );
+    }
+
+    // Top-of-stack Cute Fairytale Topper (Crown + Rose for Left Stack; Tower + Lantern for Right Stack)
+    function StackTopper({ side }) {
+      if (side === 'left') {
+        return (
+          <svg viewBox="0 0 180 68" className="w-36 sm:w-44 h-auto -mb-3 z-20 pointer-events-none select-none sticker-diecut-sm">
+            {/* Golden Princess Crown */}
+            <g transform="translate(46, 10)">
+              <path d="M8,42 L4,14 L24,28 L42,8 L60,28 L80,14 L76,42 Z" fill="#F6D87A" stroke="#B78534" strokeWidth="2.5" strokeLinejoin="round" />
+              <rect x="7" y="40" width="70" height="8" rx="4" fill="#E8BE58" stroke="#B78534" strokeWidth="2" />
+              <circle cx="4" cy="12" r="4" fill="#FFF3B8" stroke="#B78534" strokeWidth="1.5" />
+              <circle cx="42" cy="6" r="4.5" fill="#FFF3B8" stroke="#B78534" strokeWidth="1.5" />
+              <circle cx="80" cy="12" r="4" fill="#FFF3B8" stroke="#B78534" strokeWidth="1.5" />
+              <circle cx="42" cy="31" r="4.5" fill="#F29BB2" />
+              <circle cx="24" cy="33" r="3" fill="#B6D8F2" />
+              <circle cx="60" cy="33" r="3" fill="#B6D8F2" />
+            </g>
+            {/* Pastel Pink Rose & Leaves */}
+            <g transform="translate(116, 24)">
+              <ellipse cx="26" cy="24" rx="11" ry="6" transform="rotate(-22 26 24)" fill="#A8CFA7" stroke="#6E966D" strokeWidth="1.5" />
+              <ellipse cx="6" cy="26" rx="10" ry="5.5" transform="rotate(20 6 26)" fill="#B8DCB7" stroke="#6E966D" strokeWidth="1.5" />
+              <circle cx="16" cy="18" r="14" fill="#F7B7C8" stroke="#C5778C" strokeWidth="2" />
+              <path d="M10,16 C12,10 22,10 22,17 C22,22 14,24 12,19" fill="none" stroke="#C5778C" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          </svg>
+        );
+      }
+      return (
+        <svg viewBox="0 0 180 74" className="w-36 sm:w-44 h-auto -mb-3 z-20 pointer-events-none select-none sticker-diecut-sm">
+          {/* Mini Fairytale Tower */}
+          <g transform="translate(46, 4)">
+            <rect x="22" y="28" width="26" height="36" rx="3" fill="#F7E4C8" stroke="#B89468" strokeWidth="2" />
+            <polygon points="16,30 35,4 54,30" fill="#CFAEE8" stroke="#8C6AA8" strokeWidth="2" strokeLinejoin="round" />
+            <path d="M31,44 A4,4 0 0,1 39,44 L39,54 L31,54 Z" fill="#8C6AA8" />
+            <circle cx="35" cy="3" r="3.5" fill="#F6D87A" stroke="#B78534" strokeWidth="1.5" />
+          </g>
+          {/* Floating Glowing Lantern */}
+          <g transform="translate(106, 22)">
+            <rect x="4" y="8" width="26" height="34" rx="8" fill="#FFF2B2" stroke="#D19C3E" strokeWidth="2" />
+            <ellipse cx="17" cy="8" rx="12" ry="3.5" fill="#F5C96B" stroke="#D19C3E" strokeWidth="1.5" />
+            <ellipse cx="17" cy="42" rx="12" ry="3.5" fill="#F5C96B" stroke="#D19C3E" strokeWidth="1.5" />
+            <circle cx="17" cy="25" r="7" fill="#FFE074" opacity="0.85" />
+            <path d="M17,19 L18.5,23.5 L23,25 L18.5,26.5 L17,31 L15.5,26.5 L11,25 L15.5,23.5 Z" fill="#FFFFFF" />
+          </g>
+        </svg>
+      );
+    }
+
+    // 2.5D Isometric Hardcover Book Component
+    function Book25D({ book, index, totalCount, isNewest, side, onSelect, newLabel }) {
+      const palette = BOOK_PALETTES[book.paletteIndex % BOOK_PALETTES.length];
+      // Slight natural horizontal offset so the stack looks organically piled
+      const offsets = [0, -7, 6, -4, 8, -6, 4];
+      const tiltOffsets = [0, -0.7, 0.6, -0.4, 0.8, -0.5, 0.3];
+      const offsetX = offsets[index % offsets.length];
+      const rotateDeg = tiltOffsets[index % tiltOffsets.length];
+      const hasRibbon = index % 2 === 0 || isNewest;
+      const isLeft = side === 'left';
+
+      return (
+        <div
+          onClick={() => onSelect(book)}
+          style={{
+            transform: `translateX(${offsetX}px) rotate(${rotateDeg}deg)`,
+            zIndex: 10 + index
+          }}
+          className={`group relative cursor-pointer select-none transition-transform duration-300 hover:scale-105 hover:-translate-y-1 ${
+            isNewest ? 'animate-book-drop' : ''
+          }`}
+        >
+          {/* Sparkle Burst when newly dropped */}
+          {isNewest && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-30">
+              <GoldStar size={24} className="animate-burst absolute" style={{ '--tx': '-75px', '--ty': '-35px' }} />
+              <GoldStar size={20} className="animate-burst absolute" style={{ '--tx': '78px', '--ty': '-30px' }} />
+              <GoldStar size={18} className="animate-burst absolute" style={{ '--tx': '-55px', '--ty': '25px' }} />
+              <GoldStar size={22} className="animate-burst absolute" style={{ '--tx': '62px', '--ty': '22px' }} />
+            </div>
+          )}
+
+          {/* NEW Sticker Tag */}
+          {isNewest && (
+            <div
+              className={`absolute -top-3 ${
+                isLeft ? '-left-3 -rotate-12' : '-right-3 rotate-12'
+              } z-30 gold-foil-bg text-[#6A4518] font-bold text-[11px] px-2.5 py-0.5 rounded-full border-2 border-white shadow-md tracking-wider`}
+            >
+              ★ {newLabel}
+            </div>
+          )}
+
+          {/* 2.5D Hardcover Book SVG with White Die-Cut Sticker Outline */}
+          <svg
+            viewBox="0 0 320 78"
+            className="w-[265px] sm:w-[310px] md:w-[335px] h-auto sticker-diecut-sm overflow-visible"
+          >
+            {/* Top 2.5D Cover Perspective Plane */}
+            <polygon
+              points={isLeft ? '28,16 286,6 306,20 46,32' : '34,6 292,16 274,32 14,20'}
+              fill={palette.coverTop}
+              stroke={palette.border}
+              strokeWidth="2.2"
+              strokeLinejoin="round"
+            />
+            {/* Cream Pages Edge (Side Fore-edge) */}
+            <polygon
+              points={isLeft ? '284,8 304,21 304,54 284,42' : '36,8 16,21 16,54 36,42'}
+              fill="#FAF3E3"
+              stroke={palette.border}
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+            {/* Page Lines */}
+            {isLeft ? (
+              <g stroke="#DFCDAE" strokeWidth="1.2">
+                <line x1="286" y1="16" x2="302" y2="27" />
+                <line x1="286" y1="24" x2="302" y2="35" />
+                <line x1="286" y1="32" x2="302" y2="43" />
+              </g>
+            ) : (
+              <g stroke="#DFCDAE" strokeWidth="1.2">
+                <line x1="34" y1="16" x2="18" y2="27" />
+                <line x1="34" y1="24" x2="18" y2="35" />
+                <line x1="34" y1="32" x2="18" y2="43" />
+              </g>
+            )}
+
+            {/* Rounded Front 2.5D Hardcover Spine */}
+            <path
+              d={
+                isLeft
+                  ? 'M 22,22 C 10,33 10,55 24,66 L 284,56 L 284,18 Z'
+                  : 'M 298,22 C 310,33 310,55 296,66 L 36,56 L 36,18 Z'
+              }
+              fill={palette.spineMain}
+              stroke={palette.border}
+              strokeWidth="2.4"
+              strokeLinejoin="round"
+            />
+
+            {/* Spine Highlight Sheen */}
+            <path
+              d={
+                isLeft
+                  ? 'M 26,27 L 280,22 L 280,30 L 22,35 Z'
+                  : 'M 294,27 L 40,22 L 40,30 L 298,35 Z'
+              }
+              fill={palette.spineLight}
+              opacity="0.65"
+            />
+
+            {/* Spine Bottom Shadow */}
+            <path
+              d={
+                isLeft
+                  ? 'M 22,57 L 282,48 L 282,55 L 25,64 Z'
+                  : 'M 298,57 L 38,48 L 38,55 L 295,64 Z'
+              }
+              fill={palette.spineDark}
+              opacity="0.55"
+            />
+
+            {/* Decorative Gold Foil Spine Bands */}
+            {isLeft ? (
+              <g>
+                <path d="M 46,21 C 40,34 40,51 47,64" fill="none" stroke={palette.goldBand} strokeWidth="3.5" />
+                <path d="M 264,18 C 260,31 260,45 264,56" fill="none" stroke={palette.goldBand} strokeWidth="3.5" />
+              </g>
+            ) : (
+              <g>
+                <path d="M 274,21 C 280,34 280,51 273,64" fill="none" stroke={palette.goldBand} strokeWidth="3.5" />
+                <path d="M 56,18 C 60,31 60,45 56,56" fill="none" stroke={palette.goldBand} strokeWidth="3.5" />
+              </g>
+            )}
+
+            {/* Book Title Printed on Spine */}
+            <text
+              x="160"
+              y="45"
+              textAnchor="middle"
+              fill={palette.text}
+              fontSize="14.5"
+              fontWeight="700"
+              transform={isLeft ? 'rotate(-2.1 160 42)' : 'rotate(2.1 160 42)'}
+              style={{ fontFamily: "'Playfair Display', 'Noto Sans TC', serif" }}
+            >
+              {book.title.length > 18 ? book.title.slice(0, 17) + '…' : book.title}
+            </text>
+
+            {/* Silk Ribbon Bookmark Hanging Down */}
+            {hasRibbon && (
+              <g transform={isLeft ? 'translate(216, 20)' : 'translate(84, 20)'}>
+                <path
+                  d="M0,0 L16,0 L16,52 L8,44 L0,52 Z"
+                  fill={palette.ribbon}
+                  stroke={palette.border}
+                  strokeWidth="1.6"
+                />
+                <circle cx="8" cy="14" r="5.5" fill="#F8DF8B" stroke="#B78534" strokeWidth="1.4" />
+              </g>
+            )}
+          </svg>
+        </div>
+      );
+    }
+
+    // Scalloped Rosette Scholarship Medallion (Inspired by bottom-left sticker in reference)
+    function RosetteScholarshipMedallion({ amount, bookCount, t, onClick }) {
+      // Generate 16-scallop SVG flower path
+      const scallops = 16;
+      const cx = 80, cy = 80, rOuter = 74, rInner = 65;
+      let d = '';
+      for (let i = 0; i < scallops; i++) {
+        const a1 = (i / scallops) * Math.PI * 2;
+        const aMid = ((i + 0.5) / scallops) * Math.PI * 2;
+        const a2 = ((i + 1) / scallops) * Math.PI * 2;
+        const x1 = cx + Math.cos(a1) * rInner;
+        const y1 = cy + Math.sin(a1) * rInner;
+        const xm = cx + Math.cos(aMid) * rOuter;
+        const ym = cy + Math.sin(aMid) * rOuter;
+        const x2 = cx + Math.cos(a2) * rInner;
+        const y2 = cy + Math.sin(a2) * rInner;
+        if (i === 0) d += `M ${x1.toFixed(1)},${y1.toFixed(1)} `;
+        d += `Q ${xm.toFixed(1)},${ym.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)} `;
+      }
+      d += 'Z';
+
+      return (
+        <button
+          onClick={onClick}
+          title={t.ruleShort}
+          className="group relative cursor-pointer focus:outline-none transition-transform duration-300 hover:scale-105 active:scale-95 sticker-diecut"
+        >
+          <svg viewBox="0 0 160 160" className="w-36 h-36 sm:w-40 sm:h-40">
+            <defs>
+              <radialGradient id="rosettePink" cx="35%" cy="28%" r="70%">
+                <stop offset="0%" stopColor="#F8CED7" />
+                <stop offset="65%" stopColor="#E19AA8" />
+                <stop offset="100%" stopColor="#C97E8E" />
+              </radialGradient>
+              <linearGradient id="goldRing" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#FFF4C2" />
+                <stop offset="50%" stopColor="#D6A54E" />
+                <stop offset="100%" stopColor="#F5DC8E" />
+              </linearGradient>
+            </defs>
+            <path d={d} fill="url(#rosettePink)" stroke="#FFFFFF" strokeWidth="4" />
+            <circle cx="80" cy="80" r="56" fill="none" stroke="url(#goldRing)" strokeWidth="3.5" />
+            <circle cx="80" cy="80" r="51" fill="none" stroke="#FFF8E7" strokeWidth="1" strokeDasharray="3 3" />
+
+            {/* Top Crown Icon */}
+            <path d="M68,36 L66,26 L74,31 L80,23 L86,31 L94,26 L92,36 Z" fill="url(#goldRing)" />
+
+            {/* Title */}
+            <text x="80" y="52" textAnchor="middle" fill="#FFFDF9" fontSize="11.5" fontWeight="700" letterSpacing="0.5">
+              {t.scholarshipBadgeTitle}
+            </text>
+
+            {/* Big Dollar Amount */}
+            <text
+              x="80"
+              y="92"
+              textAnchor="middle"
+              fill="#FFF8D6"
+              stroke="#9D6C27"
+              strokeWidth="1.2"
+              fontSize="36"
+              fontWeight="900"
+              style={{ fontFamily: "'Fredoka', sans-serif" }}
+            >
+              ${amount}
+            </text>
+
+            {/* Subtitle Book Count */}
+            <text x="80" y="113" textAnchor="middle" fill="#FFF7F9" fontSize="11.5" fontWeight="700">
+              {bookCount} {t.booksCountUnit} · {t.ruleShort.split('｜')[0]}
+            </text>
+
+            {/* Little Heart at bottom */}
+            <path d="M80,124 C77,120 73,122 73,125.5 C73,129 80,133 80,133 C80,133 87,129 87,125.5 C87,122 83,120 80,124 Z" fill="#FFF4C2" />
+          </svg>
+        </button>
+      );
+    }
+
+    // Photo Crop & Upload Modal
+    function AddBookModal({ isOpen, onClose, onSave, t }) {
+      const [rawImage, setRawImage] = useState(null);
+      const [zoom, setZoom] = useState(1.1);
+      const [rotation, setRotation] = useState(0);
+      const [offset, setOffset] = useState({ x: 0, y: 0 });
+      const [isDragging, setIsDragging] = useState(false);
+      const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+      const [title, setTitle] = useState('');
+      const [language, setLanguage] = useState('en');
+      const fileInputRef = useRef(null);
+      const imgObjRef = useRef(null);
+
+      useEffect(() => {
+        if (isOpen) {
+          setRawImage(null);
+          setZoom(1.1);
+          setRotation(0);
+          setOffset({ x: 0, y: 0 });
+          setTitle('');
+          setLanguage('en');
+        }
+      }, [isOpen]);
+
+      if (!isOpen) return null;
+
+      const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setRawImage(ev.target.result);
+          setZoom(1.1);
+          setRotation(0);
+          setOffset({ x: 0, y: 0 });
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const handleUseSample = () => {
+        const sample = createSampleCoverDataUrl(title || 'Princess Story', Math.floor(Math.random() * 4));
+        setRawImage(sample);
+        setZoom(1.0);
+        setRotation(0);
+        setOffset({ x: 0, y: 0 });
+      };
+
+      const handlePointerDown = (e) => {
+        if (!rawImage) return;
+        setIsDragging(true);
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        setDragStart({ x: clientX - offset.x, y: clientY - offset.y });
+      };
+
+      const handlePointerMove = (e) => {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        setOffset({
+          x: clientX - dragStart.x,
+          y: clientY - dragStart.y
+        });
+      };
+
+      const handlePointerUp = () => setIsDragging(false);
+
+      const generateCroppedCover = () => {
+        if (!rawImage || !imgObjRef.current) {
+          return createSampleCoverDataUrl(title || 'My Storybook', Math.floor(Math.random() * 4));
+        }
+        const canvas = document.createElement('canvas');
+        const outW = 320;
+        const outH = 400;
+        canvas.width = outW;
+        canvas.height = outH;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#FFF5F7';
+        ctx.fillRect(0, 0, outW, outH);
+
+        const img = imgObjRef.current;
+        const previewW = 220;
+        const scaleFactor = outW / previewW;
+
+        ctx.save();
+        ctx.translate(outW / 2 + offset.x * scaleFactor, outH / 2 + offset.y * scaleFactor);
+        ctx.rotate((rotation * Math.PI) / 180);
+        const baseScale = Math.max(outW / img.naturalWidth, outH / img.naturalHeight) * zoom;
+        ctx.scale(baseScale, baseScale);
+        ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+        ctx.restore();
+
+        return canvas.toDataURL('image/jpeg', 0.88);
+      };
+
+      const handleConfirmSave = () => {
+        const finalTitle =
+          title.trim() ||
+          (language === 'en' ? `Fairytale Vol.${Math.floor(Math.random() * 9 + 1)}` : `童話故事集 ${Math.floor(Math.random() * 9 + 1)}`);
+        const coverDataUrl = generateCroppedCover();
+        onSave({
+          id: 'book-' + Date.now(),
+          title: finalTitle,
+          language,
+          paletteIndex: Math.floor(Math.random() * BOOK_PALETTES.length),
+          createdAt: new Date().toISOString(),
+          coverDataUrl
+        });
+        onClose();
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#6D4C55]/45 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[36px] bg-gradient-to-b from-[#FFF9FA] to-[#FDECEF] border-4 border-white shadow-2xl p-6 max-h-[92vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-center text-[#784B58] mb-4">{t.modalTitle}</h2>
+
+            {/* Step 1: Photo & Crop */}
+            <div className="mb-4">
+              <p className="text-sm font-bold text-[#8A5A67] mb-2">{t.step1Photo}</p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 py-2 px-3 rounded-full bg-[#E898AC] hover:bg-[#DC849A] text-white font-bold text-xs sm:text-sm shadow transition cursor-pointer"
+                >
+                  📷 {t.takePhoto}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUseSample}
+                  className="py-2 px-3 rounded-full bg-[#F5E0A3] hover:bg-[#ECD082] text-[#6E5322] font-bold text-xs sm:text-sm shadow transition cursor-pointer"
+                >
+                  👑 {t.useSample}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Interactive Crop Frame */}
+              <div className="flex flex-col items-center">
+                <div
+                  onMouseDown={handlePointerDown}
+                  onMouseMove={handlePointerMove}
+                  onMouseUp={handlePointerUp}
+                  onMouseLeave={handlePointerUp}
+                  onTouchStart={handlePointerDown}
+                  onTouchMove={handlePointerMove}
+                  onTouchEnd={handlePointerUp}
+                  className="relative w-[220px] h-[275px] rounded-[24px] border-4 border-[#E5BE73] bg-[#FFF2F5] overflow-hidden shadow-inner flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+                >
+                  {rawImage ? (
+                    <img
+                      ref={imgObjRef}
+                      src={rawImage}
+                      alt="Book Preview"
+                      draggable={false}
+                      style={{
+                        transform: `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg) scale(${zoom})`,
+                        transformOrigin: 'center center'
+                      }}
+                      className="max-w-none w-full h-full object-cover pointer-events-none"
+                    />
+                  ) : (
+                    <div className="text-center px-4 text-[#B58894]">
+                      <div className="text-4xl mb-2">📖✨</div>
+                      <div className="text-xs font-medium">{t.cropHint}</div>
+                    </div>
+                  )}
+                  {/* Corner Crop Guides */}
+                  <div className="absolute inset-3 border-2 border-dashed border-white/80 rounded-[16px] pointer-events-none" />
+                </div>
+
+                {rawImage && (
+                  <div className="w-full mt-3 px-2 space-y-2">
+                    <p className="text-[11px] text-center text-[#9A6D79]">{t.cropHint}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-[#784B58] whitespace-nowrap">{t.zoomLabel}</span>
+                      <input
+                        type="range"
+                        min="0.7"
+                        max="2.6"
+                        step="0.05"
+                        value={zoom}
+                        onChange={(e) => setZoom(parseFloat(e.target.value))}
+                        className="flex-1 accent-[#DF8FA3]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setRotation((r) => (r + 90) % 360)}
+                        className="px-2.5 py-1 rounded-full bg-white border border-[#E7B5C0] text-xs font-bold text-[#784B58] shadow-sm hover:bg-[#FFF5F7] cursor-pointer"
+                      >
+                        ↻ {t.rotateLabel}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Step 2: Book Title */}
+            <div className="mb-4">
+              <label className="block text-sm font-bold text-[#8A5A67] mb-1.5">{t.bookTitleLabel}</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={t.bookTitlePlaceholder}
+                className="w-full px-4 py-2.5 rounded-full bg-white border-2 border-[#ECC2CC] focus:border-[#D6A85A] focus:outline-none text-sm text-[#6D4C55] font-medium"
+              />
+            </div>
+
+            {/* Step 3: Language Stack Choice */}
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-[#8A5A67] mb-1.5">{t.langSelectLabel}</label>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setLanguage('en')}
+                  className={`py-2.5 px-3 rounded-full text-xs sm:text-sm font-bold border-2 transition cursor-pointer ${
+                    language === 'en'
+                      ? 'bg-[#BAD8F2] border-[#759EC2] text-[#355675] shadow-sm'
+                      : 'bg-white border-[#F0D3DA] text-[#9A717C]'
+                  }`}
+                >
+                  🏰 {t.langEn}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage('zh')}
+                  className={`py-2.5 px-3 rounded-full text-xs sm:text-sm font-bold border-2 transition cursor-pointer ${
+                    language === 'zh'
+                      ? 'bg-[#F2B8C6] border-[#B97889] text-[#6B3B48] shadow-sm'
+                      : 'bg-white border-[#F0D3DA] text-[#9A717C]'
+                  }`}
+                >
+                  🌸 {t.langZh}
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-1/3 py-3 rounded-full bg-white border-2 border-[#EBC6D0] text-[#8A5A67] font-bold text-sm hover:bg-[#FFF5F7] cursor-pointer"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSave}
+                className="w-2/3 py-3 rounded-full gold-foil-bg border-2 border-white text-[#634115] font-extrabold text-sm shadow-lg hover:brightness-105 active:scale-95 transition cursor-pointer"
+              >
+                {t.saveAndDrop}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main App Component
+    function App() {
+      const [lang, setLang] = useState('zh');
+      const [viewMode, setViewMode] = useState('week'); // 'week' (default) | 'all'
+      const [weekOffset, setWeekOffset] = useState(0); // 0 = current Sun-Sat week
+      const [books, setBooks] = useState(() => {
+        try {
+          const saved = localStorage.getItem('fairytale_castle_books_v1');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          }
+        } catch (e) {}
+        return createInitialBooks();
+      });
+      const [newestBookId, setNewestBookId] = useState(null);
+      const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+      const [selectedBook, setSelectedBook] = useState(null);
+      const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('fairytale_castle_books_v1', JSON.stringify(books));
+        } catch (e) {}
+      }, [books]);
+
+      const t = I18N[lang];
+      const { sunday, saturday } = useMemo(() => getWeekBounds(new Date(), weekOffset), [weekOffset]);
+
+      // Filter books based on viewMode ('week' vs 'all')
+      const displayedBooks = useMemo(() => {
+        const sorted = [...books].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        if (viewMode === 'all') return sorted;
+        return sorted.filter((b) => {
+          const time = new Date(b.createdAt).getTime();
+          return time >= sunday.getTime() && time <= saturday.getTime();
+        });
+      }, [books, viewMode, sunday, saturday]);
+
+      // Always calculate weekly scholarship from the active week's books
+      const activeWeekBooks = useMemo(() => {
+        return books.filter((b) => {
+          const time = new Date(b.createdAt).getTime();
+          return time >= sunday.getTime() && time <= saturday.getTime();
+        });
+      }, [books, sunday, saturday]);
+
+      const scholarshipAmount = calculateScholarship(activeWeekBooks.length);
+
+      const enBooks = displayedBooks.filter((b) => b.language === 'en');
+      const zhBooks = displayedBooks.filter((b) => b.language === 'zh');
+
+      const handleAddBook = (newBook) => {
+        // Ensure new book falls inside the currently viewed week if user navigated weeks, or today if current week
+        let bookToSave = { ...newBook };
+        if (weekOffset !== 0) {
+          const midWeek = new Date(sunday.getTime() + 12 * 3600 * 1000);
+          bookToSave.createdAt = midWeek.toISOString();
+        }
+        setBooks((prev) => [...prev, bookToSave]);
+        setNewestBookId(bookToSave.id);
+        setTimeout(() => {
+          setNewestBookId((curr) => (curr === bookToSave.id ? null : curr));
+        }, 2500);
+      };
+
+      const handleDeleteBook = (id) => {
+        setBooks((prev) => prev.filter((b) => b.id !== id));
+        setSelectedBook(null);
+      };
+
+      return (
+        <div className="relative min-h-screen pb-32 overflow-hidden">
+          {/* Scattered Gold Foil Stars Background */}
+          <GoldStar size={26} className="fixed top-12 left-[6%] animate-twinkle" />
+          <GoldStar size={18} className="fixed top-36 left-[18%] animate-twinkle" style={{ animationDelay: '0.8s' }} />
+          <GoldStar size={28} className="fixed top-16 right-[8%] animate-twinkle" style={{ animationDelay: '1.3s' }} />
+          <GoldStar size={20} className="fixed top-48 right-[20%] animate-twinkle" style={{ animationDelay: '2.1s' }} />
+          <GoldStar size={24} className="fixed bottom-32 left-[8%] animate-twinkle" style={{ animationDelay: '1.6s' }} />
+          <GoldStar size={22} className="fixed bottom-28 right-[9%] animate-twinkle" style={{ animationDelay: '0.5s' }} />
+
+          {/* Top Floating Cloud Controls & Castle Header */}
+          <header className="relative z-20 max-w-5xl mx-auto pt-3 px-4">
+            {/* Top Bar: View Toggle Cloud & Bilingual Toggle Cloud */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+              {/* Cloud Pill: This Week vs All-Time Tower */}
+              <div className="inline-flex items-center bg-white/90 backdrop-blur-sm p-1 rounded-full border-2 border-[#F2CFD8] shadow-sm">
+                <button
+                  onClick={() => setViewMode('week')}
+                  className={`px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer ${
+                    viewMode === 'week'
+                      ? 'bg-[#E99DB0] text-white shadow-sm'
+                      : 'text-[#8C5E6B] hover:text-[#6D4C55]'
+                  }`}
+                >
+                  ☁️ {t.thisWeek} ({activeWeekBooks.length})
+                </button>
+                <button
+                  onClick={() => setViewMode('all')}
+                  className={`px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer ${
+                    viewMode === 'all'
+                      ? 'bg-[#C7AEE3] text-white shadow-sm'
+                      : 'text-[#8C5E6B] hover:text-[#6D4C55]'
+                  }`}
+                >
+                  🏰 {t.allTime} ({books.length})
+                </button>
+              </div>
+
+              {/* Cloud Pill: Traditional Chinese / English Switch */}
+              <button
+                onClick={() => setLang((l) => (l === 'zh' ? 'en' : 'zh'))}
+                className="px-4 py-1.5 rounded-full bg-white/95 border-2 border-[#E5BE73] text-xs sm:text-sm font-bold text-[#7A5526] shadow-sm hover:bg-[#FFF9EB] transition cursor-pointer"
+              >
+                🌐 {t.langBtn}
+              </button>
+            </div>
+
+            {/* Pastel Fairytale Castle Illustration & Title */}
+            <div className="text-center -mt-1">
+              <CastleHeaderArt />
+              <h1 className="font-serif-title text-2xl sm:text-4xl font-bold text-[#784957] tracking-wide -mt-3 drop-shadow-sm">
+                {t.castleTitle}
+              </h1>
+              <p className="text-xs sm:text-sm text-[#9B6D7A] font-medium mt-0.5">{t.subtitle}</p>
+            </div>
+
+            {/* Floating Cloud Week Navigator (Sunday to Saturday) */}
+            {viewMode === 'week' && (
+              <div className="mt-3 flex flex-col items-center">
+                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/90 border-2 border-[#F3D5DD] shadow-sm">
+                  <button
+                    onClick={() => setWeekOffset((w) => w - 1)}
+                    className="w-7 h-7 rounded-full bg-[#FCE9EE] hover:bg-[#F6D2DC] text-[#784957] font-bold flex items-center justify-center cursor-pointer"
+                  >
+                    ‹
+                  </button>
+                  <div className="text-center">
+                    <div className="text-[11px] font-bold text-[#A67885]">{t.weekRangeLabel}</div>
+                    <div className="text-sm sm:text-base font-extrabold text-[#784957]">
+                      {formatDateShort(sunday)} ({t.dayNames[0]}) — {formatDateShort(saturday)} ({t.dayNames[6]})
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setWeekOffset((w) => Math.min(0, w + 1))}
+                    disabled={weekOffset === 0}
+                    className={`w-7 h-7 rounded-full font-bold flex items-center justify-center ${
+                      weekOffset === 0
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'bg-[#FCE9EE] hover:bg-[#F6D2DC] text-[#784957] cursor-pointer'
+                    }`}
+                  >
+                    ›
+                  </button>
+                </div>
+
+                {/* Progress Hint Pill */}
+                <div className="mt-2 text-xs font-bold text-[#8E5B69] bg-[#FFF8EA]/90 px-4 py-1 rounded-full border border-[#EBD094]">
+                  {activeWeekBooks.length < 2
+                    ? t.goalProgress2.replace('{n}', String(2 - activeWeekBooks.length))
+                    : t.goalUnlocked}
+                </div>
+              </div>
+            )}
+          </header>
+
+          {/* Main 2.5D Book Stacks Stage (Left: English Books, Right: Chinese Books) */}
+          <main className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 mt-4 sm:mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-6 items-end min-h-[360px]">
+              {/* LEFT STACK: English Books */}
+              <section className="flex flex-col items-center justify-end">
+                {/* Stack Topper (Crown & Rose) */}
+                {enBooks.length > 0 && <StackTopper side="left" />}
+
+                {/* Stacked 2.5D Books (Newest on Top) */}
+                <div className="flex flex-col-reverse items-center -space-y-2">
+                  {enBooks.length === 0 ? (
+                    <div className="w-64 py-10 px-5 rounded-[32px] bg-white/75 border-2 border-dashed border-[#B6D0E8] text-center text-xs sm:text-sm text-[#6C8EAE] font-medium">
+                      👑 {t.emptyStack}
+                    </div>
+                  ) : (
+                    enBooks.map((book, idx) => (
+                      <Book25D
+                        key={book.id}
+                        book={book}
+                        index={idx}
+                        totalCount={enBooks.length}
+                        isNewest={book.id === newestBookId}
+                        side="left"
+                        onSelect={setSelectedBook}
+                        newLabel={t.newTag}
+                      />
+                    ))
+                  )}
+                </div>
+
+                {/* Soft Cloud Pedestal Base */}
+                <div className="relative -mt-2 flex flex-col items-center">
+                  <div className="w-64 sm:w-72 h-5 rounded-full bg-white/95 border-2 border-[#DCEAF7] shadow-md" />
+                  <div className="mt-2 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 border-2 border-[#B9D6F0] shadow-sm">
+                    <span className="text-sm font-extrabold text-[#496F94]">🏰 {t.enStackTitle}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#DCECF9] text-xs font-black text-[#3B5F82]">
+                      {enBooks.length} {t.booksCountUnit}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              {/* RIGHT STACK: Chinese Books */}
+              <section className="flex flex-col items-center justify-end">
+                {/* Stack Topper (Mini Tower & Lantern) */}
+                {zhBooks.length > 0 && <StackTopper side="right" />}
+
+                {/* Stacked 2.5D Books (Newest on Top) */}
+                <div className="flex flex-col-reverse items-center -space-y-2">
+                  {zhBooks.length === 0 ? (
+                    <div className="w-64 py-10 px-5 rounded-[32px] bg-white/75 border-2 border-dashed border-[#EAB8C6] text-center text-xs sm:text-sm text-[#A66B7B] font-medium">
+                      🌸 {t.emptyStack}
+                    </div>
+                  ) : (
+                    zhBooks.map((book, idx) => (
+                      <Book25D
+                        key={book.id}
+                        book={book}
+                        index={idx}
+                        totalCount={zhBooks.length}
+                        isNewest={book.id === newestBookId}
+                        side="right"
+                        onSelect={setSelectedBook}
+                        newLabel={t.newTag}
+                      />
+                    ))
+                  )}
+                </div>
+
+                {/* Soft Cloud Pedestal Base */}
+                <div className="relative -mt-2 flex flex-col items-center">
+                  <div className="w-64 sm:w-72 h-5 rounded-full bg-white/95 border-2 border-[#F7DCE3] shadow-md" />
+                  <div className="mt-2 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 border-2 border-[#F0B8C7] shadow-sm">
+                    <span className="text-sm font-extrabold text-[#7D4756]">🌸 {t.zhStackTitle}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#FCE4EB] text-xs font-black text-[#7D4756]">
+                      {zhBooks.length} {t.booksCountUnit}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </main>
+
+          {/* Bottom-Left Scalloped Rosette Scholarship Medallion (Matching Reference Sticker) */}
+          <div className="fixed bottom-3 left-3 sm:bottom-5 sm:left-6 z-30 animate-float">
+            <RosetteScholarshipMedallion
+              amount={scholarshipAmount}
+              bookCount={activeWeekBooks.length}
+              t={t}
+              onClick={() => setIsRuleModalOpen(true)}
+            />
+          </div>
+
+          {/* Floating Bottom-Right / Center Primary Action Button */}
+          <div className="fixed bottom-5 right-4 sm:bottom-7 sm:right-8 z-30">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="group flex items-center gap-2.5 px-5 py-3.5 sm:px-6 sm:py-4 rounded-full bg-gradient-to-r from-[#EE9CB1] via-[#E5869F] to-[#D89EE0] text-white font-extrabold text-sm sm:text-base border-4 border-white shadow-xl hover:scale-105 active:scale-95 transition cursor-pointer"
+            >
+              <span className="text-xl sm:text-2xl group-hover:rotate-12 transition-transform">📸</span>
+              <span>{t.addBookBtn}</span>
+            </button>
+          </div>
+
+          {/* Add Book + Crop Modal */}
+          <AddBookModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            onSave={handleAddBook}
+            t={t}
+          />
+
+          {/* Book Cover Memory Detail Modal */}
+          {selectedBook && (
+            <div
+              onClick={() => setSelectedBook(null)}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#6D4C55]/45 backdrop-blur-sm"
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm rounded-[36px] bg-gradient-to-b from-[#FFF9FA] to-[#FCE9EE] border-4 border-white shadow-2xl p-6 text-center"
+              >
+                <div className="text-sm font-bold text-[#9A6B78] mb-2">{t.bookDetailTitle}</div>
+                <div className="mx-auto w-48 h-60 rounded-[22px] border-4 border-[#E5BE73] overflow-hidden shadow-lg mb-4 bg-white">
+                  <img
+                    src={selectedBook.coverDataUrl}
+                    alt={selectedBook.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="font-serif-title text-xl font-bold text-[#6D4C55] mb-1">{selectedBook.title}</h3>
+                <p className="text-xs font-medium text-[#9A6B78] mb-5">
+                  {t.readDate}: {new Date(selectedBook.createdAt).toLocaleDateString()} ·{' '}
+                  {selectedBook.language === 'en' ? 'English' : '繁體中文'}
+                </p>
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={() => handleDeleteBook(selectedBook.id)}
+                    className="flex-1 py-2.5 rounded-full bg-white border-2 border-[#F0C6D0] text-xs font-bold text-[#C2647C] hover:bg-[#FFF0F3] cursor-pointer"
+                  >
+                    🗑️ {t.deleteBook}
+                  </button>
+                  <button
+                    onClick={() => setSelectedBook(null)}
+                    className="flex-1 py-2.5 rounded-full bg-[#E898AC] text-white text-xs font-bold shadow hover:bg-[#DC849A] cursor-pointer"
+                  >
+                    {t.close}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Scholarship Rule Explanation Cloud Modal */}
+          {isRuleModalOpen && (
+            <div
+              onClick={() => setIsRuleModalOpen(false)}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#6D4C55]/45 backdrop-blur-sm"
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md rounded-[36px] bg-gradient-to-b from-[#FFFDF7] to-[#FDECEF] border-4 border-white shadow-2xl p-6"
+              >
+                <h3 className="text-lg sm:text-xl font-extrabold text-center text-[#784957] mb-4">
+                  {t.ruleModalTitle}
+                </h3>
+                <ul className="space-y-2.5 text-sm text-[#6D4C55] mb-6">
+                  {t.ruleLines.map((line, i) => (
+                    <li key={i} className="flex items-start gap-2 bg-white/80 p-3 rounded-2xl border border-[#F3D5DD]">
+                      <span className="text-base">🌟</span>
+                      <span className="font-medium leading-relaxed">{line}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => setIsRuleModalOpen(false)}
+                  className="w-full py-3 rounded-full gold-foil-bg border-2 border-white text-[#634115] font-extrabold text-sm shadow-md cursor-pointer"
+                >
+                  {t.close}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
