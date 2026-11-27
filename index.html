@@ -176,11 +176,11 @@
     @media (max-width:699px) { #lfApps { margin:0 -8px; } }
     #lfApps .lf-app { width:100%; }
     .lf-top { flex-wrap:wrap; }
-    #lfToolbar { margin:0; justify-content:flex-end; } /* 分頁列右緣對齊皇冠；＋ 在左邊，消失時分頁列不會移動 */
-    #lfToolbar .clc-tb-add { order:-1; }
-    @media (max-width:639px) { #lfToolbar { justify-content:flex-start; } #lfToolbar .clc-tb-add { order:0; } } /* 手機：分頁列靠左、＋ 緊接在放大鏡旁邊 */
+    .lf-tabbar.clc-tb { margin:0; justify-content:flex-end; } /* 分頁列右緣對齊皇冠；＋ 在左邊，消失時分頁列不會移動 */
+    .lf-tabbar.clc-tb .clc-tb-add { order:-1; }
+    @media (max-width:639px) { .lf-tabbar.clc-tb { justify-content:flex-start; } .lf-tabbar.clc-tb .clc-tb-add { order:0; } } /* 手機：分頁列靠左、＋ 緊接在放大鏡旁邊 */
     main > .clc-tb-search { order:-1; flex:none; } /* 搜尋框出現在上方，把內容往下擠 */
-    @media (max-width:639px) { #lfToolbar { order:3; flex-basis:100%; margin-top:14px; } }
+    @media (max-width:639px) { .lf-tabbar.clc-tb { order:3; flex-basis:100%; margin-top:14px; } }
     @media (min-width:640px) { .lf-top { align-items:flex-end; padding-top:calc(30px + env(safe-area-inset-top)); } .lf-top > :first-child { flex:1; min-width:0; } }
     html.lf-has-wall .clc-tb-tabs, html.lf-has-wall .clc-tb-btn { background:color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
     #lfApps .slot-cell { aspect-ratio:auto; }
@@ -314,9 +314,21 @@
       .lf-top, #panelApps, #panelFamily, .lf-family-scroll, .lfc-list { touch-action:pan-y; }
     }
     .lf-swiping { overflow:hidden; }
-    .lf-swipe-viewport { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:2; }
-    .lf-swipe-preview { width:100%; height:100%; display:grid; place-items:center; background:var(--surface); color:var(--text); will-change:transform; }
-    .lf-swipe-preview strong { font-size:52px; letter-spacing:.08em; }
+    html.lf-swiping body { position:relative; overflow:visible; }
+    .lf-swipe-frame, main > .lf-swipe-incoming { transform:translate3d(var(--lf-swipe-side, 100vw),0,0); pointer-events:none; }
+    .lf-swipe-frame { position:absolute; inset:0; background:var(--bg); z-index:0; }
+    .lf-swipe-frame .lf-wall { position:absolute; }
+    .lf-swipe-frame .lf-right { position:absolute; }
+    main > .lf-swipe-incoming {
+      display:block; position:absolute; top:var(--lf-swipe-top); bottom:0; z-index:1;
+      left:calc(max(var(--lf-pad), env(safe-area-inset-left)) - 10px);
+      right:calc(max(var(--lf-pad), env(safe-area-inset-left)) - 10px); margin:0;
+    }
+    main > #panelFamily.lf-swipe-incoming {
+      padding:0; overflow:hidden;
+      left:max(var(--lf-pad), env(safe-area-inset-left)); right:max(var(--lf-pad), env(safe-area-inset-left));
+    }
+    @media (max-width:639px) { main > #panelFamily.lf-swipe-incoming { left:0; right:0; } }
     #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
     #lfApps.is-editing .slot-empty { visibility:visible; }
     @media (max-width:639px) { footer { display:none; } }
@@ -459,12 +471,12 @@
   <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261125-app-crop-pine"></script>
   <script src="js/lf-menu.js?v=5"></script>
-  <script src="js/lf-home-swipe.js?v=4"></script>
+  <script src="js/lf-home-swipe.js?v=5"></script>
   <script src="https://clc-dx04.pages.dev/reorder.js?v=shared-todo-4"></script>
   <script src="js/dashboard-todos.js?v=20261125b"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
-  <script src="js/lf-chat.js?v=40"></script>
+  <script src="js/lf-chat.js?v=41"></script>
   <script>
   window.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -951,7 +963,9 @@
     });
     window.lfHomeSwipe({
       activeTab: () => curTab,
-      selectTab: tab => tb.setTab(tab, true)
+      selectTab: tab => tb.setTab(tab, true),
+      hasAdd: tab => addMenu(tab).length > 0,
+      prepareTab: tab => tab === 'family' ? window.lfChatApi?.prepareSwipe?.() : desk.relayout()
     });
     // 家庭留言板（Family 分頁）：有新訊息時 Family 分頁標籤亮紅點
     window.lfChatApi = db && window.lfChatInit ? window.lfChatInit($('lfChat'), { db, desktop: $('lfFamilyDesk'), toast, tabDot: on => {

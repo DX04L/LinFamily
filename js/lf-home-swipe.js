@@ -1,4 +1,4 @@
-window.lfHomeSwipe = function ({ activeTab, selectTab }) {
+window.lfHomeSwipe = function ({ activeTab, selectTab, prepareTab, hasAdd }) {
   const page = document.body, root = document.documentElement;
   const welcome = document.getElementById('lfWelcome');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -30,29 +30,66 @@ window.lfHomeSwipe = function ({ activeTab, selectTab }) {
     return tab === 'apps' ? 'family' : 'apps';
   }
 
+  function cloneDecoration(element) {
+    const clone = element.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+    return clone;
+  }
+
   function draw(g) {
     if (!visual) {
-      const viewport = document.createElement('div');
-      const layer = document.createElement('div');
-      const label = document.createElement('strong');
-      label.textContent = nextTab(g.tab) === 'family' ? 'Family' : 'Home';
-      viewport.setAttribute('aria-hidden', 'true');
-      viewport.className = 'lf-swipe-viewport';
-      layer.className = 'lf-swipe-preview';
-      layer.append(label);
-      viewport.append(layer);
-      root.append(viewport);
+      const next = nextTab(g.tab);
+      const panel = document.getElementById(next === 'family' ? 'panelFamily' : 'panelApps');
+      const current = document.getElementById(g.tab === 'family' ? 'panelFamily' : 'panelApps');
+      const { top } = current.getBoundingClientRect();
+      const nextIsFamily = next === 'family';
+      const frame = document.createElement('div');
+      frame.className = 'lf-swipe-frame';
+      frame.inert = true;
+      frame.setAttribute('aria-hidden', 'true');
+
+      const wallpaper = document.querySelector('.lf-wall:not([hidden])');
+      if (wallpaper) frame.append(cloneDecoration(wallpaper));
+      const header = cloneDecoration(document.querySelector('.lf-top'));
+      header.querySelectorAll('[data-tab]').forEach(button => {
+        button.setAttribute('aria-selected', String(button.dataset.tab === next));
+      });
+      header.querySelector('.clc-tb-btn').hidden = !hasAdd(next);
+      frame.append(header);
+
+      const search = document.querySelector('main > .clc-tb-search:not([hidden])');
+      if (search) {
+        const clone = cloneDecoration(search);
+        const rect = search.getBoundingClientRect();
+        clone.querySelector('input').value = search.querySelector('input').value;
+        Object.assign(clone.style, {
+          position: 'absolute', top: rect.top + 'px', left: rect.left + 'px',
+          width: rect.width + 'px', margin: '0'
+        });
+        frame.append(clone);
+      }
+
+      panel.style.setProperty('--lf-swipe-top', (top + (nextIsFamily ? 10 : -10)) + 'px');
+      panel.inert = true;
+      page.append(frame);
       root.classList.add('lf-swiping');
-      visual = { viewport, layer, distance: innerWidth, original: page.style.transform };
+      panel.classList.add('lf-swipe-incoming');
+      visual = { frame, panel, distance: innerWidth, original: page.style.transform };
+      prepareTab(next);
     }
     const dx = Math.max(-visual.distance, Math.min(visual.distance, g.dx));
+    page.style.setProperty('--lf-swipe-side', (dx < 0 ? visual.distance : -visual.distance) + 'px');
     page.style.transform = transform(dx);
-    visual.layer.style.transform = transform((dx < 0 ? visual.distance : -visual.distance) + dx);
   }
 
   function restore() {
     page.style.transform = visual.original;
-    visual.viewport.remove();
+    page.style.removeProperty('--lf-swipe-side');
+    visual.panel.classList.remove('lf-swipe-incoming');
+    visual.panel.style.removeProperty('--lf-swipe-top');
+    visual.panel.inert = false;
+    visual.frame.remove();
     root.classList.remove('lf-swiping');
     visual = null;
   }
@@ -62,16 +99,14 @@ window.lfHomeSwipe = function ({ activeTab, selectTab }) {
     if (visual) {
       const dx = Math.max(-visual.distance, Math.min(visual.distance, g.dx));
       const offscreen = g.dx < 0 ? -visual.distance : visual.distance;
-      const options = next
-        ? { duration: 200, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' }
-        : { duration: 160, easing: 'ease-out', fill: 'forwards' };
-      const outgoing = page.animate(
-        [{ transform: transform(dx) }, { transform: transform(next ? offscreen : 0) }], options);
-      const incoming = visual.layer.animate(
-        [{ transform: transform(dx - offscreen) }, { transform: transform(next ? 0 : -offscreen) }], options);
-      await Promise.allSettled([outgoing.finished, incoming.finished]);
-      outgoing.cancel();
-      incoming.cancel();
+      const duration = next ? 200 : 160;
+      const easing = next ? 'cubic-bezier(.2,.7,.3,1)' : 'ease-out';
+      const slide = page.animate(
+        [{ transform: transform(dx) }, { transform: transform(next ? offscreen : 0) }],
+        { duration, easing, fill: 'forwards' }
+      );
+      try { await slide.finished; } catch (_) { next = null; }
+      slide.cancel();
       restore();
     }
     settling = false;

@@ -167,7 +167,7 @@
       return { x, w, W };
     }
     function fit() {
-      if (!visible) return;
+      if (!visible && !root.closest('.lf-swipe-incoming')) return;
       const vh = window.visualViewport ? visualViewport.height : innerHeight;
       box.style.height = Math.max(160, Math.min(root.clientHeight, vh - Math.max(0, root.getBoundingClientRect().top))) + 'px'; // 手機橫放高度很矮：最低只留 160，輸入列才不會被推出畫面
       place();
@@ -1452,6 +1452,7 @@
       _camera: () => camera(), _editor: (f, o) => photoEditor(f, o),
       closePopups() { if (closeOverlay) closeOverlay(false); },
       search, findNext: () => findStep(1),
+      prepareSwipe() { familyDesk.relayout(); fit(); },
       show(on) {
         visible = on; dot(); document.body.classList.toggle('lf-tab-family', on);
         if (!on) {
