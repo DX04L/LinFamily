@@ -100,6 +100,7 @@
       <form class="lf-card" id="lfUserAdd">
         <h2>新增成員</h2>
         <label>Google 帳號 Email<input class="field" id="lfUserEmail" type="email" placeholder="name@example.com" autocomplete="off"></label>
+        <label class="text-sm block">姓名（選填）<input class="field" id="lfUserName" type="text" maxlength="100" autocomplete="off" placeholder="可於登入後帶入 Google 姓名"></label>
         <label>權限等級<select class="field" id="lfUserRole"><option value="admin">Admin（可登入）</option><option value="viewer">Viewer（唯讀）</option><option value="user">User（不含 DX、YA、SR）</option></select></label>
         <button type="submit" class="lf-primary">新增成員</button>
       </form>
@@ -189,16 +190,52 @@
         $('lfSecMsg').textContent = '✅ 已儲存，下次打開或 1 分鐘內生效。';
       } catch (err) { $('lfSecMsg').textContent = '儲存失敗：' + errText(err); }
     });
+    async function createWithName(ref, data) {
+      const name = $('lfUserName').value.trim();
+      if (!name) return ref.set(data);
+      const batch = db.batch();
+      batch.set(ref, data);
+      batch.set(db.collection('admin_user_names').doc(ref.id), { name });
+      await batch.commit();
+    }
+
+    async function deleteWithName(ref) {
+      if (!accountNames) return ref.delete();
+      const batch = db.batch();
+      batch.delete(ref);
+      batch.delete(db.collection('admin_user_names').doc(ref.id));
+      await batch.commit();
+    }
+
+    let accountNames = null;
+    async function loadAccountNames() {
+      try {
+        const snap = await db.collection('admin_user_names').get();
+        accountNames = new Map(snap.docs.map(doc => [doc.id, doc.data().name]));
+      } catch (err) {
+        accountNames = null;
+        console.warn('無法讀取姓名備註', err);
+      }
+    }
+
+    function nameMarkup(email, editable) {
+      if (!accountNames) return '';
+      const name = accountNames.get(email) || '';
+      return `<div class="text-sm break-words">姓名：${esc(name || '未填寫')}
+        ${editable ? `<button type="button" class="rounded-md border px-2 py-1 text-xs" data-edit-name="${esc(email)}">編輯姓名</button>` : ''}</div>`;
+    }
+
     async function loadUsers() {
       const list = $('lfUsersList');
       try {
         const snap = await db.collection('admin_users').get();
+        await loadAccountNames();
         const rows = snap.docs.map(d => Object.assign({ email: d.id }, d.data())).sort((a, b) => a.email.localeCompare(b.email));
         const all = SUPERUSERS.map(email => ({ email, sup: true })).concat(rows.filter(u => !SUPERUSERS.includes(u.email)));
         $('lfUsersCount').textContent = all.length + ' 位成員';
         list.innerHTML = all.map(u => u.sup
-          ? `<div class="lf-row"><div><div class="lf-email">${esc(u.email)}</div><div class="lf-sub">🔒 Superuser · 永久保留（不可刪除、不可降權）</div></div></div>`
-          : `<div class="lf-row" data-email="${esc(u.email)}"><div><div class="lf-email">${esc(u.email)}</div>
+          ? `<div class="lf-row"><div><div class="lf-email">${esc(u.email)}</div>${nameMarkup(u.email, true)}<div class="lf-sub">🔒 Superuser · 永久保留（不可刪除、不可降權）</div></div></div>`
+          : `<div class="lf-row" data-email="${esc(u.email)}"><div><div class="lf-email">${esc(u.email)}</div>${nameMarkup(u.email, true)}
           <div class="lf-sub">${ROLE_NAME[u.role] || 'Admin'} · ${u.active === false ? '已停用' : '已啟用'}</div></div>
           <div class="lf-btns"><select data-u="role" class="field" style="width:auto;margin:0" aria-label="權限等級">${Object.keys(ROLE_NAME).map(r => `<option value="${r}"${(ROLE_NAME[u.role] ? u.role : 'admin') === r ? ' selected' : ''}>${r === 'admin' ? 'Admin' : r === 'viewer' ? 'Viewer' : 'User'}</option>`).join('')}</select>
           <button type="button" data-u="active" data-active="${u.active === false ? '0' : '1'}" class="${u.active === false ? 'lf-on' : 'lf-off'}">${u.active === false ? '啟用' : '停用'}</button>
@@ -207,11 +244,28 @@
         usersErr('');
       } catch (err) { list.innerHTML = ''; usersErr('讀取失敗：' + errText(err)); }
     }
+    $('lfUsersList').addEventListener('click', async event => {
+      const button = event.target.closest('[data-edit-name]');
+      if (!button || !accountNames) return;
+      const email = button.dataset.editName;
+      const name = prompt('姓名', accountNames.get(email) || '');
+      if (name === null) return;
+      const value = name.trim();
+      if (value.length > 100) { alert('姓名最多 100 個字元。'); return; }
+      button.disabled = true;
+      try {
+        await db.collection('admin_user_names').doc(email).set({ name: value });
+        await loadUsers();
+      } catch (err) {
+        alert('姓名儲存失敗：' + err.message);
+        button.disabled = false;
+      }
+    });
     $('lfUsersList').addEventListener('click', async e => {
       const b = e.target.closest('button[data-u]'); if (!b) return;
       const email = b.closest('[data-email]').dataset.email, ref = db.collection('admin_users').doc(email);
       try {
-        if (b.dataset.u === 'del') { if (!confirm('刪除 ' + email + '？')) return; await ref.delete(); }
+        if (b.dataset.u === 'del') { if (!confirm('刪除 ' + email + '？')) return; await deleteWithName(ref); }
         else if (b.dataset.u === 'force') { // 對方 App 開著會立刻登出；沒開著的話下次打開時登出
           if (!confirm('讓 ' + email + ' 在所有裝置上登出？')) return;
           await ref.update({ forceLogoutAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
@@ -231,8 +285,11 @@
       const email = $('lfUserEmail').value.trim().toLowerCase();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || SUPERUSERS.includes(email)) return usersErr('Email 格式不正確，或已是 Superuser。');
       try {
-        await db.collection('admin_users').doc(email).set({ role: $('lfUserRole').value, active: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        $('lfUserEmail').value = ''; loadUsers();
+        const ref = db.collection('admin_users').doc(email);
+        if ((await ref.get()).exists) return usersErr('帳號已在名單中，請在下方編輯。');
+        const data = { role: $('lfUserRole').value, active: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        await createWithName(ref, data);
+        $('lfUserEmail').value = ''; $('lfUserName').value = ''; loadUsers();
       } catch (err) { usersErr('加入失敗：' + errText(err)); }
     });
   })();

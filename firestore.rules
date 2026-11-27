@@ -16,6 +16,26 @@ service cloud.firestore {
     function isAdmin() { return isSuper() || (isMember() && memberDoc().data.role == 'admin'); }
 
     // 權限名單：自己可讀自己的；只有 Superuser 可列出、新增、修改（含強制登出 forceLogoutAt）、刪除
+    function validAccountName(data) {
+      return data.keys().hasOnly(['name'])
+        && data.name is string && data.name.size() <= 100;
+    }
+
+    // Editable name is stored independently of the account's permissions.
+    match /admin_user_names/{email} {
+      allow list: if isSuper();
+      allow get: if isSuper()
+        || (signedIn() && myEmail() == email && (isSuper() || isMember()));
+      allow create: if email == email.lower() && validAccountName(request.resource.data)
+        && (email in supers() || existsAfter(/databases/$(database)/documents/admin_users/$(email)))
+        && (isSuper() || (signedIn() && myEmail() == email && (isSuper() || isMember())
+          && request.auth.token.firebase.sign_in_provider == 'google.com'
+          && request.resource.data.name == request.auth.token.get('name', '')
+          && request.resource.data.name.size() > 0));
+      allow update: if isSuper() && validAccountName(request.resource.data);
+      allow delete: if isSuper();
+    }
+
     match /admin_users/{email} {
       allow get: if signedIn() && (myEmail() == email || isSuper());
       allow list, delete: if isSuper();

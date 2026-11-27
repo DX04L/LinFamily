@@ -542,7 +542,23 @@
       user = u && u.email && u.emailVerified ? u : null;
       if (!user) return applyRole('');
       const email = user.email.toLowerCase();
-      if (SUPERUSERS.includes(email)) return applyRole('superuser');
+      const signedInUser = user;
+      const fillGoogleName = async () => {
+        try {
+          const token = await signedInUser.getIdTokenResult();
+          const name = token.claims.name;
+          if (token.signInProvider !== 'google.com' || typeof name !== 'string' || !name.trim() || name.length > 100) return;
+          const ref = db.collection('admin_user_names').doc(email);
+          await db.runTransaction(async tx => {
+            if (!(await tx.get(ref)).exists) tx.set(ref, { name });
+          });
+        } catch (err) {
+          // Name lookup must never interrupt sign-in.
+          console.warn('無法帶入 Google 姓名', err);
+        }
+      };
+      let nameChecked = false;
+      if (SUPERUSERS.includes(email)) { void fillGoogleName(); return applyRole('superuser'); }
       roleUnsub = db.collection('admin_users').doc(email).onSnapshot(snap => {
         const d = snap.exists ? snap.data() : null;
         // 強制登出（全站設定 → 權限管理）：記號時間比這台裝置登入的時間新 → 立刻登出
@@ -554,6 +570,7 @@
         if (!nextRole && !snap.metadata.fromCache) {
           try { localStorage.removeItem('linfamily_offline_desktop_' + user.uid); } catch (_) {}
         }
+        if (nextRole && !nameChecked && !snap.metadata.fromCache) { nameChecked = true; void fillGoogleName(); }
         applyRole(nextRole);
       }, () => { applyRole(''); toast('無法確認帳號權限，請檢查網路後再試。'); });
     }, err => {
