@@ -311,9 +311,10 @@
     main { display:flex; flex-direction:column; min-height:0; padding-bottom:0; }
     main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px 10px calc(16px + env(safe-area-inset-bottom)); margin:-10px -10px 0; } /* 四周留 10px，App 滑鼠放大時不會被切到；負邊距讓位置不變 */
     @media (max-width:1023px) {
-      main > section, .lf-family-scroll, .lfc-list, dialog.lf-pin { touch-action:pan-y; }
+      .lf-top, #panelApps, #panelFamily, .lf-family-scroll, .lfc-list { touch-action:pan-y; }
     }
-    .lf-swipe-viewport { position:fixed; overflow:hidden; pointer-events:none; z-index:2; }
+    .lf-swiping { overflow:hidden; }
+    .lf-swipe-viewport { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:2; }
     .lf-swipe-preview { width:100%; height:100%; display:grid; place-items:center; background:var(--surface); color:var(--text); will-change:transform; }
     .lf-swipe-preview strong { font-size:52px; letter-spacing:.08em; }
     #lfApps .slot-empty { visibility:hidden; } /* 空位平常看不到，編輯（晃動）時才出現，可以拖到任何位置 */
@@ -458,7 +459,7 @@
   <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261125-app-crop-pine"></script>
   <script src="js/lf-menu.js?v=5"></script>
-  <script src="js/lf-home-swipe.js?v=3"></script>
+  <script src="js/lf-home-swipe.js?v=4"></script>
   <script src="https://clc-dx04.pages.dev/reorder.js?v=shared-todo-4"></script>
   <script src="js/dashboard-todos.js?v=20261125b"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
@@ -941,23 +942,16 @@
     }
     let addPos = null; // 舊格子用；新桌面由右鍵/長按的格子位置決定
     let curTab = 'apps', cabinetOnly = false;
-    const tabs = [
-      { id: 'apps', label: 'Home', panel: $('panelApps') },
-      { id: 'family', label: 'Family', panel: $('panelFamily') },
-      { id: 'all', label: 'Apps', panel: $('panelAll') }
-    ];
     const tb = window.clcToolbar($('lfToolbar'), {
-      tabs,
+      tabs: [{ id: 'apps', label: 'Home' }, { id: 'family', label: 'Family' }, { id: 'all', label: 'Apps' }],
       active: 'apps', onTab: t => onTab(t), placeholder: '搜尋 App 或卡片內容…', searchHost: document.querySelector('main'),
       addItems: t => addMenu(t),
       onSearch: () => applySearch(),
       onEnter: () => { if (tb.tab() === 'family') return window.lfChatApi && window.lfChatApi.findNext(); const id = applySearch().find(x => apps.some(a => a.id === x)); const a = id && desk.element(id) && desk.element(id).querySelector('a[href]'); if (a) a.click(); }
     });
     window.lfHomeSwipe({
-      tabs,
       activeTab: () => curTab,
-      selectTab: tab => tb.setTab(tab, true),
-      needsPin: tab => tab === 'all' && isSuper() && !cabUnlocked()
+      selectTab: tab => tb.setTab(tab, true)
     });
     // 家庭留言板（Family 分頁）：有新訊息時 Family 分頁標籤亮紅點
     window.lfChatApi = db && window.lfChatInit ? window.lfChatInit($('lfChat'), { db, desktop: $('lfFamilyDesk'), toast, tabDot: on => {
