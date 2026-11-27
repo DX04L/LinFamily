@@ -1,0 +1,3342 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <title>大衛與歌利亞！與大衛同行的勇氣冒險</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       [預留注音字體接口 - Bopomofo / Zhuyin Font Ready]
+       說明：當您將專屬的「注音破音字體」交給下一個 AI 或放入專案資料夾時，
+       只需替換下方 src 的路徑或字體名稱即可全站自動套用！
+       ========================================================================= */
+    @font-face {
+      font-family: 'CustomZhuyinFont';
+      /* [預留接口] 請替換為您的注音字體檔案路徑，例如：url('fonts/YourZhuyinFont.ttf') format('truetype') */
+      src: local('BopomofoCustom'), local('王漢宗中楷體注音'), local('標楷體注音');
+      font-display: swap;
+    }
+
+    :root {
+      --font-zhuyin-story: 'CustomZhuyinFont', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+      --parchment-cream: #FFFDF7;
+      --parchment-warm: #F8EFE0;
+      --earth-ochre: #D49B54;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #1A1511;
+      background-image: radial-gradient(circle at 50% 45%, #2B2118 0%, #14100C 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+    }
+
+    /* 注音字體專用排版類別：預留充足行高、字距與 OpenType 破音連字特性 */
+    .zhuyin-text {
+      font-family: var(--font-zhuyin-story);
+      line-height: 2.05;
+      letter-spacing: 0.1em;
+      font-feature-settings: "liga" 1, "calt" 1, "kern" 1;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.zhuyin-spacing-boost .zhuyin-text {
+      line-height: 2.4;
+      letter-spacing: 0.16em;
+    }
+
+    /* 全螢幕閱讀舞台 */
+    #reader-stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* 書本外殼容器 */
+    #book-shell {
+      position: relative;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.78), 0 6px 18px rgba(0, 0, 0, 0.55);
+      border-radius: 12px;
+      background: var(--parchment-cream);
+      will-change: transform;
+      transform-origin: center center;
+      overflow: hidden;
+    }
+
+    /* 物理翻頁畫布層 */
+    canvas#book-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    canvas#book-canvas:active {
+      cursor: grabbing;
+    }
+
+    /* 透明互動覆蓋層（嚴格限制於書頁安全邊界內，翻頁時自動淡出） */
+    #interactive-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.14s ease;
+    }
+
+    #book-shell.is-flipping #interactive-overlay {
+      opacity: 0;
+      pointer-events: none !important;
+    }
+
+    .interactive-hotspot {
+      pointer-events: auto;
+      user-select: text;
+    }
+
+    /* 右上角折疊式燕尾緞帶書籤 */
+    #bookmark-ribbon {
+      position: absolute;
+      top: -2px;
+      right: 22px;
+      width: 42px;
+      height: 84px;
+      cursor: pointer;
+      z-index: 18;
+      transform-origin: top center;
+      transition: opacity 0.25s ease, transform 0.28s ease;
+    }
+
+    #bookmark-ribbon.inactive {
+      opacity: 0.85;
+    }
+
+    #bookmark-ribbon.inactive:hover {
+      opacity: 1;
+    }
+
+    #bookmark-ribbon.active {
+      opacity: 1;
+    }
+
+    #bookmark-ribbon.active:active {
+      transform: translateY(3px) scaleY(1.03);
+    }
+
+    #bookmark-ribbon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    #book-shell.is-flipping #bookmark-ribbon {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.12s ease;
+    }
+
+    /* 書籤與操作提示氣泡 */
+    #bookmark-toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-16px);
+      background: rgba(34, 24, 16, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #FFE082;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border: 1.5px solid rgba(255, 213, 79, 0.45);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 40;
+      white-space: nowrap;
+    }
+
+    #bookmark-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* 底部懸浮膠囊控制列 */
+    #hud-pill {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: rgba(28, 21, 15, 0.86);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: rgba(255, 255, 255, 0.95);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s ease, transform 0.28s ease;
+      z-index: 30;
+      border: 1px solid rgba(255, 213, 79, 0.28);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+      max-width: 96vw;
+      overflow-x: auto;
+    }
+
+    #hud-pill.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+
+    .hud-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 5px 9px;
+      border-radius: 999px;
+      line-height: 1.1;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .hud-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .hud-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    .hud-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .hud-chip-gold {
+      color: #FFD54F;
+      font-size: 12px;
+      padding: 4px 10px;
+      background: rgba(255, 213, 79, 0.16);
+      border: 1px solid rgba(255, 213, 79, 0.38);
+    }
+
+    .hud-chip-sky {
+      color: #81D4FA;
+      font-size: 12px;
+      padding: 4px 10px;
+      background: rgba(43, 140, 214, 0.24);
+      border: 1px solid rgba(129, 212, 250, 0.42);
+    }
+
+    /* 兒童繪本互動選項按鈕 */
+    .story-choice-card {
+      background: linear-gradient(180deg, #FFFDF8 0%, #F9EFE0 100%);
+      border: 2px solid #D9B37C;
+      border-radius: 12px;
+      padding: 8px 11px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 3px 0 #C49354;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .story-choice-card:hover {
+      transform: translateY(-2px);
+      border-color: #E65100;
+      background: linear-gradient(180deg, #FFF9EC 0%, #FFE8C2 100%);
+      box-shadow: 0 5px 0 #D84315;
+    }
+
+    .story-choice-card:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 0 #C49354;
+    }
+
+    .choice-badge {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #FFB300, #F57C00);
+      color: #fff;
+      font-weight: 900;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      margin-top: 2px;
+    }
+
+    .cover-cta-btn {
+      background: linear-gradient(180deg, #FFE033 0%, #FF9900 100%);
+      color: #5D1900;
+      border: 3px solid #B71C1C;
+      border-radius: 999px;
+      font-weight: 900;
+      box-shadow: 0 4px 0 #8E0000, 0 8px 18px rgba(0,0,0,0.35);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .cover-cta-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 6px 0 #8E0000, 0 12px 22px rgba(0,0,0,0.4);
+    }
+
+    .cover-cta-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #8E0000;
+    }
+
+    .cover-sub-btn {
+      background: rgba(255, 255, 255, 0.94);
+      color: #1B4F72;
+      border: 2.5px solid #2B8CD6;
+      border-radius: 999px;
+      font-weight: 800;
+      box-shadow: 0 3px 0 #1B4F72;
+      cursor: pointer;
+      transition: transform 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .cover-sub-btn:hover {
+      transform: translateY(-2px);
+      background: #EBF5FB;
+    }
+
+    /* 故事滾動區域 */
+    .story-scroll-area {
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: #D4B483 transparent;
+    }
+
+    .story-scroll-area::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .story-scroll-area::-webkit-scrollbar-thumb {
+      background: #D4B483;
+      border-radius: 999px;
+    }
+
+    /* 彈出視窗（AI 聖經故事擴充、注音字體設定） */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 13, 9, 0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      z-index: 60;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #FFFDF7;
+      border: 3px solid #D49B54;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 620px;
+      max-height: 88dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+      color: #3E2723;
+    }
+
+    /* 載入畫面 */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #3A8FD6 0%, #1B4F72 100%);
+      color: #FFFDF7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 80;
+      transition: opacity 0.35s ease;
+    }
+
+    #loader.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 38px;
+      height: 38px;
+      border: 4px solid rgba(255, 255, 255, 0.25);
+      border-top-color: #FFD54F;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- 啟動載入畫面 -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <div style="font-size: 16px; font-weight: 800; letter-spacing: 0.08em; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+      正在打開《大衛與歌利亞！》3D立體繪本…
+    </div>
+  </div>
+
+  <!-- 書籤與提示氣泡 -->
+  <div id="bookmark-toast">已將書籤移至此頁</div>
+
+  <!-- 全螢幕書本閱讀舞台 -->
+  <div id="reader-stage">
+    <div id="book-shell">
+      <canvas id="book-canvas"></canvas>
+
+      <!-- 與 Canvas 同步的兒童互動覆蓋層 -->
+      <div id="interactive-overlay"></div>
+
+      <!-- 右上角折疊式燕尾緞帶書籤 -->
+      <div id="bookmark-ribbon" class="inactive" title="點擊在此頁掛上書籤（全書僅保留一個書籤）">
+        <svg viewBox="0 0 42 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ribbonBody" x1="0" y1="0" x2="42" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#8F1720" />
+              <stop offset="22%" stop-color="#D42838" />
+              <stop offset="50%" stop-color="#B81D2B" />
+              <stop offset="80%" stop-color="#DE3344" />
+              <stop offset="100%" stop-color="#7E121A" />
+            </linearGradient>
+            <linearGradient id="foldOverShadow" x1="21" y1="0" x2="21" y2="84" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="rgba(40, 4, 8, 0.55)" />
+              <stop offset="3.5%" stop-color="rgba(255, 232, 232, 0.42)" />
+              <stop offset="7.5%" stop-color="rgba(0, 0, 0, 0.26)" />
+              <stop offset="14%" stop-color="rgba(255, 255, 255, 0.05)" />
+              <stop offset="75%" stop-color="rgba(255, 255, 255, 0)" />
+              <stop offset="100%" stop-color="rgba(0, 0, 0, 0.24)" />
+            </linearGradient>
+            <linearGradient id="goldTrim" x1="0" y1="0" x2="42" y2="84" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#F7D78B" />
+              <stop offset="50%" stop-color="#D99B38" />
+              <stop offset="100%" stop-color="#F5CE76" />
+            </linearGradient>
+            <filter id="ribbonDropShadow" x="-20%" y="-10%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3.5" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.34"/>
+            </filter>
+          </defs>
+          <g filter="url(#ribbonDropShadow)">
+            <path id="ribbon-main-path" d="M2 2.5C2 1.12 3.12 0 4.5 0H37.5C38.88 0 40 1.12 40 2.5V26L21 18L2 26V2.5Z" fill="url(#ribbonBody)"/>
+            <path id="ribbon-sheen-path" d="M2 2.5C2 1.12 3.12 0 4.5 0H37.5C38.88 0 40 1.12 40 2.5V26L21 18L2 26V2.5Z" fill="url(#foldOverShadow)"/>
+            <line x1="2.5" y1="2.8" x2="39.5" y2="2.8" stroke="rgba(255, 228, 228, 0.38)" stroke-width="0.9"/>
+            <path id="ribbon-stitch-path" d="M6.8 3.5V21M35.2 3.5V21" stroke="url(#goldTrim)" stroke-width="1.35" stroke-dasharray="2.4 2"/>
+            <g id="ribbon-emblem" opacity="0">
+              <circle cx="21" cy="45" r="8.2" fill="rgba(94, 13, 19, 0.38)" stroke="url(#goldTrim)" stroke-width="1.2"/>
+              <path d="M21 39.3L22.4 43.2L26.5 43.4L23.3 46L24.4 50L21 47.6L17.6 50L18.7 46L15.5 43.4L19.6 43.2L21 39.3Z" fill="#F9DF9B"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部懸浮膠囊控制列 -->
+  <div id="hud-pill">
+    <button class="hud-btn" id="btn-first" title="回到封面">⇤ 封面</button>
+    <button class="hud-btn" id="btn-prev" title="上一頁">‹</button>
+    <span id="page-label" style="font-weight:700; white-space:nowrap;">封面</span>
+    <button class="hud-btn" id="btn-next" title="下一頁">›</button>
+    <button class="hud-btn hud-chip-gold" id="btn-goto-bookmark" title="回到上次書籤頁" style="display:none;">🔖 回書籤</button>
+    <button class="hud-btn hud-chip-sky" id="btn-open-ai-story" title="Google AI 聖經故事擴充介面">✨ AI故事擴充</button>
+    <button class="hud-btn" id="btn-zhuyin-settings" title="注音字體預留設定">字ㄅㄆㄇ</button>
+    <button class="hud-btn" id="btn-reset-zoom" title="還原大小" style="display:none; font-size:12px;">100%</button>
+  </div>
+
+  <!-- =========================================================================
+       彈窗 1：Google AI 聖經故事擴充介面（預留標準化 Gemini API 串接接口）
+       ========================================================================= -->
+  <div id="ai-story-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div style="background: linear-gradient(135deg, #2B8CD6, #1B4F72); color: #fff; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: 16px; font-weight: 900; letter-spacing: 0.04em;">✨ Google AI 聖經故事擴充介面</div>
+          <div style="font-size: 12px; opacity: 0.9;">預留 Gemini API 串接接口，可動態生成新的聖經故事章節並放入繪本翻閱</div>
+        </div>
+        <button onclick="closeModal('ai-story-modal')" style="background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer;">✕</button>
+      </div>
+
+      <div class="story-scroll-area" style="padding: 16px 18px; flex: 1;">
+        <!-- Google AI API 串接設定 -->
+        <div style="background: #EBF5FB; border: 1.5px solid #85C1E9; border-radius: 14px; padding: 12px; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
+            <span style="font-size: 13px; font-weight: 800; color: #1B4F72;">🔌 API 串接橋接器：<code>window.GoogleAIBridge</code></span>
+            <span id="api-status-badge" style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #FFF3CD; color: #856404; font-weight: 700;">目前：離線聖經章節測試模式</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 8px;">
+            <input type="password" id="gemini-api-key-input" placeholder="預留欄位：貼上 Google AI Studio API Key（留空則啟用測試章節）"
+              style="padding: 8px 10px; border-radius: 10px; border: 1.5px solid #AED6F1; font-size: 12px; background: #fff; color: #2C3E50;" />
+            <select id="gemini-model-select" style="padding: 8px; border-radius: 10px; border: 1.5px solid #AED6F1; font-size: 12px; background: #fff; color: #2C3E50; font-weight: 700;">
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+            </select>
+          </div>
+          <div style="font-size: 11px; color: #2874A6; line-height: 1.55;">
+            給後續開發 AI 的呼叫接口：<code>await window.GoogleAIBridge.generateBibleChapter({ theme, apiKey, model })</code>，回傳標準 JSON 章節物件並自動插入故事繪本中。
+          </div>
+        </div>
+
+        <!-- 聖經故事擴充主題選擇 -->
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px;">
+          <select id="story-theme-select" style="flex: 1; min-width: 190px; padding: 9px 12px; border-radius: 12px; border: 2px solid #D49B54; font-size: 13px; font-weight: 700; background: #FFF9EC; color: #4E342E;">
+            <option value="jonathan">🤝 《大衛與約拿單的盟約》（撒母耳記上 18:1–4）</option>
+            <option value="harp_peace">🎵 《基比亞王宮的平安琴聲》（撒母耳記上 16:23）</option>
+            <option value="shepherd_psalm">🐑 《青草地與溪水旁的讚美》（詩篇 23 篇背景）</option>
+          </select>
+          <button id="btn-run-story-gen" onclick="handleGenerateExtraChapter()" class="cover-cta-btn" style="padding: 9px 18px; font-size: 13px;">
+            ✨ 生成聖經故事章節
+          </button>
+        </div>
+
+        <!-- 章節預覽區 -->
+        <div id="chapter-preview-box" style="background: #FBF6EC; border: 2px dashed #D49B54; border-radius: 16px; padding: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span id="preview-ch-title" class="zhuyin-text" style="font-size: 17px; font-weight: 900; color: #8E0000;">
+              大衛與約拿單的真心盟約
+            </span>
+            <span id="preview-ch-ref" style="font-size: 12px; font-weight: 800; color: #1B4F72; background: #EBF5FB; padding: 2px 8px; border-radius: 999px;">
+              📖 撒母耳記上 18:1–4
+            </span>
+          </div>
+          <div id="preview-ch-text" class="zhuyin-text" style="font-size: 14px; color: #3E2723;">
+            打敗巨人歌利亞之後，掃羅王的兒子約拿單王子看見大衛如此勇敢又敬畏神，心裡非常敬佩他，立刻和大衛成為最要好的朋友！約拿單脫下自己尊貴的外袍、戰衣，連同弓箭、寶劍和腰帶都送給了大衛，兩人在神面前立下永遠互相扶持的約定。
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 12px 18px; border-top: 1.5px solid #EAD7B7; background: #FAF2E4; display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center;">
+        <button onclick="closeModal('ai-story-modal')" style="padding: 8px 16px; border-radius: 999px; border: 1.5px solid #BCAAA4; background: #fff; font-weight: 700; font-size: 13px; cursor: pointer;">
+          關閉視窗
+        </button>
+        <button onclick="insertGeneratedChapterIntoBook()" class="cover-sub-btn" style="padding: 9px 18px; font-size: 13px;">
+          📖 插入繪本並翻頁閱讀 →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       彈窗 2：注音字體預留與兒童閱讀排版設定
+       ========================================================================= -->
+  <div id="zhuyin-modal" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 520px;">
+      <div style="background: linear-gradient(135deg, #FFB300, #F57C00); color: #fff; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size: 16px; font-weight: 900;">🔤 注音字體預留與排版調整</div>
+        <button onclick="closeModal('zhuyin-modal')" style="background: rgba(255,255,255,0.25); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer;">✕</button>
+      </div>
+      <div style="padding: 18px; font-size: 14px; line-height: 1.7;">
+        <p style="margin-bottom: 12px;">
+          全書故事與選項皆已套用 <code>.zhuyin-text</code> 注音專用排版類別，並預留 <code>@font-face { font-family: 'CustomZhuyinFont'; }</code> 接口。當套入「注音破音字體」後，每個國字旁會自動顯示注音符號。
+        </p>
+        <div style="background: #FFF8E7; border: 1.5px solid #F0C36D; border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+          <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #5D4037;">
+            動態載入測試注音字體（供後續 AI 或開發者測試 .ttf / .woff2）：
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="custom-zhuyin-url" placeholder="輸入字體檔案 URL 或本機字體名稱..."
+              style="flex: 1; padding: 8px 10px; border-radius: 8px; border: 1.5px solid #D49B54; font-size: 13px;" />
+            <button onclick="loadCustomZhuyinFont()" style="padding: 8px 14px; border-radius: 8px; background: #E65100; color: #fff; border: none; font-weight: 800; cursor: pointer;">
+              套用字體
+            </button>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #F5EFE6; border-radius: 12px;">
+          <div>
+            <div style="font-weight: 800;">加寬注音行距模式</div>
+            <div style="font-size: 12px; color: #6D4C41;">避免上下行注音符號重疊，適合低年級兒童閱讀</div>
+          </div>
+          <button id="btn-toggle-spacing" onclick="toggleZhuyinSpacing()" style="padding: 7px 14px; border-radius: 999px; background: #2B8CD6; color: #fff; border: none; font-weight: 800; cursor: pointer;">
+            已開啟標準行距
+          </button>
+        </div>
+      </div>
+      <div style="padding: 12px 18px; border-top: 1px solid #EAD7B7; text-align: right;">
+        <button onclick="closeModal('zhuyin-modal')" class="cover-cta-btn" style="padding: 7px 20px; font-size: 14px;">完成設定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. 繁體中文兒童互動繪本劇本庫（忠於《撒母耳記上》16–17章，10個完整抉擇關卡）
+       ========================================================================= */
+    const BASE_STORY_CHAPTERS = [
+      {
+        id: 1,
+        title: "伯利恒的牧野晨光",
+        scripture: "撒母耳記上 16:1–11",
+        sceneType: "pasture",
+        text: [
+          "清晨的陽光灑在伯利恒的青草坡上，露珠在嫩綠的草葉上閃閃發光。你和從小一起長大的好朋友大衛，正坐在大石頭旁照看羊群。大衛懷裡抱著心愛的十弦琴，輕輕撥出溫暖又好聽的旋律，小羊們聽得乖乖低頭吃草，連山風都變得好溫柔。",
+          "忽然，遠處城門口傳來低沉又莊重的羊角號聲！沒多久，大衛家裡的老僕人滿頭大汗地跑上山坡，喘著氣喊道：「大衛！快跟我回家！拉瑪的先知撒母耳親自來到伯利恒啦！你爸爸耶西和七位哥哥都已經去見先知了，可是先知說耶和華一個也沒有揀選，還說你若不來，大家都不准坐下來吃席呢！」大衛驚訝地睜大眼睛，回頭看看你，又看看山坡上這一大群正在吃草的綿羊。"
+        ],
+        prompt: "先知撒母耳正在等大衛，可是羊群不能沒有人看顧！你要怎麼幫助大衛呢？",
+        choices: [
+          {
+            text: "主動接過牧羊杖，請大衛放心趕快回家見先知，你會幫他把羊群照顧得妥妥當當。",
+            stats: { bond: 4, wisdom: 2 },
+            feedback: "你笑著接過大衛手裡的橄欖木牧羊杖：「快去吧！羊群交給我！」整個下午你吹著小笛子巡邏，還趕走了兩隻想偷靠近小羊的野狼，讓大衛完全沒有後顧之憂。"
+          },
+          {
+            text: "先把羊群趕進安全的石頭圍欄，陪大衛走到城門外的老橄欖樹下，安靜為他守望。",
+            stats: { faith: 3, bond: 3 },
+            feedback: "你把羊群安頓好後，一路陪著大衛跑到伯利恒城門口。你在老橄欖樹下靜靜祈禱，直到黃昏看見大衛帶著滿臉神聖的光彩走出來，兩人都感受到神正在做奇妙的大事。"
+          },
+          {
+            text: "貼心提醒大衛在哥哥們面前要保持謙虛有禮，免得脾氣急躁的大哥以利押生氣。",
+            stats: { wisdom: 4, courage: 1 },
+            feedback: "你小聲叮囑大衛要沈住氣、多聽少說。傍晚大衛回來後感激地說，大哥以利押果然臉色不太好看，多虧你的提醒，他才能平平安安度過這場重要的聚會。"
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "角裡的聖油與星空秘密",
+        scripture: "撒母耳記上 16:12–13",
+        sceneType: "anointing",
+        text: [
+          "夜晚降臨了，伯利恒的夜空像一塊鋪滿鑽石的深藍色絨布。羊群都安穩地睡在石頭圍成的羊圈裡，篝火在你們面前噼啪跳動著暖黃色的火光。大衛捧著熱騰騰的大麥餅，眼神裡多了一份前所未有的勇敢與莊嚴。",
+          "大衛壓低聲音，把白天的秘密只告訴了你一個人：「撒母耳先知看見我走進屋子，就拿起盛滿馨香聖油的牛角，當著我七位哥哥的面，把膏油倒在我的頭上！那一瞬間，耶和華的靈大大感動我，好像有一團溫暖又明亮的力量住進我心裡。先知已經回拉瑪去了，爸爸交代大家絕對不能把這件事說出去，免得招來危險。」你聽得心跳撲通撲通加快，知道大衛的未來已經和整個以色列緊緊連在一起了。"
+        ],
+        prompt: "知道了大衛被神秘密揀選為未來君王，面對這個天大的秘密，你會怎麼做？",
+        choices: [
+          {
+            text: "在星光下和大衛打勾勾立約：無論未來遇到什麼困難，永遠做他最忠實的好朋友。",
+            stats: { bond: 4, faith: 2 },
+            feedback: "你們在篝火旁緊緊握住彼此的雙手。大衛開心地抱起十弦琴，在滿天星斗下唱出「耶和華是我的牧者」的讚美詩，琴聲清脆悅耳，連星星彷彿都在眨眼微笑。"
+          },
+          {
+            text: "冷靜觀察四周確認沒有人偷聽，建議大衛平常照常放羊，把這份榮耀悄悄藏在心底。",
+            stats: { wisdom: 4, faith: 1 },
+            feedback: "你先起身巡視了一圈石牆外圍，確認只有夜風吹過葡萄藤，才回來對大衛點點頭。大衛覺得你的細心非常可靠，決定在神的時候來到之前，繼續踏實地做好牧羊的工作。"
+          },
+          {
+            text: "和大衛一起跪在草地上向天上的神禱告，感謝神揀選伯利恒的牧羊少年，祈求平安。",
+            stats: { faith: 4, courage: 1 },
+            feedback: "你們並肩跪在柔軟的草地上，閉上眼睛向列祖的神獻上最單純的祈禱。那一晚，你們的友情不只是童年的玩伴，更成為信仰路上互相扶持的好夥伴。"
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: "勇敢擊退獅子與棕熊",
+        scripture: "撒母耳記上 17:34–36",
+        sceneType: "lionbear",
+        text: [
+          "春天的草地綠油油的，這天中午，你們把羊群帶到靠近山谷灌木叢的地方吃草。突然間，「咩——」的一聲驚叫劃破天空！整群綿羊嚇得四處亂跑。原來是旱季食物變少，一頭兇猛的大獅子和一頭厚實的大棕熊竟然同時闖進了牧場！",
+          "壞了！那頭雄獅一口咬住了一隻雪白的小羊羔，轉身就要往山谷深處拖走！大衛眼神一亮，沒有半點害怕，立刻抓起牧羊杖和甩石機弦大喊一聲追了過去：「那是爸爸交給我們照顧的小羊，不能讓野獸叼走！」與此同時，旁邊那頭大棕熊也站起身子，發出震耳欲聾的咆哮，眼看就要從側面撲向大衛！"
+        ],
+        prompt: "大衛正全力追趕叼走小羊的獅子，旁邊的棕熊卻虎視眈眈！你要怎麼配合大衛？",
+        choices: [
+          {
+            text: "點燃隨身火把並揮舞石塊大喊，吸引大棕熊的注意力，保護大衛的背後不被偷襲。",
+            stats: { courage: 4, wisdom: 2 },
+            feedback: "你勇敢地揮舞火把衝向棕熊側翼，成功引開了棕熊的注意力！前方傳來激烈的搏鬥聲，大衛果真追上獅子，揪住牠的鬃毛將獅子打死，救出完好無損的小羊羔，接著又回頭和你合力打退了棕熊！"
+          },
+          {
+            text: "緊跟在大衛身後衝進山谷，在獅子倒下後第一時間抱起受驚的小羊羔並遞上短矛。",
+            stats: { bond: 4, courage: 2 },
+            feedback: "你毫不猶豫地跟著大衛衝進灌木叢，親眼看見神賜給大衛驚人的力量打敗了獅子。你緊緊抱住發抖的小羊羔安慰牠，大衛微笑著說：「耶和華救我脫離獅子和熊的爪，也必永遠保護我們！」"
+          },
+          {
+            text: "趕緊吹響集合骨哨，把四處逃散的羊群引導到高處石圈裡保護好，再趕去接應大衛。",
+            stats: { wisdom: 4, bond: 1 },
+            feedback: "你機智地吹響骨哨穩住了幾十隻受驚的綿羊，沒有一隻羊掉進山溝裡。當你趕到谷底時，大衛已經平安擊退猛獸，他豎起大拇指稱讚你守住了最重要的後方！"
+          }
+        ]
+      },
+      {
+        id: 4,
+        title: "王宮裡的十弦琴聲",
+        scripture: "撒母耳記上 16:14–23",
+        sceneType: "palace",
+        text: [
+          "這天，一隊穿著閃亮銅甲的王宮使者騎馬來到伯利恒。原來以色列王掃羅最近常被煩躁痛苦的心情折磨，整天發脾氣睡不著覺。大臣們向掃羅王推薦了大衛，說伯利恒耶西的兒子不但彈琴非常動聽，而且勇敢聰明，更有耶和華與他同在！",
+          "大衛的爸爸耶西立刻準備了餅、一皮袋酒和一隻小山羊羔作為禮物，並答應讓你陪著大衛一起前往基比亞的王宮照料行囊。王宮大殿裡的氣氛好緊張，高大的掃羅王皺著眉頭坐在王座上，手裡緊緊抓著長矛，侍衛們都嚇得低頭不敢說話。大衛深吸一口氣，對你點點頭，便抱起十弦琴坐下來，輕柔地彈起悠揚的樂曲。"
+        ],
+        prompt: "大殿裡安靜得連針掉在地上都聽得見，大衛正在彈琴安撫掃羅王，你在旁邊怎麼做？",
+        choices: [
+          {
+            text: "安靜站在廊柱旁為大衛默禱，同時留心觀察掃羅王的表情與動靜。",
+            stats: { faith: 3, wisdom: 2 },
+            feedback: "隨著大衛如清泉般溫柔的琴聲傳遍大殿，掃羅王緊皺的眉頭慢慢舒展開來，手裡的長矛也放下了，整個人變得舒暢又平靜！侍衛們都對你們投來敬佩的眼光。"
+          },
+          {
+            text: "趁著樂曲告一段落時，恭敬有禮地把伯利恒帶來的麥餅與美酒呈獻給近侍。",
+            stats: { wisdom: 4, bond: 1 },
+            feedback: "你的舉止大方又謙卑，掃羅王看見你們兩個少年如此懂事穩重，非常喜歡大衛，立刻派人告訴耶西，讓大衛留在宮裡做他拿兵器的人。"
+          },
+          {
+            text: "休息時和宮裡友善的老侍衛聊天，打聽邊境上非利士軍隊的最新消息。",
+            stats: { courage: 2, wisdom: 3 },
+            feedback: "你從一位駐守邊境的老兵口中打聽到，西方非利士人正在秘密集結大軍。你把消息告訴大衛，大衛誇獎你真是他最聰明的小幫手。"
+          }
+        ]
+      },
+      {
+        id: 5,
+        title: "戰鼓響起與爸爸的託付",
+        scripture: "撒母耳記上 17:1–3, 12–18",
+        sceneType: "march",
+        text: [
+          "掃羅王心情好轉後，大衛時常回到伯利恒繼續幫爸爸放羊。可是到了初夏時節，傳令兵騎著快馬衝過猶大各城，帶來令人緊張的消息：世仇非利士人集結了龐大的軍隊，紮營在以拉谷南邊的山坡上！掃羅王也召集了以色列大軍，紮營在以拉谷北邊的山坡上，兩邊隔著山谷對峙起來。",
+          "大衛的三位哥哥——大哥以利押、二哥亞比拿達、三哥沙瑪，都已經穿上軍裝跟著掃羅王去前線打仗了。這天傍晚，年邁的耶西把大衛叫到院子裡，準備了一大袋烘熟的麥穗子、十個大餅和十塊香濃的奶餅，吩咐大衛明天一早送到以拉谷軍營給哥哥們和千夫長，再帶回哥哥們平安的信物。"
+        ],
+        prompt: "明天一早就要出發前往以拉谷前線送糧食了，出發前的晚上你會怎麼準備？",
+        choices: [
+          {
+            text: "向耶西叔叔自告奮勇，請求陪大衛一起牽著小毛驢去軍營，沿途互相照應。",
+            stats: { bond: 4, courage: 2 },
+            feedback: "耶西叔叔摸摸你的頭笑著答應：「有你和大衛作伴，我這顆心就放心一半啦！記得問候哥哥們平安就早點回來喔！」"
+          },
+          {
+            text: "仔細檢查行囊裡的食物有沒有裝好，並悄悄把大衛慣用的牛皮甩石機弦放進布袋。",
+            stats: { wisdom: 4, faith: 1 },
+            feedback: "大衛看見你把甩石機弦也打包進去，笑著問去送飯帶這個做什麼？你眨眨眼說山路野生動物多，帶著最順手，沒想到這副機弦很快就要派上大用場了！"
+          },
+          {
+            text: "晚上和大衛一起坐在屋頂上看星星，重溫神膏立他的應許，彼此加油打氣。",
+            stats: { faith: 4, bond: 2 },
+            feedback: "望著西方隱約的營火微光，大衛堅定地說：「無論前方有什麼困難，永生神一定會保護祂的子民。」你們心裡都充滿了平靜與力量。"
+          }
+        ]
+      },
+      {
+        id: 6,
+        title: "前進以拉谷軍營",
+        scripture: "撒母耳記上 17:19–22",
+        sceneType: "camp",
+        text: [
+          "天還沒亮，公雞剛啼叫第一聲，大衛就把羊群交託給可靠的看守人，和你一起牽著馱滿麥穗、大餅和奶餅的小毛驢，迎著清晨涼爽的微風向西出發了。越靠近以拉谷，路上就越熱鬧，到處都是運送箭矢的牛車和神色緊張的傳令兵。",
+          "到了中午，你們終於爬上最後一座山梁，壯觀的以拉谷出現在眼前！南北兩座山坡上搭滿了密密麻麻的帳篷，山谷中間是一條布滿光滑鵝卵石的乾涸小溪。就在你們剛剛走進後方輜重營的時候，前方陣地突然爆發出震天動地的喊殺聲——兩邊的士兵正列隊走出營壘擺開陣勢，戰鼓咚咚響個不停！大衛眼睛一亮，好想立刻跑到陣前去看看三位哥哥。"
+        ],
+        prompt: "軍營裡人山人海、戰鼓喧天，大衛急著想跑到前線找哥哥們，你要怎麼配合？",
+        choices: [
+          {
+            text: "自願留在輜重營看管小毛驢和糧食袋，讓大衛輕輕鬆鬆快步跑到前線找哥哥。",
+            stats: { bond: 3, wisdom: 3 },
+            feedback: "你穩穩拉住小毛驢的韁繩，守在輜重車旁保護好所有食物；大衛像一隻敏捷的小羚羊般穿過人群，順利跑到了猶大支派的最前線。"
+          },
+          {
+            text: "趕緊把貨物交給輜重官登記看管，堅持陪大衛一起奔向前線，絕不讓他孤單涉險。",
+            stats: { courage: 3, bond: 3 },
+            feedback: "你們把行李託付妥當後，並肩穿過一排排拿著長矛的士兵，終於在陣前找到了身材高大的以利押、亞比拿達和沙瑪三位哥哥！"
+          },
+          {
+            text: "提醒大衛先按照爸爸的交代把奶餅送給千夫長，請軍官幫忙指路找哥哥更省力。",
+            stats: { wisdom: 4, courage: 1 },
+            feedback: "千夫長收到伯利恒香噴噴的奶餅非常開心，立刻派了一名傳令兵帶路，讓你們不用在幾萬人的大軍營裡繞遠路，很快就找到了哥哥們。"
+          }
+        ]
+      },
+      {
+        id: 7,
+        title: "巨人歌利亞的咆哮",
+        scripture: "撒母耳記上 17:4–11, 23–27",
+        sceneType: "goliath_roar",
+        text: [
+          "正當大衛和哥哥們說話的時候，山谷對面的非利士陣營裡突然走出一個像移動銅塔一樣的超級巨人！你嚇得倒吸一口涼氣——他就是非利士最可怕的戰士歌利亞！他身高足足有將近三公尺高，頭戴閃亮的青銅頭盔，身上穿著重達五十多公斤的魚鱗青銅鎧甲，手裡提著一根像織布機橫樑一樣粗的鐵頭長矛，前面還有一個拿大盾牌的士兵幫他開路。",
+          "歌利亞站在山谷中央，雙手叉腰大聲吼叫，聲音震得山石彷彿都在發抖：「你們以色列人擺陣做什麼？選一個人出來跟我單挑吧！他若打贏我，我們就做你們的奴僕；我若打贏他，你們就做我們的奴僕！」整整四十天了，全以色列幾萬名士兵一聽到歌利亞的吼聲就嚇得臉色發白、紛紛往後退縮。唯獨站在你身旁的大衛握緊拳頭，氣憤地問旁邊的士兵：「這外邦巨人是誰，竟敢天天辱罵永生神的軍隊呢？」"
+        ],
+        prompt: "全軍上下都在歌利亞的吼聲中嚇得發抖，只有大衛勇敢地站出來打聽情況，你怎麼做？",
+        choices: [
+          {
+            text: "挺起胸膛站在大衛身旁點頭附和，向周圍膽怯的士兵大聲說永生神一定會得勝。",
+            stats: { faith: 4, courage: 2 },
+            feedback: "你的聲音雖然年輕卻充滿力量，旁邊幾位老兵聽了都慚愧地低下頭，並悄悄告訴你們：掃羅王曾答應，誰能打敗這巨人，王就會賞賜大財並免除他全家納稅！"
+          },
+          {
+            text: "細心觀察歌利亞全身盔甲的弱點，發現他的額頭在頭盔邊緣露出一塊沒有遮住！",
+            stats: { wisdom: 4, courage: 1 },
+            feedback: "你像在伯利恒觀察野獸一樣冷靜審視巨人，立刻湊到大衛耳邊小聲指出這個關鍵發現。大衛眼睛一亮：「好眼力！那就是神為我們留下的破口！」"
+          },
+          {
+            text: "悄悄拉拉大衛的袖子，提醒他聲音小一點，因為大哥以利押的臉色已經越來越難看了。",
+            stats: { wisdom: 3, bond: 2 },
+            feedback: "你敏銳地注意到大哥以利押正咬牙切齒地瞪過來。雖然大衛為了神的榮耀不肯退縮，但你的提醒讓他先做好了心理準備。"
+          }
+        ]
+      },
+      {
+        id: 8,
+        title: "走進掃羅王的大帳",
+        scripture: "撒母耳記上 17:28–37",
+        sceneType: "tent",
+        text: [
+          "果然，大哥以利押聽見大衛一直在問巨人的事，氣得走過來大聲責罵：「你跑下來做什麼？在曠野那幾隻羊你交給誰看了？我知道你心裡驕傲，一定是偷跑下來看熱鬧的！」面對大哥當眾的誤解，大衛沒有生氣頂嘴，只是平靜地回答：「我做了什麼呢？我來豈沒有緣故嗎？」說完便轉身繼續和別人說話。",
+          "沒想到，大衛勇敢的話一傳十、十傳百，竟然傳進了中軍大帳掃羅王的耳裡！掃羅王立刻派人把大衛叫進王帳。你在帳篷簾幕外清清楚楚聽見大衛對掃羅王說：「大王不用擔心，你的僕人要去和那非利士人戰鬥！」掃羅搖頭說大衛只是個孩子，但大衛講述了自己放羊時靠著神打死獅子和棕熊的經歷，宣告說：「耶和華救我脫離獅子和熊的爪，也必救我脫離這非利士人的手！」掃羅終於點頭答應：「你可以去吧！耶和華必與你同在！」"
+        ],
+        prompt: "掃羅王正式答應讓大衛出戰了！當大衛走出王帳、周圍士兵議論紛紛時，你怎麼支持他？",
+        choices: [
+          {
+            text: "第一個衝上前握住大衛的手，大聲鼓勵他：「大衛加油，我永遠是你最堅強的後盾！」",
+            stats: { bond: 4, faith: 2 },
+            feedback: "大衛看見你滿滿信任的笑容，心裡感到無比溫暖，所有的懷疑與嘲笑都在你們的擊掌聲中煙消雲散。"
+          },
+          {
+            text: "向掃羅王的護衛長請求，讓你擔任大衛的隨身伴當，陪他一起走到山谷溪水邊。",
+            stats: { courage: 4, bond: 2 },
+            feedback: "掃羅王想起你曾陪大衛進宮彈琴，便點頭答應讓你送大衛到溪谷邊緣。你挺直腰桿走在好朋友身旁，覺得無比光榮。"
+          },
+          {
+            text: "去安慰還在擔心發抖的二哥與三哥，告訴他們大衛靠著神一定會平平安安凱旋歸來。",
+            stats: { wisdom: 3, bond: 3 },
+            feedback: "聽完你誠懇的話，二哥亞比拿達和三哥沙瑪終於放下心中的石頭，連原本生氣的大哥以利押也低聲為弟弟祈求平安。"
+          }
+        ]
+      },
+      {
+        id: 9,
+        title: "卸下銅甲與五顆光滑石子",
+        scripture: "撒母耳記上 17:38–40",
+        sceneType: "stones",
+        text: [
+          "出戰之前，掃羅王好心地把自己的王室戰衣給大衛穿上，又把沉甸甸的青銅頭盔戴在大衛頭上，給他穿上厚重的鎧甲，還在腰間掛了一把大寶劍。大衛試著往前走了兩步，卻發現這身大人穿的青銅重甲實在太重、太卡了，連跑步都跑不動！",
+          "大衛坦白地對掃羅王說：「我穿戴這些不能走，因為素來沒有穿慣。」於是大衛一件件脫下了頭盔、鎧甲和寶劍，重新換回舒服輕便的伯利恒米白牧羊短袍！他右手拿著陪伴自己多年的橄欖木牧羊杖，腰間斜背著牧羊人的小皮囊，左手拿著甩石的機弦，大步走向山谷底部。你陪他來到乾涸的溪床邊，大衛蹲下身子，正在清澈的溪水裡仔細挑選石頭。"
+        ],
+        prompt: "大衛卸下了世人眼中最堅固的青銅盔甲，正在溪水中挑選五顆光滑石子，你如何陪伴這最後一刻？",
+        choices: [
+          {
+            text: "蹲下來幫大衛一起挑選最圓潤、大小剛剛好的鵝卵石，用衣角擦乾水珠放進皮囊。",
+            stats: { wisdom: 3, bond: 3 },
+            feedback: "你們從小一起練習甩石，最懂什麼樣的石子飛得又直又快。五顆光滑圓潤的溪石整整齊齊放進皮囊裡，大衛拍拍皮囊，眼神平靜又充滿信心。"
+          },
+          {
+            text: "在溪水邊把手按在大衛肩膀上，獻上簡短卻熱切的禱告，求神親自引導每一顆石子。",
+            stats: { faith: 4, bond: 2 },
+            feedback: "「阿們！」大衛清脆地回應你的禱告，隨後跨過小溪，迎著那尊像銅牆鐵壁般的巨人邁出了勇敢的腳步。"
+          },
+          {
+            text: "妥善保管好脫下的王室裝備，並大聲提醒大衛保持奔跑速度、千萬別讓巨人靠近。",
+            stats: { wisdom: 4, courage: 2 },
+            feedback: "大衛回頭對你比了一個放心的手勢。你站在溪岸高處緊緊握著拳頭，全神貫注地望向山谷中央。"
+          }
+        ]
+      },
+      {
+        id: 10,
+        title: "奉萬軍之耶和華的名得勝！",
+        scripture: "撒母耳記上 17:41–54",
+        sceneType: "victory",
+        text: [
+          "巨人歌利亞大步走上前來，一看見對面走來的竟然是一個沒穿盔甲、只拿著一根牧羊杖的紅潤少年，氣得哈哈大笑，揮舞著長矛大罵：「你拿著木棍來找我，把我當成狗嗎？看我把你餵給天上的飛鳥！」",
+          "山谷兩邊幾萬名士兵全都屏住呼吸。大衛站定腳步，清亮而勇敢的聲音響徹整個以拉谷：「你來攻擊我，是靠著刀槍和銅戟；我來攻擊你，是靠著萬軍之耶和華的名，就是你所怒罵帶領以色列軍隊的神！今天耶和華必將你交在我手裡，使普天下都知道以色列中有神，因為爭戰的勝敗全在乎耶和華！」說完，大衛非但沒有逃跑，反而迎著巨人飛快跑過去！他從皮囊掏出一顆光滑石子裝上機弦，用力一甩——「嗖！」石子像閃電般精準打進歌利亞的額頭，巨人轟隆一聲面朝下倒在地上！大衛跑上前拔出巨人的刀砍下首級，非利士全軍嚇得轉身四處逃跑！"
+        ],
+        prompt: "歌利亞倒下了！以色列全軍發出震天歡呼衝下山坡追擊敵人，在這個歷史性的一刻，你決定怎麼做？",
+        choices: [
+          {
+            text: "跟著以色列大軍歡呼追擊，並小心拾起大衛留在溪畔的牧羊杖與甩石機弦珍藏起來。",
+            stats: { faith: 3, bond: 4 },
+            feedback: "你把大衛留在溪邊的牧羊杖和甩石機弦擦乾淨抱在懷裡，知道這兩件不起眼的小工具，正是神藉著信心成就奇蹟的最美見證！"
+          },
+          {
+            text: "拿起盾牌與長矛跟著勇士們奮勇向前追趕潰兵，親身經歷以色列收復家園的榮耀！",
+            stats: { courage: 4, faith: 2 },
+            feedback: "你和無數熱淚盈眶的以色列勇士一起高喊「耶和華得勝了！」，一路追趕逃跑的非利士軍隊直到迦特城門，見證了偉大的勝利！"
+          },
+          {
+            text: "第一時間穿過歡呼的人群回到大衛身旁，陪他一起走向掃羅王和元帥押尼珥面前。",
+            stats: { wisdom: 3, bond: 4 },
+            feedback: "你安靜地站在大衛身邊，看見掃羅王驚喜地召見大衛，而王子約拿單也立刻和大衛成為生死之交，把自己的外袍和弓箭都送給了大衛！"
+          },
+          {
+            text: "趁著大家慶祝的時候，第一時間騎著小毛驢趕回伯利恒，向年邁的耶西叔叔報平安！",
+            stats: { wisdom: 4, faith: 2 },
+            feedback: "當你推開耶西家的石門，把大衛打敗巨人、哥哥們全都平安的好消息告訴耶西叔叔時，老人家感動得流下眼淚，跪下來感謝天上的神！"
+          }
+        ]
+      }
+    ];
+
+    /* 4 種個性化終章結局 */
+    const STORY_ENDINGS = {
+      chronicler: {
+        badge: "終章結局一 · 信心與智慧之星",
+        title: "錫安詩篇的快樂記錄者",
+        scripture: "撒母耳記上 18:1–5 / 詩篇題注",
+        sceneType: "ending_harp",
+        text: [
+          "以拉谷的大勝利傳遍了整個以色列！掃羅王從此把大衛留在王宮裡擔任戰士長，王子約拿單也和大衛結拜為最好的兄弟。而你憑著一路上的聰明細心與堅定信心，留在大衛身邊成為最受信任的文字小史官。",
+          "每當大衛在星光下重新抱起十弦琴，唱出讚美耶和華拯救的優美詩歌時，你就在一旁的羊皮卷上把每一句動人的詩篇工工整整記錄下來，流傳給世世代代的小朋友閱讀！"
+        ]
+      },
+      captain: {
+        badge: "終章結局二 · 勇氣與守護之盾",
+        title: "大衛勇士團的年輕小隊長",
+        scripture: "撒母耳記上 18:5, 13–16",
+        sceneType: "victory",
+        text: [
+          "經過以拉谷這一戰，昔日在伯利恒山坡上放羊的你，已經成長為一名勇敢又機智的年輕小隊長！掃羅王看見你和大衛自幼同行、在戰場上毫不畏懼，便把你編入大衛帶領的精銳隊伍裡。",
+          "無論前方遇到什麼艱難的任務，你總是拿著盾牌守護在大衛身旁。你常笑著告訴新加入的年輕士兵：「真正讓人勇敢的不是手裡的刀劍，而是奉萬軍之耶和華的名邁出第一步！」"
+        ]
+      },
+      keeper: {
+        badge: "終章結局三 · 友誼與信物守護者",
+        title: "牧羊杖與甩石機弦的守護者",
+        scripture: "撒母耳記上 17:40, 54",
+        sceneType: "stones",
+        text: [
+          "當大衛把歌利亞的盔甲收進帳篷時，你卻把大衛留在溪水邊的那根橄欖木牧羊杖和牛皮甩石機弦珍藏了起來。無論大衛後來遇到多少考驗，你始終是他最溫暖、最貼心的好朋友，常為他送去伯利恒家鄉的麥餅與鼓勵。",
+          "多年以後，你回到故鄉伯利恒，在老橄欖樹下向一群群睜大眼睛的小朋友展示這副舊機弦，講述當年那位牧羊少年如何靠著信心打敗了三公尺高的巨人！"
+        ]
+      },
+      watchman: {
+        badge: "終章結局四 · 寧靜與守望之心",
+        title: "伯利恒青草坡的微笑守望者",
+        scripture: "撒母耳記上 17:15 / 路得記 4:11",
+        sceneType: "pasture",
+        text: [
+          "看著好朋友大衛踏上守護以色列百姓的榮耀道路後，你帶著耶西叔叔的祝福，開心地回到了伯利恒那片熟悉的青草山坡，繼續照看可愛的羊群，在微風中吹奏悠揚的短笛。",
+          "許多許多年後，已經成為以色列偉大君王的大衛微服回到伯利恒老家，在井水旁找到了微笑著的你。兩位老朋友緊緊擁抱，因為大衛知道，正是你忠實又溫暖的陪伴，陪他走過了人生最關鍵的第一步！"
+        ]
+      }
+    };
+
+    /* =========================================================================
+       2. Google AI API 串接預留介面（純聖經故事章節生成，絕無古詩內容）
+       ========================================================================= */
+    const EXTRA_BIBLE_CHAPTER_PRESETS = {
+      jonathan: {
+        title: "大衛與約拿單的真心盟約",
+        scripture: "撒母耳記上 18:1–4",
+        sceneType: "palace",
+        text: [
+          "打敗巨人歌利亞之後，掃羅王的兒子約拿單王子看見大衛如此勇敢又敬畏神，心裡非常敬佩他，立刻和大衛成為最要好的朋友！",
+          "約拿單脫下自己尊貴的外袍、戰衣，連同弓箭、寶劍和腰帶都送給了大衛，兩人在神面前立下永遠互相扶持的約定，成為聖經中最動人的友誼榜樣。"
+        ],
+        prompt: "看到王子約拿單和大衛成為好朋友，身為大衛童年摯友的你會怎麼做？",
+        choices: [
+          {
+            text: "開心向約拿單王子行禮，感謝他如此愛護大衛，三人一起成為守護以色列的好夥伴。",
+            stats: { bond: 4, wisdom: 2 },
+            feedback: "約拿單王子親切地拍拍你的肩膀，稱讚你和大衛自幼同行的深厚情誼非常可貴！"
+          },
+          {
+            text: "幫忙把約拿單贈送的寶劍與外袍妥善收好，提醒大衛永遠保持牧羊人的謙卑。",
+            stats: { wisdom: 4, faith: 2 },
+            feedback: "大衛感動地點點頭，把這份提醒深深記在心裡。"
+          }
+        ]
+      },
+      harp_peace: {
+        title: "基比亞王宮的平安琴聲",
+        scripture: "撒母耳記上 16:23",
+        sceneType: "ending_harp",
+        text: [
+          "每當掃羅王心裡感到煩躁不安的時候，大衛就抱起心愛的十弦琴坐在王座前彈奏讚美神的樂曲。清澈優美的琴聲像清晨的甘露一樣灑滿整個大殿。",
+          "漸漸地，掃羅王的眉頭舒展開了，煩躁的情緒完全離開了他，整個王宮再次充滿了平靜與安寧。"
+        ],
+        prompt: "大衛彈完一首平安樂曲後，你會為他遞上什麼貼心的小禮物？",
+        choices: [
+          {
+            text: "遞上一杯清涼的山泉水與伯利恒帶來的無花果餅，讓大衛潤潤喉嚨。",
+            stats: { bond: 4, wisdom: 1 },
+            feedback: "大衛開心地吃著家鄉的無花果餅，感謝你無微不至的照顧。"
+          },
+          {
+            text: "幫他擦拭十弦琴的木框並調整琴弦音準，準備下一首讚美詩。",
+            stats: { wisdom: 3, faith: 3 },
+            feedback: "調好音準的十弦琴發出更加悅耳動聽的共鳴聲！"
+          }
+        ]
+      },
+      shepherd_psalm: {
+        title: "青草地與溪水旁的讚美",
+        scripture: "詩篇 23:1–3",
+        sceneType: "pasture",
+        text: [
+          "回到伯利恒寧靜的山坡上，陽光金燦燦地照耀著青翠的草地，清澈的小溪在石頭間唱著歌。大衛看著一隻隻吃得飽飽的小綿羊，心中湧出滿滿的感恩。",
+          "他輕輕撥動琴弦唱道：「耶和華是我的牧者，我必不至缺乏。祂使我躺臥在青草地上，領我在可安歇的水邊！」"
+        ],
+        prompt: "聽著大衛唱出這首流傳千古的讚美詩，你想怎麼回應他？",
+        choices: [
+          {
+            text: "拿起小木笛吹出輕快的和聲，與大衛的十弦琴合奏一曲感恩讚美。",
+            stats: { faith: 4, bond: 3 },
+            feedback: "琴聲與笛聲在山谷間迴盪，連天上的白雲都彷彿停下來傾聽！"
+          },
+          {
+            text: "拿出隨身攜帶的羊皮小本子，把這段美好的歌詞一字一句寫下來保存。",
+            stats: { wisdom: 4, faith: 2 },
+            feedback: "你工整的字跡把這首寶貴的詩篇完整地保存了下來。"
+          }
+        ]
+      }
+    };
+
+    /**
+     * [預留 Google AI API 串接橋接器]
+     * 供下一個 AI 或開發者直接呼叫：
+     * await window.GoogleAIBridge.generateBibleChapter({ theme: '...', apiKey: 'AIza...', model: 'gemini-2.5-flash' })
+     */
+    window.GoogleAIBridge = {
+      endpointBase: "https://generativelanguage.googleapis.com/v1beta/models",
+      async generateBibleChapter({ theme = "jonathan", apiKey = "", model = "gemini-2.5-flash" } = {}) {
+        const cleanKey = (apiKey || "").trim();
+        if (cleanKey) {
+          const promptText = `請根據聖經《撒母耳記上》大衛的生平，為兒童繁體中文繪本創作一個新的互動冒險關卡（主題：${theme}）。請嚴格以純 JSON 格式回覆，不要包含 markdown 標記，欄位包含：title（關卡標題）、scripture（經文出處）、sceneType（固定填 "palace" 或 "pasture" 或 "victory"）、text（字串陣列，共2段，總字數約250字繁體中文）、prompt（選擇提問）、choices（陣列，含2個物件，每個物件有 text、stats: {faith, courage, wisdom, bond}、feedback）。`;
+          const url = `${this.endpointBase}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }],
+              generationConfig: { responseMimeType: "application/json" }
+            })
+          });
+          if (!res.ok) throw new Error(`Gemini API 回應錯誤 (${res.status})`);
+          const data = await res.json();
+          const rawJson = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+          return JSON.parse(rawJson);
+        }
+
+        // 未填入 API Key 時，使用內建離線聖經章節測試庫
+        await new Promise(r => setTimeout(r, 280));
+        return EXTRA_BIBLE_CHAPTER_PRESETS[theme] || EXTRA_BIBLE_CHAPTER_PRESETS.jonathan;
+      }
+    };
+
+    /* =========================================================================
+       3. 全螢幕書本狀態管理
+       ========================================================================= */
+    const STORAGE_KEY = "david_goliath_3d_book_bookmark_v2";
+    const PAGE_ASPECT = 896 / 1200;
+
+    let storyChapters = [...BASE_STORY_CHAPTERS];
+    let pendingGeneratedChapter = EXTRA_BIBLE_CHAPTER_PRESETS.jonathan;
+
+    const appState = {
+      playerName: "亞薩",
+      stats: { faith: 10, courage: 10, wisdom: 10, bond: 10 },
+      unlockedMaxChapter: 1,
+      choicesMade: {}
+    };
+
+    const readerStage = document.getElementById("reader-stage");
+    const bookShell = document.getElementById("book-shell");
+    const canvas = document.getElementById("book-canvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const interactiveOverlay = document.getElementById("interactive-overlay");
+    const loader = document.getElementById("loader");
+    const hudPill = document.getElementById("hud-pill");
+    const pageLabel = document.getElementById("page-label");
+    const btnFirst = document.getElementById("btn-first");
+    const btnPrev = document.getElementById("btn-prev");
+    const btnNext = document.getElementById("btn-next");
+    const btnGotoBookmark = document.getElementById("btn-goto-bookmark");
+    const btnResetZoom = document.getElementById("btn-reset-zoom");
+    const bookmarkRibbon = document.getElementById("bookmark-ribbon");
+    const bookmarkToast = document.getElementById("bookmark-toast");
+
+    const ribbonMainPath = document.getElementById("ribbon-main-path");
+    const ribbonSheenPath = document.getElementById("ribbon-sheen-path");
+    const ribbonStitchPath = document.getElementById("ribbon-stitch-path");
+    const ribbonEmblem = document.getElementById("ribbon-emblem");
+
+    const pageCache = [];
+    let cachedPageW = 0;
+    let cachedPageH = 0;
+
+    let isSpreadCapable = false;
+    let currentStep = 0;
+    let logicalW = 0;
+    let logicalH = 0;
+
+    function getTotalPageCount() {
+      const activeChapters = Math.min(appState.unlockedMaxChapter, storyChapters.length + 1);
+      return 1 + activeChapters * 2;
+    }
+
+    function getMaxStep() {
+      const total = getTotalPageCount();
+      return isSpreadCapable
+        ? Math.ceil((total - 1) / 2)
+        : total - 1;
+    }
+
+    function clearPageCache() {
+      pageCache.length = 0;
+    }
+
+    /* =========================================================================
+       4. 皮克斯 / 迪士尼 3D 繪本厚塗渲染引擎（無描邊軟光影、陽光放射光芒、立體體積高光）
+       ========================================================================= */
+    function draw3DSunburstSky(c, w, h) {
+      // 1. 飽滿湛藍到天藍漸層
+      const skyGrad = c.createLinearGradient(0, 0, 0, h * 0.85);
+      skyGrad.addColorStop(0, "#1E78D6");
+      skyGrad.addColorStop(0.45, "#4CA8F5");
+      skyGrad.addColorStop(0.85, "#A5DCFF");
+      skyGrad.addColorStop(1, "#FFF5D6");
+      c.fillStyle = skyGrad;
+      c.fillRect(0, 0, w, h);
+
+      // 2. 陽光上帝光芒（God Rays，完全重現封面圖放射光束）
+      c.save();
+      const sunX = w * 0.42;
+      const sunY = h * 0.34;
+      const rayCount = 18;
+      const maxR = Math.hypot(w, h) * 1.25;
+      for (let i = 0; i < rayCount; i++) {
+        const a1 = (i / rayCount) * Math.PI * 2;
+        const a2 = a1 + (Math.PI / rayCount) * 0.88;
+        const rayGrad = c.createRadialGradient(sunX, sunY, 10, sunX, sunY, maxR * 0.85);
+        rayGrad.addColorStop(0, "rgba(255, 252, 224, 0.36)");
+        rayGrad.addColorStop(0.55, "rgba(255, 244, 184, 0.14)");
+        rayGrad.addColorStop(1, "rgba(255, 244, 184, 0)");
+        c.beginPath();
+        c.moveTo(sunX, sunY);
+        c.arc(sunX, sunY, maxR, a1, a2);
+        c.closePath();
+        c.fillStyle = rayGrad;
+        c.fill();
+      }
+
+      // 中心暖陽光暈
+      const sunGlow = c.createRadialGradient(sunX, sunY, 4, sunX, sunY, w * 0.58);
+      sunGlow.addColorStop(0, "rgba(255, 255, 240, 0.92)");
+      sunGlow.addColorStop(0.32, "rgba(255, 242, 178, 0.45)");
+      sunGlow.addColorStop(1, "rgba(255, 242, 178, 0)");
+      c.fillStyle = sunGlow;
+      c.fillRect(0, 0, w, h);
+      c.restore();
+
+      // 3. 蓬鬆立體白雲（柔和體積漸層）
+      draw3DFluffyCloud(c, w * 0.16, h * 0.24, w * 0.14);
+      draw3DFluffyCloud(c, w * 0.84, h * 0.16, w * 0.16);
+
+      // 4. 大景深遠山層次（空氣透視淡紫褐色 -> 暖沙金）
+      const farHill = c.createLinearGradient(0, h * 0.56, 0, h * 0.8);
+      farHill.addColorStop(0, "rgba(176, 152, 128, 0.55)");
+      farHill.addColorStop(1, "rgba(216, 182, 138, 0.75)");
+      c.fillStyle = farHill;
+      c.beginPath();
+      c.moveTo(0, h * 0.76);
+      c.quadraticCurveTo(w * 0.18, h * 0.58, w * 0.42, h * 0.72);
+      c.quadraticCurveTo(w * 0.72, h * 0.56, w, h * 0.68);
+      c.lineTo(w, h);
+      c.lineTo(0, h);
+      c.closePath();
+      c.fill();
+
+      // 5. 前景溫暖黃土與嫩綠草地
+      const groundGrad = c.createLinearGradient(0, h * 0.74, 0, h);
+      groundGrad.addColorStop(0, "#9BB354");
+      groundGrad.addColorStop(0.22, "#C8A45D");
+      groundGrad.addColorStop(0.65, "#B58344");
+      groundGrad.addColorStop(1, "#8A5B28");
+      c.fillStyle = groundGrad;
+      c.beginPath();
+      c.moveTo(0, h * 0.76);
+      c.quadraticCurveTo(w * 0.5, h * 0.72, w, h * 0.77);
+      c.lineTo(w, h);
+      c.lineTo(0, h);
+      c.closePath();
+      c.fill();
+
+      // 地面揚起的金色沙塵光點（增添動感）
+      c.fillStyle = "rgba(255, 236, 179, 0.42)";
+      [[0.18, 0.83, 4], [0.26, 0.87, 3], [0.76, 0.85, 4.5], [0.85, 0.81, 3.5], [0.58, 0.90, 3]].forEach(([rx, ry, r]) => {
+        c.beginPath();
+        c.arc(w * rx, h * ry, r, 0, Math.PI * 2);
+        c.fill();
+      });
+    }
+
+    function draw3DFluffyCloud(c, x, y, r) {
+      c.save();
+      const puffs = [[-r * 0.65, r * 0.1, r * 0.55], [0, -r * 0.12, r * 0.72], [r * 0.68, r * 0.08, r * 0.52]];
+      puffs.forEach(([px, py, pr]) => {
+        const g = c.createRadialGradient(x + px - pr * 0.25, y + py - pr * 0.3, pr * 0.1, x + px, y + py, pr);
+        g.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+        g.addColorStop(0.75, "rgba(240, 248, 255, 0.78)");
+        g.addColorStop(1, "rgba(215, 235, 255, 0)");
+        c.fillStyle = g;
+        c.beginPath();
+        c.arc(x + px, y + py, pr, 0, Math.PI * 2);
+        c.fill();
+      });
+      c.restore();
+    }
+
+    // 繪製 3D 球體/圓柱體積著色輔助函式（營造皮克斯 3D 軟光影無描邊立體感）
+    function fill3DSphere(c, x, y, r, lightColor, midColor, darkColor) {
+      const g = c.createRadialGradient(x - r * 0.32, y - r * 0.32, r * 0.08, x, y, r);
+      g.addColorStop(0, lightColor);
+      g.addColorStop(0.55, midColor);
+      g.addColorStop(1, darkColor);
+      c.fillStyle = g;
+      c.beginPath();
+      c.arc(x, y, r, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // 繪製 3D 繪本風少年大衛（無死板黑線，使用柔和高光、次表面散射膚色、立體捲髮與牛皮機弦）
+    function draw3DDavid(c, cx, cy, scale) {
+      c.save();
+      c.translate(cx, cy);
+      c.scale(scale, scale);
+
+      // 1. 柔和地面接觸陰影
+      const shadowGrad = c.createRadialGradient(0, 130, 4, 0, 130, 48);
+      shadowGrad.addColorStop(0, "rgba(62, 39, 35, 0.45)");
+      shadowGrad.addColorStop(1, "rgba(62, 39, 35, 0)");
+      c.fillStyle = shadowGrad;
+      c.beginPath();
+      c.ellipse(0, 130, 48, 12, 0, 0, Math.PI * 2);
+      c.fill();
+
+      // 2. 立體雙腿與涼鞋
+      [-14, 14].forEach(lx => {
+        const legG = c.createLinearGradient(lx - 7, 0, lx + 7, 0);
+        legG.addColorStop(0, "#F5BE8E");
+        legG.addColorStop(0.5, "#E29D68");
+        legG.addColorStop(1, "#B87344");
+        c.fillStyle = legG;
+        c.beginPath();
+        c.roundRect(lx - 7, 72, 14, 48, 6);
+        c.fill();
+
+        // 涼鞋皮帶與鞋底
+        c.fillStyle = "#5D3A1A";
+        c.beginPath();
+        c.roundRect(lx - 10, 114, 20, 10, 5);
+        c.fill();
+        c.fillRect(lx - 8, 103, 16, 4);
+      });
+
+      // 3. 米白亞麻牧羊短袍（立體褶皺漸層）
+      const robeGrad = c.createLinearGradient(-32, 0, 34, 84);
+      robeGrad.addColorStop(0, "#FFFDF8");
+      robeGrad.addColorStop(0.45, "#F2E4CC");
+      robeGrad.addColorStop(0.85, "#D9C29C");
+      robeGrad.addColorStop(1, "#B89B72");
+      c.fillStyle = robeGrad;
+      c.beginPath();
+      c.moveTo(-24, 4);
+      c.lineTo(24, 4);
+      c.lineTo(32, 82);
+      c.quadraticCurveTo(0, 86, -32, 82);
+      c.closePath();
+      c.fill();
+
+      // 領口V字繩結陰影
+      c.fillStyle = "#C4A77D";
+      c.beginPath();
+      c.moveTo(-8, 4);
+      c.lineTo(0, 18);
+      c.lineTo(8, 4);
+      c.closePath();
+      c.fill();
+
+      // 4. 立體牛皮腰帶與金屬扣環
+      const beltGrad = c.createLinearGradient(-27, 44, 27, 54);
+      beltGrad.addColorStop(0, "#794A24");
+      beltGrad.addColorStop(0.5, "#5A3314");
+      beltGrad.addColorStop(1, "#3B200B");
+      c.fillStyle = beltGrad;
+      c.beginPath();
+      c.roundRect(-27, 45, 54, 10, 4);
+      c.fill();
+
+      // 銀金色皮帶扣
+      const buckleGrad = c.createLinearGradient(-6, 44, 6, 56);
+      buckleGrad.addColorStop(0, "#FFF9C4");
+      buckleGrad.addColorStop(0.5, "#D4AF37");
+      buckleGrad.addColorStop(1, "#8C6D1F");
+      c.fillStyle = buckleGrad;
+      c.beginPath();
+      c.roundRect(-6, 44, 12, 12, 3);
+      c.fill();
+
+      // 5. 斜背皮帶與鼓鼓的牧羊皮囊（3D 圓潤皮包質感）
+      c.strokeStyle = "#5A3314";
+      c.lineWidth = 6.5;
+      c.beginPath();
+      c.moveTo(-17, 5);
+      c.lineTo(25, 56);
+      c.stroke();
+
+      const bagGrad = c.createRadialGradient(22, 54, 4, 27, 62, 24);
+      bagGrad.addColorStop(0, "#B8743B");
+      bagGrad.addColorStop(0.6, "#854D20");
+      bagGrad.addColorStop(1, "#4E2A0E");
+      c.fillStyle = bagGrad;
+      c.beginPath();
+      c.roundRect(14, 46, 26, 32, 10);
+      c.fill();
+      // 皮囊蓋子高光
+      c.fillStyle = "#9C5D29";
+      c.beginPath();
+      c.roundRect(13, 45, 28, 14, 7);
+      c.fill();
+
+      // 6. 立體雙臂與手掌
+      const armL = c.createLinearGradient(-38, 10, -22, 50);
+      armL.addColorStop(0, "#F7C394");
+      armL.addColorStop(1, "#C98552");
+      c.fillStyle = armL;
+      c.beginPath();
+      c.roundRect(-37, 8, 14, 42, 7);
+      c.fill();
+
+      const armR = c.createLinearGradient(23, 10, 39, 50);
+      armR.addColorStop(0, "#F7C394");
+      armR.addColorStop(1, "#C98552");
+      c.fillStyle = armR;
+      c.beginPath();
+      c.roundRect(23, 8, 14, 42, 7);
+      c.fill();
+
+      // 左手握著牛皮甩石機弦
+      c.strokeStyle = "#5A3314";
+      c.lineWidth = 2.6;
+      c.beginPath();
+      c.moveTo(-31, 48);
+      c.quadraticCurveTo(-40, 76, -29, 94);
+      c.moveTo(-29, 48);
+      c.quadraticCurveTo(-18, 76, -24, 94);
+      c.stroke();
+      fill3DSphere(c, -26.5, 94, 7.5, "#A66A38", "#75441D", "#42230B");
+
+      // 7. 3D 圓潤臉龐（暖光高光＋紅潤臉頰次表面散射）
+      const faceGrad = c.createRadialGradient(-9, -34, 5, 0, -26, 34);
+      faceGrad.addColorStop(0, "#FFE0BD");
+      faceGrad.addColorStop(0.55, "#F2B37E");
+      faceGrad.addColorStop(1, "#C9814B");
+      c.fillStyle = faceGrad;
+      c.beginPath();
+      c.arc(0, -26, 30, 0, Math.PI * 2);
+      c.fill();
+
+      // 紅潤臉頰柔光
+      [[-15, -19], [15, -19]].forEach(([bx, by]) => {
+        const blush = c.createRadialGradient(bx, by, 1, bx, by, 8);
+        blush.addColorStop(0, "rgba(235, 92, 82, 0.36)");
+        blush.addColorStop(1, "rgba(235, 92, 82, 0)");
+        c.fillStyle = blush;
+        c.beginPath();
+        c.arc(bx, by, 8, 0, Math.PI * 2);
+        c.fill();
+      });
+
+      // 靈動大眼睛（眼白＋琥珀深棕虹膜＋雙高光點）
+      [[-11, -27], [11, -27]].forEach(([ex, ey]) => {
+        c.fillStyle = "#FFFDF9";
+        c.beginPath();
+        c.ellipse(ex, ey, 6.2, 6.8, 0, 0, Math.PI * 2);
+        c.fill();
+
+        fill3DSphere(c, ex, ey + 0.5, 4.5, "#6D4C41", "#3E2723", "#1B0F0A");
+
+        c.fillStyle = "#FFFFFF";
+        c.beginPath();
+        c.arc(ex - 1.6, ey - 1.6, 1.9, 0, Math.PI * 2);
+        c.arc(ex + 1.5, ey + 1.4, 0.9, 0, Math.PI * 2);
+        c.fill();
+      });
+
+      // 柔和立體小鼻子與自信微笑
+      fill3DSphere(c, 0, -20, 3.6, "#FFD3A8", "#E59D68", "#BD7440");
+
+      c.strokeStyle = "#5D331A";
+      c.lineWidth = 2.6;
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(-17, -36);
+      c.quadraticCurveTo(-11, -39, -6, -36);
+      c.moveTo(6, -36);
+      c.quadraticCurveTo(11, -39, 17, -36);
+      c.moveTo(-8, -13);
+      c.quadraticCurveTo(0, -6.5, 8, -13);
+      c.stroke();
+
+      // 8. 蓬鬆 3D 棕色捲髮球群（每撮捲髮皆有高光與陰影層次）
+      const hairBalls = [
+        [-25, -42, 13], [-12, -52, 15], [2, -55, 16], [16, -50, 15], [25, -40, 13],
+        [-28, -28, 10], [28, -28, 10], [-7, -45, 13], [10, -44, 13], [0, -48, 14]
+      ];
+      hairBalls.forEach(([hx, hy, hr]) => {
+        fill3DSphere(c, hx, hy, hr, "#8D5B34", "#5C3618", "#331B09");
+      });
+
+      c.restore();
+    }
+
+    // 繪製 3D 繪本風青銅巨人歌利亞（厚重金屬高光鎧甲、立體濃鬚、巨大長矛）
+    function draw3DGoliath(c, cx, cy, scale) {
+      c.save();
+      c.translate(cx, cy);
+      c.scale(scale, scale);
+
+      // 1. 巨型長矛（斜貫畫面，帶木紋與金屬反光）
+      c.save();
+      c.rotate(-0.45);
+      const shaftGrad = c.createLinearGradient(0, -7, 0, 7);
+      shaftGrad.addColorStop(0, "#BC936C");
+      shaftGrad.addColorStop(0.5, "#7D5636");
+      shaftGrad.addColorStop(1, "#452C18");
+      c.fillStyle = shaftGrad;
+      c.beginPath();
+      c.roundRect(-200, -6.5, 370, 13, 6);
+      c.fill();
+
+      // 立體雙面銀灰鐵矛頭
+      c.fillStyle = "#ECEFF1";
+      c.beginPath();
+      c.moveTo(-200, -15);
+      c.lineTo(-252, 0);
+      c.lineTo(-200, 0);
+      c.closePath();
+      c.fill();
+
+      c.fillStyle = "#78909C";
+      c.beginPath();
+      c.moveTo(-200, 0);
+      c.lineTo(-252, 0);
+      c.lineTo(-200, 15);
+      c.closePath();
+      c.fill();
+      c.restore();
+
+      // 2. 粗壯雙腿與青銅護膝
+      [-28, 28].forEach(lx => {
+        const legG = c.createLinearGradient(lx - 18, 0, lx + 18, 0);
+        legG.addColorStop(0, "#E0A472");
+        legG.addColorStop(0.6, "#B57745");
+        legG.addColorStop(1, "#7A4922");
+        c.fillStyle = legG;
+        c.beginPath();
+        c.roundRect(lx - 17, 60, 34, 72, 12);
+        c.fill();
+
+        const greaveG = c.createLinearGradient(lx - 19, 0, lx + 19, 0);
+        greaveG.addColorStop(0, "#D4AF7A");
+        greaveG.addColorStop(0.45, "#8D6843");
+        greaveG.addColorStop(1, "#4A321C");
+        c.fillStyle = greaveG;
+        c.beginPath();
+        c.roundRect(lx - 19, 76, 38, 38, 10);
+        c.fill();
+      });
+
+      // 3. 3D 青銅胸甲與魚鱗裙甲
+      const chestGrad = c.createRadialGradient(-20, -25, 10, 0, 10, 95);
+      chestGrad.addColorStop(0, "#E0BD84");
+      chestGrad.addColorStop(0.45, "#9C7346");
+      chestGrad.addColorStop(0.85, "#5E4022");
+      chestGrad.addColorStop(1, "#382411");
+      c.fillStyle = chestGrad;
+      c.beginPath();
+      c.roundRect(-66, -38, 132, 98, 28);
+      c.fill();
+
+      // 胸甲金色邊框高光
+      c.strokeStyle = "rgba(255, 224, 150, 0.55)";
+      c.lineWidth = 3;
+      c.beginPath();
+      c.roundRect(-62, -34, 124, 90, 25);
+      c.stroke();
+
+      // 巨型圓弧肩甲
+      fill3DSphere(c, -70, -16, 30, "#E6C58E", "#966E42", "#472E16");
+      fill3DSphere(c, 70, -16, 30, "#E6C58E", "#966E42", "#472E16");
+
+      // 4. 粗壯手臂與青銅護腕
+      [[-78, 1], [78, -1]].forEach(([ax]) => {
+        const armG = c.createLinearGradient(ax - 16, 0, ax + 16, 0);
+        armG.addColorStop(0, "#E3A776");
+        armG.addColorStop(0.6, "#B37442");
+        armG.addColorStop(1, "#73421D");
+        c.fillStyle = armG;
+        c.beginPath();
+        c.roundRect(ax - 16, -6, 32, 72, 15);
+        c.fill();
+
+        const cuffG = c.createLinearGradient(ax - 17, 0, ax + 17, 0);
+        cuffG.addColorStop(0, "#DFBC84");
+        cuffG.addColorStop(1, "#5C3E21");
+        c.fillStyle = cuffG;
+        c.beginPath();
+        c.roundRect(ax - 17, 36, 34, 24, 8);
+        c.fill();
+      });
+
+      // 5. 巨人頭部、濃密黑鬍與誇張卡通咬牙表情
+      fill3DSphere(c, 0, -68, 35, "#EBB282", "#C28250", "#824D27");
+
+      // 濃密 3D 黑鬍鬚
+      const beardGrad = c.createRadialGradient(-8, -50, 5, 0, -48, 38);
+      beardGrad.addColorStop(0, "#3E322E");
+      beardGrad.addColorStop(0.6, "#1F1816");
+      beardGrad.addColorStop(1, "#0D0908");
+      c.fillStyle = beardGrad;
+      c.beginPath();
+      c.arc(0, -55, 35, 0, Math.PI);
+      c.fill();
+
+      // 卡通咬牙大嘴與兇巴巴濃眉
+      c.fillStyle = "#FFFDF9";
+      c.beginPath();
+      c.roundRect(-16, -58, 32, 11, 4);
+      c.fill();
+
+      c.strokeStyle = "#1F1816";
+      c.lineWidth = 4.5;
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(-21, -81);
+      c.lineTo(-5, -73);
+      c.moveTo(21, -81);
+      c.lineTo(5, -73);
+      c.stroke();
+
+      // 6. 高光青銅頭盔
+      const helmGrad = c.createRadialGradient(-12, -92, 6, 0, -80, 42);
+      helmGrad.addColorStop(0, "#F0D29C");
+      helmGrad.addColorStop(0.5, "#9C7447");
+      helmGrad.addColorStop(1, "#452D16");
+      c.fillStyle = helmGrad;
+      c.beginPath();
+      c.arc(0, -76, 38, Math.PI, 0);
+      c.fill();
+      c.fillRect(-41, -78, 82, 9);
+      c.beginPath();
+      c.roundRect(-7, -120, 14, 15, 4);
+      c.fill();
+
+      c.restore();
+    }
+
+    // 繪製封面大標題「大衛與歌利亞！」（亮金黃＋鮮紅粗描邊 3D 立體字）
+    function drawCoverTitleBanner(c, w, h) {
+      c.save();
+      const lines = ["大衛", "與", "歌利亞！"];
+      const baseSize = Math.min(w * 0.135, h * 0.086);
+      c.textAlign = "left";
+      c.textBaseline = "middle";
+      c.lineJoin = "round";
+
+      const startX = w * 0.07;
+      let curY = h * 0.13;
+
+      lines.forEach((word, idx) => {
+        const fontSize = idx === 1 ? baseSize * 0.62 : baseSize;
+        c.font = `900 ${Math.round(fontSize)}px 'Noto Sans TC', sans-serif`;
+
+        c.lineWidth = Math.max(9, fontSize * 0.23);
+        c.strokeStyle = "#7F0000";
+        c.strokeText(word, startX + 3, curY + 5);
+
+        c.strokeStyle = "#D50000";
+        c.strokeText(word, startX, curY);
+
+        const tGrad = c.createLinearGradient(0, curY - fontSize * 0.5, 0, curY + fontSize * 0.5);
+        tGrad.addColorStop(0, "#FFF9C4");
+        tGrad.addColorStop(0.45, "#FFD600");
+        tGrad.addColorStop(1, "#FF8F00");
+        c.fillStyle = tGrad;
+        c.fillText(word, startX, curY);
+
+        curY += fontSize * (idx === 1 ? 0.92 : 1.06);
+      });
+
+      // 副標題徽章
+      const subText = "與大衛同行的勇氣冒險 · 繁體注音繪本";
+      c.font = `800 ${Math.round(w * 0.031)}px 'Noto Sans TC', sans-serif`;
+      const pillW = Math.min(w * 0.86, c.measureText(subText).width + 26);
+      const pillH = Math.round(h * 0.042);
+      const pillX = (w - pillW) / 2;
+      const pillY = h * 0.415;
+
+      c.fillStyle = "rgba(183, 28, 28, 0.92)";
+      c.beginPath();
+      c.roundRect(pillX, pillY, pillW, pillH, 999);
+      c.fill();
+      c.strokeStyle = "#FFD54F";
+      c.lineWidth = 2;
+      c.stroke();
+
+      c.fillStyle = "#FFF9C4";
+      c.textAlign = "center";
+      c.fillText(subText, w / 2, pillY + pillH / 2);
+
+      c.restore();
+    }
+
+    function renderCoverToCanvas(c, w, h) {
+      draw3DSunburstSky(c, w, h);
+      draw3DGoliath(c, w * 0.68, h * 0.63, Math.min(w, h) / 435);
+      draw3DDavid(c, w * 0.44, h * 0.68, Math.min(w, h) / 415);
+      drawCoverTitleBanner(c, w, h);
+
+      c.strokeStyle = "rgba(255, 213, 79, 0.65)";
+      c.lineWidth = 4;
+      c.strokeRect(8, 8, w - 16, h - 16);
+    }
+
+    // 繪製 3D 立體綿羊、金色十弦琴與軍營帳篷
+    function draw3DSheep(c, x, y, s) {
+      c.save();
+      c.translate(x, y);
+      c.scale(s, s);
+      // 柔和投影
+      c.fillStyle = "rgba(62, 39, 35, 0.25)";
+      c.beginPath();
+      c.ellipse(0, 26, 26, 7, 0, 0, Math.PI * 2);
+      c.fill();
+
+      // 小羊腿
+      c.fillStyle = "#4E342E";
+      c.beginPath();
+      c.roundRect(-13, 12, 5, 15, 2);
+      c.roundRect(8, 12, 5, 15, 2);
+      c.fill();
+
+      // 3D 蓬鬆羊毛球
+      [[-14, 0, 15], [0, -7, 18], [14, 0, 15], [0, 6, 16]].forEach(([px, py, r]) => {
+        fill3DSphere(c, px, py, r, "#FFFFFF", "#F5EFE6", "#D7CCC8");
+      });
+
+      // 可愛小羊頭
+      fill3DSphere(c, -21, -2, 10, "#6D4C41", "#4E342E", "#2C1810");
+      c.fillStyle = "#FFFFFF";
+      c.beginPath();
+      c.arc(-24, -4, 2.2, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    }
+
+    function draw3DGoldenHarp(c, x, y, s) {
+      c.save();
+      c.translate(x, y);
+      c.scale(s, s);
+      const harpGrad = c.createLinearGradient(-22, -45, 28, 45);
+      harpGrad.addColorStop(0, "#FFF59D");
+      harpGrad.addColorStop(0.5, "#FFB300");
+      harpGrad.addColorStop(1, "#B26A00");
+      c.strokeStyle = harpGrad;
+      c.lineWidth = 8;
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(-20, -45);
+      c.lineTo(-20, 45);
+      c.lineTo(25, 45);
+      c.quadraticCurveTo(34, -15, -20, -45);
+      c.stroke();
+
+      c.strokeStyle = "rgba(255, 253, 231, 0.85)";
+      c.lineWidth = 1.6;
+      for (let i = -10; i <= 14; i += 6) {
+        c.beginPath();
+        c.moveTo(i, -22 + Math.abs(i));
+        c.lineTo(i, 42);
+        c.stroke();
+      }
+      c.restore();
+    }
+
+    function draw3DCampTent(c, x, y, s) {
+      c.save();
+      c.translate(x, y);
+      c.scale(s, s);
+      const tentGrad = c.createLinearGradient(-42, -35, 42, 30);
+      tentGrad.addColorStop(0, "#FFFDF9");
+      tentGrad.addColorStop(0.6, "#E6D7C3");
+      tentGrad.addColorStop(1, "#B89F82");
+      c.fillStyle = tentGrad;
+      c.beginPath();
+      c.moveTo(-44, 30);
+      c.lineTo(0, -36);
+      c.lineTo(44, 30);
+      c.closePath();
+      c.fill();
+
+      // 帳篷入口陰影
+      c.fillStyle = "#5D4037";
+      c.beginPath();
+      c.moveTo(-10, 30);
+      c.lineTo(0, 4);
+      c.lineTo(10, 30);
+      c.closePath();
+      c.fill();
+
+      // 紅色三角小旗
+      c.fillStyle = "#D32F2F";
+      c.beginPath();
+      c.moveTo(0, -36);
+      c.lineTo(24, -46);
+      c.lineTo(0, -54);
+      c.closePath();
+      c.fill();
+      c.restore();
+    }
+
+    // 繪製內頁「左頁（或直立模式上方）：3D 彩色兒童繪本插畫」
+    function renderIllustrationPageToCanvas(c, w, h, chapterObj, isEnding = false) {
+      c.fillStyle = "#FFFDF7";
+      c.fillRect(0, 0, w, h);
+
+      // 頂部天空藍漸層標題旗幟
+      const bannerH = Math.max(46, h * 0.105);
+      const topGrad = c.createLinearGradient(0, 0, w, bannerH);
+      topGrad.addColorStop(0, "#1E78D6");
+      topGrad.addColorStop(1, "#56B4F5");
+      c.fillStyle = topGrad;
+      c.beginPath();
+      c.roundRect(14, 14, w - 28, bannerH, 14);
+      c.fill();
+
+      c.fillStyle = "#FFF9C4";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.font = `900 ${Math.round(w * 0.043)}px 'Noto Sans TC', sans-serif`;
+      const headerLabel = isEnding
+        ? chapterObj.badge
+        : `第 ${chapterObj.id} 關 · ${chapterObj.title}`;
+      c.fillText(headerLabel, w / 2, 14 + bannerH * 0.40);
+
+      c.fillStyle = "#FFFFFF";
+      c.font = `700 ${Math.round(w * 0.026)}px 'Noto Sans TC', sans-serif`;
+      c.fillText(`📖 ${chapterObj.scripture}`, w / 2, 14 + bannerH * 0.78);
+
+      // 中央大畫框
+      const frameX = 14;
+      const frameY = 14 + bannerH + 10;
+      const frameW = w - 28;
+      const frameH = h * 0.67;
+
+      c.save();
+      c.beginPath();
+      c.roundRect(frameX, frameY, frameW, frameH, 18);
+      c.clip();
+
+      draw3DSunburstSky(c, frameX + frameW, frameY + frameH);
+
+      const scaleBase = Math.min(frameW, frameH) / 365;
+      const scene = chapterObj.sceneType;
+
+      if (scene === "pasture" || scene === "anointing") {
+        draw3DSheep(c, frameX + frameW * 0.23, frameY + frameH * 0.77, scaleBase * 0.95);
+        draw3DSheep(c, frameX + frameW * 0.78, frameY + frameH * 0.75, scaleBase * 0.88);
+        draw3DDavid(c, frameX + frameW * 0.50, frameY + frameH * 0.65, scaleBase * 1.16);
+        if (scene === "anointing") {
+          const holyGlow = c.createRadialGradient(
+            frameX + frameW * 0.50, frameY + frameH * 0.34, 6,
+            frameX + frameW * 0.50, frameY + frameH * 0.34, 72 * scaleBase
+          );
+          holyGlow.addColorStop(0, "rgba(255, 241, 118, 0.75)");
+          holyGlow.addColorStop(1, "rgba(255, 241, 118, 0)");
+          c.fillStyle = holyGlow;
+          c.beginPath();
+          c.arc(frameX + frameW * 0.50, frameY + frameH * 0.34, 72 * scaleBase, 0, Math.PI * 2);
+          c.fill();
+        }
+      } else if (scene === "lionbear") {
+        draw3DSheep(c, frameX + frameW * 0.22, frameY + frameH * 0.78, scaleBase * 0.9);
+        draw3DDavid(c, frameX + frameW * 0.48, frameY + frameH * 0.65, scaleBase * 1.16);
+        fill3DSphere(c, frameX + frameW * 0.78, frameY + frameH * 0.70, 34 * scaleBase, "#F59B42", "#D8721E", "#8A3E08");
+      } else if (scene === "palace" || scene === "ending_harp") {
+        draw3DGoldenHarp(c, frameX + frameW * 0.74, frameY + frameH * 0.62, scaleBase * 1.15);
+        draw3DDavid(c, frameX + frameW * 0.42, frameY + frameH * 0.65, scaleBase * 1.16);
+      } else if (scene === "march" || scene === "camp") {
+        draw3DCampTent(c, frameX + frameW * 0.74, frameY + frameH * 0.66, scaleBase * 1.05);
+        draw3DDavid(c, frameX + frameW * 0.42, frameY + frameH * 0.65, scaleBase * 1.16);
+      } else if (scene === "stones") {
+        const brookG = c.createLinearGradient(0, frameY + frameH * 0.84, 0, frameY + frameH * 0.94);
+        brookG.addColorStop(0, "#81D4FA");
+        brookG.addColorStop(1, "#0288D1");
+        c.fillStyle = brookG;
+        c.beginPath();
+        c.ellipse(frameX + frameW * 0.5, frameY + frameH * 0.89, frameW * 0.46, 22 * scaleBase, 0, 0, Math.PI * 2);
+        c.fill();
+        for (let s = 0; s < 5; s++) {
+          fill3DSphere(c, frameX + frameW * (0.34 + s * 0.08), frameY + frameH * 0.87, 10 * scaleBase, "#FFFFFF", "#CFD8DC", "#78909C");
+        }
+        draw3DDavid(c, frameX + frameW * 0.50, frameY + frameH * 0.61, scaleBase * 1.14);
+      } else {
+        draw3DGoliath(c, frameX + frameW * 0.72, frameY + frameH * 0.60, scaleBase * 0.94);
+        draw3DDavid(c, frameX + frameW * 0.36, frameY + frameH * 0.66, scaleBase * 1.14);
+      }
+
+      c.restore();
+
+      // 插畫框金邊
+      c.strokeStyle = "#D49B54";
+      c.lineWidth = 3;
+      c.beginPath();
+      c.roundRect(frameX, frameY, frameW, frameH, 18);
+      c.stroke();
+
+      // 底部成長徽章進度欄
+      const footerY = frameY + frameH + 10;
+      const footerH = h - footerY - 14;
+      c.fillStyle = "#F9EFE0";
+      c.beginPath();
+      c.roundRect(14, footerY, w - 28, footerH, 14);
+      c.fill();
+      c.strokeStyle = "#E0C397";
+      c.lineWidth = 2;
+      c.stroke();
+
+      const badges = [
+        { label: "信心", val: appState.stats.faith, color: "#E65100" },
+        { label: "勇氣", val: appState.stats.courage, color: "#C62828" },
+        { label: "智慧", val: appState.stats.wisdom, color: "#1565C0" },
+        { label: "友誼", val: appState.stats.bond, color: "#2E7D32" }
+      ];
+      const colW = (w - 28) / 4;
+      badges.forEach((b, idx) => {
+        const bx = 14 + colW * idx + colW / 2;
+        c.fillStyle = "#6D4C41";
+        c.font = `700 ${Math.round(w * 0.025)}px 'Noto Sans TC', sans-serif`;
+        c.textAlign = "center";
+        c.fillText(b.label, bx, footerY + footerH * 0.34);
+
+        c.fillStyle = b.color;
+        c.font = `900 ${Math.round(w * 0.037)}px 'Noto Sans TC', sans-serif`;
+        c.fillText(`★ ${b.val}`, bx, footerY + footerH * 0.72);
+      });
+    }
+
+    function renderStoryPageBackgroundToCanvas(c, w, h, pageNumLabel) {
+      c.fillStyle = "#FFFDF7";
+      c.fillRect(0, 0, w, h);
+
+      c.strokeStyle = "#EAD7B7";
+      c.lineWidth = 2;
+      c.beginPath();
+      c.roundRect(14, 14, w - 28, h - 28, 16);
+      c.stroke();
+
+      c.fillStyle = "#A1887F";
+      c.font = `700 ${Math.round(w * 0.025)}px 'Noto Sans TC', sans-serif`;
+      c.textAlign = "right";
+      c.fillText(pageNumLabel, w - 24, h - 20);
+    }
+
+    /* =========================================================================
+       5. 離屏頁面快取生成器（供物理翻頁動畫使用）
+       ========================================================================= */
+    function getCachedPage(pageIndex, targetW, targetH) {
+      const dpr = getEffectiveDpr();
+      const pxW = Math.max(1, Math.round(targetW * dpr));
+      const pxH = Math.max(1, Math.round(targetH * dpr));
+
+      if (cachedPageW !== pxW || cachedPageH !== pxH) {
+        pageCache.length = 0;
+        cachedPageW = pxW;
+        cachedPageH = pxH;
+      }
+
+      if (pageCache[pageIndex]) {
+        return pageCache[pageIndex];
+      }
+
+      const off = document.createElement("canvas");
+      off.width = pxW;
+      off.height = pxH;
+      const octx = off.getContext("2d", { alpha: false });
+      octx.scale(dpr, dpr);
+
+      if (pageIndex === 0) {
+        renderCoverToCanvas(octx, targetW, targetH);
+      } else {
+        const chapterIdx = Math.floor((pageIndex - 1) / 2);
+        const isLeftIllustration = (pageIndex % 2 === 1);
+        const isEnding = chapterIdx >= storyChapters.length;
+        const chapterData = isEnding ? getFinalEnding() : storyChapters[chapterIdx];
+
+        if (isLeftIllustration) {
+          renderIllustrationPageToCanvas(octx, targetW, targetH, chapterData, isEnding);
+        } else {
+          renderStoryPageBackgroundToCanvas(octx, targetW, targetH, isEnding ? "史詩終章" : `第 ${chapterIdx + 1} 關`);
+          octx.fillStyle = "#3E2723";
+          octx.textAlign = "left";
+          octx.font = `600 ${Math.round(targetW * 0.033)}px 'Noto Sans TC', sans-serif`;
+          const previewLines = (chapterData.text[0] || "").match(/.{1,15}/g) || [];
+          previewLines.slice(0, 9).forEach((ln, idx) => {
+            octx.fillText(ln, 26, 48 + idx * (targetH * 0.052));
+          });
+        }
+      }
+
+      pageCache[pageIndex] = off;
+      return off;
+    }
+
+    function getFinalEnding() {
+      const { faith, courage, wisdom, bond } = appState.stats;
+      const list = [
+        { key: "chronicler", val: faith + wisdom },
+        { key: "captain", val: courage * 1.6 + faith * 0.4 },
+        { key: "keeper", val: bond * 1.6 + faith * 0.4 },
+        { key: "watchman", val: wisdom * 1.4 + bond * 0.6 }
+      ];
+      list.sort((a, b) => b.val - a.val);
+      return STORY_ENDINGS[list[0].key];
+    }
+
+    /* =========================================================================
+       6. 同步互動 DOM 覆蓋層（嚴格限制於書頁安全邊界內，絕不重疊跑版）
+       ========================================================================= */
+    function renderInteractiveOverlay() {
+      if (flip.active) {
+        interactiveOverlay.innerHTML = "";
+        return;
+      }
+
+      // 1. 封面頁（currentStep === 0）
+      if (currentStep === 0) {
+        interactiveOverlay.innerHTML = `
+          <div style="position:absolute; left:5%; right:5%; bottom:3.5%; display:flex; flex-direction:column; align-items:center; gap:7px;">
+            <div class="interactive-hotspot" style="background:rgba(255,253,247,0.94); border:2px solid #D49B54; border-radius:999px; padding:4px 12px; display:flex; align-items:center; gap:6px; box-shadow:0 4px 12px rgba(0,0,0,0.25);">
+              <span style="font-size:12px; font-weight:800; color:#5D4037;">小夥伴名字：</span>
+              <input id="cover-name-input" type="text" maxlength="6" value="${escapeHtml(appState.playerName)}"
+                onchange="appState.playerName = this.value.trim() || '亞薩'; clearPageCache();"
+                style="width:68px; border:none; border-bottom:2px solid #E65100; background:transparent; font-weight:900; font-size:13px; color:#B71C1C; text-align:center; outline:none;" />
+            </div>
+            <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; width:100%;">
+              <button onclick="startStoryAdventure()" class="interactive-hotspot cover-cta-btn" style="padding:9px 20px; font-size:14px;">
+                📖 翻開故事書開始冒險 →
+              </button>
+              <button onclick="openModal('ai-story-modal')" class="interactive-hotspot cover-sub-btn" style="padding:8px 14px; font-size:12.5px;">
+                ✨ AI聖經故事擴充
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // 2. 判斷目前顯示「插畫頁」或「文字與選項頁」
+      let chapterIdx = 0;
+      let showTextPane = false;
+
+      if (isSpreadCapable) {
+        chapterIdx = currentStep - 1;
+        showTextPane = true;
+      } else {
+        chapterIdx = Math.floor((currentStep - 1) / 2);
+        showTextPane = (currentStep % 2 === 0);
+      }
+
+      if (!showTextPane) {
+        interactiveOverlay.innerHTML = `
+          <div style="position:absolute; left:16px; right:16px; bottom:18px; display:flex; justify-content:center;">
+            <button onclick="turnPage(1)" class="interactive-hotspot cover-cta-btn" style="padding:9px 20px; font-size:14px;">
+              翻開下一頁閱讀故事與做選擇 →
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const isEnding = chapterIdx >= storyChapters.length;
+      const chapter = isEnding ? getFinalEnding() : storyChapters[chapterIdx];
+
+      // 嚴格計算安全內邊距（避開右上角緞帶書籤與底部頁碼）
+      const paneRectStyle = isSpreadCapable
+        ? "position:absolute; top:20px; bottom:34px; left:calc(50% + 18px); right:20px;"
+        : "position:absolute; top:20px; bottom:34px; left:20px; right:20px;";
+
+      const prevFeedback = (chapterIdx > 0 && appState.choicesMade[chapterIdx] !== undefined && storyChapters[chapterIdx - 1])
+        ? storyChapters[chapterIdx - 1].choices[appState.choicesMade[chapterIdx]].feedback
+        : "";
+
+      if (isEnding) {
+        interactiveOverlay.innerHTML = `
+          <div class="interactive-hotspot story-scroll-area" style="${paneRectStyle} padding:8px 10px; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:inline-block; align-self:flex-start; background:#FFE082; color:#8E0000; font-size:12px; font-weight:900; padding:3px 10px; border-radius:999px;">
+              ${escapeHtml(chapter.badge)}
+            </div>
+            <h2 class="zhuyin-text" style="font-size:clamp(18px, 2.1vw, 22px); font-weight:900; color:#8E0000;">
+              ${escapeHtml(chapter.title)}
+            </h2>
+            ${prevFeedback ? `
+              <div class="zhuyin-text" style="background:#E8F5E9; border-left:4px solid #2E7D32; padding:8px 10px; border-radius:8px; font-size:13px; color:#1B5E20;">
+                <strong>✨ 你的行動回響：</strong>${escapeHtml(prevFeedback)}
+              </div>
+            ` : ""}
+            <div class="zhuyin-text" style="font-size:clamp(14px, 1.48vw, 16px); color:#3E2723;">
+              ${chapter.text.map(p => `<p style="margin-bottom:8px; text-indent:2em;">${escapeHtml(p)}</p>`).join("")}
+            </div>
+            <div style="margin-top:auto; padding-top:8px; display:flex; flex-wrap:wrap; gap:8px;">
+              <button onclick="restartStoryAdventure()" class="cover-cta-btn" style="padding:8px 16px; font-size:13px;">
+                🔄 再玩一次探索不同結局
+              </button>
+              <button onclick="openModal('ai-story-modal')" class="cover-sub-btn" style="padding:8px 14px; font-size:13px;">
+                ✨ 擴充新的聖經故事章節
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const labels = ["甲", "乙", "丙", "丁"];
+      const selectedIdx = appState.choicesMade[chapter.id];
+
+      interactiveOverlay.innerHTML = `
+        <div class="interactive-hotspot story-scroll-area" style="${paneRectStyle} padding:6px 10px; display:flex; flex-direction:column; gap:8px;">
+          ${prevFeedback ? `
+            <div class="zhuyin-text" style="background:#FFF3E0; border-left:4px solid #EF6C00; padding:7px 10px; border-radius:8px; font-size:12.5px; color:#5D4037;">
+              <strong>✨ 上一步的結果：</strong>${escapeHtml(prevFeedback)}
+            </div>
+          ` : ""}
+
+          <div class="zhuyin-text" style="font-size:clamp(14px, 1.48vw, 16px); color:#2C1E16;">
+            ${chapter.text.map(p => `<p style="margin-bottom:8px; text-indent:2em;">${escapeHtml(p)}</p>`).join("")}
+          </div>
+
+          <div style="border-top:1.5px dashed #D49B54; padding-top:8px; margin-top:2px;">
+            <div class="zhuyin-text" style="font-size:13.5px; font-weight:900; color:#B71C1C; margin-bottom:7px;">
+              🌟 ${escapeHtml(chapter.prompt)}
+            </div>
+            <div style="display:flex; flex-direction:column; gap:7px;">
+              ${chapter.choices.map((ch, idx) => `
+                <button onclick="chooseStoryOption(${chapter.id}, ${idx})" class="story-choice-card"
+                  style="${selectedIdx === idx ? 'border-color:#2E7D32; background:#E8F5E9;' : ''}">
+                  <span class="choice-badge">${labels[idx]}</span>
+                  <span class="zhuyin-text" style="font-size:13.5px; font-weight:700; color:#3E2723;">
+                    ${escapeHtml(ch.text)}
+                  </span>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function startStoryAdventure() {
+      clearPageCache();
+      turnPage(1);
+    }
+
+    function restartStoryAdventure() {
+      storyChapters = [...BASE_STORY_CHAPTERS];
+      appState.stats = { faith: 10, courage: 10, wisdom: 10, bond: 10 };
+      appState.unlockedMaxChapter = 1;
+      appState.choicesMade = {};
+      clearPageCache();
+      currentStep = 0;
+      updateLayout(false);
+      showBookmarkToast("已重新開啟故事，準備展開新的冒險！");
+    }
+
+    function chooseStoryOption(chapterId, choiceIdx) {
+      const chapter = storyChapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+      const chosen = chapter.choices[choiceIdx];
+
+      if (appState.choicesMade[chapterId] === undefined) {
+        for (const [k, v] of Object.entries(chosen.stats)) {
+          appState.stats[k] = (appState.stats[k] || 10) + v;
+        }
+      }
+      appState.choicesMade[chapterId] = choiceIdx;
+
+      if (appState.unlockedMaxChapter <= chapterId) {
+        appState.unlockedMaxChapter = chapterId + 1;
+      }
+      clearPageCache();
+      updateLayout(false);
+      turnPage(1);
+    }
+
+    /* =========================================================================
+       7. Google AI 聖經故事擴充與注音字體設定互動
+       ========================================================================= */
+    async function handleGenerateExtraChapter() {
+      const btn = document.getElementById("btn-run-story-gen");
+      const theme = document.getElementById("story-theme-select").value;
+      const apiKey = document.getElementById("gemini-api-key-input").value;
+      const model = document.getElementById("gemini-model-select").value;
+      const badge = document.getElementById("api-status-badge");
+
+      btn.disabled = true;
+      btn.textContent = "⏳ 正在生成聖經故事章節…";
+
+      try {
+        badge.textContent = apiKey.trim() ? `連線 ${model} 中…` : "執行離線聖經章節測試…";
+        const ch = await window.GoogleAIBridge.generateBibleChapter({ theme, apiKey, model });
+        pendingGeneratedChapter = ch;
+
+        document.getElementById("preview-ch-title").textContent = ch.title;
+        document.getElementById("preview-ch-ref").textContent = `📖 ${ch.scripture}`;
+        document.getElementById("preview-ch-text").innerHTML = (ch.text || []).map(p => `<p style="margin-bottom:6px;">${escapeHtml(p)}</p>`).join("");
+
+        badge.textContent = apiKey.trim() ? `✅ 已由 ${model} 生成新章節` : "✅ 測試聖經章節準備完成";
+      } catch (err) {
+        badge.textContent = "⚠️ API 錯誤，已保留預設測試章節";
+        showBookmarkToast("API 呼叫失敗：" + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "✨ 生成聖經故事章節";
+      }
+    }
+
+    function insertGeneratedChapterIntoBook() {
+      if (!pendingGeneratedChapter) return;
+      const newId = storyChapters.length + 1;
+      const newChapterObj = {
+        ...pendingGeneratedChapter,
+        id: newId
+      };
+      storyChapters.push(newChapterObj);
+      appState.unlockedMaxChapter = Math.max(appState.unlockedMaxChapter, newId);
+      clearPageCache();
+      closeModal("ai-story-modal");
+
+      const targetStep = isSpreadCapable ? newId : (newId * 2 - 1);
+      currentStep = targetStep;
+      updateLayout(false);
+      showBookmarkToast(`已將《${newChapterObj.title}》加入繪本第 ${newId} 關！`);
+    }
+
+    function loadCustomZhuyinFont() {
+      const val = document.getElementById("custom-zhuyin-url").value.trim();
+      if (!val) {
+        showBookmarkToast("請先輸入注音字體檔案路徑或字體名稱");
+        return;
+      }
+      const isUrl = val.includes("/") || val.includes(".");
+      if (isUrl) {
+        const fontFace = new FontFace("CustomZhuyinFont", `url("${val}")`);
+        fontFace.load().then(loaded => {
+          document.fonts.add(loaded);
+          document.documentElement.style.setProperty("--font-zhuyin-story", "'CustomZhuyinFont', 'Noto Sans TC', sans-serif");
+          showBookmarkToast("已成功載入外部注音字體！");
+        }).catch(() => {
+          showBookmarkToast("字體檔案載入失敗，請確認路徑是否正確");
+        });
+      } else {
+        document.documentElement.style.setProperty("--font-zhuyin-story", `'${val}', 'CustomZhuyinFont', 'Noto Sans TC', sans-serif`);
+        showBookmarkToast(`已套用本機注音字體：${val}`);
+      }
+    }
+
+    function toggleZhuyinSpacing() {
+      const boosted = document.body.classList.toggle("zhuyin-spacing-boost");
+      document.getElementById("btn-toggle-spacing").textContent = boosted ? "已開啟加寬注音行距" : "已開啟標準行距";
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add("open");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    /* =========================================================================
+       8. 物理翻頁引擎、紅金燕尾緞帶書籤與縮放手勢系統
+       ========================================================================= */
+    let ribbonOpenFactor = 0;
+    let ribbonAnimFrame = null;
+
+    function applyRibbonGeometry(t) {
+      const sideY = 25 + t * 55;
+      const notchY = 17.5 + t * 49;
+      const stitchEndY = 20.5 + t * 52.5;
+
+      const d = `M2 2.5C2 1.12 3.12 0 4.5 0H37.5C38.88 0 40 1.12 40 2.5V${sideY.toFixed(1)}L21 ${notchY.toFixed(1)}L2 ${sideY.toFixed(1)}V2.5Z`;
+      ribbonMainPath.setAttribute("d", d);
+      ribbonSheenPath.setAttribute("d", d);
+      ribbonStitchPath.setAttribute("d", `M6.8 3.5V${stitchEndY.toFixed(1)}M35.2 3.5V${stitchEndY.toFixed(1)}`);
+
+      const emblemAlpha = Math.max(0, Math.min(1, (t - 0.45) / 0.45));
+      ribbonEmblem.setAttribute("opacity", emblemAlpha.toFixed(2));
+      ribbonEmblem.setAttribute("transform", `translate(0, ${((t - 1) * 14).toFixed(1)})`);
+    }
+
+    function animateRibbonTo(targetT, immediate = false) {
+      if (ribbonAnimFrame) {
+        cancelAnimationFrame(ribbonAnimFrame);
+        ribbonAnimFrame = null;
+      }
+      if (immediate) {
+        ribbonOpenFactor = targetT;
+        applyRibbonGeometry(ribbonOpenFactor);
+        return;
+      }
+
+      let pos = ribbonOpenFactor;
+      let vel = 0;
+      let lastTs = performance.now();
+      const stiffness = 135;
+      const damping = 18;
+
+      function tick(now) {
+        const dt = Math.min(0.032, (now - lastTs) / 1000);
+        lastTs = now;
+
+        const force = -stiffness * (pos - targetT) - damping * vel;
+        vel += force * dt;
+        pos += vel * dt;
+
+        ribbonOpenFactor = Math.max(0, Math.min(1.06, pos));
+        applyRibbonGeometry(ribbonOpenFactor);
+
+        if (Math.abs(pos - targetT) < 0.005 && Math.abs(vel) < 0.03) {
+          ribbonOpenFactor = targetT;
+          applyRibbonGeometry(targetT);
+          ribbonAnimFrame = null;
+          return;
+        }
+        ribbonAnimFrame = requestAnimationFrame(tick);
+      }
+      ribbonAnimFrame = requestAnimationFrame(tick);
+    }
+
+    let bookmarkedPageIndex = loadSavedBookmark();
+
+    function loadSavedBookmark() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw === null) return null;
+        const idx = parseInt(raw, 10);
+        if (!Number.isNaN(idx) && idx >= 0) return idx;
+      } catch (e) {}
+      return null;
+    }
+
+    function saveBookmarkToStorage(pageIdx) {
+      try {
+        if (pageIdx === null || pageIdx === undefined) {
+          localStorage.removeItem(STORAGE_KEY);
+        } else {
+          localStorage.setItem(STORAGE_KEY, String(pageIdx));
+        }
+      } catch (e) {}
+    }
+
+    function pageIndexToStep(pageIdx) {
+      if (pageIdx <= 0) return 0;
+      if (isSpreadCapable) {
+        return Math.min(getMaxStep(), Math.ceil(pageIdx / 2));
+      }
+      return Math.min(getMaxStep(), pageIdx);
+    }
+
+    function getCurrentRepresentativePageIndex() {
+      if (!isSpreadCapable || currentStep === 0) return currentStep;
+      const leftIdx = currentStep * 2 - 1;
+      const rightIdx = currentStep * 2;
+      return rightIdx < getTotalPageCount() ? rightIdx : leftIdx;
+    }
+
+    function isCurrentViewBookmarked() {
+      if (bookmarkedPageIndex === null) return false;
+      if (!isSpreadCapable || currentStep === 0) return bookmarkedPageIndex === currentStep;
+      const leftIdx = currentStep * 2 - 1;
+      const rightIdx = currentStep * 2;
+      return bookmarkedPageIndex === leftIdx || bookmarkedPageIndex === rightIdx;
+    }
+
+    let toastTimer = null;
+    function showBookmarkToast(text) {
+      bookmarkToast.textContent = text;
+      bookmarkToast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        bookmarkToast.classList.remove("visible");
+      }, 2200);
+    }
+
+    function updateBookmarkUI(immediate = false) {
+      const isHere = isCurrentViewBookmarked();
+      if (isHere) {
+        bookmarkRibbon.classList.remove("inactive");
+        bookmarkRibbon.classList.add("active");
+        animateRibbonTo(1, immediate);
+      } else {
+        bookmarkRibbon.classList.remove("active");
+        bookmarkRibbon.classList.add("inactive");
+        animateRibbonTo(0, immediate);
+      }
+
+      if (bookmarkedPageIndex !== null && !isHere && bookmarkedPageIndex < getTotalPageCount()) {
+        btnGotoBookmark.style.display = "inline-block";
+        const targetName = bookmarkedPageIndex === 0 ? "封面" : `第 ${bookmarkedPageIndex} 頁`;
+        btnGotoBookmark.textContent = `🔖 回${targetName}`;
+      } else {
+        btnGotoBookmark.style.display = "none";
+      }
+    }
+
+    bookmarkRibbon.addEventListener("mouseenter", () => {
+      if (!isCurrentViewBookmarked()) animateRibbonTo(0.14, false);
+    });
+    bookmarkRibbon.addEventListener("mouseleave", () => {
+      if (!isCurrentViewBookmarked()) animateRibbonTo(0, false);
+    });
+
+    function toggleOrMoveBookmark() {
+      if (isCurrentViewBookmarked()) {
+        bookmarkedPageIndex = null;
+        saveBookmarkToStorage(null);
+        updateBookmarkUI(false);
+        showBookmarkToast("已收起書籤");
+      } else {
+        const hadOldBookmark = bookmarkedPageIndex !== null;
+        const targetIdx = getCurrentRepresentativePageIndex();
+        bookmarkedPageIndex = targetIdx;
+        saveBookmarkToStorage(targetIdx);
+        updateBookmarkUI(false);
+        const label = targetIdx === 0 ? "封面" : `第 ${targetIdx} 頁`;
+        showBookmarkToast(hadOldBookmark ? `書籤已移至${label}` : `已在${label}掛上書籤`);
+      }
+    }
+
+    function jumpToBookmark() {
+      if (bookmarkedPageIndex === null || flip.active) return;
+      const targetStep = pageIndexToStep(bookmarkedPageIndex);
+      if (targetStep === currentStep) return;
+      resetZoom(false);
+      const dir = targetStep > currentStep ? 1 : -1;
+      flip.active = true;
+      flip.dragging = false;
+      flip.direction = dir;
+      flip.fromStep = currentStep;
+      flip.toStep = targetStep;
+      flip.progress = 0.015;
+      flip.tiltAngle = 0;
+      bookShell.classList.add("is-flipping");
+      if (isSpreadCapable && (currentStep === 0 || targetStep === 0)) {
+        updateLayout(false);
+      }
+      animateSpringTo(1, 0.95, () => {
+        currentStep = targetStep;
+      });
+    }
+
+    const view = {
+      scale: 1, tx: 0, ty: 0, minScale: 1, maxScale: 3.5,
+      isPinching: false, isPanning: false,
+      pinchStartDist: 0, pinchStartScale: 1, pinchStartTx: 0, pinchStartTy: 0,
+      pinchMidX: 0, pinchMidY: 0, panStartX: 0, panStartY: 0, panStartTx: 0, panStartTy: 0,
+      zoomAnim: null
+    };
+
+    const flip = {
+      active: false, direction: 0, progress: 0, velocity: 0, tiltAngle: 0,
+      startYNorm: 0.5, dragging: false, startX: 0, startY: 0, lastX: 0, lastTime: 0,
+      fromStep: 0, toStep: 0, animFrame: null
+    };
+
+    let renderPending = false;
+    function scheduleRender() {
+      if (renderPending) return;
+      renderPending = true;
+      requestAnimationFrame(() => {
+        renderPending = false;
+        render();
+      });
+    }
+
+    let hudTimer = null;
+    function showHud() {
+      hudPill.classList.add("visible");
+      clearTimeout(hudTimer);
+      hudTimer = setTimeout(() => {
+        hudPill.classList.remove("visible");
+      }, 3200);
+    }
+
+    function clampPan(tx, ty, scale) {
+      if (scale <= 1.001) return { tx: 0, ty: 0 };
+      const stageRect = readerStage.getBoundingClientRect();
+      const scaledW = logicalW * scale;
+      const scaledH = logicalH * scale;
+      const maxTx = Math.max(0, (scaledW - stageRect.width) / 2 + 24);
+      const maxTy = Math.max(0, (scaledH - stageRect.height) / 2 + 24);
+      return {
+        tx: Math.max(-maxTx, Math.min(maxTx, tx)),
+        ty: Math.max(-maxTy, Math.min(maxTy, ty))
+      };
+    }
+
+    function applyViewTransform() {
+      const clamped = clampPan(view.tx, view.ty, view.scale);
+      view.tx = clamped.tx;
+      view.ty = clamped.ty;
+      if (view.scale <= 1.001 && Math.abs(view.tx) < 0.5 && Math.abs(view.ty) < 0.5) {
+        bookShell.style.transform = "";
+        btnResetZoom.style.display = "none";
+      } else {
+        bookShell.style.transform = `translate3d(${view.tx.toFixed(2)}px, ${view.ty.toFixed(2)}px, 0) scale(${view.scale.toFixed(4)})`;
+        btnResetZoom.style.display = "inline-block";
+        btnResetZoom.textContent = `${Math.round(view.scale * 100)}%`;
+      }
+    }
+
+    function animateViewTo(targetScale, targetTx, targetTy, onDone) {
+      if (view.zoomAnim) cancelAnimationFrame(view.zoomAnim);
+      const startScale = view.scale;
+      const startTx = view.tx;
+      const startTy = view.ty;
+      const startTime = performance.now();
+      const duration = 260;
+
+      function step(now) {
+        const t = Math.min(1, (now - startTime) / duration);
+        const ease = 1 - Math.pow(1 - t, 3);
+        view.scale = startScale + (targetScale - startScale) * ease;
+        view.tx = startTx + (targetTx - startTx) * ease;
+        view.ty = startTy + (targetTy - startTy) * ease;
+        applyViewTransform();
+
+        if (t < 1) {
+          view.zoomAnim = requestAnimationFrame(step);
+        } else {
+          view.scale = targetScale;
+          view.tx = targetTx;
+          view.ty = targetTy;
+          view.zoomAnim = null;
+          applyViewTransform();
+          updateCanvasResolution();
+          if (onDone) onDone();
+        }
+      }
+      view.zoomAnim = requestAnimationFrame(step);
+    }
+
+    function resetZoom(animated = true) {
+      if (animated) {
+        animateViewTo(1, 0, 0);
+      } else {
+        if (view.zoomAnim) cancelAnimationFrame(view.zoomAnim);
+        view.scale = 1;
+        view.tx = 0;
+        view.ty = 0;
+        applyViewTransform();
+        updateCanvasResolution();
+      }
+    }
+
+    function checkSpreadCapable(stageW, stageH) {
+      return stageW >= 820 && stageW > stageH * 1.05;
+    }
+
+    function convertStepOnResize(wasSpread, nowSpread, oldStep) {
+      if (wasSpread === nowSpread) return Math.min(oldStep, getMaxStep());
+      if (!wasSpread && nowSpread) {
+        return oldStep === 0 ? 0 : Math.ceil(oldStep / 2);
+      } else {
+        return oldStep === 0 ? 0 : Math.min(oldStep * 2 - 1, getTotalPageCount() - 1);
+      }
+    }
+
+    function getEffectiveDpr() {
+      const baseDpr = window.devicePixelRatio || 1;
+      const zoomBoost = Math.min(2.2, Math.max(1, view.scale));
+      return Math.min(3.5, baseDpr * zoomBoost);
+    }
+
+    function updateCanvasResolution() {
+      if (!logicalW || !logicalH) return;
+      const dpr = getEffectiveDpr();
+      const targetCanvasW = Math.round(logicalW * dpr);
+      const targetCanvasH = Math.round(logicalH * dpr);
+      if (canvas.width !== targetCanvasW || canvas.height !== targetCanvasH) {
+        canvas.width = targetCanvasW;
+        canvas.height = targetCanvasH;
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      scheduleRender();
+    }
+
+    function updateLayout(forceReset = false) {
+      const stageRect = readerStage.getBoundingClientRect();
+      const stageW = stageRect.width || window.innerWidth;
+      const stageH = stageRect.height || window.innerHeight;
+
+      const wasSpread = isSpreadCapable;
+      isSpreadCapable = checkSpreadCapable(stageW, stageH);
+
+      if (!forceReset && wasSpread !== isSpreadCapable) {
+        currentStep = convertStepOnResize(wasSpread, isSpreadCapable, currentStep);
+        if (flip.active) {
+          if (flip.animFrame) cancelAnimationFrame(flip.animFrame);
+          flip.active = false;
+          flip.dragging = false;
+          flip.animFrame = null;
+          bookShell.classList.remove("is-flipping");
+        }
+        resetZoom(false);
+      }
+      currentStep = Math.max(0, Math.min(currentStep, getMaxStep()));
+
+      const effectiveStep = flip.active ? Math.max(flip.fromStep, flip.toStep) : currentStep;
+      const showDouble = isSpreadCapable && effectiveStep > 0;
+
+      const padW = 14;
+      const padH = 14;
+      const availW = Math.max(220, stageW - padW);
+      const availH = Math.max(220, stageH - padH);
+      const targetAspect = showDouble ? (PAGE_ASPECT * 2) : PAGE_ASPECT;
+
+      let bookW, bookH;
+      if (availW / availH > targetAspect) {
+        bookH = availH;
+        bookW = bookH * targetAspect;
+      } else {
+        bookW = availW;
+        bookH = bookW / targetAspect;
+      }
+
+      const nextLogicalW = Math.round(bookW);
+      const nextLogicalH = Math.round(bookH);
+      const sizeChanged = (nextLogicalW !== logicalW || nextLogicalH !== logicalH);
+
+      logicalW = nextLogicalW;
+      logicalH = nextLogicalH;
+
+      if (sizeChanged || forceReset) {
+        bookShell.style.width = logicalW + "px";
+        bookShell.style.height = logicalH + "px";
+        applyViewTransform();
+        updateCanvasResolution();
+      }
+
+      updateHudText();
+      updateBookmarkUI(forceReset);
+      renderInteractiveOverlay();
+      render();
+    }
+
+    function updateHudText() {
+      const maxStep = getMaxStep();
+      btnFirst.disabled = currentStep === 0;
+      btnPrev.disabled = currentStep === 0;
+      btnNext.disabled = currentStep >= maxStep;
+
+      if (!isSpreadCapable) {
+        if (currentStep === 0) {
+          pageLabel.textContent = "封面";
+        } else {
+          const chNum = Math.ceil(currentStep / 2);
+          const sub = currentStep % 2 === 1 ? "插畫" : "故事";
+          pageLabel.textContent = chNum <= storyChapters.length
+            ? `第 ${chNum} 關（${sub}）`
+            : `史詩終章（${sub}）`;
+        }
+      } else {
+        if (currentStep === 0) {
+          pageLabel.textContent = "封面";
+        } else if (currentStep <= storyChapters.length) {
+          pageLabel.textContent = `第 ${currentStep} 關 / 共 ${storyChapters.length} 關`;
+        } else {
+          pageLabel.textContent = "史詩終章";
+        }
+      }
+    }
+
+    function drawPageImage(imgIndex, x, y, w, h, basePageW, basePageH) {
+      const cacheW = basePageW || w;
+      const cacheH = basePageH || h;
+      const cached = getCachedPage(imgIndex, cacheW, cacheH);
+      if (cached) {
+        ctx.drawImage(cached, x, y, w, h);
+      } else {
+        ctx.fillStyle = "#FFFDF7";
+        ctx.fillRect(x, y, w, h);
+      }
+    }
+
+    function drawSpineShadow(centerX, h) {
+      const spineW = Math.max(18, h * 0.032);
+      const grad = ctx.createLinearGradient(centerX - spineW, 0, centerX + spineW, 0);
+      grad.addColorStop(0, "rgba(0,0,0,0)");
+      grad.addColorStop(0.38, "rgba(0,0,0,0.06)");
+      grad.addColorStop(0.5, "rgba(0,0,0,0.22)");
+      grad.addColorStop(0.62, "rgba(0,0,0,0.06)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(centerX - spineW, 0, spineW * 2, h);
+    }
+
+    function drawStaticStep(step, w, h, forceDoubleLayout) {
+      if (!forceDoubleLayout) {
+        const idx = isSpreadCapable ? 0 : step;
+        drawPageImage(idx, 0, 0, w, h, w, h);
+        const edgeGrad = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
+        edgeGrad.addColorStop(0, "rgba(0,0,0,0.16)");
+        edgeGrad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = edgeGrad;
+        ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
+      } else {
+        const halfW = w / 2;
+        const leftIdx = step * 2 - 1;
+        const rightIdx = step * 2;
+        drawPageImage(leftIdx, 0, 0, halfW, h, halfW, h);
+        drawPageImage(rightIdx, halfW, 0, halfW, h, halfW, h);
+        drawSpineShadow(halfW, h);
+      }
+    }
+
+    function drawSinglePageCurl(lowerIdx, upperIdx, peelP, tiltAngle, w, h) {
+      drawPageImage(upperIdx, 0, 0, w, h, w, h);
+
+      const activeAngle = tiltAngle * Math.sin(peelP * Math.PI);
+      const curlCurve = Math.sin(peelP * Math.PI);
+
+      const foldCenterX = w * (1 - peelP);
+      const foldCenterY = h * 0.5;
+      const peeledSpan = w * peelP;
+      const diag = Math.hypot(w, h) * 1.6;
+
+      ctx.save();
+      ctx.translate(foldCenterX, foldCenterY);
+      ctx.rotate(activeAngle);
+
+      const rightShadowW = Math.min(w * 0.36, 22 + w * 0.18 * curlCurve);
+      const rightShadow = ctx.createLinearGradient(0, 0, rightShadowW, 0);
+      rightShadow.addColorStop(0, `rgba(0, 0, 0, ${0.34 * curlCurve})`);
+      rightShadow.addColorStop(0.45, `rgba(0, 0, 0, ${0.12 * curlCurve})`);
+      rightShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = rightShadow;
+      ctx.fillRect(0, -diag, rightShadowW, diag * 2);
+
+      if (foldCenterX - peeledSpan > -w * 0.2) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-diag, -diag, Math.max(0, diag - peeledSpan), diag * 2);
+        ctx.clip();
+
+        ctx.rotate(-activeAngle);
+        ctx.translate(-foldCenterX, -foldCenterY);
+        drawPageImage(lowerIdx, 0, 0, w, h, w, h);
+
+        const leftSpine = ctx.createLinearGradient(0, 0, Math.max(12, w * 0.025), 0);
+        leftSpine.addColorStop(0, "rgba(0,0,0,0.16)");
+        leftSpine.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = leftSpine;
+        ctx.fillRect(0, 0, Math.max(12, w * 0.025), h);
+
+        ctx.translate(foldCenterX, foldCenterY);
+        ctx.rotate(activeAngle);
+        const leftCastShadowW = Math.min(w * 0.30, 20 + w * 0.16 * curlCurve);
+        const leftCastShadow = ctx.createLinearGradient(-peeledSpan - leftCastShadowW, 0, -peeledSpan, 0);
+        leftCastShadow.addColorStop(0, "rgba(0, 0, 0, 0)");
+        leftCastShadow.addColorStop(0.55, `rgba(0, 0, 0, ${0.14 * curlCurve})`);
+        leftCastShadow.addColorStop(1, `rgba(0, 0, 0, ${0.34 * curlCurve})`);
+        ctx.fillStyle = leftCastShadow;
+        ctx.fillRect(-peeledSpan - leftCastShadowW, -diag, leftCastShadowW, diag * 2);
+        ctx.restore();
+      }
+
+      if (peeledSpan > 0.5 && peelP > 0.002 && peelP < 0.998) {
+        ctx.save();
+        ctx.rotate(-activeAngle);
+        ctx.translate(-foldCenterX, -foldCenterY);
+        ctx.beginPath();
+        ctx.rect(0, 0, w, h);
+        ctx.clip();
+        ctx.translate(foldCenterX, foldCenterY);
+        ctx.rotate(activeAngle);
+
+        ctx.beginPath();
+        ctx.rect(-peeledSpan, -diag, peeledSpan, diag * 2);
+        ctx.clip();
+
+        ctx.fillStyle = "#faf7f0";
+        ctx.fillRect(-peeledSpan, -diag, peeledSpan, diag * 2);
+
+        ctx.save();
+        ctx.globalAlpha = 0.20;
+        ctx.scale(-1, 1);
+        ctx.rotate(-activeAngle);
+        ctx.translate(-foldCenterX, -foldCenterY);
+        drawPageImage(lowerIdx, 0, 0, w, h, w, h);
+        ctx.restore();
+
+        const ridgeWidth = Math.min(peeledSpan, Math.max(24, w * 0.14 * curlCurve));
+        const spreadGrad = ctx.createLinearGradient(-peeledSpan, 0, 0, 0);
+        spreadGrad.addColorStop(0, `rgba(0, 0, 0, ${0.14 * curlCurve})`);
+        spreadGrad.addColorStop(0.06, `rgba(255, 255, 255, ${0.10 * curlCurve})`);
+        const ridgeStartStop = Math.max(0.08, 1 - ridgeWidth / Math.max(1, peeledSpan));
+        spreadGrad.addColorStop(ridgeStartStop, "rgba(245, 240, 232, 0.03)");
+        const peakStop = Math.min(0.96, ridgeStartStop + (1 - ridgeStartStop) * 0.58);
+        spreadGrad.addColorStop(peakStop, `rgba(255, 255, 255, ${0.50 * curlCurve})`);
+        spreadGrad.addColorStop(1, `rgba(0, 0, 0, ${0.18 * curlCurve})`);
+
+        ctx.fillStyle = spreadGrad;
+        ctx.fillRect(-peeledSpan, -diag, peeledSpan, diag * 2);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function drawSpreadPageFlip(prevLeftIdx, prevRightIdx, nextLeftIdx, nextRightIdx, flipP, tiltAngle, w, h) {
+      const halfW = w / 2;
+      drawPageImage(prevLeftIdx, 0, 0, halfW, h, halfW, h);
+      drawPageImage(nextRightIdx, halfW, 0, halfW, h, halfW, h);
+
+      const skewOffset = Math.sin(tiltAngle) * h * 0.14 * Math.sin(flipP * Math.PI);
+
+      if (flipP < 0.5) {
+        const t = flipP * 2;
+        const pageW = halfW * Math.cos(t * Math.PI * 0.5);
+
+        const dropShadowW = Math.min(halfW, pageW + 55);
+        const sGrad = ctx.createLinearGradient(halfW, 0, halfW + dropShadowW, 0);
+        sGrad.addColorStop(0, `rgba(0,0,0,${0.38 * (1 - t * 0.4)})`);
+        sGrad.addColorStop(0.75, `rgba(0,0,0,${0.14 * (1 - t)})`);
+        sGrad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = sGrad;
+        ctx.fillRect(halfW, 0, dropShadowW, h);
+
+        ctx.save();
+        ctx.transform(1, skewOffset / Math.max(1, pageW), 0, 1, 0, -skewOffset * 0.5);
+        drawPageImage(prevRightIdx, halfW, 0, pageW, h, halfW, h);
+
+        const curlGrad = ctx.createLinearGradient(halfW, 0, halfW + pageW, 0);
+        curlGrad.addColorStop(0, "rgba(0,0,0,0.14)");
+        curlGrad.addColorStop(0.65, `rgba(255,255,255,${0.28 * t})`);
+        curlGrad.addColorStop(0.92, `rgba(0,0,0,${0.18 * t})`);
+        curlGrad.addColorStop(1, `rgba(0,0,0,${0.32 * t})`);
+        ctx.fillStyle = curlGrad;
+        ctx.fillRect(halfW, 0, pageW, h);
+        ctx.restore();
+      } else {
+        const t = (flipP - 0.5) * 2;
+        const pageW = halfW * Math.sin(t * Math.PI * 0.5);
+        const leftEdge = halfW - pageW;
+
+        const dropShadowW = Math.min(halfW, pageW + 55);
+        const sGrad = ctx.createLinearGradient(halfW - dropShadowW, 0, halfW, 0);
+        sGrad.addColorStop(0, "rgba(0,0,0,0)");
+        sGrad.addColorStop(0.25, `rgba(0,0,0,${0.14 * (1 - t)})`);
+        sGrad.addColorStop(1, `rgba(0,0,0,${0.38 * (1 - t * 0.4)})`);
+        ctx.fillStyle = sGrad;
+        ctx.fillRect(halfW - dropShadowW, 0, dropShadowW, h);
+
+        ctx.save();
+        ctx.transform(1, -skewOffset / Math.max(1, pageW), 0, 1, 0, skewOffset * 0.5);
+        drawPageImage(nextLeftIdx, leftEdge, 0, pageW, h, halfW, h);
+
+        const curlGrad = ctx.createLinearGradient(leftEdge, 0, halfW, 0);
+        curlGrad.addColorStop(0, `rgba(0,0,0,${0.32 * (1 - t)})`);
+        curlGrad.addColorStop(0.08, `rgba(0,0,0,${0.16 * (1 - t)})`);
+        curlGrad.addColorStop(0.35, `rgba(255,255,255,${0.28 * (1 - t)})`);
+        curlGrad.addColorStop(1, "rgba(0,0,0,0.14)");
+        ctx.fillStyle = curlGrad;
+        ctx.fillRect(leftEdge, 0, pageW, h);
+        ctx.restore();
+      }
+
+      drawSpineShadow(halfW, h);
+    }
+
+    function render() {
+      const w = logicalW;
+      const h = logicalH;
+      if (!w || !h) return;
+
+      if (!flip.active) {
+        const isDouble = isSpreadCapable && currentStep > 0;
+        drawStaticStep(currentStep, w, h, isDouble);
+        return;
+      }
+
+      const p = Math.max(0, Math.min(1, flip.progress));
+      const dir = flip.direction;
+      const fromStep = flip.fromStep;
+      const toStep = flip.toStep;
+
+      if (isSpreadCapable && ((fromStep === 0 && toStep === 1) || (fromStep === 1 && toStep === 0))) {
+        const halfW = w / 2;
+        drawStaticStep(1, w, h, true);
+
+        const openP = (fromStep === 0) ? p : (1 - p);
+
+        if (openP < 0.5) {
+          const t = openP * 2;
+          const coverW = halfW * Math.cos(t * Math.PI * 0.5);
+
+          ctx.fillStyle = `rgba(0, 0, 0, ${0.38 * (1 - t)})`;
+          ctx.fillRect(halfW, 0, halfW, h);
+
+          drawPageImage(0, halfW, 0, coverW, h, halfW, h);
+          const ridge = ctx.createLinearGradient(halfW, 0, halfW + coverW, 0);
+          ridge.addColorStop(0, "rgba(0,0,0,0.18)");
+          ridge.addColorStop(0.7, `rgba(255,255,255,${0.28 * t})`);
+          ridge.addColorStop(1, `rgba(0,0,0,${0.25 * t})`);
+          ctx.fillStyle = ridge;
+          ctx.fillRect(halfW, 0, coverW, h);
+        } else {
+          const t = (openP - 0.5) * 2;
+          const flapW = halfW * Math.sin(t * Math.PI * 0.5);
+
+          ctx.fillStyle = `rgba(0, 0, 0, ${0.32 * (1 - t)})`;
+          ctx.fillRect(0, 0, halfW, h);
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(halfW - flapW, 0, flapW, h);
+          ctx.clip();
+          drawPageImage(1, halfW - flapW, 0, flapW, h, halfW, h);
+
+          const ridge = ctx.createLinearGradient(halfW - flapW, 0, halfW, 0);
+          ridge.addColorStop(0, `rgba(0,0,0,${0.22 * (1 - t)})`);
+          ridge.addColorStop(0.3, `rgba(255,255,255,${0.28 * (1 - t)})`);
+          ridge.addColorStop(1, "rgba(0,0,0,0.15)");
+          ctx.fillStyle = ridge;
+          ctx.fillRect(halfW - flapW, 0, flapW, h);
+          ctx.restore();
+        }
+
+        drawSpineShadow(halfW, h);
+        return;
+      }
+
+      if (isSpreadCapable) {
+        const prevStep = dir === 1 ? fromStep : toStep;
+        const nextStep = dir === 1 ? toStep : fromStep;
+        const flipP = dir === 1 ? p : (1 - p);
+
+        const prevLeftIdx = prevStep * 2 - 1;
+        const prevRightIdx = prevStep * 2;
+        const nextLeftIdx = nextStep * 2 - 1;
+        const nextRightIdx = nextStep * 2;
+
+        drawSpreadPageFlip(prevLeftIdx, prevRightIdx, nextLeftIdx, nextRightIdx, flipP, flip.tiltAngle, w, h);
+        return;
+      }
+
+      const lowerIdx = dir === 1 ? fromStep : toStep;
+      const upperIdx = dir === 1 ? toStep : fromStep;
+      const peelP = dir === 1 ? p : (1 - p);
+
+      drawSinglePageCurl(lowerIdx, upperIdx, peelP, flip.tiltAngle, w, h);
+    }
+
+    function animateSpringTo(targetP, initialVelocity, onComplete) {
+      if (flip.animFrame) cancelAnimationFrame(flip.animFrame);
+      bookShell.classList.add("is-flipping");
+      interactiveOverlay.innerHTML = "";
+
+      let pos = flip.progress;
+      let vel = initialVelocity || 0;
+      let lastTs = performance.now();
+
+      const stiffness = 105;
+      const damping = 20.5;
+
+      function finishAnimation() {
+        flip.progress = targetP;
+        flip.tiltAngle = 0;
+        flip.active = false;
+        flip.dragging = false;
+        flip.velocity = 0;
+        flip.animFrame = null;
+        bookShell.classList.remove("is-flipping");
+        if (onComplete) onComplete();
+        if (isSpreadCapable && (flip.fromStep === 0 || flip.toStep === 0)) {
+          updateLayout(false);
+        } else {
+          updateHudText();
+          updateBookmarkUI(false);
+          renderInteractiveOverlay();
+          render();
+        }
+      }
+
+      function tick(now) {
+        const dt = Math.min(0.032, (now - lastTs) / 1000);
+        lastTs = now;
+
+        const displacement = pos - targetP;
+        const springForce = -stiffness * displacement;
+        const dampingForce = -damping * vel;
+        const accel = springForce + dampingForce;
+
+        vel += accel * dt;
+        pos += vel * dt;
+        flip.tiltAngle *= 0.90;
+
+        if ((pos <= 0 && targetP === 0) || (pos >= 1 && targetP === 1)) {
+          finishAnimation();
+          return;
+        }
+
+        pos = Math.max(0, Math.min(1, pos));
+        flip.progress = pos;
+        render();
+
+        if (Math.abs(pos - targetP) < 0.008 && Math.abs(vel) < 0.18) {
+          finishAnimation();
+          return;
+        }
+
+        flip.animFrame = requestAnimationFrame(tick);
+      }
+
+      flip.animFrame = requestAnimationFrame(tick);
+    }
+
+    function turnPage(dir, customTilt = 0) {
+      if (flip.active) return;
+      if (view.scale > 1.02) resetZoom(true);
+
+      const maxStep = getMaxStep();
+      const nextStep = currentStep + dir;
+      if (nextStep < 0 || nextStep > maxStep) return;
+
+      flip.active = true;
+      flip.dragging = false;
+      flip.direction = dir;
+      flip.fromStep = currentStep;
+      flip.toStep = nextStep;
+      flip.progress = 0.01;
+      flip.tiltAngle = customTilt;
+      bookShell.classList.add("is-flipping");
+      interactiveOverlay.innerHTML = "";
+
+      if (isSpreadCapable && currentStep === 0 && nextStep === 1) {
+        updateLayout(false);
+      }
+
+      animateSpringTo(1, 0.9, () => {
+        currentStep = nextStep;
+      });
+    }
+
+    bookmarkRibbon.addEventListener("mousedown", (e) => e.stopPropagation());
+    bookmarkRibbon.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+    bookmarkRibbon.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (flip.active) return;
+      toggleOrMoveBookmark();
+      showHud();
+    });
+
+    btnGotoBookmark.addEventListener("click", (e) => {
+      e.stopPropagation();
+      jumpToBookmark();
+      showHud();
+    });
+
+    document.getElementById("btn-open-ai-story").addEventListener("click", (e) => {
+      e.stopPropagation();
+      openModal("ai-story-modal");
+    });
+
+    document.getElementById("btn-zhuyin-settings").addEventListener("click", (e) => {
+      e.stopPropagation();
+      openModal("zhuyin-modal");
+    });
+
+    let pointerDown = false;
+    let hasMoved = false;
+    let touchStartTime = 0;
+    let lastTapTime = 0;
+    let lastTapX = 0;
+    let lastTapY = 0;
+
+    function getTouchDistance(t1, t2) {
+      return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    }
+
+    function getTouchMidpoint(t1, t2) {
+      return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+    }
+
+    readerStage.addEventListener("touchstart", (e) => {
+      if (e.target.closest(".interactive-hotspot")) return;
+      if (e.touches.length >= 2) {
+        pointerDown = false;
+        view.isPanning = false;
+        if (flip.active && flip.dragging) {
+          const orig = flip.fromStep;
+          animateSpringTo(0, -0.35, () => { currentStep = orig; });
+        }
+        if (view.zoomAnim) { cancelAnimationFrame(view.zoomAnim); view.zoomAnim = null; }
+        view.isPinching = true;
+        const t1 = e.touches[0], t2 = e.touches[1];
+        const mid = getTouchMidpoint(t1, t2);
+        const stageRect = readerStage.getBoundingClientRect();
+        view.pinchStartDist = Math.max(10, getTouchDistance(t1, t2));
+        view.pinchStartScale = view.scale;
+        view.pinchStartTx = view.tx;
+        view.pinchStartTy = view.ty;
+        view.pinchMidX = mid.x - (stageRect.left + stageRect.width / 2);
+        view.pinchMidY = mid.y - (stageRect.top + stageRect.height / 2);
+        return;
+      }
+
+      if (e.touches.length === 1 && !view.isPinching) {
+        const touch = e.touches[0];
+        touchStartTime = performance.now();
+        if (view.scale > 1.02) {
+          if (view.zoomAnim) { cancelAnimationFrame(view.zoomAnim); view.zoomAnim = null; }
+          view.isPanning = true;
+          hasMoved = false;
+          view.panStartX = touch.clientX;
+          view.panStartY = touch.clientY;
+          view.panStartTx = view.tx;
+          view.panStartTy = view.ty;
+        } else {
+          onSingleStart(touch.clientX, touch.clientY);
+        }
+      }
+    }, { passive: true });
+
+    readerStage.addEventListener("touchmove", (e) => {
+      if (view.isPinching && e.touches.length >= 2) {
+        const t1 = e.touches[0], t2 = e.touches[1];
+        const dist = getTouchDistance(t1, t2);
+        const mid = getTouchMidpoint(t1, t2);
+        const stageRect = readerStage.getBoundingClientRect();
+        const rawScale = view.pinchStartScale * (dist / view.pinchStartDist);
+        const nextScale = Math.max(0.85, Math.min(view.maxScale * 1.15, rawScale));
+        const scaleRatio = nextScale / view.pinchStartScale;
+        const curMidX = mid.x - (stageRect.left + stageRect.width / 2);
+        const curMidY = mid.y - (stageRect.top + stageRect.height / 2);
+        view.scale = nextScale;
+        view.tx = curMidX - (view.pinchMidX - view.pinchStartTx) * scaleRatio;
+        view.ty = curMidY - (view.pinchMidY - view.pinchStartTy) * scaleRatio;
+        applyViewTransform();
+        return;
+      }
+
+      if (view.isPanning && e.touches.length === 1) {
+        const touch = e.touches[0];
+        const dx = touch.clientX - view.panStartX;
+        const dy = touch.clientY - view.panStartY;
+        if (!hasMoved && Math.hypot(dx, dy) < 5) return;
+        hasMoved = true;
+        view.tx = view.panStartTx + dx;
+        view.ty = view.panStartTy + dy;
+        applyViewTransform();
+        return;
+      }
+
+      if (pointerDown && e.touches.length === 1) {
+        if (!hasMoved && performance.now() - touchStartTime < 40) return;
+        onSingleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    readerStage.addEventListener("touchend", (e) => {
+      if (view.isPinching) {
+        if (e.touches.length < 2) {
+          view.isPinching = false;
+          if (view.scale <= 1.06) animateViewTo(1, 0, 0);
+          else {
+            const clamped = clampPan(view.tx, view.ty, Math.min(view.maxScale, view.scale));
+            animateViewTo(Math.min(view.maxScale, view.scale), clamped.tx, clamped.ty);
+          }
+        }
+        return;
+      }
+      if (view.isPanning) {
+        view.isPanning = false;
+        if (!hasMoved && e.changedTouches.length) {
+          handleTapOrDoubleTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        }
+        return;
+      }
+      if (pointerDown) {
+        const endX = e.changedTouches.length ? e.changedTouches[0].clientX : flip.lastX;
+        const endY = e.changedTouches.length ? e.changedTouches[0].clientY : flip.startY;
+        onSingleEnd(endX, endY);
+      }
+    });
+
+    canvas.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      if (view.scale > 1.02) {
+        view.isPanning = true;
+        hasMoved = false;
+        view.panStartX = e.clientX;
+        view.panStartY = e.clientY;
+        view.panStartTx = view.tx;
+        view.panStartTy = view.ty;
+      } else {
+        onSingleStart(e.clientX, e.clientY);
+      }
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (view.isPanning) {
+        const dx = e.clientX - view.panStartX;
+        const dy = e.clientY - view.panStartY;
+        if (!hasMoved && Math.hypot(dx, dy) < 5) return;
+        hasMoved = true;
+        view.tx = view.panStartTx + dx;
+        view.ty = view.panStartTy + dy;
+        applyViewTransform();
+        return;
+      }
+      if (!pointerDown) {
+        showHud();
+        return;
+      }
+      onSingleMove(e.clientX, e.clientY);
+    });
+
+    window.addEventListener("mouseup", (e) => {
+      if (view.isPanning) {
+        view.isPanning = false;
+        if (!hasMoved) handleTapOrDoubleTap(e.clientX, e.clientY);
+        return;
+      }
+      if (!pointerDown) return;
+      onSingleEnd(e.clientX, e.clientY);
+    });
+
+    function onSingleStart(x, y) {
+      if (flip.active && flip.animFrame) {
+        cancelAnimationFrame(flip.animFrame);
+        flip.animFrame = null;
+        flip.dragging = true;
+      }
+      pointerDown = true;
+      hasMoved = false;
+      flip.startX = x;
+      flip.startY = y;
+      flip.lastX = x;
+      flip.lastTime = performance.now();
+      flip.velocity = 0;
+      const rect = bookShell.getBoundingClientRect();
+      flip.startYNorm = Math.max(0, Math.min(1, (y - rect.top) / Math.max(1, rect.height)));
+    }
+
+    function onSingleMove(x, y) {
+      const now = performance.now();
+      const dx = x - flip.startX;
+      const dy = y - flip.startY;
+      const stepDx = x - flip.lastX;
+      const dt = Math.max(1, now - flip.lastTime) / 1000;
+
+      if (!hasMoved && Math.hypot(dx, dy) < 6) return;
+      hasMoved = true;
+
+      const maxStep = getMaxStep();
+      if (!flip.dragging) {
+        const dir = dx < 0 ? 1 : -1;
+        const targetStep = currentStep + dir;
+        if (targetStep < 0 || targetStep > maxStep) return;
+        flip.active = true;
+        flip.dragging = true;
+        flip.direction = dir;
+        flip.fromStep = currentStep;
+        flip.toStep = targetStep;
+        flip.progress = 0;
+        flip.tiltAngle = 0;
+        bookShell.classList.add("is-flipping");
+        interactiveOverlay.innerHTML = "";
+        if (isSpreadCapable && currentStep === 0 && targetStep === 1) {
+          updateLayout(false);
+        }
+      }
+
+      const cornerBias = (flip.startYNorm - 0.5) * 0.42;
+      const dragBias = (dy / Math.max(180, logicalH)) * 0.55;
+      const rawTilt = (dragBias - cornerBias) * flip.direction;
+      const targetTilt = Math.max(-0.42, Math.min(0.42, rawTilt));
+      flip.tiltAngle = flip.tiltAngle * 0.7 + targetTilt * 0.3;
+
+      const dragSpan = Math.max(120, logicalW * 0.90);
+      const deltaP = (flip.direction === 1 ? -stepDx : stepDx) / dragSpan;
+      flip.progress = Math.max(0.002, Math.min(0.998, flip.progress + deltaP));
+
+      const instantVel = deltaP / dt;
+      flip.velocity = flip.velocity * 0.65 + instantVel * 0.35;
+      flip.lastX = x;
+      flip.lastTime = now;
+      scheduleRender();
+    }
+
+    function handleTapOrDoubleTap(clientX, clientY) {
+      const now = performance.now();
+      const isDoubleTap = (now - lastTapTime < 280) && (Math.hypot(clientX - lastTapX, clientY - lastTapY) < 36);
+      lastTapTime = now;
+      lastTapX = clientX;
+      lastTapY = clientY;
+
+      if (isDoubleTap) {
+        lastTapTime = 0;
+        if (view.scale > 1.05) {
+          animateViewTo(1, 0, 0);
+        } else {
+          const stageRect = readerStage.getBoundingClientRect();
+          const targetScale = 1.9;
+          const tapOffsetX = clientX - (stageRect.left + stageRect.width / 2);
+          const tapOffsetY = clientY - (stageRect.top + stageRect.height / 2);
+          const clamped = clampPan(-tapOffsetX * (targetScale - 1), -tapOffsetY * (targetScale - 1), targetScale);
+          animateViewTo(targetScale, clamped.tx, clamped.ty);
+        }
+        return;
+      }
+
+      if (view.scale <= 1.02) {
+        const rect = bookShell.getBoundingClientRect();
+        const ratio = (clientX - rect.left) / rect.width;
+        const yNorm = (clientY - rect.top) / rect.height;
+        const tapTilt = (0.5 - yNorm) * 0.28;
+        if (ratio < 0.24) turnPage(-1, -tapTilt);
+        else if (ratio > 0.76) turnPage(1, tapTilt);
+        else showHud();
+      } else {
+        showHud();
+      }
+    }
+
+    function onSingleEnd(endX, endY) {
+      pointerDown = false;
+      if (!hasMoved && !flip.dragging) {
+        handleTapOrDoubleTap(endX, endY);
+        return;
+      }
+      if (flip.dragging) {
+        const shouldComplete =
+          (flip.progress > 0.38 && flip.velocity > -0.5) ||
+          (flip.progress > 0.12 && flip.velocity > 0.65);
+
+        if (shouldComplete) {
+          const dest = flip.toStep;
+          animateSpringTo(1, Math.max(0.35, flip.velocity * 0.7), () => { currentStep = dest; });
+        } else {
+          const orig = flip.fromStep;
+          animateSpringTo(0, Math.min(-0.2, flip.velocity * 0.7), () => { currentStep = orig; });
+        }
+      }
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+      if (e.key === "ArrowRight" || e.key === "PageDown") {
+        e.preventDefault();
+        turnPage(1);
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        turnPage(-1);
+      } else if (e.key === "Escape" && view.scale > 1.02) {
+        resetZoom(true);
+      }
+    });
+
+    btnFirst.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (flip.active || currentStep === 0) return;
+      resetZoom(false);
+      currentStep = 0;
+      updateLayout(false);
+      showHud();
+    });
+
+    btnPrev.addEventListener("click", (e) => {
+      e.stopPropagation();
+      turnPage(-1);
+      showHud();
+    });
+
+    btnNext.addEventListener("click", (e) => {
+      e.stopPropagation();
+      turnPage(1);
+      showHud();
+    });
+
+    btnResetZoom.addEventListener("click", (e) => {
+      e.stopPropagation();
+      resetZoom(true);
+      showHud();
+    });
+
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(() => updateLayout(false)).observe(readerStage);
+    } else {
+      window.addEventListener("resize", () => updateLayout(false));
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const stageRect = readerStage.getBoundingClientRect();
+      isSpreadCapable = checkSpreadCapable(stageRect.width || window.innerWidth, stageRect.height || window.innerHeight);
+      if (bookmarkedPageIndex !== null && bookmarkedPageIndex < getTotalPageCount()) {
+        currentStep = pageIndexToStep(bookmarkedPageIndex);
+      }
+      updateLayout(true);
+      setTimeout(() => {
+        loader.classList.add("hidden");
+        showHud();
+      }, 280);
+    });
+  </script>
+</body>
+</html>
