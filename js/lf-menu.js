@@ -99,8 +99,11 @@
     openedAt = Date.now();
     menu.querySelector('button').focus({ preventScroll: true });
   }
+  function hasOpenMenu() {
+    return Array.from(document.querySelectorAll('.dk-menu:not([hidden]), .lfc-pop')).some(el => el.getClientRects().length > 0);
+  }
   function canOpen(target) {
-    if (!(target instanceof Element) || document.querySelector('dialog[open], .dk-menu') || String(getSelection() || '').trim()) return false;
+    if (!(target instanceof Element) || document.querySelector('dialog[open]') || hasOpenMenu() || String(getSelection() || '').trim()) return false;
     if (target.closest('.lfc, .lfc-tab, .lfc-pop, .lfc-pop-bg, .lfc-view, .lfc-ov, [data-no-lf-menu]')) return false; // 留言板有自己的長按選單（回覆、表情…），不出現 Copy link
     const control = target.closest(OBJECT);
     return !control || Boolean(control.closest('[data-lf-menu-trigger]'));
@@ -120,7 +123,7 @@
     clearTimeout(lp && lp.timer); lp = null;
     if (e.touches.length !== 1 || !canOpen(e.target)) return;
     const t = e.touches[0];
-    lp = { x: t.clientX, y: t.clientY, timer: setTimeout(() => { if (lp && !document.querySelector('.dk-menu, .lfc-pop')) { show(lp.x, lp.y); try { getSelection().removeAllRanges(); } catch (_) {} } }, 550) };
+    lp = { x: t.clientX, y: t.clientY, timer: setTimeout(() => { if (lp && !document.querySelector('dialog[open]') && !hasOpenMenu()) { show(lp.x, lp.y); try { getSelection().removeAllRanges(); } catch (_) {} } }, 550) };
   }, { passive: true });
   document.addEventListener('touchmove', e => {
     if (!lp) return; const t = e.touches[0];
