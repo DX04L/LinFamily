@@ -523,6 +523,7 @@
       to { transform: rotate(360deg); }
     }
   </style>
+  <script defer src="../../js/lf-menu.js?v=7"></script>
 </head>
 <body>
   <div id="loader">
@@ -534,7 +535,7 @@
 
   <div id="reader-stage">
     <div id="book-shell">
-      <canvas id="book-canvas"></canvas>
+      <canvas id="book-canvas" data-lf-menu-trigger></canvas>
       <!-- 左上角折疊式燕尾緞帶書籤（童趣暖橘紅配金黃星章） -->
       <div id="bookmark-ribbon" class="inactive" title="點擊在此頁掛上書籤（全書僅保留一個書籤）">
         <svg viewBox="0 0 42 84" fill="none" xmlns="http://www.w3.org/2000/svg">

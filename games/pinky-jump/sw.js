@@ -1,6 +1,7 @@
 /* Pinky Jump: per-game offline PWA (scoped to this folder only). */
-const CACHE = 'pinky-jump-v79';
-const ASSETS = ['./','./index.html','./style.css?v=15','./locale.js?v=9','./characters.js?v=3','./bluezi.js?v=1','./game.js?v=20261125-ios-audio','./install.css','./install.js?v=2','./manifest.webmanifest?v=4','./pinky-icon.png?v=3','./pinky-icon-192.png?v=3','./pinky-icon-maskable.png?v=3','./apple-touch-icon.png?v=3','./name-filter.js?v=1','./pinky-ui.js?v=2','./qrcode.js?v=1','./pinky-rtc.js?v=1','./pinky-online.js?v=38','./splash.css?v=2','./splash-cat.png?v=2','./pinky-arcade.css?v=31','./lf-menu.js?v=3','./controller.html','./pinky-jump-music.mp3'];
+const CACHE = 'pinky-jump-v80';
+const MENU = '../../js/lf-menu.js?v=7';
+const ASSETS = ['./','./index.html','./style.css?v=15','./locale.js?v=9','./characters.js?v=3','./bluezi.js?v=1','./game.js?v=20261125-ios-audio','./install.css','./install.js?v=2','./manifest.webmanifest?v=4','./pinky-icon.png?v=3','./pinky-icon-192.png?v=3','./pinky-icon-maskable.png?v=3','./apple-touch-icon.png?v=3','./name-filter.js?v=1','./pinky-ui.js?v=2','./qrcode.js?v=1','./pinky-rtc.js?v=1','./pinky-online.js?v=38','./splash.css?v=2','./splash-cat.png?v=2','./pinky-arcade.css?v=31',MENU,'./controller.html','./pinky-jump-music.mp3'];
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(ASSETS.map(path => cache.add(path)))));
@@ -14,7 +15,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope)) return;
+  const isGameAsset = url.href.startsWith(self.registration.scope) || url.href === new URL(MENU, self.registration.scope).href;
+  if (req.method !== 'GET' || url.origin !== self.location.origin || !isGameAsset) return;
   event.respondWith(fetch(req).then(response => {
     if (response.ok) { const copy = response.clone(); event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => {})); }
     return response;

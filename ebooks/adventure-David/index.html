@@ -533,6 +533,7 @@
       to { transform: rotate(360deg); }
     }
   </style>
+  <script defer src="../../js/lf-menu.js?v=7"></script>
 </head>
 <body>
   <!-- 啟動載入畫面 -->
@@ -549,7 +550,7 @@
   <!-- 全螢幕書本閱讀舞台 -->
   <div id="reader-stage">
     <div id="book-shell">
-      <canvas id="book-canvas" aria-hidden="true"></canvas>
+      <canvas id="book-canvas" data-lf-menu-trigger aria-hidden="true"></canvas>
 
       <!-- 與 Canvas 同步的兒童互動覆蓋層 -->
       <div id="interactive-overlay"></div>

@@ -33,10 +33,10 @@
 自家 App 沿用 `js/lf-menu.js`。在頁首或空白處按右鍵（手機長按），會出現與 DX04 Header 一致的 **Copy link** 和 **Open in new window**。普通連結、按鈕和輸入欄保留原本的操作。
 
 ```html
-<script defer src="../js/lf-menu.js?v=3"></script>
+<script defer src="../js/lf-menu.js?v=7"></script>
 ```
 
-以上路徑適用於 LF 的第一層子 App。獨立部署的自家 App 改用 `https://clc-dx04.pages.dev/lf/js/lf-menu.js?v=3`。若頁首的品牌連結也要開啟選單，可在該連結加 `data-lf-menu-trigger`，一般點擊仍會照常。新增 App 時請引用共用檔案，避免另寫一份選單。
+以上路徑適用於 LF 的第一層子 App。獨立部署的自家 App 改用 `https://linfamily.pages.dev/js/lf-menu.js?v=7`。若頁首的品牌連結也要開啟選單，可在該連結加 `data-lf-menu-trigger`，一般點擊仍會照常。新增 App 時請引用共用檔案，避免另寫一份選單。自家子頁分享 `linfamily.pages.dev` 的網址，主站分享 `clc-dx04.pages.dev/lf/`。透過 LinFamily 內嵌的外站，可以從外層標題列的「連結」選單複製原始入口網址。
 
 ## 離線導覽
 

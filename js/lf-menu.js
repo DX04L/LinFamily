@@ -77,11 +77,28 @@
     inner.append(b); v.classList.add('is-run');
     inner.style.animationDuration = Math.max(6, text.length * 0.22) + 's';
   }
+  const lfOrigin = 'https://linfamily.pages.dev';
+  const dxOrigin = 'https://clc-dx04.pages.dev';
+  function shareUrl() {
+    const url = new URL(document.body.dataset.lfShareUrl || location.href);
+    const viaDx = url.origin === dxOrigin && /^\/lf(?:\/|$)/.test(url.pathname);
+    if (!viaDx && url.origin !== lfOrigin) return url.href;
+
+    const path = viaDx ? url.pathname.slice(3) || '/' : url.pathname;
+    const home = /^\/(?:index(?:\.html)?)?$/.test(path);
+    const original = new URL(home ? dxOrigin : lfOrigin);
+    original.pathname = home ? '/lf/' : path;
+    original.search = url.search;
+    original.hash = url.hash;
+    if (original.searchParams.has('lfhome')) original.searchParams.delete('lfhome');
+    return original.href;
+  }
+
   let menu = null, openedAt = 0;
   function close() { if (menu) { menu.remove(); menu = null; } }
   function show(x, y) {
     close();
-    const url = location.href;
+    const url = shareUrl();
     menu = document.createElement('div');
     menu.className = 'lf-ctx'; menu.setAttribute('role', 'menu');
     menu.innerHTML = '<button type="button" role="menuitem" data-m="copy" class="lf-ctx-copy"><span>Copy link</span><span class="lf-ctx-url"></span></button><button type="button" role="menuitem" data-m="open">Open in new window</button>';
@@ -108,6 +125,13 @@
     const control = target.closest(OBJECT);
     return !control || Boolean(control.closest('[data-lf-menu-trigger]'));
   }
+
+  // 外站的 iframe 由瀏覽器隔離，從外層標題列提供同一個選單。
+  document.querySelector('[data-lf-menu-button]')?.addEventListener('click', event => {
+    if (!document.body.dataset.lfShareUrl) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    show(rect.left, rect.bottom + 4);
+  });
 
   // 電腦右鍵（Android 長按也會觸發 contextmenu）
   document.addEventListener('contextmenu', e => {
