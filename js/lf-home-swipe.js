@@ -1,5 +1,5 @@
-window.lfHomeSwipe = function ({ activeTab, selectTab, prepareTab, hasAdd }) {
-  const page = document.body, root = document.documentElement;
+window.lfHomeSwipe = function ({ activeTab, selectTab, prepareTab }) {
+  const root = document.documentElement;
   const welcome = document.getElementById('lfWelcome');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const busy = 'dialog[open], #lfMenu:not([hidden]), .clc-tb-menu:not([hidden]), .todo-edit, ' +
@@ -30,11 +30,11 @@ window.lfHomeSwipe = function ({ activeTab, selectTab, prepareTab, hasAdd }) {
     return tab === 'apps' ? 'family' : 'apps';
   }
 
-  function cloneDecoration(element) {
-    const clone = element.cloneNode(true);
-    clone.removeAttribute('id');
-    clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
-    return clone;
+  function indicatorTransform(progress) {
+    const { start, end } = visual;
+    const x = (end.left - start.left) * progress;
+    const width = start.width + (end.width - start.width) * progress;
+    return `${transform(x)} scaleX(${width / start.width})`;
   }
 
   function draw(g) {
@@ -43,53 +43,42 @@ window.lfHomeSwipe = function ({ activeTab, selectTab, prepareTab, hasAdd }) {
       const panel = document.getElementById(next === 'family' ? 'panelFamily' : 'panelApps');
       const current = document.getElementById(g.tab === 'family' ? 'panelFamily' : 'panelApps');
       const { top } = current.getBoundingClientRect();
-      const nextIsFamily = next === 'family';
-      const frame = document.createElement('div');
-      frame.className = 'lf-swipe-frame';
-      frame.inert = true;
-      frame.setAttribute('aria-hidden', 'true');
+      const tabs = document.querySelector('#lfToolbar .clc-tb-tabs');
+      const start = tabs.querySelector(`[data-tab="${g.tab}"]`).getBoundingClientRect();
+      const end = tabs.querySelector(`[data-tab="${next}"]`).getBoundingClientRect();
+      const indicator = document.createElement('span');
+      indicator.className = 'lf-swipe-tab-indicator';
+      indicator.setAttribute('aria-hidden', 'true');
 
-      const wallpaper = document.querySelector('.lf-wall:not([hidden])');
-      if (wallpaper) frame.append(cloneDecoration(wallpaper));
-      const header = cloneDecoration(document.querySelector('.lf-top'));
-      header.querySelectorAll('[data-tab]').forEach(button => {
-        button.setAttribute('aria-selected', String(button.dataset.tab === next));
-      });
-      header.querySelector('.clc-tb-btn').hidden = !hasAdd(next);
-      frame.append(header);
-
-      const search = document.querySelector('main > .clc-tb-search:not([hidden])');
-      if (search) {
-        const clone = cloneDecoration(search);
-        const rect = search.getBoundingClientRect();
-        clone.querySelector('input').value = search.querySelector('input').value;
-        Object.assign(clone.style, {
-          position: 'absolute', top: rect.top + 'px', left: rect.left + 'px',
-          width: rect.width + 'px', margin: '0'
-        });
-        frame.append(clone);
-      }
-
-      panel.style.setProperty('--lf-swipe-top', (top + (nextIsFamily ? 10 : -10)) + 'px');
+      panel.style.setProperty('--lf-swipe-top', (top + (next === 'family' ? 10 : -10)) + 'px');
       panel.inert = true;
-      page.append(frame);
       root.classList.add('lf-swiping');
       panel.classList.add('lf-swipe-incoming');
-      visual = { frame, panel, distance: innerWidth, original: page.style.transform };
+
+      const tabBounds = tabs.getBoundingClientRect();
+      Object.assign(indicator.style, {
+        left: (start.left - tabBounds.left - tabs.clientLeft) + 'px',
+        top: (start.top - tabBounds.top - tabs.clientTop) + 'px',
+        width: start.width + 'px', height: start.height + 'px'
+      });
+      tabs.prepend(indicator);
+      visual = { panel, current, indicator, start, end, distance: innerWidth };
       prepareTab(next);
     }
     const dx = Math.max(-visual.distance, Math.min(visual.distance, g.dx));
-    page.style.setProperty('--lf-swipe-side', (dx < 0 ? visual.distance : -visual.distance) + 'px');
-    page.style.transform = transform(dx);
+    const side = dx < 0 ? visual.distance : -visual.distance;
+    visual.current.style.transform = transform(dx);
+    visual.panel.style.transform = transform(side + dx);
+    visual.indicator.style.transform = indicatorTransform(Math.abs(dx) / visual.distance);
   }
 
   function restore() {
-    page.style.transform = visual.original;
-    page.style.removeProperty('--lf-swipe-side');
+    visual.current.style.removeProperty('transform');
+    visual.panel.style.removeProperty('transform');
     visual.panel.classList.remove('lf-swipe-incoming');
     visual.panel.style.removeProperty('--lf-swipe-top');
     visual.panel.inert = false;
-    visual.frame.remove();
+    visual.indicator.remove();
     root.classList.remove('lf-swiping');
     visual = null;
   }
@@ -99,14 +88,23 @@ window.lfHomeSwipe = function ({ activeTab, selectTab, prepareTab, hasAdd }) {
     if (visual) {
       const dx = Math.max(-visual.distance, Math.min(visual.distance, g.dx));
       const offscreen = g.dx < 0 ? -visual.distance : visual.distance;
-      const duration = next ? 200 : 160;
-      const easing = next ? 'cubic-bezier(.2,.7,.3,1)' : 'ease-out';
-      const slide = page.animate(
-        [{ transform: transform(dx) }, { transform: transform(next ? offscreen : 0) }],
-        { duration, easing, fill: 'forwards' }
-      );
-      try { await slide.finished; } catch (_) { next = null; }
-      slide.cancel();
+      const options = next
+        ? { duration: 200, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' }
+        : { duration: 160, easing: 'ease-out', fill: 'forwards' };
+      const slides = [
+        visual.current.animate([
+          { transform: transform(dx) }, { transform: transform(next ? offscreen : 0) }
+        ], options),
+        visual.panel.animate([
+          { transform: transform(dx - offscreen) }, { transform: transform(next ? 0 : -offscreen) }
+        ], options),
+        visual.indicator.animate([
+          { transform: indicatorTransform(Math.abs(dx) / visual.distance) },
+          { transform: indicatorTransform(next ? 1 : 0) }
+        ], options)
+      ];
+      try { await Promise.all(slides.map(slide => slide.finished)); } catch (_) { next = null; }
+      slides.forEach(slide => slide.cancel());
       restore();
     }
     settling = false;

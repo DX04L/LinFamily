@@ -314,13 +314,15 @@
       .lf-top, #panelApps, #panelFamily, .lf-family-scroll, .lfc-list { touch-action:pan-y; }
     }
     .lf-swiping { overflow:hidden; }
-    html.lf-swiping body { position:relative; overflow:visible; }
-    .lf-swipe-frame, main > .lf-swipe-incoming { transform:translate3d(var(--lf-swipe-side, 100vw),0,0); pointer-events:none; }
-    .lf-swipe-frame { position:absolute; inset:0; background:var(--bg); z-index:0; }
-    .lf-swipe-frame .lf-wall { position:absolute; }
-    .lf-swipe-frame .lf-right { position:absolute; }
+    html.lf-swiping body { position:relative; }
+    .lf-swiping #lfToolbar .clc-tb-tabs { position:relative; isolation:isolate; }
+    .lf-swiping #lfToolbar .clc-tb-tabs > [aria-selected="true"] { background:transparent; color:var(--text); }
+    .lf-swipe-tab-indicator {
+      position:absolute; z-index:-1; pointer-events:none; transform-origin:left center;
+      border-radius:9999px; background:color-mix(in srgb, var(--pine) 40%, transparent);
+    }
     main > .lf-swipe-incoming {
-      display:block; position:absolute; top:var(--lf-swipe-top); bottom:0; z-index:1;
+      display:block; position:absolute; pointer-events:none; top:var(--lf-swipe-top); bottom:0; z-index:1;
       left:calc(max(var(--lf-pad), env(safe-area-inset-left)) - 10px);
       right:calc(max(var(--lf-pad), env(safe-area-inset-left)) - 10px); margin:0;
     }
@@ -471,7 +473,7 @@
   <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261125-app-crop-pine"></script>
   <script src="js/lf-menu.js?v=5"></script>
-  <script src="js/lf-home-swipe.js?v=5"></script>
+  <script src="js/lf-home-swipe.js?v=6"></script>
   <script src="https://clc-dx04.pages.dev/reorder.js?v=shared-todo-4"></script>
   <script src="js/dashboard-todos.js?v=20261125b"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
@@ -964,7 +966,6 @@
     window.lfHomeSwipe({
       activeTab: () => curTab,
       selectTab: tab => tb.setTab(tab, true),
-      hasAdd: tab => addMenu(tab).length > 0,
       prepareTab: tab => tab === 'family' ? window.lfChatApi?.prepareSwipe?.() : desk.relayout()
     });
     // 家庭留言板（Family 分頁）：有新訊息時 Family 分頁標籤亮紅點
