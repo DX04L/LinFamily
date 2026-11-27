@@ -310,6 +310,9 @@
     @media (pointer:coarse) { input, textarea, select { font-size:16px !important; } }
     main { display:flex; flex-direction:column; min-height:0; padding-bottom:0; }
     main > section { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px 10px calc(16px + env(safe-area-inset-bottom)); margin:-10px -10px 0; } /* 四周留 10px，App 滑鼠放大時不會被切到；負邊距讓位置不變 */
+    @media (max-width:1023px) {
+      main > section, .lf-family-scroll, .lfc-list, dialog.lf-pin { touch-action:pan-y; }
+    }
     .lf-swipe-viewport { position:fixed; overflow:hidden; pointer-events:none; z-index:2; }
     .lf-swipe-preview { width:100%; height:100%; display:grid; place-items:center; background:var(--surface); color:var(--text); will-change:transform; }
     .lf-swipe-preview strong { font-size:52px; letter-spacing:.08em; }
@@ -455,7 +458,7 @@
   <script src="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.js?v=1"></script>
   <script src="js/clc-icon-upload.js?v=20261125-app-crop-pine"></script>
   <script src="js/lf-menu.js?v=5"></script>
-  <script src="js/lf-home-swipe.js?v=1"></script>
+  <script src="js/lf-home-swipe.js?v=2"></script>
   <script src="https://clc-dx04.pages.dev/reorder.js?v=shared-todo-4"></script>
   <script src="js/dashboard-todos.js?v=20261125b"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
@@ -1260,18 +1263,31 @@
       let t = 0; try { t = Number(sessionStorage.getItem(CAB_KEY) || 0); } catch (_) {}
       return t && Date.now() - t < (cabCfg ? cabCfg.min : 10) * 60000;
     }
+    let pinPending = false;
     async function askPin(done) {
+      if (pinPending) return;
+      pinPending = true;
+      const fromTab = curTab, fromUser = user;
       const cfg = await cabConfig();
+      if (fromTab !== curTab || fromUser !== user || !isSuper() || !$('lfWelcome').hidden) {
+        pinPending = false;
+        return;
+      }
       const d = document.createElement('dialog'); d.className = 'lf-dialog lf-pin';
       d.innerHTML = '<form method="dialog"><h3>🔒 App 櫃</h3><p>請輸入管理密碼</p><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="12"><p class="lf-pin-err" hidden>密碼不對</p><div class="lf-pin-btns"><button value="cancel" type="button">取消</button><button value="ok" class="lf-primary">確定</button></div></form>';
       document.body.append(d);
       const input = d.querySelector('input'), err = d.querySelector('.lf-pin-err');
       d.querySelector('[value=cancel]').addEventListener('click', () => d.close());
+      let verified = false;
       d.querySelector('form').addEventListener('submit', e => {
-        if (input.value === cfg.pin) { try { sessionStorage.setItem(CAB_KEY, String(Date.now())); } catch (_) {} return; }
+        if (input.value === cfg.pin) { verified = true; try { sessionStorage.setItem(CAB_KEY, String(Date.now())); } catch (_) {} return; }
         e.preventDefault(); err.hidden = false; input.value = ''; input.focus();
       });
-      d.addEventListener('close', () => { d.remove(); if (cabUnlocked()) done(); });
+      d.addEventListener('close', () => {
+        d.remove();
+        pinPending = false;
+        if (verified && fromUser === user && isSuper() && cabUnlocked()) done();
+      });
       d.showModal(); input.focus();
     }
     function renderNews() { tb.setDot('all', newApps().length > 0); } // 有新 App → Apps 分頁紅點

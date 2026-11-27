@@ -1,9 +1,7 @@
 window.lfHomeSwipe = function ({ tabs, activeTab, selectTab, needsPin }) {
-  if (window.top !== window) return;
-
   const welcome = document.getElementById('lfWelcome');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const busy = 'dialog[open], #lfMenu:not([hidden]), .clc-tb-menu:not([hidden]), .todo-edit, ' +
+  const busy = 'dialog[open]:not(.lf-pin), #lfMenu:not([hidden]), .clc-tb-menu:not([hidden]), .todo-edit, ' +
     '.reorder-source, .reorder-floating, .is-dragging, .dk-root.is-editing, .slot-grid.is-editing, ' +
     '.slot-floating, .clc-hmenu, .dk-menu, .dk-sel, .ui-resizable-resizing, .ui-draggable-dragging, ' +
     '.grid-stack-item.ui-draggable-dragging, .lfc-pop, .lfc-view, .lfc-cam, .lfc-stks:not([hidden])';
@@ -11,13 +9,14 @@ window.lfHomeSwipe = function ({ tabs, activeTab, selectTab, needsPin }) {
     '.ui-resizable-handle, .lfc-rz, .lfc-down';
   let gesture, visual, settling = false;
 
-  function canSwipe() {
-    return welcome.hidden && innerWidth <= 1023 && !document.querySelector(busy);
+  const openPin = () => document.querySelector('dialog.lf-pin[open]');
+  function canSwipe(pin = null) {
+    return welcome.hidden && innerWidth <= 1023 && openPin() === pin && !document.querySelector(busy);
   }
 
   function blocked(node, surface) {
     if (node.closest(controls)) return true;
-    for (let el = node; el && surface.contains(el); el = el.parentElement) {
+    for (let el = node; el && el !== surface; el = el.parentElement) {
       if (el.scrollWidth > el.clientWidth + 4 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return true;
     }
     return false;
@@ -25,7 +24,7 @@ window.lfHomeSwipe = function ({ tabs, activeTab, selectTab, needsPin }) {
 
   const transform = x => `translate3d(${x}px,0,0)`;
   function nextTab(g) {
-    const index = tabs.findIndex(tab => tab.id === g.tab);
+    const index = tabs.findIndex(tab => tab.id === (g.pin ? 'all' : g.tab));
     return tabs[(index + (g.dx < 0 ? 1 : tabs.length - 1)) % tabs.length];
   }
 
@@ -92,22 +91,23 @@ window.lfHomeSwipe = function ({ tabs, activeTab, selectTab, needsPin }) {
   document.addEventListener('touchstart', e => {
     if (settling) return;
     if (gesture) return cancel();
-    if (e.touches.length !== 1 || !canSwipe()) return;
+    const pin = openPin();
+    if (e.touches.length !== 1 || !canSwipe(pin) || (pin && !pin.contains(e.target))) return;
     const tab = activeTab();
     const panel = tabs.find(item => item.id === tab).panel;
     const surface = tab === 'family'
       ? e.target.closest('.lfc-list, .lf-family-scroll')
       : panel;
-    if (!surface || !panel.contains(surface) || !surface.contains(e.target) || blocked(e.target, surface)) return;
+    if (!pin && (!surface || !panel.contains(surface) || !surface.contains(e.target) || blocked(e.target, surface))) return;
     const t = e.touches[0];
     const edge = innerWidth * .1; // 左右各留 10% 給系統手勢
     if (t.clientX < edge || t.clientX > innerWidth - edge) return;
-    gesture = { tab, surface, id: t.identifier, x: t.clientX, y: t.clientY, at: performance.now(), horizontal: false, dx: 0 };
-  }, { passive: true });
+    gesture = { tab, surface, pin, id: t.identifier, x: t.clientX, y: t.clientY, at: performance.now(), horizontal: false, dx: 0 };
+  }, { capture: true, passive: true });
 
   document.addEventListener('touchmove', e => {
     if (!gesture) return;
-    if (e.touches.length !== 1 || !canSwipe() || activeTab() !== gesture.tab) return cancel();
+    if (e.touches.length !== 1 || !canSwipe(gesture.pin) || activeTab() !== gesture.tab) return cancel();
     const t = e.touches[0], dx = t.clientX - gesture.x, dy = t.clientY - gesture.y;
     if (t.identifier !== gesture.id) return cancel();
     if (!gesture.horizontal) {
@@ -117,17 +117,23 @@ window.lfHomeSwipe = function ({ tabs, activeTab, selectTab, needsPin }) {
     }
     gesture.dx = dx;
     if (e.cancelable) e.preventDefault();
-    if (!reduceMotion.matches) draw(gesture);
+    if (!gesture.pin && !reduceMotion.matches) draw(gesture);
   }, { capture: true, passive: false });
 
   document.addEventListener('touchend', e => {
     const g = gesture;
-    if (!g || !g.horizontal || !canSwipe() || activeTab() !== g.tab) return cancel();
+    if (!g || !g.horizontal || !canSwipe(g.pin) || activeTab() !== g.tab) return cancel();
     if (e.cancelable) e.preventDefault();
     const fast = Math.abs(g.dx) >= 28 && performance.now() - g.at < 320;
     if (!fast && Math.abs(g.dx) < Math.max(40, innerWidth * .11)) return cancel();
     const next = nextTab(g);
     gesture = null;
+    if (g.pin) {
+      // 密碼視窗代表 Apps；從這裡往任一方向滑，關閉視窗並移到相鄰分頁。
+      g.pin.close();
+      if (next.id !== g.tab) selectTab(next.id);
+      return;
+    }
     // App 櫃鎖住時先回彈，再走工具列原本的密碼流程。
     if (needsPin(next.id)) {
       settle(g).then(() => {
@@ -136,7 +142,7 @@ window.lfHomeSwipe = function ({ tabs, activeTab, selectTab, needsPin }) {
     } else {
       settle(g, next);
     }
-  }, { passive: false });
+  }, { capture: true, passive: false });
 
   document.addEventListener('touchcancel', cancel, { passive: true });
 };
