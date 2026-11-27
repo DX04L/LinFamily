@@ -3,7 +3,8 @@ window.lfHomeSwipe = function ({ tabs, activeTab, selectTab, needsPin }) {
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const busy = 'dialog[open]:not(.lf-pin), #lfMenu:not([hidden]), .clc-tb-menu:not([hidden]), .todo-edit, ' +
     '.reorder-source, .reorder-floating, .is-dragging, .dk-root.is-editing, .slot-grid.is-editing, ' +
-    '.slot-floating, .clc-hmenu, .dk-menu, .dk-sel, .ui-resizable-resizing, .ui-draggable-dragging, ' +
+    '.slot-floating, .clc-hmenu, .dk-menu:not(.lfc-options):not([hidden]), .dk-sel, .ui-resizable-resizing, .ui-draggable-dragging, ' +
+    '#panelFamily:not([hidden]) .lfc-options:not([hidden]), ' +
     '.grid-stack-item.ui-draggable-dragging, .lfc-pop, .lfc-view, .lfc-cam, .lfc-stks:not([hidden])';
   const controls = 'input, textarea, select, dialog, [role="dialog"], [contenteditable], iframe, video, audio, ' +
     '.ui-resizable-handle, .lfc-rz, .lfc-down';
