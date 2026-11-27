@@ -711,7 +711,7 @@
           { label: '編輯 App', run: () => openApp(id) },
           { label: '新增選項', run: () => openAppEntries(id) }
         ];
-        return id ? [] : [{ label: '往上整理', run: () => desk.compact() }];
+        return [];
       },
       onDelete: (id, type) => type === 'card' ? desktopTodos.removeArea(id) : removeApp(id),
       saveLayout: (mode, map) => {
@@ -979,12 +979,12 @@
     { const t0 = { '#family': 'family', '#apps': 'all' }[location.hash]; if (t0) { tb.setTab(t0, true); if (curTab !== t0) onTab(t0); } }
  // cabinetOnly：Superuser 在 Apps 分頁按 ＋，只加到 App 櫃（不放自己的主畫面）
     // ＋ 只在用得到的地方出現：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）；Family 等其他分頁收起來
-    // ＋ 和長按選單共用：Home 給所有登入者；Apps 分頁只給 Superuser（加到 App 櫃）
     function addMenu(tab) {
       if (!role) return [];
       if (tab === 'apps') return [
         { label: '新增 APP', run: () => { addPos = null; cabinetOnly = false; openApp(null); } },
-        { label: '新增待辦事項區域', run: () => desktopTodos.add() }
+        { label: '新增待辦事項區域', run: () => desktopTodos.add() },
+        { label: '向上整理', run: () => desk.compact() }
       ];
       if (tab === 'all' && isSuper()) return [{ label: '新增 APP', run: () => { addPos = null; cabinetOnly = true; openApp(null); $('lfAppTitle').textContent = '新增 App 到 App 櫃'; } }];
       return [];
