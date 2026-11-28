@@ -256,18 +256,12 @@ window.clcMountTodos = function (dashboard, {
             if (e.detail >= 2 || e.detail === 0) startEdit(todo, text);
             return;
           }
-          // 手機：點一下就編輯；長按放開不算（那是「−」刪除／拖曳排序）。
+          // 手機：點一下就編輯；長按放開不算（保留給拖曳排序）。
           if (touchDownAt && performance.now() - touchDownAt >= 350) return;
           startEdit(todo, text);
         });
         text.addEventListener('keydown', e => {
           if (e.key === 'Enter') { e.preventDefault(); startEdit(todo, text); }
-          if (e.key === 'Delete') {
-            e.preventDefault();
-            setTodoDeleteMode(true);
-            const target = [...scroll.querySelectorAll('.todo-row')].find(row => row.dataset.sortId === todo.id);
-            target?.querySelector('.todo-minus')?.focus();
-          }
         });
         const title = document.createElement('span');
         title.className = 'todo-title';
@@ -311,15 +305,6 @@ window.clcMountTodos = function (dashboard, {
           finally { move.disabled = false; }
         });
         li.append(label, move);
-        if (body.classList.contains('todo-deleting')) {
-          const minus = document.createElement('button');
-          minus.type = 'button';
-          minus.className = 'todo-minus';
-          minus.setAttribute('aria-label', '刪除：' + todo.title);
-          minus.innerHTML = '<span aria-hidden="true"></span>';
-          minus.addEventListener('click', e => { e.stopPropagation(); removeTodo(todo); });
-          li.append(minus);
-        }
         return li;
       }
       function group(title, cls, items, opts) {
@@ -379,7 +364,6 @@ window.clcMountTodos = function (dashboard, {
       window.clcReorder(scroll, {
         item: '.todo-row', directMouse: true, scroll, allowed: canUse,
         crossTarget, crossMove, signal,
-        hold: () => setTodoDeleteMode(true), // 長按不動：每一項右上角出現「−」
         move(from, to, after) {
           const rows = Array.from(body.querySelectorAll('.todo-row'));
           const ids = rows.map(el => el.dataset.sortId).filter(id => id !== from);
@@ -457,21 +441,9 @@ window.clcMountTodos = function (dashboard, {
         update();
       })();
       const byNewest = (a, b) => b.created - a.created || b.id.localeCompare(a.id);
-      // 刪除模式：長按任一項 → 每項右上角出現「−」（跟 App 一樣），點旁邊或 Esc 結束。
-      function setTodoDeleteMode(on) {
-        on = !!on && canUse();
-        if (body.classList.contains('todo-deleting') === on) return;
-        body.classList.toggle('todo-deleting', on);
-        doneList.classList.toggle('todo-deleting', on);
-        // 震動已在長按浮起時給過一次，這裡不再震（避免連震兩下）
-        render();
-      }
-      document.addEventListener('pointerdown', e => {
-        if (body.classList.contains('todo-deleting') && !e.target.closest('.todo-row, .todo-undo-bar')) setTodoDeleteMode(false);
-      }, { signal });
-      document.addEventListener('keydown', e => { if (e.key === 'Escape') setTodoDeleteMode(false); }, { signal });
-
+      let editing = false;
       function render() {
+        if (editing) return;
         body.replaceChildren();
         doneList.replaceChildren();
         if (!canUse()) {
@@ -589,42 +561,46 @@ window.clcMountTodos = function (dashboard, {
           undoBar.className = 'todo-undo-bar';
           undoBar.setAttribute('role', 'status');
           undoBar.setAttribute('aria-live', 'polite');
-          const message = document.createElement('span'); message.className = 'todo-undo-message';
           const button = document.createElement('button'); button.type = 'button';
           button.className = 'todo-undo-action';
-          button.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a5 5 0 0 1 0 10h-2"/></svg>復原';
-          button.addEventListener('click', undoDelete);
-          undoBar.append(message, button);
+          button.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a5 5 0 0 1 0 10h-2"/></svg>Undo';
+          button.setAttribute('aria-label', '復原（Undo）');
+          button.addEventListener('click', undoChanges);
+          undoBar.append(button);
           doneToggle.parentElement.append(undoBar);
         }
         undoBar.hidden = !undoEntries.size;
-        undoBar.querySelector('.todo-undo-message').textContent = `已刪除 ${undoEntries.size} 項`;
         undoBar.querySelector('button').disabled = undoBusy;
       }
       function expireUndo(id) {
         const entry = undoEntries.get(id); if (!entry) return;
         clearTimeout(entry.timer); undoEntries.delete(id); showUndo();
       }
+      function rememberUndo(id, restore) {
+        if (!canUse()) return;
+        clearTimeout(undoEntries.get(id)?.timer);
+        undoEntries.set(id, { restore, timer: setTimeout(() => expireUndo(id), 5000) });
+        showUndo();
+      }
       async function removeTodo(todo) {
         if (deleting.has(todo.id) || !canUse()) return;
         deleting.add(todo.id);
         try {
           await deleteTodo(todo.id);
-          const entry = { data: todo.raw, timer: setTimeout(() => expireUndo(todo.id), 5000) };
-          undoEntries.set(todo.id, entry); showUndo();
+          rememberUndo(todo.id, () => setTodo(todo.id, todo.raw));
         } catch (err) { console.warn('待辦刪除失敗', err); setStatus(errText(err)); }
         finally { deleting.delete(todo.id); }
       }
-      async function undoDelete() {
+      async function undoChanges() {
         if (undoBusy || !canUse()) return;
         undoBusy = true;
         const entries = Array.from(undoEntries.entries());
         entries.forEach(([, entry]) => clearTimeout(entry.timer)); showUndo();
         try {
           for (const [id, entry] of entries) {
-            try { await setTodo(id, entry.data); undoEntries.delete(id); }
+            try { await entry.restore(); if (undoEntries.get(id) === entry) undoEntries.delete(id); }
             catch (err) {
-              entry.timer = setTimeout(() => expireUndo(id), 5000);
+              if (canUse() && undoEntries.get(id) === entry) entry.timer = setTimeout(() => expireUndo(id), 5000);
               console.warn('待辦復原失敗', err); setStatus('復原未完成，請再按一次「復原」。' + errText(err));
             }
           }
@@ -640,30 +616,49 @@ window.clcMountTodos = function (dashboard, {
         return parts.join(' ');
       }
       function startEdit(todo, textEl) {
+        if (editing || !canUse()) return;
+        editing = true;
         const box = document.createElement('textarea');
         box.rows = Math.max(2, todo.title.split('\n').length);
         box.className = 'todo-edit';
         box.maxLength = 220;
         box.value = rawText(todo);
         box.setAttribute('aria-label', '修改待辦');
-        textEl.replaceWith(box);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'todo-del';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', '刪除：' + todo.title);
+        textEl.closest('.todo-row').querySelector('.todo-move-area').remove();
+        textEl.replaceWith(box, remove);
         box.focus();
         let finished = false;
         const finish = async save => {
           if (finished) return;
           finished = true;
+          editing = false;
           const v = box.value.trim();
           if (!save || !v || v === rawText(todo)) { render(); return; }
           try {
             const p = parse(v);
+            const previous = { title: todo.title, due: todo.due, time: todo.time, tag: todo.tag };
             await updateTodo(todo.id, { title: p.title.slice(0, 200), due: p.due, time: p.time, tag: p.tag.slice(0, 20), updatedAt: timestamp() });
-          } catch (err) { console.warn('待辦修改失敗', err); setStatus(errText(err)); render(); }
+            rememberUndo(todo.id, () => updateTodo(todo.id, { ...previous, updatedAt: timestamp() }));
+          } catch (err) { console.warn('待辦修改失敗', err); setStatus(errText(err)); }
+          finally { render(); }
         };
         box.addEventListener('keydown', e => {
           if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); finish(true); }
           else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
         });
-        box.addEventListener('blur', () => finish(true));
+        box.addEventListener('blur', e => { if (e.relatedTarget !== remove) finish(true); });
+        remove.addEventListener('pointerdown', e => e.preventDefault());
+        remove.addEventListener('blur', e => { if (e.relatedTarget !== box) finish(true); });
+        remove.addEventListener('keydown', e => { if (e.key === 'Escape') finish(false); });
+        remove.addEventListener('click', () => {
+          finish(false);
+          removeTodo(todo);
+        });
       }
 
       // ---------- 一次貼上多行：每行一項 ----------

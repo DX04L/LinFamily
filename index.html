@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/js/dashboard-widgets.css?v=11">
-  <link rel="stylesheet" href="css/lf-todos.css?v=11">
-  <link rel="stylesheet" href="css/dashboard-todos.v1.css?v=20261125c">
+  <link rel="stylesheet" href="css/lf-todos.css?v=12">
+  <link rel="stylesheet" href="css/dashboard-todos.v1.css?v=20261128">
   <link rel="stylesheet" href="css/lf-chat.css?v=31">
-  <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=18">
+  <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/desktop/desktop.v1.css?v=19">
   <link rel="stylesheet" href="https://clc-dx04.pages.dev/shared/toolbar/toolbar.v1.css?v=1">
   <script src="https://linfamily.pages.dev/js/scrollbars.js?v=20261118-1"></script>
   <script>
@@ -475,7 +475,7 @@
   <script src="js/lf-menu.js?v=7"></script>
   <script src="js/lf-home-swipe.js?v=6"></script>
   <script src="https://clc-dx04.pages.dev/reorder.js?v=shared-todo-4"></script>
-  <script src="js/dashboard-todos.js?v=20261125b"></script>
+  <script src="js/dashboard-todos.js?v=20261128"></script>
   <script src="https://clc-dx04.pages.dev/js/dashboard-widgets.js?v=11"></script>
   <script src="js/lf-todos.js?v=8"></script>
   <script src="js/lf-chat.js?v=41"></script>
@@ -703,7 +703,7 @@
       cols: { desktop: 16, phone: 4 }, cell: { desktop: 104, phone: 88 }, ratio: 1.3, margin: { desktop: 11, phone: 8 },
       waitLayout: true,
       canEdit: () => !!role,
-      label: id => (apps.find(a => a.id === id) || {}).name || '這個待辦區域',
+      label: id => (apps.find(a => a.id === id) || {}).name || $('todoTitle-' + id)?.textContent || '這個待辦區域',
       appMenu: id => apps.find(a => a.id === id)?.name,
       menu: ({ id, type }) => {
         if (!role) return [];

@@ -54,46 +54,24 @@ button.todo-mic.is-listening { color:#fff; background:#e11d48; animation:micPuls
   -webkit-user-select: text;
 }
 .todo-mic.hidden { display: none; }
-.todo-row .todo-minus {
-  position: absolute;
-  top: -9px;
-  right: -6px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-content: center;
-  border: 0;
-  background: none;
+.todo-row .todo-del {
+  flex: none;
+  align-self: start;
+  width: 36px;
+  height: 36px;
   padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
   cursor: pointer;
-  z-index: 2;
 }
-.todo-minus span {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #475569;
-  box-shadow: 0 1px 4px rgb(0 0 0 / .35);
-  display: grid;
-  place-content: center;
+.todo-row .todo-del:hover, .todo-row .todo-del:focus-visible {
+  background: var(--btn, rgb(127 127 127 / .16));
 }
-.todo-minus span::after {
-  content: "";
-  width: 10px;
-  height: 2px;
-  border-radius: 2px;
-  background: white;
-}
-.todo-minus:active span { background: #e11d48; }
-.todo-deleting .todo-row { animation: todo-jiggle .32s ease-in-out infinite; }
-.todo-deleting .todo-row:nth-child(2n) { animation-delay: -.16s; }
-.todo-row.reorder-floating .todo-minus { visibility: hidden; }
-@keyframes todo-jiggle {
-  0%, 100% { transform: rotate(-.4deg); }
-  50% { transform: rotate(.4deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .todo-deleting .todo-row { animation: none; }
+@media (max-width: 699px), (pointer: coarse) {
+  .todo-row .todo-move-area { display: none !important; }
 }
 
 form button.todo-send {

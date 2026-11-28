@@ -45,8 +45,10 @@ html :is(.lf-todo-card, .lf-todo-drawer) .todo-done-bar { border-top: 1px solid 
 
 .lf-todo-drawer { border: 0; max-width: none; }
 #lfApps ~ [role="status"]:empty { display: none; }
-body:has(#lfApps .dk-card ~ .dk-card) .lf-todo-drawer .todo-move-area {
-  display: block !important; flex: none; max-width: 6em;
+@media (min-width: 700px) and (pointer: fine) {
+  body:has(#lfApps .dk-card ~ .dk-card) .lf-todo-drawer .todo-move-area {
+    display: block !important; flex: none; max-width: 6em;
+  }
 }
 .lf-todo-menu {
   width: 210px;
