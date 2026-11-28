@@ -82,7 +82,7 @@ h3{font-size:18px}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 
 /* 經文排版 */
-.verses{font:clamp(18px,calc(2.2vw + 1px),22px)/1.68 var(--heading);list-style:none;padding:0;margin:6px 0 0}
+.verses{font:calc(clamp(18px,2.2vw + 1px,22px) * var(--qt-size,1))/calc(1.68 * var(--qt-leading,1)) var(--heading);list-style:none;padding:0;margin:6px 0 0}
 .verses li{margin:0 0 14px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
 .verses li > span:first-of-type,.context p{color:#222220}
 .kids-verses .zhuyin{color:#463044}
@@ -94,7 +94,7 @@ h3{font-size:18px}
 .eng-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:6px;background:var(--panel);color:var(--accent);margin-right:6px;vertical-align:middle}
 
 p{line-height:1.85;white-space:pre-line}
-#grown-up p:not(.eyebrow){font-size:17px;line-height:1.68}
+#grown-up p:not(.eyebrow){font-size:calc(17px * var(--qt-size,1));line-height:calc(1.68 * var(--qt-leading,1))}
 .qt-ai-paragraph{display:block}
 .qt-ai-paragraph + .qt-ai-paragraph{margin-block-start:.65em}
 .qt-mode-swipe{touch-action:pan-y pinch-zoom}
@@ -114,8 +114,8 @@ button:hover,.action:hover{filter:brightness(.95)}
 /* 源泉圓體注音版（比大人版稍大一點點） */
 .zhuyin{
   font-family:"BpmfGenSenRounded","Noto Sans TC",sans-serif;
-  font-size:clamp(19px,2.5vw,23px);
-  line-height:1.58;
+  font-size:calc(clamp(19px,2.5vw,23px) * var(--qt-size,1));
+  line-height:calc(1.58 * var(--qt-leading,1));
   letter-spacing:.03em;
 }
 .kids-verses{list-style:none;padding:0;margin:6px 0 0}
@@ -157,8 +157,21 @@ html:has(#meditation[open]){overflow:hidden}
 .meditation-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .meditation-heading h2{font-family:"Noto Serif TC",serif}
 .meditation-heading img{flex:none;border-radius:9px}
-#meditation-verses{margin:24px 0 32px;font:clamp(19px,3vw,23px)/1.8 "Noto Serif TC",serif;color:#eeeae1;white-space:normal}
-#meditation-verses sup{font:600 .55em/0 var(--body);color:#b6c5ba;margin-inline-end:.4em}
+#meditation-verses{margin:24px 0 32px;font:calc(clamp(23px,3vw + 4px,27px) * var(--qt-size,1))/calc(1.8 * var(--qt-leading,1)) "Noto Serif TC",serif;color:#fff}
+#meditation-verses p{margin:0;line-height:inherit;white-space:normal}
+#meditation-verses p + p{margin-block-start:.8em}
+#reading-settings{position:relative;border:0;padding:0;margin:0;color:var(--ink)}
+#reading-settings summary{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:var(--panel);list-style:none}
+#reading-settings summary::-webkit-details-marker{display:none}
+.reading-options{position:absolute;inset-inline-end:0;top:calc(100% + 8px);width:min(16rem,calc(100vw - 32px));padding:14px;display:grid;gap:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);box-shadow:var(--shadow)}
+.reading-options label{display:grid;grid-template-columns:1fr auto;gap:4px;font-size:14px;font-weight:600}
+.reading-options input{grid-column:1/-1;width:100%;margin:0;accent-color:var(--button)}
+.reading-options output{color:var(--muted);font-variant-numeric:tabular-nums}
+#reading-settings #export-word{width:100%;height:auto;min-height:36px;border-radius:8px;font-size:14px;font-weight:700}
+#grown-up h2{font-size:calc(clamp(20px,2.5vw,26px) * var(--qt-size,1))}
+#grown-up h3,#kids h3{font-size:calc(18px * var(--qt-size,1))}
+#grown-up :is(h2,h3),#kids h3{line-height:calc(1.35 * var(--qt-leading,1))}
+#meditation-verses sup{font:600 .55em/0 var(--body);color:inherit;margin-inline-end:.4em}
 #meditation form{text-align:center}
 #meditation form button{
   padding:8px 14px;border:1px solid #627169;border-radius:8px;background:transparent;color:#c3cdc6;font-size:14px
@@ -172,13 +185,18 @@ html:has(#meditation[open]){overflow:hidden}
 <header class="qt-mode-swipe"><div class="bar shell">
   <div class="qt-brand-group"><a id="home" class="brand" data-lf-menu-trigger href="./"><img id="brand-icon" src="icons/grownup.svg" alt=""><span>Daily QT · 每日靈修</span></a><span id="qt-welcome" hidden><span id="qt-welcome-name"></span><span id="qt-welcome-extra" hidden></span></span></div>
   <div class="qt-header-actions">
-    <button id="export-word" type="button" aria-label="匯出 Word" title="匯出 Word" hidden>
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></svg>
-    </button>
     <div class="modes" role="group" aria-label="閱讀模式">
     <button type="button" data-mode="literary" aria-pressed="true">大人</button>
     <button type="button" data-mode="kids-cute" aria-pressed="false">兒童</button>
     </div>
+    <details id="reading-settings">
+      <summary aria-label="閱讀設定"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></summary>
+      <div class="reading-options">
+        <label>文字大小 <output id="qt-size-value" for="qt-size">100%</output><input id="qt-size" type="range" min="75" max="160" value="100" aria-label="文字大小"></label>
+        <label>行距 <output id="qt-leading-value" for="qt-leading">100%</output><input id="qt-leading" type="range" min="85" max="155" value="100" aria-label="行距"></label>
+        <button id="export-word" type="button" hidden>匯出 Word</button>
+      </div>
+    </details>
   </div>
 </div></header>
 <div id="reading-sheet">
@@ -237,7 +255,7 @@ html:has(#meditation[open]){overflow:hidden}
       <h2 id="meditation-title" tabindex="-1" autofocus></h2>
       <img id="meditation-icon" width="40" height="40" alt="">
     </div>
-    <p id="meditation-verses"></p>
+    <div id="meditation-verses"></div>
     <form method="dialog"><button type="submit">結束默想模式</button></form>
   </div>
 </dialog>
@@ -338,15 +356,55 @@ async function loadEnglish(user) {
   } catch { /* The browser preference remains available offline. */ }
 }
 
+const readingSettings = $('reading-settings');
+for (const id of ['qt-size', 'qt-leading']) {
+  const slider = $(id);
+  const apply = () => {
+    root.style.setProperty('--' + id, slider.valueAsNumber / 100);
+    $(id + '-value').value = slider.value + '%';
+    slider.setAttribute('aria-valuetext', slider.value + '%');
+  };
+  try { slider.value = localStorage.getItem(id) ?? slider.defaultValue; } catch {}
+  apply();
+  slider.addEventListener('input', () => {
+    apply();
+    try { localStorage.setItem(id, slider.value); } catch {}
+  });
+}
+document.addEventListener('click', event => {
+  if (!readingSettings.contains(event.target)) readingSettings.open = false;
+});
+readingSettings.addEventListener('keydown', event => {
+  if (event.key !== 'Escape' || !readingSettings.open) return;
+  readingSettings.open = false;
+  readingSettings.querySelector('summary').focus();
+});
+
+function meditationParagraphs(verses) {
+  const transition = /^(?:但(?:是|如今|後|到了|願)|然而|可是|因此|所以|這樣看來|總而言之|末了|再者|論到|至於|從前|如今|後來|此後|這事以後|過了.{1,12}(?:天|日|年)|第二天|到了.{1,12}的時候|有一天|那時[，、]|(?:耶穌|他們|門徒)又(?:說|問)|(?:耶穌|他)又設個比喻)/;
+  const label = scriptureVerseLabel(verses);
+  const paragraphs = [];
+  let paragraph = [];
+  for (const [index, verse] of verses.entries()) {
+    const previous = verses[index - 1];
+    const startsTopic = previous && /[。！？！？”」』]$/.test(previous.text.trim()) &&
+      transition.test(verse.text.trim());
+    if (paragraph.length && (verse.chapter !== previous.chapter || startsTopic)) {
+      paragraphs.push(paragraph.join(' '));
+      paragraph = [];
+    }
+    paragraph.push(`<span><sup>${escapeText(label(verse))}</sup>${escapeText(verse.text)}</span>`);
+  }
+  if (paragraph.length) paragraphs.push(paragraph.join(' '));
+  return paragraphs.map(text => `<p>${text}</p>`).join('');
+}
+
 $('meditation-open').addEventListener('click', () => {
   const scripture = current?.scripture;
   if (!scripture?.verses?.length) return;
-  const verseLabel = scriptureVerseLabel(scripture.verses);
   $('meditation-title').textContent = scripture.reference;
   $('meditation-icon').src = $('brand-icon').src;
-  $('meditation-verses').innerHTML = scripture.verses.map(verse =>
-    `<span><sup>${escapeText(verseLabel(verse))}</sup>${escapeText(verse.text)}</span>`
-  ).join(' ');
+  $('meditation-verses').innerHTML = meditationParagraphs(scripture.verses);
   const dialog = $('meditation');
   dialog.showModal();
   dialog.scrollTop = 0;
