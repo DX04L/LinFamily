@@ -564,6 +564,7 @@ meditationVersesEl.addEventListener('contextmenu', event => {
   const verseEl = event.target.closest('.meditation-verse');
   if (!verseEl) return;
   event.preventDefault();
+  if (meditationLongPressed || matchMedia('(any-pointer: coarse)').matches) return;
   focusMeditationVerse(verseEl);
   if (verseEl.dataset.copy) {
     showMeditationMenu(event.clientX, event.clientY, verseEl.dataset.copy);
