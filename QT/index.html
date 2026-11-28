@@ -1114,7 +1114,20 @@ setVerseLang(localLang(null), false);
 selectDate(taipeiDate(), false, true);
 watchLinFamilyAuth();
 </script>
-  <script defer src="https://clc-dx04.pages.dev/lf-back.js?v=10" data-home="../" data-key="linfamily_homebtn_open"></script>
+  <script>
+  {
+    const home = new URL('../', location.href);
+    const launchedFromHome = [home.href, new URL('index.html', home).href, new URL('index', home).href]
+      .includes(document.referrer.split(/[?#]/)[0]);
+    if (window.top === window && launchedFromHome) {
+      const script = document.createElement('script');
+      script.src = 'https://clc-dx04.pages.dev/lf-back.js?v=10';
+      script.dataset.home = '../';
+      script.dataset.key = 'linfamily_homebtn_open';
+      document.body.append(script);
+    }
+  }
+</script>
   <script defer src="../js/lf-menu.js?v=7"></script>
 </body>
 </html>
