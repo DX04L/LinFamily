@@ -159,11 +159,11 @@ html:has(#meditation[open]){overflow:hidden}
 .meditation-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .meditation-heading h2{font-family:"Noto Serif TC",serif}
 .meditation-heading img{flex:none;border-radius:9px}
-#meditation-verses{margin:24px 0 32px;font:calc(clamp(23px,3vw + 4px,27px) * var(--qt-size,1))/calc(1.8 * var(--qt-leading,1)) "Noto Serif TC",serif;color:#fff;display:grid;gap:6px}
-.meditation-verse{margin:0;line-height:inherit;white-space:normal;cursor:pointer;padding:10px 14px 10px 16px;border-radius:10px;border-left:3px solid transparent;transition:opacity .25s ease,color .22s ease,background-color .22s ease,border-color .22s ease;user-select:none;-webkit-user-select:none}
+#meditation-verses{margin:20px 0 28px;font:calc(clamp(20px,2.5vw + 2px,23px) * var(--qt-size,1))/calc(1.62 * var(--qt-leading,1)) "Noto Serif TC",serif;color:#fff;display:grid;gap:2px}
+.meditation-verse{margin:0;line-height:inherit;white-space:normal;cursor:pointer;padding:7px 14px 7px 0;border-radius:10px;border-left:3px solid transparent;transition:opacity .25s ease,color .22s ease,background-color .22s ease,border-color .22s ease,padding-left .22s ease;user-select:none;-webkit-user-select:none}
 .meditation-verse:hover{background:rgba(255,255,255,.04)}
 #meditation-verses.has-focus .meditation-verse:not(.is-focused){opacity:.35}
-#meditation-verses.has-focus .meditation-verse.is-focused{opacity:1;color:#F0B95B;border-left-color:#F0B95B;background:rgba(240,185,91,.10)}
+#meditation-verses.has-focus .meditation-verse.is-focused{opacity:1;color:#F0B95B;padding-left:14px;border-left-color:#F0B95B;background:rgba(240,185,91,.10)}
 #reading-settings{position:relative;border:0;padding:0;margin:0;color:var(--ink)}
 #reading-settings summary{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:var(--panel);list-style:none}
 #reading-settings summary::-webkit-details-marker{display:none}
@@ -173,7 +173,7 @@ html:has(#meditation[open]){overflow:hidden}
 .reading-options output{color:var(--muted);font-variant-numeric:tabular-nums}
 .reading-options-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #reading-settings #export-word,#reading-reset{width:auto;height:auto;min-height:32px;padding:4px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font-size:13px;font-weight:700}
-#meditation[data-zhuyin] #meditation-verses{font-family:"BpmfGenSenRounded","Noto Sans TC",sans-serif}
+#meditation[data-zhuyin] #meditation-title,#meditation[data-zhuyin] #meditation-verses{font-family:"BpmfGenSenRounded","Noto Sans TC",sans-serif}
 #grown-up h2{font-size:calc(clamp(20px,2.5vw,26px) * var(--qt-size,1))}
 #grown-up h3,#kids h3{font-size:calc(18px * var(--qt-size,1))}
 #grown-up :is(h2,h3),#kids h3{line-height:calc(1.35 * var(--qt-leading,1))}
@@ -428,9 +428,13 @@ $('meditation').addEventListener('click', event => {
 $('meditation-open').addEventListener('click', () => {
   const scripture = current?.scripture;
   if (!scripture?.verses?.length) return;
-  $('meditation-title').textContent = scripture.reference;
-  $('meditation-icon').src = $('brand-icon').src;
   const withZhuyin = mode === 'kids-cute';
+  if (withZhuyin) {
+    $('meditation-title').innerHTML = rubyMarkup(scripture.reference);
+  } else {
+    $('meditation-title').textContent = scripture.reference;
+  }
+  $('meditation-icon').src = $('brand-icon').src;
   const dialog = $('meditation');
   const container = $('meditation-verses');
   dialog.toggleAttribute('data-zhuyin', withZhuyin);
