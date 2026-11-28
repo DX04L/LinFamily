@@ -82,7 +82,7 @@ h3{font-size:18px}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 
 /* 經文排版 */
-.verses{font:clamp(18px,calc(2.2vw + 1px),22px)/1.75 var(--heading);list-style:none;padding:0;margin:6px 0 0}
+.verses{font:clamp(18px,calc(2.2vw + 1px),22px)/1.68 var(--heading);list-style:none;padding:0;margin:6px 0 0}
 .verses li{margin:0 0 14px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
 .verses li > span:first-of-type,.context p{color:#222220}
 .kids-verses .zhuyin{color:#463044}
@@ -94,7 +94,7 @@ h3{font-size:18px}
 .eng-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:6px;background:var(--panel);color:var(--accent);margin-right:6px;vertical-align:middle}
 
 p{line-height:1.85;white-space:pre-line}
-#grown-up p:not(.eyebrow){font-size:17px;line-height:1.75}
+#grown-up p:not(.eyebrow){font-size:17px;line-height:1.68}
 .qt-ai-paragraph{display:block}
 .qt-ai-paragraph + .qt-ai-paragraph{margin-block-start:.65em}
 .qt-mode-swipe{touch-action:pan-y pinch-zoom}
@@ -115,7 +115,7 @@ button:hover,.action:hover{filter:brightness(.95)}
 .zhuyin{
   font-family:"BpmfGenSenRounded","Noto Sans TC",sans-serif;
   font-size:clamp(19px,2.5vw,23px);
-  line-height:1.65;
+  line-height:1.58;
   letter-spacing:.03em;
 }
 .kids-verses{list-style:none;padding:0;margin:6px 0 0}
@@ -142,6 +142,28 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
   .modes button{padding:5px 11px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.date-nav #meditation-open{
+  margin-inline-start:auto;width:auto;height:30px;padding:0 10px;border-radius:8px;
+  background:var(--panel);color:var(--accent);white-space:nowrap
+}
+#meditation{
+  position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;
+  border:0;border-radius:0;padding:0;background:#1b2421;color:#fff;
+  color-scheme:dark;overscroll-behavior:contain
+}
+#meditation::backdrop{background:#1b2421}
+html:has(#meditation[open]){overflow:hidden}
+.meditation-page{width:min(100%,42rem);margin-inline:auto;padding:clamp(28px,8vw,72px) clamp(20px,5vw,42px)}
+.meditation-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.meditation-heading h2{font-family:"Noto Serif TC",serif}
+.meditation-heading img{flex:none;border-radius:9px}
+#meditation-verses{margin:24px 0 32px;font:clamp(19px,3vw,23px)/1.8 "Noto Serif TC",serif;color:#eeeae1;white-space:normal}
+#meditation-verses sup{font:600 .55em/0 var(--body);color:#b6c5ba;margin-inline-end:.4em}
+#meditation form{text-align:center}
+#meditation form button{
+  padding:8px 14px;border:1px solid #627169;border-radius:8px;background:transparent;color:#c3cdc6;font-size:14px
+}
+#meditation form button:focus-visible{outline-color:#c3cdc6}
 </style>
 <link rel="stylesheet" href="reader.css?v=9">
   <style>footer { display:none !important; }</style><!-- LF 全站不顯示 footer -->
@@ -169,7 +191,7 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
           <div id="date-list" aria-label="最近七天的經文"></div>
         </details>
         <button id="next" disabled aria-label="後一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-        <button id="english-toggle" type="button" role="switch" aria-label="英文經文" aria-checked="true">英文</button>
+        <button id="meditation-open" type="button" aria-haspopup="dialog" disabled>默想模式</button>
       </div>
       <div class="title-row">
         <h1 id="hero-title">每日靈修</h1>
@@ -209,6 +231,16 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--muted);font-s
 <footer><div class="shell">Daily QT · 每日靈修 <span id="source"></span></div></footer>
 </div>
 <div id="toast" role="status" hidden></div>
+<dialog id="meditation" aria-labelledby="meditation-title">
+  <div class="meditation-page">
+    <div class="meditation-heading">
+      <h2 id="meditation-title" tabindex="-1" autofocus></h2>
+      <img id="meditation-icon" width="40" height="40" alt="">
+    </div>
+    <p id="meditation-verses"></p>
+    <form method="dialog"><button type="submit">結束默想模式</button></form>
+  </div>
+</dialog>
 <dialog id="manual-copy" aria-labelledby="copy-title">
   <h2 id="copy-title">複製神學提問</h2>
   <p>請手動複製下方提問，再前往 AI 對話視窗。</p>
@@ -274,7 +306,6 @@ let toastTimer;
 let firestore;
 let firebaseApp;
 let recent = [];
-let account;
 let superuser;
 let englishRevision = 0;
 let todayMissing = false;
@@ -291,11 +322,9 @@ function localEnglish(user) {
 
 function showEnglish(enabled) {
   root.classList.toggle('qt-hide-english', !enabled);
-  $('english-toggle').setAttribute('aria-checked', String(enabled));
 }
 
 async function loadEnglish(user) {
-  account = user;
   const revision = ++englishRevision;
   showEnglish(localEnglish(user));
   if (!user?.emailVerified) return;
@@ -309,19 +338,18 @@ async function loadEnglish(user) {
   } catch { /* The browser preference remains available offline. */ }
 }
 
-$('english-toggle').addEventListener('click', async () => {
-  ++englishRevision;
-  const user = account;
-  const enabled = $('english-toggle').getAttribute('aria-checked') !== 'true';
-  showEnglish(enabled);
-  try { localStorage.setItem(englishKey(user), enabled ? 'on' : 'off'); } catch {}
-  if (!user?.emailVerified) return;
-  try {
-    const db = await getDatabase();
-    if (account === user) {
-      await db.setDoc(db.doc(db.instance, 'qt_preferences', user.uid), {showEnglish: enabled});
-    }
-  } catch { /* The choice is still saved in this browser. */ }
+$('meditation-open').addEventListener('click', () => {
+  const scripture = current?.scripture;
+  if (!scripture?.verses?.length) return;
+  const verseLabel = scriptureVerseLabel(scripture.verses);
+  $('meditation-title').textContent = scripture.reference;
+  $('meditation-icon').src = $('brand-icon').src;
+  $('meditation-verses').innerHTML = scripture.verses.map(verse =>
+    `<span><sup>${escapeText(verseLabel(verse))}</sup>${escapeText(verse.text)}</span>`
+  ).join(' ');
+  const dialog = $('meditation');
+  dialog.showModal();
+  dialog.scrollTop = 0;
 });
 
 function updateRetry() {
@@ -410,10 +438,14 @@ function formatAiText(value, annotate = false) {
   return paragraphs.map(text => `<span class="qt-ai-paragraph">${text}</span>`).join('');
 }
 
+function scriptureVerseLabel(verses) {
+  const crossesChapters = verses?.[0]?.chapter !== verses?.at(-1)?.chapter;
+  return verse => crossesChapters && verse.chapter ? `${verse.chapter}:${verse.verse}` : verse.verse;
+}
+
 function render(data, node = $) {
   const bible = data.scripture;
-  const crossesChapters = bible.verses?.[0]?.chapter !== bible.verses?.at(-1)?.chapter;
-  const verseLabel = v => crossesChapters && v.chapter ? `${v.chapter}:${v.verse}` : v.verse;
+  const verseLabel = scriptureVerseLabel(bible.verses);
   const grownUp = data.grownUpContent;
   const kids = data.kids_content;
 
@@ -493,6 +525,7 @@ function setTheme(value) {
 
 function updateView() {
   renderView(current);
+  $('meditation-open').disabled = !current?.scripture?.verses?.length;
   const exportButton = $('export-word');
   exportButton.hidden = !current;
   const label = mode === 'kids-cute' ? '匯出兒童 Word' : '匯出大人 Word';
