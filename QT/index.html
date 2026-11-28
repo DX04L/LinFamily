@@ -194,7 +194,10 @@ html:has(#meditation[open]){overflow:hidden}
   padding:8px 14px;border:1px solid #627169;border-radius:8px;background:transparent;color:#c3cdc6;font-size:14px
 }
 #meditation form button:focus-visible{outline-color:#c3cdc6}
-#meditation-toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:10;width:max-content;max-width:calc(100% - 32px);padding:11px 18px;background:rgba(36,48,44,.95);color:#F0B95B;border:1px solid rgba(240,185,91,.35);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px;font-weight:600}
+#meditation-toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:10;padding:8px 16px;background:rgba(38,49,45,.94);color:#e2e8e4;border:1px solid rgba(255,255,255,.14);border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.35);font-size:13px;font-weight:500;white-space:nowrap}
+#meditation-menu{position:fixed;z-index:11;min-width:128px;padding:4px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:#25312d;box-shadow:0 10px 28px rgba(0,0,0,.5)}
+#meditation-menu button{display:block;width:100%;padding:8px 14px;border:0;border-radius:7px;background:transparent;color:#e8edea;font-size:14px;text-align:start;cursor:pointer}
+#meditation-menu button:hover,#meditation-menu button:focus-visible{background:rgba(255,255,255,.09);outline:none}
 </style>
 <link rel="stylesheet" href="reader.css?v=9">
   <style>footer { display:none !important; }</style><!-- LF 全站不顯示 footer -->
@@ -287,6 +290,7 @@ html:has(#meditation[open]){overflow:hidden}
     <div id="meditation-verses"></div>
     <form method="dialog"><button type="submit">結束默想模式</button></form>
   </div>
+  <div id="meditation-menu" role="menu" hidden><button type="button" role="menuitem" id="meditation-copy-btn">複製經文</button></div>
   <div id="meditation-toast" role="status" hidden></div>
 </dialog>
 <dialog id="manual-copy" aria-labelledby="copy-title">
@@ -484,18 +488,47 @@ let meditationPressTimer;
 let meditationLongPressed = false;
 let meditationPressStart = null;
 let meditationToastTimer;
+let meditationMenuText = '';
 
 function showMeditationToast(message) {
   const toast = $('meditation-toast');
   clearTimeout(meditationToastTimer);
   toast.textContent = message;
   toast.hidden = false;
-  meditationToastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
+  meditationToastTimer = setTimeout(() => { toast.hidden = true; }, 1800);
+}
+
+function focusMeditationVerse(verseEl) {
+  const container = $('meditation-verses');
+  container.querySelectorAll('.meditation-verse.is-focused').forEach(el => el.classList.remove('is-focused'));
+  if (verseEl) {
+    verseEl.classList.add('is-focused');
+    container.classList.add('has-focus');
+  } else {
+    hideMeditationMenu();
+  container.classList.remove('has-focus');
+  }
+}
+
+function hideMeditationMenu() {
+  const menu = $('meditation-menu');
+  if (menu) menu.hidden = true;
+  meditationMenuText = '';
+}
+
+function showMeditationMenu(x, y, copyText) {
+  const menu = $('meditation-menu');
+  meditationMenuText = copyText;
+  menu.hidden = false;
+  const maxLeft = Math.max(8, window.innerWidth - menu.offsetWidth - 8);
+  const maxTop = Math.max(8, window.innerHeight - menu.offsetHeight - 8);
+  menu.style.left = Math.max(8, Math.min(x, maxLeft)) + 'px';
+  menu.style.top = Math.max(8, Math.min(y, maxTop)) + 'px';
 }
 
 const meditationVersesEl = $('meditation-verses');
 meditationVersesEl.addEventListener('pointerdown', event => {
-  if (event.button !== undefined && event.button !== 0) return;
+  if (event.pointerType === 'mouse') return;
   const verseEl = event.target.closest('.meditation-verse');
   if (!verseEl) return;
   meditationLongPressed = false;
@@ -503,13 +536,11 @@ meditationVersesEl.addEventListener('pointerdown', event => {
   clearTimeout(meditationPressTimer);
   meditationPressTimer = setTimeout(async () => {
     meditationLongPressed = true;
-    meditationVersesEl.querySelectorAll('.meditation-verse.is-focused').forEach(el => el.classList.remove('is-focused'));
-    verseEl.classList.add('is-focused');
-    meditationVersesEl.classList.add('has-focus');
+    focusMeditationVerse(verseEl);
     const copyText = verseEl.dataset.copy;
     if (copyText) {
       const copied = await copyPrompt(copyText);
-      showMeditationToast(copied ? `已複製：${copyText}` : '複製失敗，請再試一次');
+      showMeditationToast(copied ? '已複製' : '無法複製');
     }
   }, 480);
 });
@@ -530,10 +561,34 @@ for (const evt of ['pointerup', 'pointercancel', 'pointerleave']) {
 }
 
 meditationVersesEl.addEventListener('contextmenu', event => {
-  if (event.target.closest('.meditation-verse')) event.preventDefault();
+  const verseEl = event.target.closest('.meditation-verse');
+  if (!verseEl) return;
+  event.preventDefault();
+  focusMeditationVerse(verseEl);
+  if (verseEl.dataset.copy) {
+    showMeditationMenu(event.clientX, event.clientY, verseEl.dataset.copy);
+  }
 });
 
+$('meditation-copy-btn').addEventListener('click', async event => {
+  event.stopPropagation();
+  const text = meditationMenuText;
+  hideMeditationMenu();
+  if (text) {
+    const copied = await copyPrompt(text);
+    showMeditationToast(copied ? '已複製' : '無法複製');
+  }
+});
+
+$('meditation').addEventListener('scroll', hideMeditationMenu, { passive: true });
+$('meditation').addEventListener('close', hideMeditationMenu);
+
 $('meditation').addEventListener('click', event => {
+  if (!event.target.closest('#meditation-menu')) {
+    const wasMenuOpen = !$('meditation-menu').hidden;
+    hideMeditationMenu();
+    if (wasMenuOpen) return;
+  }
   if (meditationLongPressed) {
     meditationLongPressed = false;
     return;
@@ -542,18 +597,11 @@ $('meditation').addEventListener('click', event => {
   const verseEl = event.target.closest('.meditation-verse');
   if (verseEl && container.contains(verseEl)) {
     const wasFocused = verseEl.classList.contains('is-focused');
-    container.querySelectorAll('.meditation-verse.is-focused').forEach(el => el.classList.remove('is-focused'));
-    if (!wasFocused) {
-      verseEl.classList.add('is-focused');
-      container.classList.add('has-focus');
-    } else {
-      container.classList.remove('has-focus');
-    }
+    focusMeditationVerse(wasFocused ? null : verseEl);
     return;
   }
   if (container.classList.contains('has-focus')) {
-    container.querySelectorAll('.meditation-verse.is-focused').forEach(el => el.classList.remove('is-focused'));
-    container.classList.remove('has-focus');
+    focusMeditationVerse(null);
   }
 });
 
