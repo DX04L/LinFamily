@@ -73,7 +73,8 @@ main{touch-action:pan-y pinch-zoom}
   color:var(--accent);
   background:radial-gradient(circle at calc(100% - 5px) 50%,currentColor 3px,transparent 3.5px)
 }
-.qt-hide-english :is(.eng-verse,.english-edition){display:none}
+.qt-hide-english :is(.eng-verse,.english-edition),.qt-lang-zh :is(.eng-verse,.english-edition){display:none}
+.qt-lang-en .eng-tag{display:none}
 #retry-panel{margin:0 0 20px}
 #status:has(+ #retry-panel:not([hidden])){margin-bottom:8px}
 #retry-status{margin:6px 0 0;color:var(--muted)}

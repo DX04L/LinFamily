@@ -160,10 +160,12 @@ html:has(#meditation[open]){overflow:hidden}
 .meditation-heading h2{font-family:"Noto Serif TC",serif}
 .meditation-heading img{flex:none;border-radius:9px}
 #meditation-verses{margin:20px 0 28px;font:calc(clamp(20px,2.5vw + 2px,23px) * var(--qt-size,1))/calc(1.62 * var(--qt-leading,1)) "Noto Serif TC",serif;color:#fff;display:grid;gap:2px}
-.meditation-verse{margin:0;line-height:inherit;white-space:normal;cursor:pointer;padding:7px 14px 7px 0;border-radius:10px;border-left:3px solid transparent;transition:opacity .25s ease,color .22s ease,background-color .22s ease,border-color .22s ease,padding-left .22s ease;user-select:none;-webkit-user-select:none}
-.meditation-verse:hover{background:rgba(255,255,255,.04)}
+.meditation-verse{position:relative;margin:0;line-height:inherit;white-space:normal;cursor:pointer;padding:7px 14px 7px 0;border-radius:8px;transition:opacity .25s ease,color .22s ease,background .22s ease;user-select:none;-webkit-user-select:none}
+.meditation-verse::before{content:"";position:absolute;left:-14px;top:7px;bottom:7px;width:3px;border-radius:2px;background:#F0B95B;opacity:0;transform:scaleY(.6);transition:opacity .22s ease,transform .22s ease}
+.meditation-verse:hover{background:linear-gradient(90deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,0) 100%)}
 #meditation-verses.has-focus .meditation-verse:not(.is-focused){opacity:.35}
-#meditation-verses.has-focus .meditation-verse.is-focused{opacity:1;color:#F0B95B;padding-left:14px;border-left-color:#F0B95B;background:rgba(240,185,91,.10)}
+#meditation-verses.has-focus .meditation-verse.is-focused{opacity:1;color:#F0B95B;background:linear-gradient(90deg,rgba(240,185,91,.16) 0%,rgba(240,185,91,.06) 65%,rgba(240,185,91,0) 100%)}
+#meditation-verses.has-focus .meditation-verse.is-focused::before{opacity:1;transform:scaleY(1)}
 #reading-settings{position:relative;border:0;padding:0;margin:0;color:var(--ink)}
 #reading-settings summary{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:var(--panel);list-style:none}
 #reading-settings summary::-webkit-details-marker{display:none}
@@ -173,6 +175,15 @@ html:has(#meditation[open]){overflow:hidden}
 .reading-options output{color:var(--muted);font-variant-numeric:tabular-nums}
 .reading-options-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #reading-settings #export-word,#reading-reset{width:auto;height:auto;min-height:32px;padding:4px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font-size:13px;font-weight:700}
+.qt-lang-group{display:grid;gap:6px;font-size:14px;font-weight:600}
+.qt-lang-toggle{display:grid;grid-template-columns:repeat(3,1fr);padding:3px;gap:3px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
+.qt-lang-toggle button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:5px 0;font-size:13px;font-weight:700;transition:background-color .2s,color .2s}
+.qt-lang-toggle button[aria-pressed="true"]{background:var(--button);color:var(--on-button)}
+.qt-lang-zh .eng-verse,.qt-lang-zh .english-edition{display:none!important}
+.qt-lang-en .verses li > span:first-of-type,.qt-lang-en .kids-verses li > span:first-of-type,.qt-lang-en .zh-edition{display:none!important}
+.qt-lang-en .eng-tag{display:none!important}
+.qt-lang-en .eng-verse{margin-top:0;font-family:var(--heading);font-size:calc(clamp(18px,2.2vw + 1px,22px) * var(--qt-size,1));line-height:calc(1.68 * var(--qt-leading,1));color:#222220}
+[data-theme="kids-cute"] .qt-lang-en .eng-verse{font-family:var(--body);color:#463044}
 #meditation[data-zhuyin] #meditation-title,#meditation[data-zhuyin] #meditation-verses{font-family:"BpmfGenSenRounded","Noto Sans TC",sans-serif}
 #grown-up h2{font-size:calc(clamp(20px,2.5vw,26px) * var(--qt-size,1))}
 #grown-up h3,#kids h3{font-size:calc(18px * var(--qt-size,1))}
@@ -184,6 +195,8 @@ html:has(#meditation[open]){overflow:hidden}
   padding:8px 14px;border:1px solid #627169;border-radius:8px;background:transparent;color:#c3cdc6;font-size:14px
 }
 #meditation form button:focus-visible{outline-color:#c3cdc6}
+.meditation-verse{-webkit-touch-callout:none}
+#meditation-toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:10;width:max-content;max-width:calc(100% - 32px);padding:11px 18px;background:rgba(36,48,44,.95);color:#F0B95B;border:1px solid rgba(240,185,91,.35);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px;font-weight:600}
 </style>
 <link rel="stylesheet" href="reader.css?v=9">
   <style>footer { display:none !important; }</style><!-- LF 全站不顯示 footer -->
@@ -199,6 +212,14 @@ html:has(#meditation[open]){overflow:hidden}
     <details id="reading-settings">
       <summary aria-label="閱讀設定"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></summary>
       <div class="reading-options">
+        <div class="qt-lang-group">
+          <span>經文語言</span>
+          <div class="qt-lang-toggle" role="group" aria-label="經文語言">
+            <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+            <button type="button" data-lang="both" aria-pressed="true">中英</button>
+            <button type="button" data-lang="en" aria-pressed="false">英文</button>
+          </div>
+        </div>
         <label>文字大小 <output id="qt-size-value" for="qt-size">100%</output><input id="qt-size" type="range" min="75" max="160" value="100" aria-label="文字大小"></label>
         <label>行距 <output id="qt-leading-value" for="qt-leading">100%</output><input id="qt-leading" type="range" min="85" max="155" value="100" aria-label="行距"></label>
         <div class="reading-options-actions">
@@ -268,6 +289,7 @@ html:has(#meditation[open]){overflow:hidden}
     <div id="meditation-verses"></div>
     <form method="dialog"><button type="submit">結束默想模式</button></form>
   </div>
+  <div id="meditation-toast" role="status" hidden></div>
 </dialog>
 <dialog id="manual-copy" aria-labelledby="copy-title">
   <h2 id="copy-title">複製神學提問</h2>
@@ -339,30 +361,58 @@ let englishRevision = 0;
 let todayMissing = false;
 let retrying = false;
 
-function englishKey(user) {
-  return user ? 'qt-english:' + user.uid : 'qt-english';
+let currentUser = null;
+
+function langKey(user) {
+  return user ? 'qt-lang:' + user.uid : 'qt-lang';
 }
 
-function localEnglish(user) {
-  try { return localStorage.getItem(englishKey(user)) !== 'off'; }
-  catch { return true; }
+function localLang(user) {
+  try {
+    const saved = localStorage.getItem(langKey(user));
+    if (saved === 'zh' || saved === 'both' || saved === 'en') return saved;
+    const legacy = localStorage.getItem(user ? 'qt-english:' + user.uid : 'qt-english');
+    if (legacy === 'off') return 'zh';
+    return 'both';
+  } catch { return 'both'; }
 }
 
-function showEnglish(enabled) {
-  root.classList.toggle('qt-hide-english', !enabled);
+function setVerseLang(lang, persist = false) {
+  const modeVal = (lang === 'zh' || lang === 'both' || lang === 'en') ? lang : 'both';
+  root.classList.remove('qt-lang-zh', 'qt-lang-en', 'qt-hide-english');
+  if (modeVal === 'zh') root.classList.add('qt-lang-zh', 'qt-hide-english');
+  else if (modeVal === 'en') root.classList.add('qt-lang-en');
+  document.querySelectorAll('.qt-lang-toggle [data-lang]').forEach(btn => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.lang === modeVal));
+  });
+  if (persist) {
+    try { localStorage.setItem(langKey(currentUser), modeVal); } catch {}
+    if (currentUser?.emailVerified) {
+      getDatabase().then(db => db.setDoc(db.doc(db.instance, 'qt_preferences', currentUser.uid), {
+        verseLang: modeVal,
+        showEnglish: modeVal !== 'zh',
+      }, { merge: true })).catch(() => {});
+    }
+  }
 }
 
 async function loadEnglish(user) {
+  currentUser = user || null;
   const revision = ++englishRevision;
-  showEnglish(localEnglish(user));
+  setVerseLang(localLang(user), false);
   if (!user?.emailVerified) return;
   try {
     const db = await getDatabase();
     const snapshot = await db.getDoc(db.doc(db.instance, 'qt_preferences', user.uid));
-    const enabled = snapshot.data()?.showEnglish;
-    if (revision !== englishRevision || typeof enabled !== 'boolean') return;
-    showEnglish(enabled);
-    try { localStorage.setItem(englishKey(user), enabled ? 'on' : 'off'); } catch {}
+    const data = snapshot.data();
+    let lang = data?.verseLang;
+    if (lang !== 'zh' && lang !== 'both' && lang !== 'en') {
+      if (typeof data?.showEnglish === 'boolean') lang = data.showEnglish ? 'both' : 'zh';
+      else return;
+    }
+    if (revision !== englishRevision) return;
+    setVerseLang(lang, false);
+    try { localStorage.setItem(langKey(user), lang); } catch {}
   } catch { /* The browser preference remains available offline. */ }
 }
 
@@ -382,11 +432,19 @@ for (const slider of readingSliders) {
     try { localStorage.setItem(id, slider.value); } catch {}
   });
 }
+document.querySelectorAll('.qt-lang-toggle [data-lang]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    QTReader.clear();
+    setVerseLang(btn.dataset.lang, true);
+  });
+});
 $('reading-reset').addEventListener('click', () => {
   for (const slider of readingSliders) {
     slider.value = slider.defaultValue;
     slider.dispatchEvent(new Event('input'));
   }
+  QTReader.clear();
+  setVerseLang('both', true);
 });
 document.addEventListener('click', event => {
   if (!readingSettings.contains(event.target)) readingSettings.open = false;
@@ -397,15 +455,87 @@ readingSettings.addEventListener('keydown', event => {
   readingSettings.querySelector('summary').focus();
 });
 
-function meditationParagraphs(verses, withZhuyin) {
+function meditationVerseRef(scripture, verse) {
+  const rawRef = String(scripture?.reference || '').trim();
+  const bookMatch = rawRef.match(/^(.+?)(?:\s+(?=\d)|(?=\d))/);
+  const fullBook = bookMatch ? bookMatch[1].trim() : '';
+  const shortBook = bookShortNames[fullBook] || fullBook;
+  let chapter = verse.chapter;
+  if (!chapter) {
+    const chapMatch = rawRef.slice(fullBook.length).trim().match(/^(\d+)/);
+    if (chapMatch) chapter = chapMatch[1];
+  }
+  const refNum = chapter ? `${chapter}:${verse.verse}` : `${verse.verse}`;
+  return `${shortBook}${refNum}`;
+}
+
+function meditationParagraphs(verses, withZhuyin, scripture) {
   const label = scriptureVerseLabel(verses);
   return verses.map(verse => {
     const text = withZhuyin ? rubyMarkup(verse.ruby || verse.text) : escapeText(verse.text);
-    return `<p class="meditation-verse"><sup>${escapeText(label(verse))}</sup>${text}</p>`;
+    const copyText = `${String(verse.text || '').trim()}${meditationVerseRef(scripture, verse)}`;
+    return `<p class="meditation-verse" data-copy="${escapeText(copyText)}"><sup>${escapeText(label(verse))}</sup>${text}</p>`;
   }).join('');
 }
 
+let meditationPressTimer;
+let meditationLongPressed = false;
+let meditationPressStart = null;
+let meditationToastTimer;
+
+function showMeditationToast(message) {
+  const toast = $('meditation-toast');
+  clearTimeout(meditationToastTimer);
+  toast.textContent = message;
+  toast.hidden = false;
+  meditationToastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
+}
+
+const meditationVersesEl = $('meditation-verses');
+meditationVersesEl.addEventListener('pointerdown', event => {
+  if (event.button !== undefined && event.button !== 0) return;
+  const verseEl = event.target.closest('.meditation-verse');
+  if (!verseEl) return;
+  meditationLongPressed = false;
+  meditationPressStart = { x: event.clientX, y: event.clientY };
+  clearTimeout(meditationPressTimer);
+  meditationPressTimer = setTimeout(async () => {
+    meditationLongPressed = true;
+    meditationVersesEl.querySelectorAll('.meditation-verse.is-focused').forEach(el => el.classList.remove('is-focused'));
+    verseEl.classList.add('is-focused');
+    meditationVersesEl.classList.add('has-focus');
+    const copyText = verseEl.dataset.copy;
+    if (copyText) {
+      const copied = await copyPrompt(copyText);
+      showMeditationToast(copied ? `已複製：${copyText}` : '複製失敗，請再試一次');
+    }
+  }, 480);
+});
+
+meditationVersesEl.addEventListener('pointermove', event => {
+  if (!meditationPressStart) return;
+  if (Math.hypot(event.clientX - meditationPressStart.x, event.clientY - meditationPressStart.y) > 10) {
+    clearTimeout(meditationPressTimer);
+    meditationPressStart = null;
+  }
+});
+
+for (const evt of ['pointerup', 'pointercancel', 'pointerleave']) {
+  meditationVersesEl.addEventListener(evt, () => {
+    clearTimeout(meditationPressTimer);
+    meditationPressStart = null;
+  });
+}
+
+meditationVersesEl.addEventListener('contextmenu', event => {
+  if (event.target.closest('.meditation-verse')) event.preventDefault();
+});
+
 $('meditation').addEventListener('click', event => {
+  if (meditationLongPressed) {
+    meditationLongPressed = false;
+    return;
+  }
   const container = $('meditation-verses');
   const verseEl = event.target.closest('.meditation-verse');
   if (verseEl && container.contains(verseEl)) {
@@ -439,7 +569,7 @@ $('meditation-open').addEventListener('click', () => {
   const container = $('meditation-verses');
   dialog.toggleAttribute('data-zhuyin', withZhuyin);
   container.classList.remove('has-focus');
-  container.innerHTML = meditationParagraphs(scripture.verses, withZhuyin);
+  container.innerHTML = meditationParagraphs(scripture.verses, withZhuyin, scripture);
   dialog.showModal();
   dialog.scrollTop = 0;
 });
@@ -543,7 +673,7 @@ function render(data, node = $) {
 
   node('grown-up').innerHTML = `
     <section class="card">
-      <p class="eyebrow">今日經文 · 和合本<span class="english-edition"> &amp; NIV</span></p>
+      <p class="eyebrow">今日經文 · <span class="zh-edition">和合本</span><span class="english-edition"><span class="zh-edition"> &amp; </span>NIV</span></p>
       <ol class="verses">${bible.verses.map(v => `
         <li>
           <small>${escapeText(verseLabel(v))}</small>
@@ -571,7 +701,7 @@ function render(data, node = $) {
   node('kids').innerHTML = `
     ${hasKidsVerses ? `
     <section class="card">
-      <p class="eyebrow">今日經文 · 注音<span class="english-edition"> &amp; NIrV</span></p>
+      <p class="eyebrow">今日經文 · <span class="zh-edition">注音</span><span class="english-edition"><span class="zh-edition"> &amp; </span>NIrV</span></p>
         <ol class="kids-verses">${bible.verses.map(v => `
           <li>
             <small>${escapeText(verseLabel(v))}</small>
@@ -929,7 +1059,7 @@ QTReader.init({
 });
 try { if (localStorage.getItem('qt-mode') === 'kids-cute') mode = 'kids-cute'; } catch {}
 setTheme(mode);
-showEnglish(localEnglish(null));
+setVerseLang(localLang(null), false);
 selectDate(taipeiDate(), false, true);
 watchLinFamilyAuth();
 </script>
