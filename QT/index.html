@@ -167,7 +167,9 @@ html:has(#meditation[open]){overflow:hidden}
 .reading-options label{display:grid;grid-template-columns:1fr auto;gap:4px;font-size:14px;font-weight:600}
 .reading-options input{grid-column:1/-1;width:100%;margin:0;accent-color:var(--button)}
 .reading-options output{color:var(--muted);font-variant-numeric:tabular-nums}
-#reading-settings #export-word{width:100%;height:auto;min-height:36px;border-radius:8px;font-size:14px;font-weight:700}
+.reading-options-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#reading-settings #export-word,#reading-reset{width:auto;height:auto;min-height:32px;padding:4px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font-size:13px;font-weight:700}
+#meditation[data-zhuyin] #meditation-verses{font-family:"BpmfGenSenRounded","Noto Sans TC",sans-serif}
 #grown-up h2{font-size:calc(clamp(20px,2.5vw,26px) * var(--qt-size,1))}
 #grown-up h3,#kids h3{font-size:calc(18px * var(--qt-size,1))}
 #grown-up :is(h2,h3),#kids h3{line-height:calc(1.35 * var(--qt-leading,1))}
@@ -194,7 +196,10 @@ html:has(#meditation[open]){overflow:hidden}
       <div class="reading-options">
         <label>文字大小 <output id="qt-size-value" for="qt-size">100%</output><input id="qt-size" type="range" min="75" max="160" value="100" aria-label="文字大小"></label>
         <label>行距 <output id="qt-leading-value" for="qt-leading">100%</output><input id="qt-leading" type="range" min="85" max="155" value="100" aria-label="行距"></label>
-        <button id="export-word" type="button" hidden>匯出 Word</button>
+        <div class="reading-options-actions">
+          <button id="export-word" type="button" hidden>匯出 Word</button>
+          <button id="reading-reset" type="button" aria-label="恢復預設字級與行距">預設</button>
+        </div>
       </div>
     </details>
   </div>
@@ -357,8 +362,9 @@ async function loadEnglish(user) {
 }
 
 const readingSettings = $('reading-settings');
-for (const id of ['qt-size', 'qt-leading']) {
-  const slider = $(id);
+const readingSliders = ['qt-size', 'qt-leading'].map($);
+for (const slider of readingSliders) {
+  const id = slider.id;
   const apply = () => {
     root.style.setProperty('--' + id, slider.valueAsNumber / 100);
     $(id + '-value').value = slider.value + '%';
@@ -371,6 +377,12 @@ for (const id of ['qt-size', 'qt-leading']) {
     try { localStorage.setItem(id, slider.value); } catch {}
   });
 }
+$('reading-reset').addEventListener('click', () => {
+  for (const slider of readingSliders) {
+    slider.value = slider.defaultValue;
+    slider.dispatchEvent(new Event('input'));
+  }
+});
 document.addEventListener('click', event => {
   if (!readingSettings.contains(event.target)) readingSettings.open = false;
 });
@@ -380,7 +392,7 @@ readingSettings.addEventListener('keydown', event => {
   readingSettings.querySelector('summary').focus();
 });
 
-function meditationParagraphs(verses) {
+function meditationParagraphs(verses, withZhuyin) {
   const transition = /^(?:但(?:是|如今|後|到了|願)|然而|可是|因此|所以|這樣看來|總而言之|末了|再者|論到|至於|從前|如今|後來|此後|這事以後|過了.{1,12}(?:天|日|年)|第二天|到了.{1,12}的時候|有一天|那時[，、]|(?:耶穌|他們|門徒)又(?:說|問)|(?:耶穌|他)又設個比喻)/;
   const label = scriptureVerseLabel(verses);
   const paragraphs = [];
@@ -393,7 +405,8 @@ function meditationParagraphs(verses) {
       paragraphs.push(paragraph.join(' '));
       paragraph = [];
     }
-    paragraph.push(`<span><sup>${escapeText(label(verse))}</sup>${escapeText(verse.text)}</span>`);
+    const text = withZhuyin ? rubyMarkup(verse.ruby || verse.text) : escapeText(verse.text);
+    paragraph.push(`<span><sup>${escapeText(label(verse))}</sup>${text}</span>`);
   }
   if (paragraph.length) paragraphs.push(paragraph.join(' '));
   return paragraphs.map(text => `<p>${text}</p>`).join('');
@@ -404,8 +417,10 @@ $('meditation-open').addEventListener('click', () => {
   if (!scripture?.verses?.length) return;
   $('meditation-title').textContent = scripture.reference;
   $('meditation-icon').src = $('brand-icon').src;
-  $('meditation-verses').innerHTML = meditationParagraphs(scripture.verses);
+  const withZhuyin = mode === 'kids-cute';
   const dialog = $('meditation');
+  dialog.toggleAttribute('data-zhuyin', withZhuyin);
+  $('meditation-verses').innerHTML = meditationParagraphs(scripture.verses, withZhuyin);
   dialog.showModal();
   dialog.scrollTop = 0;
 });
