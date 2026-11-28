@@ -159,13 +159,11 @@ html:has(#meditation[open]){overflow:hidden}
 .meditation-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .meditation-heading h2{font-family:"Noto Serif TC",serif}
 .meditation-heading img{flex:none;border-radius:9px}
-#meditation-verses{margin:20px 0 28px;font:calc(clamp(20px,2.5vw + 2px,23px) * var(--qt-size,1))/calc(1.62 * var(--qt-leading,1)) "Noto Serif TC",serif;color:#fff;display:grid;gap:2px}
-.meditation-verse{position:relative;margin:0;line-height:inherit;white-space:normal;cursor:pointer;padding:7px 14px 7px 0;border-radius:8px;transition:opacity .25s ease,color .22s ease,background .22s ease,transform .24s cubic-bezier(.25,1,.5,1);user-select:none;-webkit-user-select:none}
-.meditation-verse::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:2px;background:#F0B95B;opacity:0;transform:translateX(-14px) scaleY(.6);transition:opacity .22s ease,transform .24s cubic-bezier(.25,1,.5,1)}
+#meditation-verses{margin:20px 0 28px;font:calc(clamp(20px,2.5vw + 2px,23px) * var(--qt-size,1))/calc(1.62 * var(--qt-leading,1)) "Noto Serif TC",serif;color:#fff;display:grid;gap:4px}
+.meditation-verse{margin:0 0 0 -16px;line-height:inherit;white-space:normal;cursor:pointer;padding:9px 16px 9px 13px;border-radius:10px;border-left:3px solid transparent;transition:opacity .25s ease,color .22s ease,background .22s ease,border-color .22s ease,transform .24s cubic-bezier(.25,1,.5,1);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .meditation-verse:hover{background:linear-gradient(90deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,0) 100%)}
 #meditation-verses.has-focus .meditation-verse:not(.is-focused){opacity:.35}
-#meditation-verses.has-focus .meditation-verse.is-focused{opacity:1;color:#F0B95B;transform:translateX(14px);background:linear-gradient(90deg,rgba(240,185,91,.16) 0%,rgba(240,185,91,.06) 65%,rgba(240,185,91,0) 100%)}
-#meditation-verses.has-focus .meditation-verse.is-focused::before{opacity:1;transform:translateX(-14px) scaleY(1)}
+#meditation-verses.has-focus .meditation-verse.is-focused{opacity:1;color:#F0B95B;border-left-color:#F0B95B;transform:translateX(14px);background:linear-gradient(90deg,rgba(240,185,91,.16) 0%,rgba(240,185,91,.06) 65%,rgba(240,185,91,0) 100%)}
 #reading-settings{position:relative;border:0;padding:0;margin:0;color:var(--ink)}
 #reading-settings summary{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:var(--panel);list-style:none}
 #reading-settings summary::-webkit-details-marker{display:none}
@@ -196,7 +194,6 @@ html:has(#meditation[open]){overflow:hidden}
   padding:8px 14px;border:1px solid #627169;border-radius:8px;background:transparent;color:#c3cdc6;font-size:14px
 }
 #meditation form button:focus-visible{outline-color:#c3cdc6}
-.meditation-verse{-webkit-touch-callout:none}
 #meditation-toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:10;width:max-content;max-width:calc(100% - 32px);padding:11px 18px;background:rgba(36,48,44,.95);color:#F0B95B;border:1px solid rgba(240,185,91,.35);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px;font-weight:600}
 </style>
 <link rel="stylesheet" href="reader.css?v=9">
