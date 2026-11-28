@@ -69,6 +69,8 @@ h2{font-size:clamp(20px,2.5vw,26px)}
 h3{font-size:18px}
 .lead{font-family:var(--body);font-size:clamp(14px,1.6vw,17px);font-weight:600;color:var(--muted);margin:0}
 
+[data-theme="kids-cute"] #hero-lead{font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif}
+
 /* 右側精緻徽章化插畫 */
 .art{flex-shrink:0;width:clamp(120px,16vw,175px)}
 .art svg{display:block;width:100%;height:auto;max-height:125px}
@@ -618,8 +620,10 @@ function renderView(data, node = $) {
     node('hero-title').innerHTML = rubyMarkup(data.kids_content.bible_story_title_ruby);
   }
   node('hero-lead').hidden = !data;
-  node('hero-lead').classList.toggle('english-edition', Boolean(data?.scripture.eng_reference));
-  node('hero-lead').textContent = !data ? '' : (data.scripture.eng_reference || data.scripture.verses[0]?.text || '');
+  node('hero-lead').classList.toggle('english-edition', !isKids && Boolean(data?.scripture.eng_reference));
+  node('hero-lead').textContent = !data ? '' : isKids
+    ? data.scripture.reference
+    : (data.scripture.eng_reference || data.scripture.verses[0]?.text || '');
   node('source').textContent = data?.source_channel ? ' · ' + data.source_channel : '';
 }
 
