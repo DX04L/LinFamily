@@ -23,7 +23,7 @@
 :is(.lf-todo-card, .lf-todo-drawer) :is(textarea, select) { min-width: 0; background: transparent; color: inherit; font: inherit; }
 :is(.lf-todo-card, .lf-todo-drawer) textarea { flex: 1; }
 :is(.lf-todo-card, .lf-todo-drawer) .todo-add-input { padding: 0; border: 0; resize: none; outline: none; }
-:is(.lf-todo-card, .lf-todo-drawer) [hidden], :is(.lf-todo-card, .lf-todo-drawer) .hidden, :is(.lf-todo-card, .lf-todo-drawer) .todo-move-area { display: none !important; }
+:is(.lf-todo-card, .lf-todo-drawer) [hidden], :is(.lf-todo-card, .lf-todo-drawer) .hidden { display: none !important; }
 :is(.lf-todo-card, .lf-todo-drawer) .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 :is(.lf-todo-card, .lf-todo-drawer) :is(.todo-list, ul) { padding: 0; margin: 0; list-style: none; }
 :is(.lf-todo-card, .lf-todo-drawer) .todo-scroll { padding: 5px 2px; }
@@ -45,11 +45,6 @@ html :is(.lf-todo-card, .lf-todo-drawer) .todo-done-bar { border-top: 1px solid 
 
 .lf-todo-drawer { border: 0; max-width: none; }
 #lfApps ~ [role="status"]:empty { display: none; }
-@media (min-width: 700px) and (pointer: fine) {
-  body:has(#lfApps .dk-card ~ .dk-card) .lf-todo-drawer .todo-move-area {
-    display: block !important; flex: none; max-width: 6em;
-  }
-}
 .lf-todo-menu {
   width: 210px;
   border: 1px solid var(--border);

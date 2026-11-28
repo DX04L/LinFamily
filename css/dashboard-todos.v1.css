@@ -70,9 +70,6 @@ button.todo-mic.is-listening { color:#fff; background:#e11d48; animation:micPuls
 .todo-row .todo-del:hover, .todo-row .todo-del:focus-visible {
   background: var(--btn, rgb(127 127 127 / .16));
 }
-@media (max-width: 699px), (pointer: coarse) {
-  .todo-row .todo-move-area { display: none !important; }
-}
 
 form button.todo-send {
   flex: none;

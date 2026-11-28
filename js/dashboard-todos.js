@@ -283,28 +283,7 @@ window.clcMountTodos = function (dashboard, {
           text.append(meta);
         }
         label.append(hit, text);
-        const move = document.createElement('select');
-        move.className = 'todo-move-area';
-        move.setAttribute('aria-label', '移動到其他待辦區：' + todo.title);
-        move.add(new Option('移動到…', ''));
-        move.addEventListener('focus', () => {
-          move.options.length = 1;
-          for (const destination of todoAreas.keys()) {
-            if (destination === widget || destination.hidden) continue;
-            const name = destination.querySelector('h2')?.textContent || '代辦事項';
-            move.add(new Option(name, destination.dataset.widgetId));
-          }
-        });
-        move.addEventListener('change', async () => {
-          const destination = [...todoAreas.keys()].find(card => card.dataset.widgetId === move.value);
-          move.value = '';
-          if (!destination || !canUse()) return;
-          move.disabled = true;
-          try { await crossMove(todo.id, { widget: destination }); }
-          catch (err) { setStatus(errText(err)); }
-          finally { move.disabled = false; }
-        });
-        li.append(label, move);
+        li.append(label);
         return li;
       }
       function group(title, cls, items, opts) {
@@ -629,7 +608,6 @@ window.clcMountTodos = function (dashboard, {
         remove.className = 'todo-del';
         remove.textContent = '×';
         remove.setAttribute('aria-label', '刪除：' + todo.title);
-        textEl.closest('.todo-row').querySelector('.todo-move-area').remove();
         textEl.replaceWith(box, remove);
         box.focus();
         let finished = false;
