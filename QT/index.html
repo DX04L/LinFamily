@@ -82,8 +82,10 @@ h3{font-size:18px}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 
 /* 經文排版 */
-.verses{font:clamp(17px,2.2vw,21px)/1.9 var(--heading);list-style:none;padding:0;margin:6px 0 0}
+.verses{font:clamp(18px,calc(2.2vw + 1px),22px)/1.75 var(--heading);list-style:none;padding:0;margin:6px 0 0}
 .verses li{margin:0 0 14px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
+.verses li > span:first-of-type,.context p{color:#222220}
+.kids-verses .zhuyin{color:#463044}
 .verses li:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
 .verses small{color:var(--accent);font:700 13px/2.5 var(--body)}
 .eng-verse{display:block;margin-top:5px}
@@ -92,8 +94,9 @@ h3{font-size:18px}
 .eng-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:6px;background:var(--panel);color:var(--accent);margin-right:6px;vertical-align:middle}
 
 p{line-height:1.85;white-space:pre-line}
+#grown-up p:not(.eyebrow){font-size:17px;line-height:1.75}
 .qt-ai-paragraph{display:block}
-.qt-ai-paragraph + .qt-ai-paragraph{margin-block-start:.75em}
+.qt-ai-paragraph + .qt-ai-paragraph{margin-block-start:.65em}
 .qt-mode-swipe{touch-action:pan-y pinch-zoom}
 details{border-top:1px solid var(--line);padding-top:14px;color:var(--muted);margin-top:16px}
 summary{cursor:pointer;font-weight:600;width:fit-content;font-size:14px}
@@ -112,7 +115,7 @@ button:hover,.action:hover{filter:brightness(.95)}
 .zhuyin{
   font-family:"BpmfGenSenRounded","Noto Sans TC",sans-serif;
   font-size:clamp(19px,2.5vw,23px);
-  line-height:1.75;
+  line-height:1.65;
   letter-spacing:.03em;
 }
 .kids-verses{list-style:none;padding:0;margin:6px 0 0}
